@@ -125,6 +125,7 @@ var amazon_order_history_table = (function() {
             var tfoot;
             var fr;
             var tbody;
+            var isus;
 
             table = document.createElement("table");
             document.body.appendChild(table);
@@ -144,7 +145,17 @@ var amazon_order_history_table = (function() {
             fr = document.createElement("tr");
             tfoot.appendChild(fr);
             
+            isus = amazon_order_history_util.getSite().endsWith("\.com");
+
             cols.forEach(function(col_spec){
+                var fieldName = col_spec.field_name;
+                if (isus && fieldName === "vat") {
+                    col_spec.field_name = "tax";
+                    col_spec.help = "Caution: when stuff is not supplied by Amazon, then tax is often not collected.";
+                }
+                if (isus && fieldName === "postage") {
+                    col_spec.field_name = "shipping";
+                }
                 addHeader(hr, col_spec.field_name, col_spec.help);
                 addHeader(fr, col_spec.field_name, col_spec.help);
             });
@@ -174,7 +185,7 @@ var amazon_order_history_table = (function() {
                         // Remove the formatting to get integer data for summation
                         var floatVal = function(i) {
                             if(typeof i === "string") {
-                                return i === "?" ?
+                                return i === "N/A" ?
                                     0 : parseFloat(i.replace(/^[£$]/, ""));
                             }
                             if(typeof i === "number") { return i; }
