@@ -5,7 +5,7 @@ var amazon_order_history_util = (function(){
     "use strict";
     function getSite() {
         var href = window.location.href;
-        var stem = /https:\/\/(www\.amazon\.[^\/]+)/.exec(href)[1];
+        var stem = /https:\/\/((www|smile)\.amazon\.[^\/]+)/.exec(href)[1];
         return stem;
     }
 
