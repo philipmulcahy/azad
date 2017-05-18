@@ -3,16 +3,18 @@
 
   "name": "Amazon Order History Reporter",
   "description": "This extension extracts order history from your Amazon account",
-  "version": "1.2",
+  "version": "1.2.1",
 
   "permissions": [
     "https://www.amazon.co.uk/",
+    "https://smile.amazon.com/",
     "https://www.amazon.com/"
   ],
   "content_scripts": [
         {
             "matches": [
                 "https://www.amazon.co.uk/*",
+                "https://smile.amazon.com/*",
                 "https://www.amazon.com/*"
             ],
             "css": ["jquery.dataTables.css"],

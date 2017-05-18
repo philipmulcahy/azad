@@ -58,6 +58,9 @@ var amazon_order_history_order = (function() {
                 "/../div/span[contains(@class,\"value\")]", elem);
             this.who = getField(".//div[contains(@class,\"recipient\")]" +
                 "//span[@class=\"trigger-text\"]", elem);
+            if (this.who === "?") {
+                this.who = "N/A";
+            }
             this.id = getField(".//div[contains(@class,\"a-row\")]" +
                 "[span[contains(@class,\"label\")]]" +
                     "[span[contains(@class,\"value\")]]" +
@@ -95,20 +98,53 @@ var amazon_order_history_order = (function() {
                                     return b[1];
                                 }
                             }
-                            return "?";
+                            a = getField(
+                                "//*[text()[contains(.,\"Gift Card\")]]",
+                                doc.documentElement
+                            );
+                            if( a !== null ) {
+                                var b = a.match(
+                                    /Gift Card Amount: *([$£€0-9.]*)/);
+                                if( b !== null ) {
+                                    return b[1];
+                                }
+                            }
+                            return "N/A";
                         }.bind(this);
                         var postage = function() {
-                            return getField(
+                            var a = getField(
                                 "//div[contains(@id,\"od-subtotals\")]//" +
                                 "span[contains(text(),\"Postage\")]/" +
                                     "parent::div/following-sibling::div/span",
                                 doc.documentElement
                             );
+                            if (a !== "?") {
+                                return a;
+                            }
+                            a = getField(
+                                "//div[contains(@id,\"od-subtotals\")]//" +
+                                "span[contains(text(),\"Shipping\")]/" +
+                                    "parent::div/following-sibling::div/span",
+                                doc.documentElement
+                            );
+                            if (a !== "?") {
+                                return a;
+                            }
+                            return "N/A";
                         }.bind(this);
                         var vat = function(){
                             var a = getField(
                                 "//div[contains(@id,\"od-subtotals\")]//" +
                                 "span[contains(text(),\"VAT\") and not(contains(.,\"Before\"))]/" +
+                                    "parent::div/following-sibling::div/span",
+                                doc.documentElement
+                            );
+                            if( a !== "?") {
+                                return a;
+                            }
+                            a = getField(
+                                "//div[contains(@id,\"od-subtotals\")]//" +
+                                "span[contains(text(),\"tax\") and not(contains(.,\"before\"))]/" +
                                     "parent::div/following-sibling::div/span",
                                 doc.documentElement
                             );
@@ -136,7 +172,7 @@ var amazon_order_history_order = (function() {
                                     return c[1];
                                 }
                             }
-                            return "?";
+                            return "N/A";
                         }.bind(this);
                         resolve({
                             postage: postage(),
