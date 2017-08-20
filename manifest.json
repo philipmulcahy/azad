@@ -1,34 +1,36 @@
 {
   "manifest_version": 2,
-
   "name": "Amazon Order History Reporter",
   "description": "This extension extracts order history from your Amazon account",
   "version": "1.2.1",
-
   "permissions": [
     "https://www.amazon.de/",
     "https://www.amazon.co.uk/",
     "https://smile.amazon.com/",
     "https://www.amazon.com/"
   ],
-  "content_scripts": [{
-    "matches": [
-      "https://www.amazon.de/*",
-      "https://www.amazon.co.uk/*",
-      "https://smile.amazon.com/*",
-      "https://www.amazon.com/*"
-    ],
-    "css": ["jquery.dataTables.css"],
-    "js": [
-      "jquery-1.11.1.min.js",
-      "jquery.dataTables.min.js",
-      "sprintf.js",
-      "util.js",
-      "order.js",
-      "table.js",
-      "inject.js"
-    ]
-  }],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.amazon.de/*",
+        "https://www.amazon.co.uk/*",
+        "https://smile.amazon.com/*",
+        "https://www.amazon.com/*"
+      ],
+      "css": [
+        "jquery.dataTables.css"
+      ],
+      "js": [
+        "jquery-1.11.1.min.js",
+        "jquery.dataTables.min.js",
+        "sprintf.js",
+        "util.js",
+        "order.js",
+        "table.js",
+        "inject.js"
+      ]
+    }
+  ],
   "icons": {
     "48": "icon48.png",
     "128": "icon128.png"

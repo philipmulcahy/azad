@@ -17,29 +17,29 @@ var amazon_order_history_inject = (function () {
             this.order_found_callback = null;
             this.query_string_templates = {
                 "www.amazon.de": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s" +
-                    "&language=en_GB",
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s" +
+                "&language=en_GB",
                 "www.amazon.co.uk": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s",
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s",
                 "smile.amazon.com": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1&" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s",
+                "?opt=ab&digitalOrders=1&" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s",
                 "www.amazon.com": "https://%(site)s/gp/your-account/order-history" +
-                    "?ie=UTF8" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s" +
-                    "&unifiedOrders=0"
+                "?ie=UTF8" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s" +
+                "&unifiedOrders=0"
             };
 
             /* Promise to array of Order Promise. */
