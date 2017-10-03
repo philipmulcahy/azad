@@ -21,6 +21,13 @@ var amazon_order_history_inject = (function() {
                     "&returnTo=" +
                     "&orderFilter=year-%(year)s" +
                     "&startIndex=%(startOrderPos)s",
+                "www.amazon.de": "https://%(site)s/gp/css/order-history" +
+                    "?opt=ab&digitalOrders=1" +
+                    "&unifiedOrders=1" +
+                    "&returnTo=" +
+                    "&orderFilter=year-%(year)s" +
+                    "&startIndex=%(startOrderPos)s" +
+                    "&language=en_GB",
                 "smile.amazon.com": "https://%(site)s/gp/css/order-history" +
                     "?opt=ab&digitalOrders=1&" +
                     "&unifiedOrders=1" +
