@@ -80,9 +80,6 @@ var amazon_order_history_order = (function() {
                     "[span[contains(@class,\"value\")]]" +
                     "[contains(span,\"Order #\")]" +
                     "/span[contains(@class,\"value\")]", elem);
-            if(this.id == "026-0905967-7741961") {
-                alert("026-0905967-7741961")
-            }
             this.items = getItems(elem);
             this.detail_promise = new Promise(
                 function(resolve, reject) {
