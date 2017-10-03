@@ -29,13 +29,27 @@ var amazon_order_history_order = (function() {
             this.extractOrder(ordersPageElem);
         }
 
-
         extractOrder(elem) {
             var getItems = function(elem) {
                 var items = {};
+                /*
+                  <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
+                      The Rise and Fall of D.O.D.O.
+                  </a>
+                  or
+                  <a class="a-link-normal" href="/gp/product/B06X9BZNDM/ref=oh_aui_d_detailpage_o00_?ie=UTF8&amp;psc=1">
+                      Provenance
+                  </a>
+                  but a-link-normal is more common than this, so we need to match on gp/product
+                  like this: .//div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]
+                  then we get:
+                      name from contained text
+                      link from href attribute
+                      item: not sure what we use this for - will it still work?
+                */
                 var itemResult = elem.ownerDocument.evaluate(
-                    ".//div//a/img[@title]",
-                        elem,
+                    ".//div[@class=\"a-row\"]/a[@class=\"a-link-normal\"][contains(@href,\"/gp/product/\")]",
+                    elem,
                     null,
                     XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
                     null
@@ -46,8 +60,8 @@ var amazon_order_history_order = (function() {
                 var link;
                 for(i = 0; i !== itemResult.snapshotLength; i += 1) {
                     item = itemResult.snapshotItem(i);
-                    name = item.getAttribute("title");
-                    link = item.parentElement.getAttribute("href");
+                    name = item.innerText.trim();
+                    link = item.getAttribute("href");
                     items[name] = link;
                 }
                 return items;
@@ -66,6 +80,9 @@ var amazon_order_history_order = (function() {
                     "[span[contains(@class,\"value\")]]" +
                     "[contains(span,\"Order #\")]" +
                     "/span[contains(@class,\"value\")]", elem);
+            if(this.id == "026-0905967-7741961") {
+                alert("026-0905967-7741961")
+            }
             this.items = getItems(elem);
             this.detail_promise = new Promise(
                 function(resolve, reject) {
