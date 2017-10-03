@@ -3,8 +3,9 @@
 /* global XPathResult */
 /* jshint strict: true, esversion: 6 */
 
-var amazon_order_history_inject = (function() {
+var amazon_order_history_inject = (function () {
     "use strict";
+
     function updateStatus(msg) {
         document.getElementById("order_reporter_notification").textContent = msg;
     }
@@ -15,37 +16,44 @@ var amazon_order_history_inject = (function() {
             this.expected_order_count = null;
             this.order_found_callback = null;
             this.query_string_templates = {
+                "www.amazon.de": "https://%(site)s/gp/css/order-history" +
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s" +
+                "&language=en_GB",
                 "www.amazon.co.uk": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s",
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s",
                 "smile.amazon.com": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1&" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s",
+                "?opt=ab&digitalOrders=1&" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s",
                 "www.amazon.com": "https://%(site)s/gp/your-account/order-history" +
-                    "?ie=UTF8" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s" +
-                    "&unifiedOrders=0"
+                "?ie=UTF8" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s" +
+                "&unifiedOrders=0"
             };
 
             /* Promise to array of Order Promise. */
             this.orders = new Promise(
-                function(resolve, reject) {
+                function (resolve, reject) {
                     var orders = [];
-                    this.order_found_callback = function(order) {
+                    this.order_found_callback = function (order) {
                         orders.push(order);
                         order.then(
-                            function(order) {
+                            function (order) {
                                 updateStatus("Fetching " + order.id);
                             }
                         );
-                        if(orders.length === this.expected_order_count) {
+                        if (orders.length === this.expected_order_count) {
                             resolve(orders);
                         }
                     };
@@ -57,8 +65,7 @@ var amazon_order_history_inject = (function() {
         generateQueryString(startOrderPos) {
             var template = this.query_string_templates[amazon_order_history_util.getSite()];
             return sprintf(
-                template,
-                {
+                template, {
                     site: amazon_order_history_util.getSite(),
                     year: this.year,
                     startOrderPos: startOrderPos
@@ -82,7 +89,7 @@ var amazon_order_history_inject = (function() {
             var d = p.parseFromString(evt.target.responseText, "text/html");
             var countSpan = d.evaluate(
                 ".//span[@class=\"num-orders\"]",
-                    d,
+                d,
                 null,
                 XPathResult.FIRST_ORDERED_NODE_TYPE).singleNodeValue;
             this.expected_order_count = parseInt(
@@ -91,14 +98,14 @@ var amazon_order_history_inject = (function() {
                 "Found " + this.expected_order_count + " orders for " + this.year
             );
             this.unfetched_count = this.expected_order_count;
-            if(isNaN(this.unfetched_count)) {
+            if (isNaN(this.unfetched_count)) {
                 updateStatus(
                     "Error: cannot find order count in " + countSpan.textContent
                 );
                 this.unfetched_count = 0;
             }
             // Request second and subsequent pages.
-            for(iorder = 10; iorder < this.expected_order_count; iorder += 10) {
+            for (iorder = 10; iorder < this.expected_order_count; iorder += 10) {
                 req = new XMLHttpRequest();
                 query = this.generateQueryString(iorder);
                 req.open("GET", query, true);
@@ -120,15 +127,15 @@ var amazon_order_history_inject = (function() {
                 ordersElem = d.getElementById("ordersContainer");
                 orders = d.evaluate(
                     ".//*[contains(concat(\" \", " +
-                                         "normalize-space(@class), " +
-                                         "\" \"), " +
-                                  "\" order \")]",
-                        ordersElem,
+                    "normalize-space(@class), " +
+                    "\" \"), " +
+                    "\" order \")]",
+                    ordersElem,
                     null,
                     XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
                     null
                 );
-            } catch(err) {
+            } catch (err) {
                 updateStatus(
                     "Error: maybe you\"re not logged into " +
                     "https://" + amazon_order_history_util.getSite() + "/gp/css/order-history " +
@@ -136,14 +143,15 @@ var amazon_order_history_inject = (function() {
                 );
                 return;
             }
+
             function makeOrderPromise(elem) {
                 return new Promise(
-                    function(resolve, reject) {
+                    function (resolve, reject) {
                         resolve(amazon_order_history_order.create(elem));
                     }
                 );
             }
-            for(i = 0; i !== orders.snapshotLength; i += 1) {
+            for (i = 0; i !== orders.snapshotLength; i += 1) {
                 elem = orders.snapshotItem(i);
                 this.order_found_callback(makeOrderPromise(elem));
             }
@@ -153,12 +161,14 @@ var amazon_order_history_inject = (function() {
     function getTextArrayFromXPathSnapshotResult(snapshots, func) {
         func = defaultFor(
             func,
-            function(elem) { return elem.textContent.trim(); }
+            function (elem) {
+                return elem.textContent.trim();
+            }
         );
         var results = [];
         var i;
         var elem;
-        for(i = 0; i !== snapshots.snapshotLength; i += 1) {
+        for (i = 0; i !== snapshots.snapshotLength; i += 1) {
             elem = snapshots.snapshotItem(i);
             results[results.length] = func(elem);
         }
@@ -166,7 +176,7 @@ var amazon_order_history_inject = (function() {
     }
 
     function getYears() {
-        if(typeof(getYears.years) === "undefined") {
+        if (typeof (getYears.years) === "undefined") {
             var yearElems = document.evaluate(
                 "//select[@name=\"orderFilter\"]/option[@value]",
                 document,
@@ -175,8 +185,8 @@ var amazon_order_history_inject = (function() {
                 null
             );
             getYears.years = getTextArrayFromXPathSnapshotResult(yearElems).filter(
-                function(element, index, array) {
-                    return(/^\d+$/).test(element);
+                function (element, index, array) {
+                    return (/^\d+$/).test(element);
                 }
             );
         }
@@ -188,7 +198,7 @@ var amazon_order_history_inject = (function() {
         // At return time we may not know how many orders there are, only
         // how many years in which orders have been queried for.
         return years.map(
-            function(year) {
+            function (year) {
                 return new YearFetcher(year).orders;
             }
         );
@@ -197,7 +207,7 @@ var amazon_order_history_inject = (function() {
     function fetchAndShowOrders(years) {
         var orders = getOrdersByYear(years);
         Promise.all(orders).then(
-            function(arrayOfArrayOfOrderPromise) {
+            function (arrayOfArrayOfOrderPromise) {
                 var orderPromises = [].concat.apply(
                     [],
                     arrayOfArrayOfOrderPromise
@@ -215,19 +225,19 @@ var amazon_order_history_inject = (function() {
             document.body.firstChild
         );
         var years = getYears();
-        if(years.length > 0) {
+        if (years.length > 0) {
             amazon_order_history_util.addButton(
                 "All years",
-                function() {
+                function () {
                     fetchAndShowOrders(years);
                 }
             );
         }
         years.forEach(
-            function(year) {
+            function (year) {
                 amazon_order_history_util.addButton(
                     [year],
-                    function() {
+                    function () {
                         fetchAndShowOrders([year]);
                     }
                 );
