@@ -3,7 +3,7 @@
 
   "name": "Amazon Order History Reporter",
   "description": "This extension extracts order history from your Amazon account",
-  "version": "1.4.0",
+  "version": "1.4.1",
 
   "permissions": [
     "https://www.amazon.co.uk/",
@@ -21,15 +21,15 @@
             ],
             "css": ["jquery.dataTables.css"],
             "js": [
-                   "csv.js",
-                   "inject.js",
-                   "jquery-1.11.1.min.js",
-                   "jquery.dataTables.min.js",
-                   "order.js",
-                   "sprintf.js",
-                   "table.js",
-                   "util.js"
-                  ]
+                "jquery-1.11.1.min.js",
+                "jquery.dataTables.min.js",
+                "sprintf.js",
+                "util.js",
+                "csv.js",
+                "order.js",
+                "table.js",
+                "inject.js"
+            ]
         }
   ],
   "icons": { "48": "icon48.png",
