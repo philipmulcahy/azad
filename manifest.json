@@ -25,6 +25,7 @@
                    "jquery.dataTables.min.js",
                    "sprintf.js",
                    "util.js",
+                   "csv.js",
                    "order.js",
                    "table.js",
                    "inject.js"

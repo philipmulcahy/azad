@@ -164,6 +164,8 @@ var amazon_order_history_table = (function() {
             table.appendChild(tbody);
 
             orders.forEach(function(order) { appendOrderRow(tbody, order); });
+
+            return table;
         };
         var clearHeaders = function() {
             while(document.head.firstChild) {
@@ -173,7 +175,7 @@ var amazon_order_history_table = (function() {
         clearHeaders();
         document.body.textContent = "";
         amazon_order_history_inject.addYearButtons();
-        addOrderTable("order_table", orders);
+        var table = addOrderTable("order_table", orders);
         if(beautiful) {
             $(document).ready(function() {
                 datatable = $("#order_table").DataTable({
@@ -224,12 +226,26 @@ var amazon_order_history_table = (function() {
                     },
                     "background-color:cornflowerblue; color:white"
                 );
+                amazon_order_history_util.addButton(
+                    "download csv",
+                    function() {
+                        amazon_order_history_csv.download(table);
+                    },
+                    "background-color:cornflowerblue; color:white"
+                );
             });
         } else {
             amazon_order_history_util.addButton(
                 "data table",
                 function() {
                     reallyDisplayOrders(orders, true);
+                },
+                "background-color:cornflowerblue; color:white"
+            );
+            amazon_order_history_util.addButton(
+                "download csv",
+                function() {
+                    amazon_order_history_csv.download(table);
                 },
                 "background-color:cornflowerblue; color:white"
             );

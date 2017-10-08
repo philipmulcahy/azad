@@ -215,7 +215,7 @@ var amazon_order_history_order = (function() {
                     ul.appendChild(li);
                     a = doc.createElement("a");
                     li.appendChild(a);
-                    a.textContent = title;
+                    a.textContent = title + '; ';
                     a.href = this.items[title];
                 }
             }
