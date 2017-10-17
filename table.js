@@ -63,7 +63,8 @@ var amazon_order_history_table = (function() {
         { field_name:"total", type:"plain", property_name:"total",
           is_numeric:true },
         { field_name:"postage", type:"detail", property_name:"postage",
-          is_numeric:true },
+          is_numeric:true,
+          help:"If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here."},
         { field_name:"gift", type:"detail", property_name:"gift",
           is_numeric:true },
         { field_name:"vat", type:"detail", property_name:"vat",
@@ -97,15 +98,16 @@ var amazon_order_history_table = (function() {
                 tr.setAttribute("style", tableStyle);
                 table.appendChild(tr);
                 cols.forEach(function(col_spec){
+                    var elem = null;
                     switch(col_spec.type) {
                         case "plain":
-                            addCell(tr, order[col_spec.property_name]);
+                            elem = addCell(tr, order[col_spec.property_name]);
                             break;
                         case "detail":
-                            var td = addCell(tr, "pending");
+                            elem = addCell(tr, "pending");
                             order.detail_promise.then(
                                 function(detail) {
-                                    td.innerHTML = detail[col_spec.property_name];
+                                    elem.innerHTML = detail[col_spec.property_name];
                                     if(datatable) {
                                         datatable.rows().invalidate();
                                         datatable.draw();
@@ -116,6 +118,9 @@ var amazon_order_history_table = (function() {
                         case "func":
                             col_spec.func(order, tr);
                             break;
+                    }
+                    if ("help" in col_spec) {
+                        elem.setAttribute("title", col_spec.help);
                     }
                 });
             };
@@ -151,7 +156,7 @@ var amazon_order_history_table = (function() {
                 var fieldName = col_spec.field_name;
                 if (isus && fieldName === "vat") {
                     col_spec.field_name = "tax";
-                    col_spec.help = "Caution: when stuff is not supplied by Amazon, then tax is often not collected.";
+                    col_spec.help = "Caution: when stuff is not supplied by Amazon, then tax is often not listed and/or collected.";
                 }
                 if (isus && fieldName === "postage") {
                     col_spec.field_name = "shipping";
