@@ -87,11 +87,8 @@ var amazon_order_history_inject = (function() {
             var query;
             var p = new DOMParser();
             var d = p.parseFromString(evt.target.responseText, "text/html");
-            var countSpan = d.evaluate(
-                ".//span[@class=\"num-orders\"]",
-                    d,
-                null,
-                XPathResult.FIRST_ORDERED_NODE_TYPE).singleNodeValue;
+            var countSpan = amazon_order_history_util.findSingleNodeValue(
+                ".//span[@class=\"num-orders\"]", d, d)
             this.expected_order_count = parseInt(
                 countSpan.textContent.split(" ")[0], 10);
             updateStatus(
