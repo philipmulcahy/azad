@@ -3,20 +3,16 @@
 
 var amazon_order_history_order = (function() {
     "use strict";
-    function getField(xpath, elem) {
-        var valueElem = elem.ownerDocument.evaluate(
-            xpath,
-            elem,
-            null,
-            XPathResult.FIRST_ORDERED_NODE_TYPE,
-            null
-        ).singleNodeValue;
+
+    function getField(xpath, doc, elem) {
+        var valueElem = amazon_order_history_util.findSingleNodeValue(xpath, doc, elem);
         try {
             return valueElem.textContent.trim();
         } catch (_) {
-            return "?";
+            return "?"; 
         }
     }
+
 
     class Order {
         constructor(ordersPageElem) {
@@ -66,12 +62,13 @@ var amazon_order_history_order = (function() {
                 }
                 return items;
             };
+            var doc = elem.ownerDocument;
             this.date = getField(".//div[contains(span,\"Order placed\")]" +
-                "/../div/span[contains(@class,\"value\")]", elem);
+                "/../div/span[contains(@class,\"value\")]", doc, elem);
             this.total = getField(".//div[contains(span,\"Total\")]" +
-                "/../div/span[contains(@class,\"value\")]", elem);
+                "/../div/span[contains(@class,\"value\")]", doc, elem);
             this.who = getField(".//div[contains(@class,\"recipient\")]" +
-                "//span[@class=\"trigger-text\"]", elem);
+                "//span[@class=\"trigger-text\"]", doc, elem);
             if (this.who === "?") {
                 this.who = "N/A";
             }
@@ -79,7 +76,7 @@ var amazon_order_history_order = (function() {
                 "[span[contains(@class,\"label\")]]" +
                     "[span[contains(@class,\"value\")]]" +
                     "[contains(span,\"Order #\")]" +
-                    "/span[contains(@class,\"value\")]", elem);
+                    "/span[contains(@class,\"value\")]", doc, elem);
             this.items = getItems(elem);
             this.detail_promise = new Promise(
                 function(resolve, reject) {
@@ -96,6 +93,7 @@ var amazon_order_history_order = (function() {
                                 "//div[contains(@id,\"od-subtotals\")]//" +
                                 "span[contains(text(),\"Gift\")]/" +
                                     "parent::div/following-sibling::div/span",
+                                doc,
                                 doc.documentElement
                             );
                             if( a !== "?") {
@@ -103,6 +101,7 @@ var amazon_order_history_order = (function() {
                             }
                             a = getField(
                                 "//*[text()[contains(.,\"Gift Certificate\")]]",
+                                doc,
                                 doc.documentElement
                             );
                             if( a !== null ) {
@@ -114,6 +113,7 @@ var amazon_order_history_order = (function() {
                             }
                             a = getField(
                                 "//*[text()[contains(.,\"Gift Card\")]]",
+                                doc,
                                 doc.documentElement
                             );
                             if( a !== null ) {
@@ -130,6 +130,7 @@ var amazon_order_history_order = (function() {
                                 "//div[contains(@id,\"od-subtotals\")]//" +
                                 "span[contains(text(),\"Postage\")]/" +
                                     "parent::div/following-sibling::div/span",
+                                doc,
                                 doc.documentElement
                             );
                             if (a !== "?") {
@@ -138,7 +139,8 @@ var amazon_order_history_order = (function() {
                             a = getField(
                                 "//div[contains(@id,\"od-subtotals\")]//" +
                                 "span[contains(text(),\"Shipping\")]/" +
-                                    "parent::div/following-sibling::div/span",
+                                "parent::div/following-sibling::div/span",
+                                doc,
                                 doc.documentElement
                             );
                             if (a !== "?") {
@@ -151,6 +153,7 @@ var amazon_order_history_order = (function() {
                                 "//div[contains(@id,\"od-subtotals\")]//" +
                                 "span[contains(text(),\"VAT\") and not(contains(.,\"Before\"))]/" +
                                     "parent::div/following-sibling::div/span",
+                                doc,
                                 doc.documentElement
                             );
                             if( a !== "?") {
@@ -160,6 +163,7 @@ var amazon_order_history_order = (function() {
                                 "//div[contains(@id,\"od-subtotals\")]//" +
                                 "span[contains(text(),\"tax\") and not(contains(.,\"before\"))]/" +
                                     "parent::div/following-sibling::div/span",
+                                doc,
                                 doc.documentElement
                             );
                             if( a !== "?") {
@@ -167,6 +171,7 @@ var amazon_order_history_order = (function() {
                             }
                             a = getField(
                                 "//*[text()[contains(.,\"VAT\") and not(contains(.,\"Before\"))]]",
+                                doc,
                                 doc.documentElement
                             );
                             if( a !== null ) {
@@ -178,6 +183,7 @@ var amazon_order_history_order = (function() {
                             }
                             a = getField(
                                 "//div[contains(@class,\"a-row pmts-summary-preview-single-item-amount\")]//span[contains(text(),\"VAT\")]/parent::div/following-sibling::div/span",
+                                doc,
                                 doc.documentElement);
                             if( a !== null ) {
                                 var c = a.match(

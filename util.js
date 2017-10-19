@@ -28,9 +28,20 @@ var amazon_order_history_util = (function(){
         );
     }
 
+    function findSingleNodeValue(xpath, doc, elem) {
+        return doc.evaluate(
+            xpath,
+            elem,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            null
+        ).singleNodeValue;
+    }
+
     return {
         getSite: getSite,
         getOrderDetailUrl: getOrderDetailUrl,
-        addButton: addButton
+        addButton: addButton,
+        findSingleNodeValue: findSingleNodeValue
     };
 })();
