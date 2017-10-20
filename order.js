@@ -27,7 +27,6 @@ var amazon_order_history_order = (function() {
 
         extractOrder(elem) {
             var getItems = function(elem) {
-                var items = {};
                 /*
                   <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
                       The Rise and Fall of D.O.D.O.
@@ -43,23 +42,18 @@ var amazon_order_history_order = (function() {
                       link from href attribute
                       item: not sure what we use this for - will it still work?
                 */
-                var itemResult = elem.ownerDocument.evaluate(
+                var itemResult = amazon_order_history_util.findMultipleNodeValues(
                     ".//div[@class=\"a-row\"]/a[@class=\"a-link-normal\"][contains(@href,\"/gp/product/\")]",
-                    elem,
-                    null,
-                    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-                    null
+                    elem.ownerDocument,
+                    elem);
+                var items = {}
+                itemResult.forEach(
+                    function(item){
+                        var name = item.innerText.trim();
+                        var link = item.getAttribute("href");
+                        items[name] = link;
+                    }
                 );
-                var i;
-                var item;
-                var name;
-                var link;
-                for(i = 0; i !== itemResult.snapshotLength; i += 1) {
-                    item = itemResult.snapshotItem(i);
-                    name = item.innerText.trim();
-                    link = item.getAttribute("href");
-                    items[name] = link;
-                }
                 return items;
             };
             var doc = elem.ownerDocument;

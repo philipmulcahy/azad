@@ -1,5 +1,6 @@
 /* Copyright(c) 2016 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
+/* global XPathResult */
 
 var amazon_order_history_util = (function(){
     "use strict";
@@ -7,6 +8,10 @@ var amazon_order_history_util = (function(){
         var href = window.location.href;
         var stem = /https:\/\/((www|smile)\.amazon\.[^\/]+)/.exec(href)[1];
         return stem;
+    }
+
+    function updateStatus(msg) {
+        document.getElementById("order_reporter_notification").textContent = msg;
     }
 
     function getOrderDetailUrl(orderId) {
@@ -38,10 +43,38 @@ var amazon_order_history_util = (function(){
         ).singleNodeValue;
     }
 
+    function findMultipleNodeValues(xpath, doc, elem) {
+        var snapshot;
+        try {
+            snapshot = doc.evaluate(
+                xpath,
+                elem,
+                null,
+                XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+                null
+            );
+        } catch(err) {
+            updateStatus(
+                "Error: maybe you\"re not logged into " +
+                "https://" + getSite() + "/gp/css/order-history " +
+                err
+            );
+            return [];
+        }
+        var values = [];
+        var i;
+        for(i = 0; i !== snapshot.snapshotLength; i += 1) {
+            values.push(snapshot.snapshotItem(i));
+        }
+        return values;
+    }
+
     return {
-        getSite: getSite,
-        getOrderDetailUrl: getOrderDetailUrl,
         addButton: addButton,
-        findSingleNodeValue: findSingleNodeValue
+        findMultipleNodeValues: findMultipleNodeValues,
+        findSingleNodeValue: findSingleNodeValue,
+        getOrderDetailUrl: getOrderDetailUrl,
+        getSite: getSite,
+        updateStatus: updateStatus
     };
 })();
