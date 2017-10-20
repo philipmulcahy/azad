@@ -1,6 +1,5 @@
 /* Copyright(c) 2016 Philip Mulcahy. */
 /* global window */
-/* global XPathResult */
 /* jshint strict: true, esversion: 6 */
 
 var amazon_order_history_table = (function() {

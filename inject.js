@@ -1,13 +1,9 @@
 /* Copyright(c) 2016 Philip Mulcahy. */
 /* global window */
-/* global XPathResult */
 /* jshint strict: true, esversion: 6 */
 
 var amazon_order_history_inject = (function() {
     "use strict";
-    function updateStatus(msg) {
-        document.getElementById("order_reporter_notification").textContent = msg;
-    }
 
     class YearFetcher {
         constructor(year) {
@@ -49,7 +45,7 @@ var amazon_order_history_inject = (function() {
                         orders.push(order);
                         order.then(
                             function(order) {
-                                updateStatus("Fetching " + order.id);
+                                amazon_order_history_util.updateStatus("Fetching " + order.id);
                             }
                         );
                         if(orders.length === this.expected_order_count) {
@@ -91,12 +87,12 @@ var amazon_order_history_inject = (function() {
                 ".//span[@class=\"num-orders\"]", d, d)
             this.expected_order_count = parseInt(
                 countSpan.textContent.split(" ")[0], 10);
-            updateStatus(
+            amazon_order_history_util.updateStatus(
                 "Found " + this.expected_order_count + " orders for " + this.year
             );
             this.unfetched_count = this.expected_order_count;
             if(isNaN(this.unfetched_count)) {
-                updateStatus(
+                amazon_order_history_util.updateStatus(
                     "Error: cannot find order count in " + countSpan.textContent
                 );
                 this.unfetched_count = 0;
@@ -122,63 +118,52 @@ var amazon_order_history_inject = (function() {
             var i;
             try {
                 ordersElem = d.getElementById("ordersContainer");
-                orders = d.evaluate(
-                    ".//*[contains(concat(\" \", " +
-                                         "normalize-space(@class), " +
-                                         "\" \"), " +
-                                  "\" order \")]",
-                        ordersElem,
-                    null,
-                    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-                    null
-                );
             } catch(err) {
-                updateStatus(
+                amazon_order_history_util.updateStatus(
                     "Error: maybe you\"re not logged into " +
                     "https://" + amazon_order_history_util.getSite() + "/gp/css/order-history " +
                     err
                 );
                 return;
             }
+            orders = amazon_order_history_util.findMultipleNodeValues(
+                ".//*[contains(concat(\" \", " +
+                    "normalize-space(@class), " +
+                    "\" \"), " +
+                    "\" order \")]",
+                d,
+                ordersElem
+            );
             function makeOrderPromise(elem) {
                 return new Promise(
                     function(resolve, reject) {
-                        resolve(amazon_order_history_order.create(elem));
+                        resolve(
+                            amazon_order_history_order.create(elem)
+                        );
                     }
                 );
             }
-            for(i = 0; i !== orders.snapshotLength; i += 1) {
-                elem = orders.snapshotItem(i);
-                this.order_found_callback(makeOrderPromise(elem));
-            }
+            orders.forEach(
+                function(elem){
+                    this.order_found_callback(
+                        makeOrderPromise(elem)
+                    );
+                }.bind(this)
+            ); 
         }
-    }
-
-    function getTextArrayFromXPathSnapshotResult(snapshots, func) {
-        func = defaultFor(
-            func,
-            function(elem) { return elem.textContent.trim(); }
-        );
-        var results = [];
-        var i;
-        var elem;
-        for(i = 0; i !== snapshots.snapshotLength; i += 1) {
-            elem = snapshots.snapshotItem(i);
-            results[results.length] = func(elem);
-        }
-        return results;
     }
 
     function getYears() {
         if(typeof(getYears.years) === "undefined") {
-            var yearElems = document.evaluate(
+            var snapshot = amazon_order_history_util.findMultipleNodeValues(
                 "//select[@name=\"orderFilter\"]/option[@value]",
                 document,
-                null,
-                XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-                null
-            );
-            getYears.years = getTextArrayFromXPathSnapshotResult(yearElems).filter(
+                document);
+            getYears.years = snapshot.map(
+                function(elem){
+                    return elem.textContent.trim();
+                }
+            ).filter(
                 function(element, index, array) {
                     return(/^\d+$/).test(element);
                 }
@@ -237,10 +222,6 @@ var amazon_order_history_inject = (function() {
                 );
             }
         );
-    }
-
-    function defaultFor(arg, val) {
-        return arg === undefined ? val : arg;
     }
 
     addYearButtons();
