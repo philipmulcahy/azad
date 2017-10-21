@@ -13,7 +13,6 @@ var amazon_order_history_order = (function() {
         }
     }
 
-
     class Order {
         constructor(ordersPageElem) {
             this.id = null;
@@ -193,6 +192,32 @@ var amazon_order_history_order = (function() {
                             gift: gift(),
                             vat: vat()
                         });
+                    }.bind(this);
+                    req.send();
+                }.bind(this)
+            );
+            this.payments_promise = new Promise(
+                function(resolve, reject) {
+                    var req = new XMLHttpRequest();
+                    var query = amazon_order_history_util.getOrderPaymentUrl(this.id);
+                    req.open("GET", query, true);
+                    req.onload = function(evt) {
+                        var parser = new DOMParser();
+                        var doc = parser.parseFromString(
+                            evt.target.responseText, "text/html"
+                        );
+                        var payments = function(){
+                            var rows = amazon_order_history_util.findMultipleNodeValues(
+                                "//b[contains(text(),\"Credit Card transactions\")]/" +
+                                    "../../..//td[contains(text(),\":\")]/..",
+                                doc,
+                                doc
+                            );
+                            return rows.map(function(row){
+                                return row.textContent.trim();
+                            });
+                        }.bind(this);
+                        resolve(payments());
                     }.bind(this);
                     req.send();
                 }.bind(this)

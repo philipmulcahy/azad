@@ -68,7 +68,9 @@ var amazon_order_history_table = (function() {
           is_numeric:true },
         { field_name:"vat", type:"detail", property_name:"vat",
           is_numeric:true,
-          help:"Caution: when stuff is not supplied by Amazon, then VAT is often not listed." },
+          help:"Caution: when stuff is not supplied by Amazon, then tax is often not listed." },
+        { field_name:"payments", type:"payments", property_name:"payments",
+          is_numeric:false },
     ];
 
     function displayOrders(orders, beautiful) {
@@ -114,6 +116,29 @@ var amazon_order_history_table = (function() {
                                 }
                             );
                             break;
+                        case "payments":
+                            elem = addCell(tr, "pending");
+                            order.payments_promise.then(
+                                function(payments) {
+                                    var ul = document.createElement("ul");
+                                    payments.forEach(function(payment){
+                                        var li = document.createElement("li");
+                                        ul.appendChild(li);
+                                        var a = document.createElement("a");
+                                        li.appendChild(a);
+                                        a.textContent = payment + '; ';
+                                        a.href = amazon_order_history_util.getOrderPaymentUrl(order.id); 
+                                    });
+                                    elem.textContent = "";
+                                    elem.appendChild(ul);
+                                    if(datatable) {
+                                        datatable.rows().invalidate();
+                                        datatable.draw();
+                                    }
+
+                                }
+                            );
+                            break;
                         case "func":
                             col_spec.func(order, tr);
                             break;
@@ -155,7 +180,6 @@ var amazon_order_history_table = (function() {
                 var fieldName = col_spec.field_name;
                 if (isus && fieldName === "vat") {
                     col_spec.field_name = "tax";
-                    col_spec.help = "Caution: when stuff is not supplied by Amazon, then tax is often not listed and/or collected.";
                 }
                 if (isus && fieldName === "postage") {
                     col_spec.field_name = "shipping";
@@ -167,7 +191,7 @@ var amazon_order_history_table = (function() {
             tbody = document.createElement("tbody");
             table.appendChild(tbody);
 
-            orders.forEach(function(order) { appendOrderRow(tbody, order); });
+            orders.forEach(function(order){ appendOrderRow(tbody, order); });
 
             return table;
         };

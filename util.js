@@ -19,6 +19,11 @@ var amazon_order_history_util = (function(){
             "ref=oh_aui_or_o01_?ie=UTF8&orderID=" + orderId;
     }
 
+    function getOrderPaymentUrl(orderId) {
+        return "https://" + getSite() + "/gp/css/summary/print.html/" +
+            "ref=oh_aui_ajax_pi?ie=UTF8&orderID=" + orderId;
+    }
+
     function addButton(name, cb, style) {
         var a = document.createElement("button");
         if(typeof(style) === "undefined") {
@@ -74,6 +79,7 @@ var amazon_order_history_util = (function(){
         findMultipleNodeValues: findMultipleNodeValues,
         findSingleNodeValue: findSingleNodeValue,
         getOrderDetailUrl: getOrderDetailUrl,
+        getOrderPaymentUrl: getOrderPaymentUrl,
         getSite: getSite,
         updateStatus: updateStatus
     };
