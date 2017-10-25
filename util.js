@@ -20,8 +20,12 @@ var amazon_order_history_util = (function(){
     }
 
     function getOrderPaymentUrl(orderId) {
-        return "https://" + getSite() + "/gp/css/summary/print.html/" +
-            "ref=oh_aui_ajax_pi?ie=UTF8&orderID=" + orderId;
+        return orderId.startsWith("D") ?
+//          "https://www.amazon.co.uk/gp/digital/your-account/order-summary.html/ref=oh_aui_dor_o00_?ie=UTF8&orderID=" + orderId :
+            "https://" + getSite() + "/gp/digital/your-account/order-summary.html" +
+                "?ie=UTF8&orderID=" + orderId + "&print=1&" :
+            "https://" + getSite() + "/gp/css/summary/print.html" +
+                "/ref=oh_aui_ajax_pi?ie=UTF8&orderID=" + orderId;
     }
 
     function addButton(name, cb, style) {

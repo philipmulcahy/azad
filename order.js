@@ -45,7 +45,7 @@ var amazon_order_history_order = (function() {
                     ".//div[@class=\"a-row\"]/a[@class=\"a-link-normal\"][contains(@href,\"/gp/product/\")]",
                     elem.ownerDocument,
                     elem);
-                var items = {}
+                var items = {};
                 itemResult.forEach(
                     function(item){
                         var name = item.innerText.trim();
@@ -89,6 +89,7 @@ var amazon_order_history_order = (function() {
                                 doc,
                                 doc.documentElement
                             );
+                            var b;
                             if( a !== "?") {
                                 return a.replace('-', '');
                             }
@@ -98,7 +99,7 @@ var amazon_order_history_order = (function() {
                                 doc.documentElement
                             );
                             if( a !== null ) {
-                                var b = a.match(
+                                b = a.match(
                                     /Gift Certificate.Card Amount: *([$£€0-9.]*)/);
                                 if( b !== null ) {
                                     return b[1];
@@ -110,7 +111,7 @@ var amazon_order_history_order = (function() {
                                 doc.documentElement
                             );
                             if( a !== null ) {
-                                var b = a.match(
+                                b = a.match(
                                     /Gift Card Amount: *([$£€0-9.]*)/);
                                 if( b !== null ) {
                                     return b[1];
@@ -198,28 +199,29 @@ var amazon_order_history_order = (function() {
             );
             this.payments_promise = new Promise(
                 function(resolve, reject) {
-                    var req = new XMLHttpRequest();
-                    var query = amazon_order_history_util.getOrderPaymentUrl(this.id);
-                    req.open("GET", query, true);
-                    req.onload = function(evt) {
-                        var parser = new DOMParser();
-                        var doc = parser.parseFromString(
-                            evt.target.responseText, "text/html"
-                        );
-                        var payments = function(){
-                            var rows = amazon_order_history_util.findMultipleNodeValues(
+                    if (this.id.startsWith("D")) {
+                        resolve([ this.date + ": " + this.total]);
+                    } else {
+                        var req = new XMLHttpRequest();
+                        var query = amazon_order_history_util.getOrderPaymentUrl(this.id);
+                        req.open("GET", query, true);
+                        req.onload = function(evt) {
+                            var parser = new DOMParser();
+                            var doc = parser.parseFromString(
+                                evt.target.responseText, "text/html"
+                            );
+                            var payments = amazon_order_history_util.findMultipleNodeValues(
                                 "//b[contains(text(),\"Credit Card transactions\")]/" +
-                                    "../../..//td[contains(text(),\":\")]/..",
+                                "../../..//td[contains(text(),\":\")]/..",
                                 doc,
                                 doc
-                            );
-                            return rows.map(function(row){
+                            ).map(function(row){
                                 return row.textContent.trim();
                             });
+                            resolve(payments);
                         }.bind(this);
-                        resolve(payments());
-                    }.bind(this);
-                    req.send();
+                        req.send();
+                    }
                 }.bind(this)
             );
         }
