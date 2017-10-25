@@ -28,8 +28,8 @@ var amazon_order_history_csv = (function(){
                     processed = '"' + processed + '"';
                 }
                 return processed;
-            }
-            return row.map(processCell).join(',')
+            };
+            return row.map(processCell).join(',');
         };
         var csvFile = tableToArrayOfArrays(table).map(processRow).join('\n');
         var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });

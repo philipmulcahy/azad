@@ -8,7 +8,7 @@ Maybe the UID on the end of the URL changes when we publish a new version?
 
 ### linting (use npm's jshint linter)
 ```
-node_modules/jshint/bin/jshint order.js table.js inject.js util.js
+node_modules/jshint/bin/jshint csv.js inject.js order.js table.js util.js
 ```
 
 ### installing locally on chrome

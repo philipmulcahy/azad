@@ -84,7 +84,7 @@ var amazon_order_history_inject = (function() {
             var p = new DOMParser();
             var d = p.parseFromString(evt.target.responseText, "text/html");
             var countSpan = amazon_order_history_util.findSingleNodeValue(
-                ".//span[@class=\"num-orders\"]", d, d)
+                ".//span[@class=\"num-orders\"]", d, d);
             this.expected_order_count = parseInt(
                 countSpan.textContent.split(" ")[0], 10);
             amazon_order_history_util.updateStatus(
