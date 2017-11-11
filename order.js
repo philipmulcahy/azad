@@ -14,13 +14,14 @@ var amazon_order_history_order = (function() {
     }
 
     class Order {
-        constructor(ordersPageElem) {
+        constructor(ordersPageElem, request_scheduler) {
             this.id = null;
             this.date = null;
             this.total = null;
             this.who = null;
             this.detail_promise = null;
             this.items = null;
+            this.request_scheduler = request_scheduler;
             this.extractOrder(ordersPageElem);
         }
 
@@ -73,10 +74,8 @@ var amazon_order_history_order = (function() {
             this.items = getItems(elem);
             this.detail_promise = new Promise(
                 function(resolve, reject) {
-                    var req = new XMLHttpRequest();
                     var query = amazon_order_history_util.getOrderDetailUrl(this.id);
-                    req.open("GET", query, true);
-                    req.onload = function(evt) {
+                    var evt_callback = function(evt) {
                         var parser = new DOMParser();
                         var doc = parser.parseFromString(
                             evt.target.responseText, "text/html"
@@ -194,7 +193,11 @@ var amazon_order_history_order = (function() {
                             vat: vat()
                         });
                     }.bind(this);
-                    req.send();
+                    this.request_scheduler.schedule(
+                        query,
+                        evt_callback,
+                        this.id
+                    );
                 }.bind(this)
             );
             this.payments_promise = new Promise(
@@ -251,8 +254,8 @@ var amazon_order_history_order = (function() {
     }
 
     return {
-        create: function(ordersPageElem) {
-            return new Order(ordersPageElem);
+        create: function(ordersPageElem, request_scheduler) {
+            return new Order(ordersPageElem, request_scheduler);
         }
     };
 })();

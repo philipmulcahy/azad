@@ -5,6 +5,8 @@
 var amazon_order_history_inject = (function() {
     "use strict";
 
+    var request_scheduler = amazon_order_history_request_scheduler.create();
+
     class YearFetcher {
         constructor(year) {
             this.year = year;
@@ -70,17 +72,15 @@ var amazon_order_history_inject = (function() {
         }
 
         sendGetOrderCount() {
-            var req = new XMLHttpRequest();
-            var query = this.generateQueryString(0);
-            req.open("GET", query, true);
-            req.onload = this.receiveGetOrderCount.bind(this);
-            req.send();
+            request_scheduler.schedule(
+                this.generateQueryString(0),
+                this.receiveGetOrderCount.bind(this),
+                "1"
+            );
         }
 
         receiveGetOrderCount(evt) {
             var iorder;
-            var req;
-            var query;
             var p = new DOMParser();
             var d = p.parseFromString(evt.target.responseText, "text/html");
             var countSpan = amazon_order_history_util.findSingleNodeValue(
@@ -98,12 +98,12 @@ var amazon_order_history_inject = (function() {
                 this.unfetched_count = 0;
             }
             // Request second and subsequent pages.
-            for(iorder = 10; iorder < this.expected_order_count; iorder += 10) {
-                req = new XMLHttpRequest();
-                query = this.generateQueryString(iorder);
-                req.open("GET", query, true);
-                req.onload = this.receiveOrdersPage.bind(this);
-                req.send();
+            for(iorder = 10; iorder < this.expected_order_count; iorder += 12) {
+                request_scheduler.schedule(
+                    this.generateQueryString(iorder),
+                    this.receiveOrdersPage.bind(this),
+                    "2"
+                );
             }
             // We already have the first page.
             this.receiveOrdersPage(evt);
@@ -138,7 +138,7 @@ var amazon_order_history_inject = (function() {
                 return new Promise(
                     function(resolve, reject) {
                         resolve(
-                            amazon_order_history_order.create(elem)
+                            amazon_order_history_order.create(elem, request_scheduler)
                         );
                     }
                 );
@@ -197,7 +197,7 @@ var amazon_order_history_inject = (function() {
     }
 
     function addYearButtons() {
-        var notification = document.createElement("span");
+        var notification = document.createElement("ul");
         notification.setAttribute("id", "order_reporter_notification");
         document.body.insertBefore(
             notification,
