@@ -11,7 +11,9 @@ var amazon_order_history_util = (function(){
     }
 
     function updateStatus(msg) {
-        document.getElementById("order_reporter_notification").textContent = msg;
+        var li = document.createElement("li");
+        li.textContent = msg;
+        document.getElementById("order_reporter_notification").appendChild(li);
     }
 
     function getOrderDetailUrl(orderId) {

@@ -25,6 +25,7 @@
                 "jquery.dataTables.min.js",
                 "sprintf.js",
                 "util.js",
+                "request_scheduler.js",
                 "csv.js",
                 "order.js",
                 "table.js",
