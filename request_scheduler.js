@@ -81,9 +81,9 @@ var amazon_order_history_request_scheduler = (function() {
 
         sinkDown(n) {
             // Look up the target element and its score.
-            var length = this.content.length,
-                element = this.content[n],
-                elemScore = this.scoreFunction(element);
+            var length = this.content.length;
+            var element = this.content[n];
+            var elemScore = this.scoreFunction(element);
 
             while(true) {
                 // Compute the indices of the child elements.
@@ -91,19 +91,20 @@ var amazon_order_history_request_scheduler = (function() {
                 // This is used to store the new position of the element,
                 // if any.
                 var swap = null;
+                var child1Score = null;
                 // If the first child exists (is inside the array)...
                 if (child1N < length) {
                     // Look it up and compute its score.
-                    var child1 = this.content[child1N],
-                        child1Score = this.scoreFunction(child1);
+                    var child1 = this.content[child1N];
+                    child1Score = this.scoreFunction(child1);
                     // If the score is less than our element's, we need to swap.
                     if (child1Score < elemScore)
                         swap = child1N;
                 }
                 // Do the same checks for the other child.
                 if (child2N < length) {
-                    var child2 = this.content[child2N],
-                        child2Score = this.scoreFunction(child2);
+                    var child2 = this.content[child2N];
+                    var child2Score = this.scoreFunction(child2);
                     if (child2Score < (swap == null ? elemScore : child1Score))
                         swap = child2N;
                 }
@@ -117,37 +118,56 @@ var amazon_order_history_request_scheduler = (function() {
                 n = swap;
             }
         }
-    };
+    }
 
     class RequestScheduler {
         constructor() {
             // chrome allows 6 requests per domain at the same time.
-            this.concurrency = 6;
+            this.CONCURRENCY = 6;
             this.queue = new BinaryHeap(function(item){ return item.priority; });
-            this.pending_count = 0;
+            this.running_count = 0;
+            this.completed_count = 0;
             this.execute = function(query, callback) {
                 amazon_order_history_util.updateStatus("Executing " + query + " with " + this.queue.size()); 
                 var req = new XMLHttpRequest();
                 req.open("GET", query, true);
                 req.onload = function(evt) {
                     amazon_order_history_util.updateStatus("Finished " + query + " with " + this.queue.size()); 
-                    this.pending_count -= 1;
-                    if (this.pending_count < this.concurrency) {
+                    this.running_count -= 1;
+                    this.completed_count += 1;
+                    if (this.running_count < this.CONCURRENCY) {
                         if (this.queue.size() > 0) {
                             var task = this.queue.pop(); 
                             this.execute(task.query, task.callback);
                         }
                     }
-                    callback(evt)
+                    callback(evt);
                 }.bind(this);
-                this.pending_count += 1;
+                this.running_count += 1;
                 req.send();
             };
+            this.statistics = function() {
+                return {
+                    "queued" : this.queue.size(),
+                    "running" : this.running_count,
+                    "completed" : this.completed_count
+                };
+            };
+            this.updateProgress = function() {
+                var target = document.getElementById("order_reporter_progress");
+                if (target != null) {
+                    target.textContent = Object.entries(this.statistics())
+                                               .map(([k,v]) => {return k + ":" + v;})
+                                               .join("; ");
+                }
+                setTimeout(function() { this.updateProgress(); }.bind(this), 2000);
+            };
+            this.updateProgress();
         }
 
         schedule(query, callback, priority) {
             amazon_order_history_util.updateStatus("Scheduling " + query + " with " + this.queue.size()); 
-            if (this.pending_count < this.concurrency) {
+            if (this.running_count < this.CONCURRENCY) {
                 this.execute(query, callback);    
             } else {
                 this.queue.push({

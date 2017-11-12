@@ -203,6 +203,14 @@ var amazon_order_history_inject = (function() {
             notification,
             document.body.firstChild
         );
+        var progress = document.createElement("div");
+        progress.setAttribute("id", "order_reporter_progress");
+        progress.setAttribute(
+            "style", "position:absolute; top:0; right:0; color:orange; padding:0.2em; font-size:75%");
+        document.body.insertBefore(
+            progress,
+            document.body.firstChild
+        );
         var years = getYears();
         if(years.length > 0) {
             amazon_order_history_util.addButton(

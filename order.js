@@ -205,10 +205,8 @@ var amazon_order_history_order = (function() {
                     if (this.id.startsWith("D")) {
                         resolve([ this.date + ": " + this.total]);
                     } else {
-                        var req = new XMLHttpRequest();
                         var query = amazon_order_history_util.getOrderPaymentUrl(this.id);
-                        req.open("GET", query, true);
-                        req.onload = function(evt) {
+                        var evt_callback = function(evt) {
                             var parser = new DOMParser();
                             var doc = parser.parseFromString(
                                 evt.target.responseText, "text/html"
@@ -223,7 +221,11 @@ var amazon_order_history_order = (function() {
                             });
                             resolve(payments);
                         }.bind(this);
-                        req.send();
+                        this.request_scheduler.schedule(
+                            query,
+                            evt_callback,
+                            this.id
+                        );
                     }
                 }.bind(this)
             );
