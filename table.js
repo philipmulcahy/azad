@@ -82,14 +82,14 @@ var amazon_order_history_table = (function() {
     }
 
     function reallyDisplayOrders(orders, beautiful) {
-        var addOrderTable = function(id, orders) {
+        var addOrderTable = function(orders) {
             var addHeader = function(row, value, help) {
                 var th = row.ownerDocument.createElement("th");
                 th.setAttribute("style", tableStyle);
                 row.appendChild(th);
                 th.textContent = value;
                 if( help ) {
-                    th.setAttribute('title', help);
+                    th.setAttribute("title", help);
                 }
                 return th;
             };
@@ -158,8 +158,8 @@ var amazon_order_history_table = (function() {
 
             table = document.createElement("table");
             document.body.appendChild(table);
-            table.setAttribute("id", id);
-            table.setAttribute("class", "display stripe compact");
+            table.setAttribute("id", "order_table");
+            table.setAttribute("class", "order_reporter_table stripe compact");
             table.setAttribute("style", tableStyle);
 
             thead = document.createElement("thead");
@@ -195,15 +195,29 @@ var amazon_order_history_table = (function() {
 
             return table;
         };
+
+		// TODO move to utils
         var clearHeaders = function() {
             while(document.head.firstChild) {
                 document.head.removeChild(document.head.firstChild);
             }
         };
+		// TODO move to utils
+		var clearBody = function() {
+			Array.from(document.body.children).forEach(
+				function(elem) {
+					if( !(
+						elem.hasAttribute("class") &&
+						elem.getAttribute("class").includes("order_reporter_")
+					)) {
+						document.body.removeChild(elem);
+					}
+				}
+			);
+		}
         clearHeaders();
-        document.body.textContent = "";
-        amazon_order_history_inject.addYearButtons();
-        var table = addOrderTable("order_table", orders);
+		clearBody();
+        var table = addOrderTable(orders);
         if(beautiful) {
             $(document).ready(function() {
                 datatable = $("#order_table").DataTable({
