@@ -95,8 +95,29 @@ var amazon_order_history_util = (function(){
         return values;
     }
 
+	function clearHeaders() {
+		while(document.head.firstChild) {
+			document.head.removeChild(document.head.firstChild);
+		}
+	}
+
+	function clearBody() {
+		Array.from(document.body.children).forEach(
+			function(elem) {
+				if( !(
+					elem.hasAttribute("class") &&
+					elem.getAttribute("class").includes("order_reporter_")
+				)) {
+					document.body.removeChild(elem);
+				}
+			}
+		);
+	}
+
     return {
         addButton: addButton,
+		clearBody: clearBody,
+		clearHeaders: clearHeaders,
         findMultipleNodeValues: findMultipleNodeValues,
         findSingleNodeValue: findSingleNodeValue,
         getOrderDetailUrl: getOrderDetailUrl,

@@ -198,28 +198,8 @@ var amazon_order_history_table = (function() {
 
             return table;
         };
-
-		// TODO move to utils
-        var clearHeaders = function() {
-            while(document.head.firstChild) {
-                document.head.removeChild(document.head.firstChild);
-            }
-        };
-		// TODO move to utils
-		var clearBody = function() {
-			Array.from(document.body.children).forEach(
-				function(elem) {
-					if( !(
-						elem.hasAttribute("class") &&
-						elem.getAttribute("class").includes("order_reporter_")
-					)) {
-						document.body.removeChild(elem);
-					}
-				}
-			);
-		}
-        clearHeaders();
-		clearBody();
+        amazon_order_history_util.clearHeaders();
+		amazon_order_history_util.clearBody();
         var table = addOrderTable(orders);
         if(beautiful) {
             $(document).ready(function() {
