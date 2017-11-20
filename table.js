@@ -39,7 +39,6 @@ var amazon_order_history_table = (function() {
         return addElemCell(row, a);
     };
 
-    // TODO unglobalize cols.
     var cols = [
         { field_name:"order id",
           type:"func",
@@ -155,7 +154,11 @@ var amazon_order_history_table = (function() {
             var fr;
             var tbody;
             var isus;
-
+			// remove any old table
+			table = document.querySelector('[id="order_table"]');
+			if ( table !== null ) {
+				table.parentNode.removeChild(table);
+			}
             table = document.createElement("table");
             document.body.appendChild(table);
             table.setAttribute("id", "order_table");
