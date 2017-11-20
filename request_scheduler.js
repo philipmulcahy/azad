@@ -128,11 +128,11 @@ var amazon_order_history_request_scheduler = (function() {
             this.running_count = 0;
             this.completed_count = 0;
             this.execute = function(query, callback) {
-                amazon_order_history_util.updateStatus("Executing " + query + " with " + this.queue.size()); 
+                amazon_order_history_util.updateStatus("Executing " + query + " with queue size " + this.queue.size()); 
                 var req = new XMLHttpRequest();
                 req.open("GET", query, true);
                 req.onload = function(evt) {
-                    amazon_order_history_util.updateStatus("Finished " + query + " with " + this.queue.size()); 
+                    amazon_order_history_util.updateStatus("Finished " + query + " with queue size " + this.queue.size()); 
                     this.running_count -= 1;
                     this.completed_count += 1;
                     if (this.running_count < this.CONCURRENCY) {

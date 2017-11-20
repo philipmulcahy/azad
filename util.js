@@ -11,7 +11,7 @@ var amazon_order_history_util = (function(){
     }
 
     function updateStatus(msg) {
-        return;  // disabled debugging code
+//        return;  // disabled debugging code
         var insertion_point = document.getElementById("order_reporter_notification");
         var li = document.createElement("li");
         li.textContent = msg;
@@ -39,6 +39,7 @@ var amazon_order_history_util = (function(){
         }
         a.innerText = name;
         a.setAttribute("style", style);
+		a.setAttribute("class", "order_reporter_button");
         a.onclick = cb;
         document.body.insertBefore(
             a,

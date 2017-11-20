@@ -38,20 +38,27 @@ var amazon_order_history_inject = (function() {
                     "&startIndex=%(startOrderPos)s" +
                     "&unifiedOrders=0"
             };
+            this.orderPromises = [];
 
             /* Promise to array of Order Promise. */
-            this.orders = new Promise(
+            this.ordersPromise = new Promise(
                 function(resolve, reject) {
-                    var orders = [];
-                    this.order_found_callback = function(order) {
-                        orders.push(order);
-                        order.then(
+                    this.order_found_callback = function(orderPromise) {
+                        this.orderPromises.push(orderPromise);
+                        orderPromise.then(
                             function(order) {
+								// TODO is "Fetching" the right message for this stage?
                                 amazon_order_history_util.updateStatus("Fetching " + order.id);
                             }
                         );
-                        if(orders.length === this.expected_order_count) {
-                            resolve(orders);
+                        amazon_order_history_util.updateStatus(
+                            "YearFetcher orderPromises.length:"
+                            + this.orderPromises.length
+                            + " expected_order_count:"
+                            + this.expected_order_count);
+                        if(this.orderPromises.length === this.expected_order_count) {
+							// TODO why is this code not reached for 2011 and beyond?
+                            resolve(this.orderPromises);
                         }
                     };
                     this.sendGetOrderCount();
@@ -75,7 +82,7 @@ var amazon_order_history_inject = (function() {
             request_scheduler.schedule(
                 this.generateQueryString(0),
                 this.receiveGetOrderCount.bind(this),
-                "1"
+                "00000"
             );
         }
 
@@ -98,7 +105,7 @@ var amazon_order_history_inject = (function() {
                 this.unfetched_count = 0;
             }
             // Request second and subsequent pages.
-            for(iorder = 10; iorder < this.expected_order_count; iorder += 12) {
+            for(iorder = 10; iorder < this.expected_order_count; iorder += 10) {
                 request_scheduler.schedule(
                     this.generateQueryString(iorder),
                     this.receiveOrdersPage.bind(this),
@@ -178,7 +185,7 @@ var amazon_order_history_inject = (function() {
         // how many years in which orders have been queried for.
         return years.map(
             function(year) {
-                return new YearFetcher(year).orders;
+                return new YearFetcher(year).ordersPromise;
             }
         );
     }
@@ -197,20 +204,6 @@ var amazon_order_history_inject = (function() {
     }
 
     function addYearButtons() {
-        var notification = document.createElement("ul");
-        notification.setAttribute("id", "order_reporter_notification");
-        document.body.insertBefore(
-            notification,
-            document.body.firstChild
-        );
-        var progress = document.createElement("div");
-        progress.setAttribute("id", "order_reporter_progress");
-        progress.setAttribute(
-            "style", "position:absolute; top:0; right:0; color:orange; padding:0.2em; font-size:75%");
-        document.body.insertBefore(
-            progress,
-            document.body.firstChild
-        );
         var years = getYears();
         if(years.length > 0) {
             amazon_order_history_util.addButton(
@@ -232,9 +225,26 @@ var amazon_order_history_inject = (function() {
         );
     }
 
-    addYearButtons();
+    function addInfoPoints() {
+        var notification = document.createElement("ul");
+        notification.setAttribute("id", "order_reporter_notification");
+        notification.setAttribute("class", "order_reporter_notification");
+        document.body.insertBefore(
+            notification,
+            document.body.firstChild
+        );
+        var progress = document.createElement("div");
+        progress.setAttribute("id", "order_reporter_progress");
+        progress.setAttribute("class", "order_reporter_progress");
+        progress.setAttribute(
+            "style", "position:absolute; top:0; right:0; color:orange; padding:0.2em; font-size:75%");
+        document.body.insertBefore(
+            progress,
+            document.body.firstChild
+        );
+    }
 
-    return {
-        addYearButtons: addYearButtons
-    };
+    addYearButtons();
+    addInfoPoints();
+    amazon_order_history_util.updateStatus("Starting");
 })();
