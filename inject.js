@@ -57,7 +57,6 @@ var amazon_order_history_inject = (function() {
                             + " expected_order_count:"
                             + this.expected_order_count);
                         if(this.orderPromises.length === this.expected_order_count) {
-							// TODO why is this code not reached for 2011 and beyond?
                             resolve(this.orderPromises);
                         }
                     };
