@@ -261,6 +261,7 @@ var amazon_order_history_table = (function() {
                         });
                     }
                 });
+				amazon_order_history_util.removeButton("data table");
                 amazon_order_history_util.addButton(
                     "plain table",
                     function() {
@@ -268,15 +269,9 @@ var amazon_order_history_table = (function() {
                     },
                     "background-color:cornflowerblue; color:white"
                 );
-                amazon_order_history_util.addButton(
-                    "download csv",
-                    function() {
-                        amazon_order_history_csv.download(table);
-                    },
-                    "background-color:cornflowerblue; color:white"
-                );
             });
         } else {
+			amazon_order_history_util.removeButton("plain table");
             amazon_order_history_util.addButton(
                 "data table",
                 function() {
@@ -284,14 +279,14 @@ var amazon_order_history_table = (function() {
                 },
                 "background-color:cornflowerblue; color:white"
             );
-            amazon_order_history_util.addButton(
-                "download csv",
-                function() {
-                    amazon_order_history_csv.download(table);
-                },
-                "background-color:cornflowerblue; color:white"
-            );
         }
+		amazon_order_history_util.addButton(
+			"download csv",
+			function() {
+				amazon_order_history_csv.download(table);
+			},
+			"background-color:cornflowerblue; color:white"
+		);
     }
 
     return {displayOrders: displayOrders};

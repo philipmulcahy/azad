@@ -33,6 +33,10 @@ var amazon_order_history_util = (function(){
     }
 
     function addButton(name, cb, style) {
+		var existing = document.querySelector('[button_name="' + name + '"]');
+		if ( existing !== null ) {
+			return;
+		}
         var a = document.createElement("button");
         if(typeof(style) === "undefined") {
             style = "background-color:orange; color:white";
@@ -40,12 +44,20 @@ var amazon_order_history_util = (function(){
         a.innerText = name;
         a.setAttribute("style", style);
 		a.setAttribute("class", "order_reporter_button");
+		a.setAttribute("button_name", name);
         a.onclick = cb;
         document.body.insertBefore(
             a,
             document.body.firstChild
         );
     }
+
+	function removeButton(name) {
+		var elem = document.querySelector('[button_name="' + name + '"]');
+		if ( elem !== null ) {
+			elem.parentNode.removeChild(elem);
+		}
+	}
 
     function findSingleNodeValue(xpath, doc, elem) {
         return doc.evaluate(
@@ -90,6 +102,7 @@ var amazon_order_history_util = (function(){
         getOrderDetailUrl: getOrderDetailUrl,
         getOrderPaymentUrl: getOrderPaymentUrl,
         getSite: getSite,
+        removeButton: removeButton,
         updateStatus: updateStatus
     };
 })();

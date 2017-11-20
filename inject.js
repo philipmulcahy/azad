@@ -229,6 +229,7 @@ var amazon_order_history_inject = (function() {
         var notification = document.createElement("ul");
         notification.setAttribute("id", "order_reporter_notification");
         notification.setAttribute("class", "order_reporter_notification");
+        notification.setAttribute("hidden", "order_reporter_notification");
         document.body.insertBefore(
             notification,
             document.body.firstChild
