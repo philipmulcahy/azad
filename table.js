@@ -266,7 +266,9 @@ var amazon_order_history_table = (function() {
 		amazon_order_history_util.addButton(
 			"download csv",
 			function() {
-				amazon_order_history_csv.download(table);
+				amazon_order_history_csv.download(
+					document.querySelector('[id="order_table"]')
+				);
 			},
 			"background-color:cornflowerblue; color:white"
 		);

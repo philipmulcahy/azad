@@ -35,7 +35,7 @@ var amazon_order_history_util = (function(){
     function addButton(name, cb, style) {
 		var existing = document.querySelector('[button_name="' + name + '"]');
 		if ( existing !== null ) {
-			return;
+			existing.parentNode.removeChild(existing);
 		}
         var a = document.createElement("button");
         if(typeof(style) === "undefined") {
