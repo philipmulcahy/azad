@@ -52,10 +52,11 @@ var amazon_order_history_inject = (function() {
                             }
                         );
                         amazon_order_history_util.updateStatus(
-                            "YearFetcher orderPromises.length:"
-                            + this.orderPromises.length
-                            + " expected_order_count:"
-                            + this.expected_order_count);
+                            "YearFetcher orderPromises.length:" +
+                             this.orderPromises.length +
+                             " expected_order_count:" +
+                             this.expected_order_count
+						);
                         if(this.orderPromises.length === this.expected_order_count) {
                             resolve(this.orderPromises);
                         }
