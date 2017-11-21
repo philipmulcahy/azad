@@ -266,6 +266,7 @@ var amazon_order_history_table = (function() {
 		amazon_order_history_util.addButton(
 			"download csv",
 			function() {
+				reallyDisplayOrders(orders, false);
 				amazon_order_history_csv.download(
 					document.querySelector('[id="order_table"]')
 				);
