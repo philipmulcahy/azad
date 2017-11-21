@@ -255,9 +255,162 @@ var amazon_order_history_order = (function() {
         }
     }
 
+    class YearFetcher {
+        constructor(year, request_scheduler) {
+            this.year = year;
+            this.expected_order_count = null;
+            this.order_found_callback = null;
+            this.query_string_templates = {
+                "www.amazon.co.uk": "https://%(site)s/gp/css/order-history" +
+                    "?opt=ab&digitalOrders=1" +
+                    "&unifiedOrders=1" +
+                    "&returnTo=" +
+                    "&orderFilter=year-%(year)s" +
+                    "&startIndex=%(startOrderPos)s",
+                "www.amazon.de": "https://%(site)s/gp/css/order-history" +
+                    "?opt=ab&digitalOrders=1" +
+                    "&unifiedOrders=1" +
+                    "&returnTo=" +
+                    "&orderFilter=year-%(year)s" +
+                    "&startIndex=%(startOrderPos)s" +
+                    "&language=en_GB",
+                "smile.amazon.com": "https://%(site)s/gp/css/order-history" +
+                    "?opt=ab&digitalOrders=1&" +
+                    "&unifiedOrders=1" +
+                    "&returnTo=" +
+                    "&orderFilter=year-%(year)s" +
+                    "&startIndex=%(startOrderPos)s",
+                "www.amazon.com": "https://%(site)s/gp/your-account/order-history" +
+                    "?ie=UTF8" +
+                    "&orderFilter=year-%(year)s" +
+                    "&startIndex=%(startOrderPos)s" +
+                    "&unifiedOrders=0"
+            };
+            this.orderPromises = [];
+			this.sendGetOrderCount = function() {
+				request_scheduler.schedule(
+					this.generateQueryString(0),
+					this.receiveGetOrderCount.bind(this),
+					"00000"
+				);
+			};
+			this.generateQueryString = function(startOrderPos) {
+				var template = this.query_string_templates[amazon_order_history_util.getSite()];
+				return sprintf(
+					template,
+					{
+						site: amazon_order_history_util.getSite(),
+						year: this.year,
+						startOrderPos: startOrderPos
+					}
+				);
+			};
+			this.receiveGetOrderCount = function(evt) {
+				var iorder;
+				var p = new DOMParser();
+				var d = p.parseFromString(evt.target.responseText, "text/html");
+				var countSpan = amazon_order_history_util.findSingleNodeValue(
+					".//span[@class=\"num-orders\"]", d, d);
+				this.expected_order_count = parseInt(
+					countSpan.textContent.split(" ")[0], 10);
+				amazon_order_history_util.updateStatus(
+					"Found " + this.expected_order_count + " orders for " + this.year
+				);
+				this.unfetched_count = this.expected_order_count;
+				if(isNaN(this.unfetched_count)) {
+					amazon_order_history_util.updateStatus(
+						"Error: cannot find order count in " + countSpan.textContent
+					);
+					this.unfetched_count = 0;
+				}
+				// Request second and subsequent pages.
+				for(iorder = 10; iorder < this.expected_order_count; iorder += 10) {
+					request_scheduler.schedule(
+						this.generateQueryString(iorder),
+						this.receiveOrdersPage.bind(this),
+						"2"
+					);
+				}
+				// We already have the first page.
+				this.receiveOrdersPage(evt);
+			};
+			this.receiveOrdersPage = function(evt) {
+				var p = new DOMParser();
+				var d = p.parseFromString(evt.target.responseText, "text/html");
+				var orders;
+				var ordersElem;
+				var elem;
+				var i;
+				try {
+					ordersElem = d.getElementById("ordersContainer");
+				} catch(err) {
+					amazon_order_history_util.updateStatus(
+						"Error: maybe you\"re not logged into " +
+						"https://" + amazon_order_history_util.getSite() + "/gp/css/order-history " +
+						err
+					);
+					return;
+				}
+				orders = amazon_order_history_util.findMultipleNodeValues(
+					".//*[contains(concat(\" \", " +
+						"normalize-space(@class), " +
+						"\" \"), " +
+						"\" order \")]",
+					d,
+					ordersElem
+				);
+				function makeOrderPromise(elem) {
+					return new Promise(
+						function(resolve, reject) {
+							resolve(
+								amazon_order_history_order.create(elem, request_scheduler)
+							);
+						}
+					);
+				}
+				orders.forEach(
+					function(elem){
+						this.order_found_callback(
+							makeOrderPromise(elem)
+						);
+					}.bind(this)
+				);
+			};
+
+            /* Promise to array of Order Promise. */
+            this.ordersPromise = new Promise(
+                function(resolve, reject) {
+                    this.order_found_callback = function(orderPromise) {
+                        this.orderPromises.push(orderPromise);
+                        orderPromise.then(
+                            function(order) {
+								// TODO is "Fetching" the right message for this stage?
+                                amazon_order_history_util.updateStatus("Fetching " + order.id);
+                            }
+                        );
+                        amazon_order_history_util.updateStatus(
+                            "YearFetcher orderPromises.length:" +
+                             this.orderPromises.length +
+                             " expected_order_count:" +
+                             this.expected_order_count
+						);
+                        if(this.orderPromises.length === this.expected_order_count) {
+                            resolve(this.orderPromises);
+                        }
+                    };
+                    this.sendGetOrderCount();
+                }.bind(this)
+            );
+        }
+    }
+
     return {
         create: function(ordersPageElem, request_scheduler) {
             return new Order(ordersPageElem, request_scheduler);
-        }
+        },
+		fetchOrdersByYear: function(year, request_scheduler) {
+            /* Promise to array of Order Promise. */
+			return new YearFetcher(year, request_scheduler).ordersPromise;
+	    }
     };
 })();
