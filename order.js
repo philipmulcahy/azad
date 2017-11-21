@@ -49,7 +49,9 @@ var amazon_order_history_order = (function() {
                 var items = {};
                 itemResult.forEach(
                     function(item){
-                        var name = item.innerText.trim();
+                        var name = item.innerText.replace(/[\n\r]/g, " ")
+												 .replace(/  */g, " ")
+												 .trim();
                         var link = item.getAttribute("href");
                         items[name] = link;
                     }
@@ -217,7 +219,10 @@ var amazon_order_history_order = (function() {
                                 doc,
                                 doc
                             ).map(function(row){
-                                return row.textContent.trim();
+                                return row.textContent
+										  .replace(/[\n\r]/g, " ")
+										  .replace(/  */g, "\xa0")  //&nbsp;
+										  .trim();
                             });
                             resolve(payments);
                         }.bind(this);
