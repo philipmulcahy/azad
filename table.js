@@ -72,14 +72,6 @@ var amazon_order_history_table = (function() {
           is_numeric:false },
     ];
 
-    function displayOrders(orders, beautiful) {
-        Promise.all(orders).then(
-            function(orders) {
-                reallyDisplayOrders(orders, beautiful);
-            }
-        );
-    }
-
     function reallyDisplayOrders(orders, beautiful) {
         var addOrderTable = function(orders) {
             var addHeader = function(row, value, help) {
@@ -248,7 +240,7 @@ var amazon_order_history_table = (function() {
                 amazon_order_history_util.addButton(
                     "plain table",
                     function() {
-                        reallyDisplayOrders(orders, false);
+                        displayOrders(orders, false);
                     },
                     "background-color:cornflowerblue; color:white"
                 );
@@ -258,16 +250,15 @@ var amazon_order_history_table = (function() {
             amazon_order_history_util.addButton(
                 "data table",
                 function() {
-                    reallyDisplayOrders(orders, true);
+                    displayOrders(orders, true);
                 },
                 "background-color:cornflowerblue; color:white"
             );
         }
 		amazon_order_history_util.addButton(
-			// TODO: work out why all the promised cells are "pending" in the CSV when they're populated in tbe browser.
 			"download csv",
 			function() {
-				reallyDisplayOrders(orders, false);
+				displayOrders(orders, false);
 				amazon_order_history_csv.download(
 					document.querySelector('[id="order_table"]')
 				);
@@ -275,6 +266,15 @@ var amazon_order_history_table = (function() {
 			"background-color:cornflowerblue; color:white"
 		);
     }
+
+    function displayOrders(orders, beautiful) {
+        Promise.all(orders).then(
+            function(orders) {
+                reallyDisplayOrders(orders, beautiful);
+            }
+        );
+    }
+
 
     return {displayOrders: displayOrders};
 })();
