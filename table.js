@@ -264,6 +264,7 @@ var amazon_order_history_table = (function() {
             );
         }
 		amazon_order_history_util.addButton(
+			// TODO: work out why all the promised cells are "pending" in the CSV when they're populated in tbe browser.
 			"download csv",
 			function() {
 				reallyDisplayOrders(orders, false);
