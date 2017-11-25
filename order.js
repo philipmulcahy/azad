@@ -9,7 +9,7 @@ var amazon_order_history_order = (function() {
         try {
             return valueElem.textContent.trim();
         } catch (_) {
-            return "?"; 
+            return "?";
         }
     }
 
@@ -409,13 +409,39 @@ var amazon_order_history_order = (function() {
         }
     }
 
+	/* Returns array of Order Promise */
+	function getOrdersByYear(years, request_scheduler) {
+		// At return time we may not know how many orders there are, only
+		// how many years in which orders have been queried for.
+		return new Promise(
+			(resolve, reject) => {
+				Promise.all(
+					years.map(
+						function(year) {
+							return new YearFetcher(year, request_scheduler).ordersPromise;
+						}
+					)
+				).then(
+					function(arrayOfArrayOfOrderPromise) {
+						// Flatten the array of arrays of Promise<Order> into
+						// an array of Promise<Order>.
+						var orderPromises = [].concat.apply(
+							[],
+							arrayOfArrayOfOrderPromise
+						);
+						resolve(orderPromises);
+					}
+				);
+			}
+		);
+	}
+
+
     return {
         create: function(ordersPageElem, request_scheduler) {
             return new Order(ordersPageElem, request_scheduler);
         },
-		fetchOrdersByYear: function(year, request_scheduler) {
-            /* Promise to array of Order Promise. */
-			return new YearFetcher(year, request_scheduler).ordersPromise;
-	    }
+		// Return Array of Order Promise.
+		getOrdersByYear: getOrdersByYear
     };
 })();

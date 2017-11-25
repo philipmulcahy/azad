@@ -153,7 +153,7 @@ var amazon_order_history_request_scheduler = (function() {
                     this.completed_count += 1;
                     if (this.running_count < this.CONCURRENCY) {
                         if (this.queue.size() > 0) {
-                            var task = this.queue.pop(); 
+                            var task = this.queue.pop();
                             this.execute(task.query, task.callback);
                         }
                     }
@@ -162,6 +162,7 @@ var amazon_order_history_request_scheduler = (function() {
                 }.bind(this);
                 this.running_count += 1;
                 req.send();
+				this.updateProgress();
             };
             this.statistics = function() {
                 return {
@@ -187,7 +188,7 @@ var amazon_order_history_request_scheduler = (function() {
             amazon_order_history_util.updateStatus(
 				"Scheduling " + query + " with " + this.queue.size());
             if (this.running_count < this.CONCURRENCY) {
-                this.execute(query, callback);    
+                this.execute(query, callback);
             } else {
                 this.queue.push({
                     "query": query,
