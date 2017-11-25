@@ -7,17 +7,6 @@ var amazon_order_history_inject = (function() {
 
     var request_scheduler = amazon_order_history_request_scheduler.create();
 
-	/* Returns array of Promise to array of Order Promises. */
-	function getOrdersByYear(years) {
-		// At return time we may not know how many orders there are, only
-		// how many years in which orders have been queried for.
-		return years.map(
-			function(year) {
-				return amazon_order_history_order.fetchOrdersByYear(year, request_scheduler);
-			}
-		);
-	}
-
 	function getYears(){
 		if(typeof(getYears.years) === "undefined") {
 			var snapshot = amazon_order_history_util.findMultipleNodeValues(
@@ -38,16 +27,12 @@ var amazon_order_history_inject = (function() {
 	}
 
     function fetchAndShowOrders(years) {
-        var orders = getOrdersByYear(years);
-        Promise.all(orders).then(
-            function(arrayOfArrayOfOrderPromise) {
-                var orderPromises = [].concat.apply(
-                    [],
-                    arrayOfArrayOfOrderPromise
-                );
-                amazon_order_history_table.displayOrders(orderPromises, true);
-            }
-        );
+		return amazon_order_history_order.getOrdersByYear(years, request_scheduler).then(
+			function(orderPromises) {
+				amazon_order_history_table.displayOrders(orderPromises, true);
+				return document.querySelector('[id="order_table"]');
+			}
+		);
     }
 
     function addYearButtons() {

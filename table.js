@@ -118,7 +118,7 @@ var amazon_order_history_table = (function() {
                                         var a = document.createElement("a");
                                         li.appendChild(a);
                                         a.textContent = payment + '; ';
-                                        a.href = amazon_order_history_util.getOrderPaymentUrl(order.id); 
+                                        a.href = amazon_order_history_util.getOrderPaymentUrl(order.id);
                                     });
                                     elem.textContent = "";
                                     elem.appendChild(ul);
@@ -168,7 +168,7 @@ var amazon_order_history_table = (function() {
 
             fr = document.createElement("tr");
             tfoot.appendChild(fr);
-            
+
             isus = amazon_order_history_util.getSite().endsWith("\.com");
 
             cols.forEach(function(col_spec){
@@ -258,23 +258,22 @@ var amazon_order_history_table = (function() {
 		amazon_order_history_util.addButton(
 			"download csv",
 			function() {
-				displayOrders(orders, false);
-				amazon_order_history_csv.download(
-					document.querySelector('[id="order_table"]')
+				displayOrders(orders, false).then(
+					(table) => { amazon_order_history_csv.download(table); }
 				);
 			},
 			"background-color:cornflowerblue; color:white"
 		);
+		return table;
     }
 
-    function displayOrders(orders, beautiful) {
-        Promise.all(orders).then(
+    function displayOrders(orderPromises, beautiful) {
+        return Promise.all(orderPromises).then(
             function(orders) {
-                reallyDisplayOrders(orders, beautiful);
+                return reallyDisplayOrders(orders, beautiful);
             }
         );
     }
-
 
     return {displayOrders: displayOrders};
 })();
