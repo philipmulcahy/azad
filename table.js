@@ -146,11 +146,11 @@ var amazon_order_history_table = (function() {
             var fr;
             var tbody;
             var isus;
-      // remove any old table
-      table = document.querySelector('[id="order_table"]');
-      if ( table !== null ) {
-        table.parentNode.removeChild(table);
-      }
+            // remove any old table
+            table = document.querySelector('[id="order_table"]');
+            if ( table !== null ) {
+                table.parentNode.removeChild(table);
+            }
             table = document.createElement("table");
             document.body.appendChild(table);
             table.setAttribute("id", "order_table");
@@ -191,14 +191,14 @@ var amazon_order_history_table = (function() {
             return table;
         };
         amazon_order_history_util.clearHeaders();
-    amazon_order_history_util.clearBody();
+        amazon_order_history_util.clearBody();
         var table = addOrderTable(orders);
         if(beautiful) {
             $(document).ready(function() {
                 datatable = $("#order_table").DataTable({
                     "bPaginate": true,
                     "lengthMenu": [ [10, 25, 50, 100, -1],
-                                    [10, 25, 50, 100, "All"] ],
+                        [10, 25, 50, 100, "All"] ],
                     "footerCallback": function(row, data, start, end, display) {
                         var api = this.api();
                         // Remove the formatting to get integer data for summation
@@ -236,7 +236,7 @@ var amazon_order_history_table = (function() {
                         });
                     }
                 });
-      amazon_order_history_util.removeButton("data table");
+                amazon_order_history_util.removeButton("data table");
                 amazon_order_history_util.addButton(
                     "plain table",
                     function() {
@@ -246,7 +246,7 @@ var amazon_order_history_table = (function() {
                 );
             });
         } else {
-      amazon_order_history_util.removeButton("plain table");
+            amazon_order_history_util.removeButton("plain table");
             amazon_order_history_util.addButton(
                 "data table",
                 function() {
@@ -255,16 +255,16 @@ var amazon_order_history_table = (function() {
                 "background-color:cornflowerblue; color:white"
             );
         }
-    amazon_order_history_util.addButton(
-      "download csv",
-      function() {
-        displayOrders(orders, false).then(
-          (table) => { amazon_order_history_csv.download(table); }
+        amazon_order_history_util.addButton(
+            "download csv",
+            function() {
+                displayOrders(orders, false).then(
+                    (table) => { amazon_order_history_csv.download(table); }
+                );
+            },
+            "background-color:cornflowerblue; color:white"
         );
-      },
-      "background-color:cornflowerblue; color:white"
-    );
-    return table;
+        return table;
     }
 
     function displayOrders(orderPromises, beautiful) {

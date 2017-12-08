@@ -127,49 +127,49 @@ var amazon_order_history_request_scheduler = (function() {
             this.queue = new BinaryHeap(function(item){ return item.priority; });
             this.running_count = 0;
             this.completed_count = 0;
-			this.error_count = 0;
+            this.error_count = 0;
             this.execute = function(query, callback) {
                 amazon_order_history_util.updateStatus(
-					"Executing " + query +
-					" with queue size " + this.queue.size());
+                    "Executing " + query +
+                    " with queue size " + this.queue.size());
                 var req = new XMLHttpRequest();
                 req.open("GET", query, true);
-				req.onerror = function() {
+                req.onerror = function() {
                     this.running_count -= 1;
-					this.error_count += 1;
-					amazon_order_history_util.updateStatus(
-						"Unknown error fetching " + query);
-				};
-                req.onload = function(evt) {
-					if ( req.status != 200 ) {
-						this.error_count += 1;
-						amazon_order_history_util.updateStatus(
-							"Got HTTP" + req.status + " fetching " + query);
-						return;
-					}
+                    this.error_count += 1;
                     amazon_order_history_util.updateStatus(
-						"Finished " + query +
-						" with queue size " + this.queue.size());
+                        "Unknown error fetching " + query);
+                };
+                req.onload = function(evt) {
+                    this.running_count -= 1;
+                    if ( req.status != 200 ) {
+                        this.error_count += 1;
+                        amazon_order_history_util.updateStatus(
+                            "Got HTTP" + req.status + " fetching " + query);
+                        return;
+                    }
                     this.completed_count += 1;
-                    if (this.running_count < this.CONCURRENCY) {
-                        if (this.queue.size() > 0) {
-                            var task = this.queue.pop();
-                            this.execute(task.query, task.callback);
-                        }
+                    amazon_order_history_util.updateStatus(
+                      "Finished " + query +
+                        " with queue size " + this.queue.size());
+                    while (this.running_count < this.CONCURRENCY &&
+                           this.queue.size() > 0
+                    ) {
+                        var task = this.queue.pop();
+                        this.execute(task.query, task.callback);
                     }
                     callback(evt);
-                    this.running_count -= 1;
                 }.bind(this);
                 this.running_count += 1;
                 req.send();
-				this.updateProgress();
+                this.updateProgress();
             };
             this.statistics = function() {
                 return {
                     "queued" : this.queue.size(),
                     "running" : this.running_count,
                     "completed" : this.completed_count,
-					"errors" : this.error_count
+                    "errors" : this.error_count
                 };
             };
             this.updateProgress = function() {
@@ -186,7 +186,7 @@ var amazon_order_history_request_scheduler = (function() {
 
         schedule(query, callback, priority) {
             amazon_order_history_util.updateStatus(
-				"Scheduling " + query + " with " + this.queue.size());
+        "Scheduling " + query + " with " + this.queue.size());
             if (this.running_count < this.CONCURRENCY) {
                 this.execute(query, callback);
             } else {
