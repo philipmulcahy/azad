@@ -6,18 +6,20 @@
   "version": "1.7.3",
 
   "permissions": [
+    "https://www.amazon.com/",
     "https://www.amazon.co.uk/",
     "https://www.amazon.de/",
-    "https://smile.amazon.com/",
-    "https://www.amazon.com/"
+    "https://www.amazon.it/",
+    "https://smile.amazon.com/"
   ],
   "content_scripts": [
         {
             "matches": [
                 "https://www.amazon.co.uk/*",
                 "https://www.amazon.de/*",
-                "https://smile.amazon.com/*",
-                "https://www.amazon.com/*"
+                "https://www.amazon.it/*",
+                "https://www.amazon.com/*",
+                "https://smile.amazon.com/*"
             ],
             "css": ["jquery.dataTables.css"],
             "js": [
