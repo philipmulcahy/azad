@@ -15,7 +15,9 @@ var amazon_order_history_inject = (function() {
 				document);
 			getYears.years = snapshot.map(
 				function(elem){
-					return elem.textContent.trim();
+					return elem.textContent
+                               .replace("nel", "")  // amazon.it
+                               .trim();
 				}
 			).filter(
 				function(element, index, array) {
@@ -30,7 +32,7 @@ var amazon_order_history_inject = (function() {
 		return amazon_order_history_order.getOrdersByYear(years, request_scheduler).then(
 			function(orderPromises) {
 				amazon_order_history_table.displayOrders(orderPromises, true);
-				return document.querySelector('[id="order_table"]');
+				return document.querySelector("[id=\"order_table\"]");
 			}
 		);
     }
