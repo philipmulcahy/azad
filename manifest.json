@@ -3,7 +3,7 @@
 
   "name": "Amazon Order History Reporter",
   "description": "This extension extracts order history from your Amazon account.",
-  "version": "1.7.4",
+  "version": "1.7.5",
 
   "permissions": [
     "https://www.amazon.com/",
