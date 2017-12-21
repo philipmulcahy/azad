@@ -286,6 +286,12 @@ var amazon_order_history_order = (function() {
                     "&orderFilter=year-%(year)s" +
                     "&startIndex=%(startOrderPos)s" +
                     "&language=en_GB",
+                "smile.amazon.ca": "https://%(site)s/gp/css/order-history" +
+                    "?opt=ab&digitalOrders=1&" +
+                    "&unifiedOrders=1" +
+                    "&returnTo=" +
+                    "&orderFilter=year-%(year)s" +
+                    "&startIndex=%(startOrderPos)s",
                 "smile.amazon.com": "https://%(site)s/gp/css/order-history" +
                     "?opt=ab&digitalOrders=1&" +
                     "&unifiedOrders=1" +
