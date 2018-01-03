@@ -205,7 +205,8 @@ var amazon_order_history_table = (function() {
                         var floatVal = function(i) {
                             if(typeof i === "string") {
                                 return i === "N/A" ?
-                                    0 : parseFloat(i.replace(/^([£$]|CAD|EUR) */, ""));
+                                    0 : parseFloat(i.replace(/^([£$]|CAD|EUR) */, "")
+                                                    .replace(/,/, "."));
                             }
                             if(typeof i === "number") { return i; }
                             return 0;
