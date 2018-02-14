@@ -10,14 +10,6 @@ var amazon_order_history_util = (function(){
         return stem;
     }
 
-    function updateStatus(msg) {
-//        return;  // disabled debugging code
-        var insertion_point = document.getElementById("order_reporter_notification");
-        var li = document.createElement("li");
-        li.textContent = msg;
-        insertion_point.appendChild(li);
-    }
-
     function getOrderDetailUrl(orderId) {
         return "https://" + getSite() + "/gp/your-account/order-details/" +
             "ref=oh_aui_or_o01_?ie=UTF8&orderID=" + orderId;
@@ -80,7 +72,7 @@ var amazon_order_history_util = (function(){
                 null
             );
         } catch(err) {
-            updateStatus(
+            log(
                 "Error: maybe you\"re not logged into " +
                 "https://" + getSite() + "/gp/css/order-history " +
                 err
@@ -123,7 +115,6 @@ var amazon_order_history_util = (function(){
         getOrderDetailUrl: getOrderDetailUrl,
         getOrderPaymentUrl: getOrderPaymentUrl,
         getSite: getSite,
-        removeButton: removeButton,
-        updateStatus: updateStatus
+        removeButton: removeButton
     };
 })();

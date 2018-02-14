@@ -29,7 +29,9 @@ var amazon_order_history_inject = (function() {
 	}
 
     function fetchAndShowOrders(years) {
-		return amazon_order_history_order.getOrdersByYear(years, request_scheduler).then(
+		return amazon_order_history_order.getOrdersByYear(
+            years, request_scheduler
+        ).then(
 			function(orderPromises) {
 				amazon_order_history_table.displayOrders(orderPromises, true);
 				return document.querySelector("[id=\"order_table\"]");
@@ -60,14 +62,6 @@ var amazon_order_history_inject = (function() {
     }
 
     function addInfoPoints() {
-        var notification = document.createElement("ul");
-        notification.setAttribute("id", "order_reporter_notification");
-        notification.setAttribute("class", "order_reporter_notification");
-        notification.setAttribute("hidden", "order_reporter_notification");
-        document.body.insertBefore(
-            notification,
-            document.body.firstChild
-        );
         var progress = document.createElement("div");
         progress.setAttribute("id", "order_reporter_progress");
         progress.setAttribute("class", "order_reporter_progress");
@@ -81,5 +75,5 @@ var amazon_order_history_inject = (function() {
 
     addYearButtons();
     addInfoPoints();
-    amazon_order_history_util.updateStatus("Starting");
+    console.log("Starting");
 })();
