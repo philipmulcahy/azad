@@ -73,6 +73,7 @@ var amazon_order_history_table = (function() {
     ];
 
     function reallyDisplayOrders(orders, beautiful) {
+        console.log("amazon_order_history_table.reallyDisplayOrders starting");
         var addOrderTable = function(orders) {
             var addHeader = function(row, value, help) {
                 var th = row.ownerDocument.createElement("th");
@@ -241,6 +242,7 @@ var amazon_order_history_table = (function() {
                 amazon_order_history_util.addButton(
                     "plain table",
                     function() {
+                        console.log("amazon_order_history_table plain table button clicked");
                         displayOrders(orders, false);
                     },
                     "background-color:cornflowerblue; color:white"
@@ -251,6 +253,7 @@ var amazon_order_history_table = (function() {
             amazon_order_history_util.addButton(
                 "data table",
                 function() {
+                    console.log("amazon_order_history_table data table button clicked");
                     displayOrders(orders, true);
                 },
                 "background-color:cornflowerblue; color:white"
@@ -265,10 +268,12 @@ var amazon_order_history_table = (function() {
             },
             "background-color:cornflowerblue; color:white"
         );
+        console.log("amazon_order_history_table.reallyDisplayOrders returning");
         return table;
     }
 
     function displayOrders(orderPromises, beautiful) {
+        console.log("amazon_order_history_table.displayOrders starting");
         return Promise.all(orderPromises).then(
             function(orders) {
                 return reallyDisplayOrders(orders, beautiful);

@@ -337,12 +337,12 @@ var amazon_order_history_order = (function() {
 					".//span[@class=\"num-orders\"]", d, d);
 				this.expected_order_count = parseInt(
 					countSpan.textContent.split(" ")[0], 10);
-				amazon_order_history_util.updateStatus(
+				console.log(
 					"Found " + this.expected_order_count + " orders for " + this.year
 				);
 				this.unfetched_count = this.expected_order_count;
 				if(isNaN(this.unfetched_count)) {
-					amazon_order_history_util.updateStatus(
+					console.warn(
 						"Error: cannot find order count in " + countSpan.textContent
 					);
 					this.unfetched_count = 0;
@@ -368,7 +368,7 @@ var amazon_order_history_order = (function() {
 				try {
 					ordersElem = d.getElementById("ordersContainer");
 				} catch(err) {
-					amazon_order_history_util.updateStatus(
+					console.warn(
 						"Error: maybe you\"re not logged into " +
 						"https://" + amazon_order_history_util.getSite() + "/gp/css/order-history " +
 						err
@@ -409,10 +409,10 @@ var amazon_order_history_order = (function() {
                         orderPromise.then(
                             function(order) {
 								// TODO is "Fetching" the right message for this stage?
-                                amazon_order_history_util.updateStatus("Fetching " + order.id);
+                                console.log("amazon_order_history_order Fetching " + order.id);
                             }
                         );
-                        amazon_order_history_util.updateStatus(
+                        console.log(
                             "YearFetcher orderPromises.length:" +
                              this.orderPromises.length +
                              " expected_order_count:" +
