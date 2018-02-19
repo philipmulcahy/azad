@@ -150,9 +150,13 @@ var amazon_order_history_table = (function() {
             // remove any old table
             table = document.querySelector('[id="order_table"]');
             if ( table !== null ) {
+                console.log("removing old table");
                 table.parentNode.removeChild(table);
+                console.log("removed old table");
             }
+            console.log("adding table");
             table = document.createElement("table");
+            console.log("added table");
             document.body.appendChild(table);
             table.setAttribute("id", "order_table");
             table.setAttribute("class", "order_reporter_table stripe compact");
@@ -276,7 +280,10 @@ var amazon_order_history_table = (function() {
         console.log("amazon_order_history_table.displayOrders starting");
         return Promise.all(orderPromises).then(
             function(orders) {
-                return reallyDisplayOrders(orders, beautiful);
+                console.log("amazon_order_history_table.displayOrders then func starting");
+                var return_val = reallyDisplayOrders(orders, beautiful);
+                console.log("amazon_order_history_table.displayOrders then func returning");
+                return return_val;
             }
         );
     }
