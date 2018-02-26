@@ -191,7 +191,10 @@ var amazon_order_history_table = (function() {
             tbody = document.createElement("tbody");
             table.appendChild(tbody);
 
-            orders.forEach(function(order){ appendOrderRow(tbody, order); });
+            orders.forEach(function(order){
+                appendOrderRow(tbody, order);
+				console.log("Added row for " + order.id);
+            });
 
             return table;
         };
