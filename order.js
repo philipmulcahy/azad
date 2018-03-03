@@ -308,7 +308,7 @@ var amazon_order_history_order = (function() {
                     "?ie=UTF8" +
                     "&orderFilter=year-%(year)s" +
                     "&startIndex=%(startOrderPos)s" +
-                    "&unifiedOrders=0"
+                    "&unifiedOrders=1"
             };
             this.orderPromises = [];
 			this.sendGetOrderCount = function() {
