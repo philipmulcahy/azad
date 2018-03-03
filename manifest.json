@@ -18,7 +18,9 @@
         {
             "matches": [
                 "https://www.amazon.ca/*",
+                "https://smile.amazon.ca/*",
                 "https://www.amazon.co.uk/*",
+                "https://smile.amazon.co.uk/*",
                 "https://www.amazon.de/*",
                 "https://www.amazon.it/*",
                 "https://www.amazon.it/*",

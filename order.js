@@ -272,6 +272,12 @@ var amazon_order_history_order = (function() {
                     "&returnTo=" +
                     "&orderFilter=year-%(year)s" +
                     "&startIndex=%(startOrderPos)s",
+                "smile.amazon.co.uk": "https://%(site)s/gp/css/order-history" +
+                    "?opt=ab&digitalOrders=1" +
+                    "&unifiedOrders=1" +
+                    "&returnTo=" +
+                    "&orderFilter=year-%(year)s" +
+                    "&startIndex=%(startOrderPos)s",
                 "www.amazon.de": "https://%(site)s/gp/css/order-history" +
                     "?opt=ab&digitalOrders=1" +
                     "&unifiedOrders=1" +
@@ -292,7 +298,7 @@ var amazon_order_history_order = (function() {
                     "&returnTo=" +
                     "&orderFilter=year-%(year)s" +
                     "&startIndex=%(startOrderPos)s",
-                "amazon.ca": "https://%(site)s/gp/css/order-history" +
+                "www.amazon.ca": "https://%(site)s/gp/css/order-history" +
                     "?opt=ab&digitalOrders=1&" +
                     "&unifiedOrders=1" +
                     "&returnTo=" +
