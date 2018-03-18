@@ -265,6 +265,7 @@ var amazon_order_history_order = (function() {
             this.year = year;
             this.expected_order_count = null;
             this.order_found_callback = null;
+            this.check_complete_callback = null;
             this.query_string_templates = {
                 "www.amazon.co.uk": "https://%(site)s/gp/css/order-history" +
                     "?opt=ab&digitalOrders=1" +
@@ -359,6 +360,7 @@ var amazon_order_history_order = (function() {
 					);
 					this.unfetched_count = 0;
 				}
+                this.check_complete_callback();
 				// Request second and subsequent pages.
 				for(iorder = 10; iorder < this.expected_order_count; iorder += 10) {
 					request_scheduler.schedule(
@@ -398,9 +400,8 @@ var amazon_order_history_order = (function() {
 				function makeOrderPromise(elem) {
 					return new Promise(
 						function(resolve, reject) {
-							resolve(
-								amazon_order_history_order.create(elem, request_scheduler)
-							);
+                            var order = amazon_order_history_order.create(elem, request_scheduler);
+							resolve(order);
 						}
 					);
 				}
@@ -416,6 +417,13 @@ var amazon_order_history_order = (function() {
             /* Promise to array of Order Promise. */
             this.ordersPromise = new Promise(
                 function(resolve, reject) {
+                    this.check_complete_callback = function() {
+                        if(this.orderPromises.length === this.expected_order_count) {
+                            console.log("resolving orderPromises for " + this.year);
+                            resolve(this.orderPromises);
+                            console.log("resolved orderPromises for " + this.year);
+                        }
+                    };
                     this.order_found_callback = function(orderPromise) {
                         this.orderPromises.push(orderPromise);
                         orderPromise.then(
@@ -430,9 +438,7 @@ var amazon_order_history_order = (function() {
                              " expected_order_count:" +
                              this.expected_order_count
 						);
-                        if(this.orderPromises.length === this.expected_order_count) {
-                            resolve(this.orderPromises);
-                        }
+                        this.check_complete_callback();
                     };
                     this.sendGetOrderCount();
                 }.bind(this)
