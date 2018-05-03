@@ -3,8 +3,8 @@
 
 // Uses code from http://eloquentjavascript.net/1st_edition/appendix2.html
 
-var amazon_order_history_request_scheduler = (function() {
-    "use strict";
+let amazon_order_history_request_scheduler = (function() {
+    'use strict';
 
     class BinaryHeap {
         constructor(scoreFunction) {
@@ -21,9 +21,9 @@ var amazon_order_history_request_scheduler = (function() {
 
         pop() {
             // Store the first element so we can return it later.
-            var result = this.content[0];
+            let result = this.content[0];
             // Get the element at the end of the array.
-            var end = this.content.pop();
+            let end = this.content.pop();
             // If there are any elements left, put the end element at the
             // start, and let it sink down.
             if (this.content.length > 0) {
@@ -34,14 +34,14 @@ var amazon_order_history_request_scheduler = (function() {
         }
 
         remove(node) {
-            var length = this.content.length;
+            let length = this.content.length;
             // To remove a value, we must search through the array to find
             // it.
-            for (var i = 0; i < length; i++) {
+            for (let i = 0; i < length; i++) {
                 if (this.content[i] != node) continue;
                 // When it is found, the process seen in 'pop' is repeated
                 // to fill up the hole.
-                var end = this.content.pop();
+                let end = this.content.pop();
                 // If the element we popped was the one we needed to remove,
                 // we're done.
                 if (i == length - 1) break;
@@ -60,11 +60,11 @@ var amazon_order_history_request_scheduler = (function() {
 
         bubbleUp(n) {
             // Fetch the element that has to be moved.
-            var element = this.content[n], score = this.scoreFunction(element);
+            let element = this.content[n], score = this.scoreFunction(element);
             // When at 0, an element can not go up any further.
             while (n > 0) {
                 // Compute the parent element's index, and fetch it.
-                var parentN = Math.floor((n + 1) / 2) - 1,
+                let parentN = Math.floor((n + 1) / 2) - 1,
                     parent = this.content[parentN];
                 // If the parent has a lesser score, things are in order and we
                 // are done.
@@ -81,21 +81,21 @@ var amazon_order_history_request_scheduler = (function() {
 
         sinkDown(n) {
             // Look up the target element and its score.
-            var length = this.content.length;
-            var element = this.content[n];
-            var elemScore = this.scoreFunction(element);
+            let length = this.content.length;
+            let element = this.content[n];
+            let elemScore = this.scoreFunction(element);
 
             while(true) {
                 // Compute the indices of the child elements.
-                var child2N = (n + 1) * 2, child1N = child2N - 1;
+                let child2N = (n + 1) * 2, child1N = child2N - 1;
                 // This is used to store the new position of the element,
                 // if any.
-                var swap = null;
-                var child1Score = null;
+                let swap = null;
+                let child1Score = null;
                 // If the first child exists (is inside the array)...
                 if (child1N < length) {
                     // Look it up and compute its score.
-                    var child1 = this.content[child1N];
+                    let child1 = this.content[child1N];
                     child1Score = this.scoreFunction(child1);
                     // If the score is less than our element's, we need to swap.
                     if (child1Score < elemScore)
@@ -103,8 +103,8 @@ var amazon_order_history_request_scheduler = (function() {
                 }
                 // Do the same checks for the other child.
                 if (child2N < length) {
-                    var child2 = this.content[child2N];
-                    var child2Score = this.scoreFunction(child2);
+                    let child2 = this.content[child2N];
+                    let child2Score = this.scoreFunction(child2);
                     if (child2Score < (swap == null ? elemScore : child1Score))
                         swap = child2N;
                 }
@@ -124,39 +124,51 @@ var amazon_order_history_request_scheduler = (function() {
         constructor() {
             // chrome allows 6 requests per domain at the same time.
             this.CONCURRENCY = 6;  // Chrome allows 6 connections per server.
-            this.queue = new BinaryHeap(function(item){ return item.priority; });
+            this.queue = new BinaryHeap( item => item.priority );
             this.running_count = 0;
             this.completed_count = 0;
             this.error_count = 0;
-            this.execute = function(query, callback) {
+            this.signin_warned = false;
+            this.execute = function(query, callback, priority) {
                 console.log(
-                    "Executing " + query +
-                    " with queue size " + this.queue.size());
-                var req = new XMLHttpRequest();
-                req.open("GET", query, true);
+                    'Executing ' + query +
+                    ' with queue size ' + this.queue.size() +
+                    ' and priority ' + priority
+                );
+                let req = new XMLHttpRequest();
+                req.open('GET', query, true);
                 req.onerror = function() {
                     this.running_count -= 1;
                     this.error_count += 1;
                     console.log(
-                        "Unknown error fetching " + query);
+                        'Unknown error fetching ' + query);
                 };
                 req.onload = function(evt) {
                     this.running_count -= 1;
                     if ( req.status != 200 ) {
                         this.error_count += 1;
                         console.log(
-                            "Got HTTP" + req.status + " fetching " + query);
+                            'Got HTTP' + req.status + ' fetching ' + query);
+                        return;
+                    }
+                    if ( req.responseURL.includes('/ap/signin?') ) {
+                        this.error_count += 1;
+                        console.log('Got sign-in redirect.');
+                        if ( !this.signin_warned ) {
+                            alert('Amazon Order History Reporter Chrome Extension\n\nIt looks like you might have been logged out of Amazon. Please refresh this page, responding to the any login prompt Amazon serves you and then retry.');
+                            this.signin_warned = true;
+                        }
                         return;
                     }
                     this.completed_count += 1;
                     console.log(
-                      "Finished " + query +
-                        " with queue size " + this.queue.size());
+                      'Finished ' + query +
+                        ' with queue size ' + this.queue.size());
                     while (this.running_count < this.CONCURRENCY &&
                            this.queue.size() > 0
                     ) {
-                        var task = this.queue.pop();
-                        this.execute(task.query, task.callback);
+                        let task = this.queue.pop();
+                        this.execute(task.query, task.callback, task.priority);
                     }
                     callback(evt);
                 }.bind(this);
@@ -166,18 +178,18 @@ var amazon_order_history_request_scheduler = (function() {
             };
             this.statistics = function() {
                 return {
-                    "queued" : this.queue.size(),
-                    "running" : this.running_count,
-                    "completed" : this.completed_count,
-                    "errors" : this.error_count
+                    'queued' : this.queue.size(),
+                    'running' : this.running_count,
+                    'completed' : this.completed_count,
+                    'errors' : this.error_count
                 };
             };
             this.updateProgress = function() {
-                var target = document.getElementById("order_reporter_progress");
+                let target = document.getElementById('order_reporter_progress');
                 if (target != null) {
                     target.textContent = Object.entries(this.statistics())
-                                               .map(([k,v]) => {return k + ":" + v;})
-                                               .join("; ");
+                                               .map(([k,v]) => {return k + ':' + v;})
+                                               .join('; ');
                 }
                 setTimeout(function() { this.updateProgress(); }.bind(this), 2000);
             };
@@ -186,14 +198,14 @@ var amazon_order_history_request_scheduler = (function() {
 
         schedule(query, callback, priority) {
             console.log(
-        "Scheduling " + query + " with " + this.queue.size());
+                'Scheduling ' + query + ' with ' + this.queue.size());
             if (this.running_count < this.CONCURRENCY) {
-                this.execute(query, callback);
+                this.execute(query, callback, priority);
             } else {
                 this.queue.push({
-                    "query": query,
-                    "callback": callback,
-                    "priority": priority
+                    'query': query,
+                    'callback': callback,
+                    'priority': priority
                 });
             }
         }
