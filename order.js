@@ -301,34 +301,35 @@ var amazon_order_history_order = (function() {
                     "&startIndex=%(startOrderPos)s" +
                     "&language=en_GB",
                 "smile.amazon.ca": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1&" +
+                    "?opt=ab&digitalOrders=1" +
                     "&unifiedOrders=1" +
                     "&returnTo=" +
                     "&orderFilter=year-%(year)s" +
                     "&startIndex=%(startOrderPos)s",
                 "www.amazon.ca": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1&" +
+                    "?opt=ab&digitalOrders=1" +
                     "&unifiedOrders=1" +
                     "&returnTo=" +
                     "&orderFilter=year-%(year)s" +
                     "&startIndex=%(startOrderPos)s",
                 "smile.amazon.fr": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1&" +
+                    "?opt=ab&digitalOrders=1" +
                     "&unifiedOrders=1" +
                     "&returnTo=" +
                     "&orderFilter=year-%(year)s" +
                     "&startIndex=%(startOrderPos)s",
                 "smile.amazon.com": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1&" +
+                    "?opt=ab&digitalOrders=1" +
                     "&unifiedOrders=1" +
                     "&returnTo=" +
                     "&orderFilter=year-%(year)s" +
                     "&startIndex=%(startOrderPos)s",
-                "www.amazon.com": "https://%(site)s/gp/your-account/order-history" +
-                    "?ie=UTF8" +
+                "www.amazon.com": "https://%(site)s/gp/css/order-history" +
+                    "?opt=ab&digitalOrders=1" +
+                    "&unifiedOrders=1" +
+                    "&returnTo=" +
                     "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s" +
-                    "&unifiedOrders=1"
+                    "&startIndex=%(startOrderPos)s",
             };
             this.orderPromises = [];
 			this.sendGetOrderCount = function() {
