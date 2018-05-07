@@ -155,7 +155,10 @@ let amazon_order_history_request_scheduler = (function() {
                         this.error_count += 1;
                         console.log('Got sign-in redirect.');
                         if ( !this.signin_warned ) {
-                            alert('Amazon Order History Reporter Chrome Extension\n\nIt looks like you might have been logged out of Amazon.\nSometimes this can be "partial" - some types of order info stay logged in and some do not.\nPlease refresh this page, responding to the any login prompt Amazon serves you and then retry.');
+                            alert('Amazon Order History Reporter Chrome Extension\n\n' +
+                                  'It looks like you might have been logged out of Amazon.\n' +
+                                  'Sometimes this can be "partial" - some types of order info stay logged in and some do not.\n' +
+                                  'Please log out of amazon and log back in and then retry Amazon Order History Reporter');
                             this.signin_warned = true;
                         }
                         return;

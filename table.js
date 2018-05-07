@@ -198,7 +198,6 @@ var amazon_order_history_table = (function() {
 
             return table;
         };
-        amazon_order_history_util.clearHeaders();
         amazon_order_history_util.clearBody();
         var table = addOrderTable(orders);
         if(beautiful) {
