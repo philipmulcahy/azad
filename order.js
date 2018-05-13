@@ -50,8 +50,8 @@ var amazon_order_history_order = (function() {
                 itemResult.forEach(
                     function(item){
                         var name = item.innerText.replace(/[\n\r]/g, " ")
-												 .replace(/  */g, " ")
-												 .trim();
+                                                 .replace(/  */g, " ")
+                                                 .trim();
                         var link = item.getAttribute("href");
                         items[name] = link;
                     }
@@ -220,9 +220,9 @@ var amazon_order_history_order = (function() {
                                 doc
                             ).map(function(row){
                                 return row.textContent
-										  .replace(/[\n\r]/g, " ")
-										  .replace(/  */g, "\xa0")  //&nbsp;
-										  .trim();
+                                          .replace(/[\n\r]/g, " ")
+                                          .replace(/  */g, "\xa0")  //&nbsp;
+                                          .trim();
                             });
                             resolve(payments);
                         }.bind(this);
@@ -260,170 +260,105 @@ var amazon_order_history_order = (function() {
         }
     }
 
-    class YearFetcher {
-        constructor(year, request_scheduler) {
+    class YearQueryHelper {
+        constructor(year, query_template, request_scheduler) {
             this.year = year;
             this.expected_order_count = null;
             this.order_found_callback = null;
             this.check_complete_callback = null;
-            this.query_string_templates = {
-                "www.amazon.co.uk": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s",
-                "smile.amazon.co.uk": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s",
-                "www.amazon.de": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s" +
-                    "&language=en_GB",
-                "www.amazon.in": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s" +
-                    "&language=en_GB",
-                "www.amazon.it": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s" +
-                    "&language=en_GB",
-                "smile.amazon.ca": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s",
-                "www.amazon.ca": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s",
-                "smile.amazon.fr": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s",
-                "smile.amazon.com": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s",
-                "www.amazon.com": "https://%(site)s/gp/css/order-history" +
-                    "?opt=ab&digitalOrders=1" +
-                    "&unifiedOrders=1" +
-                    "&returnTo=" +
-                    "&orderFilter=year-%(year)s" +
-                    "&startIndex=%(startOrderPos)s",
-            };
+            this.query_template = query_template;
             this.orderPromises = [];
-			this.sendGetOrderCount = function() {
-				request_scheduler.schedule(
-					this.generateQueryString(0),
-					this.receiveGetOrderCount.bind(this),
-					"00000"
-				);
-			};
-			this.generateQueryString = function(startOrderPos) {
-				var template = this.query_string_templates[amazon_order_history_util.getSite()];
-				return sprintf(
-					template,
-					{
-						site: amazon_order_history_util.getSite(),
-						year: this.year,
-						startOrderPos: startOrderPos
-					}
-				);
-			};
-			this.receiveGetOrderCount = function(evt) {
-				var iorder;
-				var p = new DOMParser();
-				var d = p.parseFromString(evt.target.responseText, "text/html");
-				var countSpan = amazon_order_history_util.findSingleNodeValue(
-					".//span[@class=\"num-orders\"]", d, d);
-				this.expected_order_count = parseInt(
-					countSpan.textContent.split(" ")[0], 10);
-				console.log(
-					"Found " + this.expected_order_count + " orders for " + this.year
-				);
-				this.unfetched_count = this.expected_order_count;
-				if(isNaN(this.unfetched_count)) {
-					console.warn(
-						"Error: cannot find order count in " + countSpan.textContent
-					);
-					this.unfetched_count = 0;
-				}
+            this.sendGetOrderCount = function() {
+                request_scheduler.schedule(
+                    this.generateQueryString(0),
+                    this.receiveGetOrderCount.bind(this),
+                    "00000"
+                );
+            };
+            this.generateQueryString = function(startOrderPos) {
+                return sprintf(
+                    this.query_template,
+                    {
+                        site: amazon_order_history_util.getSite(),
+                        year: this.year,
+                        startOrderPos: startOrderPos
+                    }
+                );
+            };
+            this.receiveGetOrderCount = function(evt) {
+                var iorder;
+                var p = new DOMParser();
+                var d = p.parseFromString(evt.target.responseText, "text/html");
+                var countSpan = amazon_order_history_util.findSingleNodeValue(
+                    ".//span[@class=\"num-orders\"]", d, d);
+                this.expected_order_count = parseInt(
+                    countSpan.textContent.split(" ")[0], 10);
+                console.log(
+                    "Found " + this.expected_order_count + " orders for " + this.year
+                );
+                this.unfetched_count = this.expected_order_count;
+                if(isNaN(this.unfetched_count)) {
+                    console.warn(
+                        "Error: cannot find order count in " + countSpan.textContent
+                    );
+                    this.unfetched_count = 0;
+                }
                 this.check_complete_callback();
-				// Request second and subsequent pages.
-				for(iorder = 10; iorder < this.expected_order_count; iorder += 10) {
-					request_scheduler.schedule(
-						this.generateQueryString(iorder),
-						this.receiveOrdersPage.bind(this),
-						"2"
-					);
-				}
-				// We already have the first page.
-				this.receiveOrdersPage(evt);
-			};
-			this.receiveOrdersPage = function(evt) {
-				var p = new DOMParser();
-				var d = p.parseFromString(evt.target.responseText, "text/html");
-				var orders;
-				var ordersElem;
-				var elem;
-				var i;
-				try {
-					ordersElem = d.getElementById("ordersContainer");
-				} catch(err) {
-					console.warn(
-						"Error: maybe you\"re not logged into " +
-						"https://" + amazon_order_history_util.getSite() + "/gp/css/order-history " +
-						err
-					);
-					return;
-				}
-				orders = amazon_order_history_util.findMultipleNodeValues(
-					".//*[contains(concat(\" \", " +
-						"normalize-space(@class), " +
-						"\" \"), " +
-						"\" order \")]",
-					d,
-					ordersElem
-				);
-				function makeOrderPromise(elem) {
-					return new Promise(
-						function(resolve, reject) {
+                // Request second and subsequent pages.
+                for(iorder = 10; iorder < this.expected_order_count; iorder += 10) {
+                    request_scheduler.schedule(
+                        this.generateQueryString(iorder),
+                        this.receiveOrdersPage.bind(this),
+                        "2"
+                    );
+                }
+                // We already have the first page.
+                this.receiveOrdersPage(evt);
+            };
+            this.receiveOrdersPage = function(evt) {
+                var p = new DOMParser();
+                var d = p.parseFromString(evt.target.responseText, "text/html");
+                var orders;
+                var ordersElem;
+                var elem;
+                var i;
+                try {
+                    ordersElem = d.getElementById("ordersContainer");
+                } catch(err) {
+                    console.warn(
+                        "Error: maybe you\"re not logged into " +
+                        "https://" + amazon_order_history_util.getSite() + "/gp/css/order-history " +
+                        err
+                    );
+                    return;
+                }
+                orders = amazon_order_history_util.findMultipleNodeValues(
+                    ".//*[contains(concat(\" \", " +
+                        "normalize-space(@class), " +
+                        "\" \"), " +
+                        "\" order \")]",
+                    d,
+                    ordersElem
+                );
+                function makeOrderPromise(elem) {
+                    return new Promise(
+                        function(resolve, reject) {
                             var order = amazon_order_history_order.create(elem, request_scheduler);
-							resolve(order);
-						}
-					);
-				}
-				orders.forEach(
-					function(elem){
-						this.order_found_callback(
-							makeOrderPromise(elem)
-						);
-					}.bind(this)
-				);
-			};
+                            resolve(order);
+                        }
+                    );
+                }
+                orders.forEach(
+                    function(elem){
+                        this.order_found_callback(
+                            makeOrderPromise(elem)
+                        );
+                    }.bind(this)
+                );
+            };
 
             /* Promise to array of Order Promise. */
-            this.ordersPromise = new Promise(
+            this.orders_promise = new Promise(
                 function(resolve, reject) {
                     this.check_complete_callback = function() {
                         if(this.orderPromises.length === this.expected_order_count) {
@@ -436,7 +371,7 @@ var amazon_order_history_order = (function() {
                         this.orderPromises.push(orderPromise);
                         orderPromise.then(
                             function(order) {
-								// TODO is "Fetching" the right message for this stage?
+                                // TODO is "Fetching" the right message for this stage?
                                 console.log("amazon_order_history_order Fetching " + order.id);
                             }
                         );
@@ -445,7 +380,7 @@ var amazon_order_history_order = (function() {
                              this.orderPromises.length +
                              " expected_order_count:" +
                              this.expected_order_count
-						);
+                        );
                         this.check_complete_callback();
                     };
                     this.sendGetOrderCount();
@@ -454,39 +389,121 @@ var amazon_order_history_order = (function() {
         }
     }
 
-	/* Returns array of Order Promise */
-	function getOrdersByYear(years, request_scheduler) {
-		// At return time we may not know how many orders there are, only
-		// how many years in which orders have been queried for.
-		return new Promise(
-			(resolve, reject) => {
-				Promise.all(
-					years.map(
-						function(year) {
-							return new YearFetcher(year, request_scheduler).ordersPromise;
-						}
-					)
-				).then(
-					function(arrayOfArrayOfOrderPromise) {
-						// Flatten the array of arrays of Promise<Order> into
-						// an array of Promise<Order>.
-						var orderPromises = [].concat.apply(
-							[],
-							arrayOfArrayOfOrderPromise
-						);
-						resolve(orderPromises);
-					}
-				);
-			}
-		);
-	}
+    function fetchYear(year, request_scheduler) {
+        let templates = {
+            "www.amazon.co.uk": ["https://%(site)s/gp/css/order-history" +
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s"],
+            "smile.amazon.co.uk": ["https://%(site)s/gp/css/order-history" +
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s"],
+            "www.amazon.de": ["https://%(site)s/gp/css/order-history" +
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s" +
+                "&language=en_GB"],
+            "www.amazon.in": ["https://%(site)s/gp/css/order-history" +
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s" +
+                "&language=en_GB"],
+            "www.amazon.it": ["https://%(site)s/gp/css/order-history" +
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s" +
+                "&language=en_GB"],
+            "smile.amazon.ca": ["https://%(site)s/gp/css/order-history" +
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s"],
+            "www.amazon.ca": ["https://%(site)s/gp/css/order-history" +
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s"],
+            "smile.amazon.fr": ["https://%(site)s/gp/css/order-history" +
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s"],
+            "smile.amazon.com": ["https://%(site)s/gp/css/order-history" +
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s"],
+            "www.amazon.com": ["https://%(site)s/gp/css/order-history" +
+                "?opt=ab&digitalOrders=1" +
+                "&unifiedOrders=1" +
+                "&returnTo=" +
+                "&orderFilter=year-%(year)s" +
+                "&startIndex=%(startOrderPos)s"],
+        }[amazon_order_history_util.getSite()];
+
+        let helpers = [];
+        templates.forEach( template => {
+            let helper = new YearQueryHelper(year, template, request_scheduler);
+            helpers.push(helper);
+        });
+        
+        let promises_to_promises = helpers.map( h => h.orders_promise );
+
+        return Promise.all( promises_to_promises )
+        .then( array2_of_promise => {
+            let order_promises = [];
+            array2_of_promise.forEach( promises => {
+                promises.forEach( promise => {
+                    order_promises.push(promise);
+                });
+            });
+            return order_promises;
+        });
+    }
+
+    /* Returns array of Order Promise */
+    function getOrdersByYear(years, request_scheduler) {
+        // At return time we may not know how many orders there are, only
+        // how many years in which orders have been queried for.
+        return Promise.all(
+            years.map(
+                function(year) {
+                    return fetchYear(year, request_scheduler);
+                }
+            )
+        ).then(
+            array2_of_order_promise => {
+                // Flatten the array of arrays of Promise<Order> into
+                // an array of Promise<Order>.
+                return [].concat.apply(
+                    [],
+                    array2_of_order_promise
+                );
+            }
+        );
+    }
 
 
     return {
         create: function(ordersPageElem, request_scheduler) {
             return new Order(ordersPageElem, request_scheduler);
         },
-		// Return Array of Order Promise.
-		getOrdersByYear: getOrdersByYear
+        // Return Array of Order Promise.
+        getOrdersByYear: getOrdersByYear
     };
 })();
