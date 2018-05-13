@@ -153,7 +153,7 @@ let amazon_order_history_request_scheduler = (function() {
                     }
                     if ( req.responseURL.includes('/ap/signin?') ) {
                         this.error_count += 1;
-                        console.log('Got sign-in redirect.');
+                        console.warn('Got sign-in redirect from: ' + query);
                         if ( !this.signin_warned ) {
                             alert('Amazon Order History Reporter Chrome Extension\n\n' +
                                   'It looks like you might have been logged out of Amazon.\n' +
