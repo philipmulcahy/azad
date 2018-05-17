@@ -1,21 +1,20 @@
 {
-  "manifest_version": 2,
-
-  "name": "Amazon Order History Reporter",
-  "description": "This extension extracts order history from your Amazon account.",
-  "version": "1.8.3",
-
-  "permissions": [
-    "https://www.amazon.ca/",
-    "https://www.amazon.com/",
-    "https://www.amazon.co.uk/",
-    "https://www.amazon.de/",
-    "https://www.amazon.fr/",
-    "https://www.amazon.in/",
-    "https://www.amazon.it/",
-    "https://smile.amazon.com/"
-  ],
-  "content_scripts": [
+    "manifest_version": 2,
+    "name": "Amazon Order History Reporter",
+    "description": "This extension extracts order history from your Amazon account.",
+    "version": "1.8.3",
+    "permissions": [
+        "https://www.amazon.ca/",
+        "https://www.amazon.com/",
+        "https://www.amazon.co.uk/",
+        "https://www.amazon.de/",
+        "https://www.amazon.fr/",
+        "https://www.amazon.in/",
+        "https://www.amazon.it/",
+        "https://smile.amazon.com/",
+        "tabs"
+    ],
+    "content_scripts": [
         {
             "matches": [
                 "https://www.amazon.ca/*",
@@ -29,10 +28,9 @@
                 "https://www.amazon.com/*",
                 "https://smile.amazon.com/*"
             ],
-            "css": ["jquery.dataTables.css"],
+            "css": ["datatables.css"],
             "js": [
-                "jquery-1.11.1.min.js",
-                "jquery.dataTables.min.js",
+                "datatables.js",
                 "sprintf.js",
                 "util.js",
                 "request_scheduler.js",
@@ -42,7 +40,7 @@
                 "inject.js"
             ]
         }
-  ],
-  "icons": { "48": "icon48.png",
-             "128": "icon128.png" }
+    ],
+    "icons": { "48": "icon48.png",
+        "128": "icon128.png" }
 }
