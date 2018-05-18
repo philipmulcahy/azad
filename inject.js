@@ -37,7 +37,6 @@ const amazon_order_history_inject = (function() {
 
     function addYearButtons() {
         const years = getYears();
-        chrome.runtime.sendMessage({action: 'open_new_tab'});
         if(years.length > 0) {
             amazon_order_history_util.addButton(
                 'All years',
