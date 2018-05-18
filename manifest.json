@@ -14,6 +14,12 @@
         "https://smile.amazon.com/",
         "tabs"
     ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ],
+        "persistent": false
+    },
     "content_scripts": [
         {
             "matches": [
@@ -41,6 +47,8 @@
             ]
         }
     ],
-    "icons": { "48": "icon48.png",
-        "128": "icon128.png" }
+    "icons": {
+        "48": "icon48.png",
+        "128": "icon128.png"
+    }
 }
