@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "Amazon Order History Reporter",
     "description": "This extension extracts order history from your Amazon account.",
-    "version": "1.8.3",
+    "version": "1.8.4",
     "permissions": [
         "https://www.amazon.ca/",
         "https://www.amazon.com/",
