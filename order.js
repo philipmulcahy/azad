@@ -299,6 +299,9 @@ let amazon_order_history_order = (function() {
             check_complete_callback();
             // Request second and subsequent pages.
             for(let iorder = 10; iorder < expected_order_count; iorder += 10) {
+                console.log(
+                    'sending request for order: ' + iorder + ' onwards'
+                );
                 request_scheduler.schedule(
                     generateQueryString(iorder),
                     receiveOrdersPage,
