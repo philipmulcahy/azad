@@ -4,15 +4,17 @@
     "description": "This extension extracts order history from your Amazon account.",
     "version": "1.8.4",
     "permissions": [
+        "https://smile.amazon.ca/",
         "https://www.amazon.ca/",
+        "https://smile.amazon.com/",
         "https://www.amazon.com/",
+        "https://smile.amazon.co.uk/",
         "https://www.amazon.co.uk/",
         "https://www.amazon.de/",
         "https://www.amazon.fr/",
         "https://www.amazon.in/",
-        "https://www.amazon.it/",
-        "https://smile.amazon.com/",
-        "tabs"
+        "https://smile.amazon.it/",
+        "https://www.amazon.it/"
     ],
     "background": {
         "scripts": [
@@ -23,16 +25,17 @@
     "content_scripts": [
         {
             "matches": [
-                "https://www.amazon.ca/*",
                 "https://smile.amazon.ca/*",
-                "https://www.amazon.co.uk/*",
+                "https://www.amazon.ca/*",
+                "https://smile.amazon.com/*",
+                "https://www.amazon.com/*",
                 "https://smile.amazon.co.uk/*",
+                "https://www.amazon.co.uk/*",
                 "https://www.amazon.de/*",
                 "https://www.amazon.fr/*",
                 "https://www.amazon.in/*",
-                "https://www.amazon.it/*",
-                "https://www.amazon.com/*",
-                "https://smile.amazon.com/*"
+                "https://smile.amazon.it/*",
+                "https://www.amazon.it/*"
             ],
             "css": ["datatables.css"],
             "js": [
