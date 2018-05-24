@@ -375,13 +375,13 @@ let amazon_order_history_order = (function() {
 
     function fetchYear(year, request_scheduler) {
         let templates = {
-            'www.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
+            'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
                 '?opt=ab&digitalOrders=1' +
                 '&unifiedOrders=1' +
                 '&returnTo=' +
                 '&orderFilter=year-%(year)s' +
                 '&startIndex=%(startOrderPos)s'],
-            'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
+            'www.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
                 '?opt=ab&digitalOrders=1' +
                 '&unifiedOrders=1' +
                 '&returnTo=' +
@@ -421,6 +421,12 @@ let amazon_order_history_order = (function() {
                 '&orderFilter=year-%(year)s' +
                 '&startIndex=%(startOrderPos)s'],
             'smile.amazon.fr': ['https://%(site)s/gp/css/order-history' +
+                '?opt=ab&digitalOrders=1' +
+                '&unifiedOrders=1' +
+                '&returnTo=' +
+                '&orderFilter=year-%(year)s' +
+                '&startIndex=%(startOrderPos)s'],
+            'www.amazon.fr': ['https://%(site)s/gp/css/order-history' +
                 '?opt=ab&digitalOrders=1' +
                 '&unifiedOrders=1' +
                 '&returnTo=' +

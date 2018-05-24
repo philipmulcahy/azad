@@ -7,20 +7,23 @@ const amazon_order_history_inject = (function() {
 
     const request_scheduler = amazon_order_history_request_scheduler.create();
 
-	function getYears(){
+	function getYears() {
 		if(typeof(getYears.years) === 'undefined') {
+            console.log('getYears() needs to do something');
 			const snapshot = amazon_order_history_util.findMultipleNodeValues(
 				'//select[@name=\"orderFilter\"]/option[@value]',
 				document,
 				document);
 			getYears.years = snapshot.map( elem => {
                 return elem.textContent
+                           .replace('en', '')  // amazon.fr
                            .replace('nel', '')  // amazon.it
                            .trim();
             }).filter( (element, index, array) => {
                 return(/^\d+$/).test(element);
             });
 		}
+        console.log('getYears() returning ', getYears.years);
 		return getYears.years;
 	}
 
@@ -36,6 +39,7 @@ const amazon_order_history_inject = (function() {
     }
 
     function addYearButtons() {
+        console.log('addYearButtons starting');
         const years = getYears();
         if(years.length > 0) {
             amazon_order_history_util.addButton(
@@ -44,6 +48,8 @@ const amazon_order_history_inject = (function() {
                     fetchAndShowOrders(years);
                 }
             );
+        } else {
+            console.log('addYearButtons no years found');
         }
         years.forEach( year => {
             amazon_order_history_util.addButton(
@@ -67,7 +73,7 @@ const amazon_order_history_inject = (function() {
         );
     }
 
+    console.log('Amazon Order History Reporter starting');
     addYearButtons();
     addInfoPoints();
-    console.log('Starting');
 })();
