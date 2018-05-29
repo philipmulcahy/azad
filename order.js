@@ -59,8 +59,17 @@ let amazon_order_history_order = (function() {
                 return items;
             };
             const doc = elem.ownerDocument;
-            this.date = getField('.//div[contains(span,"Order placed")]' +
-                '/../div/span[contains(@class,"value")]', doc, elem);
+            this.date = getField(
+                ['Commande effectuée', 'Order placed'].map(
+                    label => sprintf(
+                        './/div[contains(span,"%s")]' +
+                        '/../div/span[contains(@class,"value")]',
+                        label
+                    )
+                ).join('|'),
+                doc,
+                elem
+            );
             this.total = getField('.//div[contains(span,"Total")]' +
                 '/../div/span[contains(@class,"value")]', doc, elem);
             this.who = getField('.//div[contains(@class,"recipient")]' +
@@ -68,11 +77,20 @@ let amazon_order_history_order = (function() {
             if (this.who === '?') {
                 this.who = 'N/A';
             }
-            this.id = getField('.//div[contains(@class,"a-row")]' +
-                '[span[contains(@class,"label")]]' +
-                    '[span[contains(@class,"value")]]' +
-                    '[contains(span,"Order #")]' +
-                    '/span[contains(@class,"value")]', doc, elem);
+            this.id = getField(
+                ['Order #', 'commande'].map(
+                    label => sprintf(
+                        './/div[contains(@class,"a-row")]' +
+                        '[span[contains(@class,"label")]]' +
+                        '[span[contains(@class,"value")]]' +
+                        '[contains(span,"%s")]' +
+                        '/span[contains(@class,"value")]',
+                        label
+                    )
+                ).join(' | '),
+                doc,
+                elem
+            );
             this.items = getItems(elem);
             this.detail_promise = new Promise(
                 function(resolve, reject) {
