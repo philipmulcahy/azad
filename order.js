@@ -140,19 +140,14 @@ let amazon_order_history_order = (function() {
                         }.bind(this);
                         const postage = function() {
                             let a = getField(
-                                '//div[contains(@id,"od-subtotals")]//' +
-                                'span[contains(text(),"Postage")]/' +
-                                    'parent::div/following-sibling::div/span',
-                                doc,
-                                doc.documentElement
-                            );
-                            if (a !== "?") {
-                                return a;
-                            }
-                            a = getField(
-                                '//div[contains(@id,"od-subtotals")]//' +
-                                'span[contains(text(),"Shipping")]/' +
-                                'parent::div/following-sibling::div/span',
+                                ['Postage', 'Shipping', 'Livraison'].map(
+                                    label => sprintf(
+                                        '//div[contains(@id,"od-subtotals")]//' +
+                                        'span[contains(text(),"%s")]/' +
+                                        'parent::div/following-sibling::div/span',
+                                        label
+                                    )
+                                ).join('|'),
                                 doc,
                                 doc.documentElement
                             );
@@ -163,19 +158,14 @@ let amazon_order_history_order = (function() {
                         }.bind(this);
                         const vat = function(){
                             let a = getField(
-                                '//div[contains(@id,"od-subtotals")]//' +
-                                'span[contains(text(),"VAT") and not(contains(.,"Before"))]/' +
-                                    'parent::div/following-sibling::div/span',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== "?") {
-                                return a;
-                            }
-                            a = getField(
-                                '//div[contains(@id,"od-subtotals")]//' +
-                                'span[contains(text(),"tax") and not(contains(.,"before"))]/' +
-                                    'parent::div/following-sibling::div/span',
+                                ['VAT', 'tax', 'TVA'].map(
+                                    label => sprintf(
+                                        '//div[contains(@id,"od-subtotals")]//' +
+                                        'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
+                                        'parent::div/following-sibling::div/span',
+                                        label
+                                    )
+                                ).join('|'),
                                 doc,
                                 doc.documentElement
                             );
@@ -195,9 +185,12 @@ let amazon_order_history_order = (function() {
                                 }
                             }
                             a = getField(
-                                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//span[contains(text(),"VAT")]/parent::div/following-sibling::div/span',
+                                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+                                'span[contains(text(),"VAT")]/' +
+                                'parent::div/following-sibling::div/span',
                                 doc,
-                                doc.documentElement);
+                                doc.documentElement
+                            );
                             if( a !== null ) {
                                 const c = a.match(
                                     /VAT: *([-$£€0-9.]*)/);
