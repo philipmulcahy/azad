@@ -124,6 +124,7 @@ let amazon_order_history_request_scheduler = (function() {
         constructor() {
             // chrome allows 6 requests per domain at the same time.
             this.CONCURRENCY = 6;  // Chrome allows 6 connections per server.
+            this.cache = {};
             this.queue = new BinaryHeap( item => item.priority );
             this.running_count = 0;
             this.completed_count = 0;
@@ -180,6 +181,7 @@ let amazon_order_history_request_scheduler = (function() {
                         let task = this.queue.pop();
                         this.execute(task.query, task.callback, task.priority);
                     }
+                    this.cache[query] = evt;
                     callback(evt);
                 }.bind(this);
                 this.running_count += 1;
@@ -207,16 +209,21 @@ let amazon_order_history_request_scheduler = (function() {
         }
 
         schedule(query, callback, priority) {
-            console.log(
-                'Scheduling ' + query + ' with ' + this.queue.size());
-            if (this.running_count < this.CONCURRENCY) {
-                this.execute(query, callback, priority);
+            const cached_response = this.cache[query];
+            if (cached_response != undefined) {
+                console.log('Already had ' + query + ' with ' + this.queue.size());
+                callback(cached_response);
             } else {
-                this.queue.push({
-                    'query': query,
-                    'callback': callback,
-                    'priority': priority
-                });
+                console.log('Scheduling ' + query + ' with ' + this.queue.size());
+                if (this.running_count < this.CONCURRENCY) {
+                    this.execute(query, callback, priority);
+                } else {
+                    this.queue.push({
+                        'query': query,
+                        'callback': callback,
+                        'priority': priority
+                    });
+                }
             }
         }
     }
