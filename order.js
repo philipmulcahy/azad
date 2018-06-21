@@ -95,7 +95,7 @@ let amazon_order_history_order = (function() {
             this.detail_promise = new Promise(
                 function(resolve, reject) {
                     const query = amazon_order_history_util.getOrderDetailUrl(this.id);
-                    const evt_callback = function(evt) {
+                    const event_converter = function(evt) {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(
                             evt.target.responseText, 'text/html'
@@ -200,15 +200,19 @@ let amazon_order_history_order = (function() {
                             }
                             return "N/A";
                         }.bind(this);
-                        resolve({
+                        return {
                             postage: postage(),
                             gift: gift(),
                             vat: vat()
-                        });
+                        };
                     }.bind(this);
+                    const callback = function(order_details) {
+                        resolve(order_details);
+                    };
                     this.request_scheduler.schedule(
                         query,
-                        evt_callback,
+                        event_converter,
+                        callback,
                         this.id
                     );
                 }.bind(this)
@@ -219,7 +223,7 @@ let amazon_order_history_order = (function() {
                         resolve([ this.date + ": " + this.total]);
                     } else {
                         const query = amazon_order_history_util.getOrderPaymentUrl(this.id);
-                        const evt_callback = function(evt) {
+                        const event_converter = function(evt) {
                             const parser = new DOMParser();
                             const doc = parser.parseFromString(
                                 evt.target.responseText, "text/html"
@@ -243,11 +247,15 @@ let amazon_order_history_order = (function() {
                                           .replace(/  */g, '\xa0')  //&nbsp;
                                           .trim();
                             });
-                            resolve(payments);
+                            return payments;
                         }.bind(this);
+                        const callback = function(payments) {
+                            resolve(payments);
+                        };
                         this.request_scheduler.schedule(
                             query,
-                            evt_callback,
+                            event_converter,
+                            callback,
                             this.id
                         );
                     }
@@ -284,7 +292,8 @@ let amazon_order_history_order = (function() {
         const sendGetOrderCount = function() {
             request_scheduler.schedule(
                 generateQueryString(0),
-                receiveGetOrderCount,
+                convertOrdersPage,
+                receiveOrdersCount,
                 '00000'
             );
         };
@@ -298,41 +307,21 @@ let amazon_order_history_order = (function() {
                 }
             );
         };
-        const receiveGetOrderCount = function(evt) {
-            let p = new DOMParser();
-            let d = p.parseFromString(evt.target.responseText, 'text/html');
-            let countSpan = amazon_order_history_util.findSingleNodeValue(
+        const convertOrdersPage = function(evt) {
+            const p = new DOMParser();
+            const d = p.parseFromString(evt.target.responseText, 'text/html');
+            const countSpan = amazon_order_history_util.findSingleNodeValue(
                 './/span[@class="num-orders"]', d, d);
             expected_order_count = parseInt(
                 countSpan.textContent.split(' ')[0], 10);
             console.log(
                 'Found ' + expected_order_count + ' orders for ' + year
             );
-            let unfetched_count = expected_order_count;
-            if(isNaN(unfetched_count)) {
+            if(isNaN(expected_order_count)) {
                 console.warn(
                     'Error: cannot find order count in ' + countSpan.textContent
                 );
-                unfetched_count = 0;
             }
-            check_complete_callback();
-            // Request second and subsequent pages.
-            for(let iorder = 10; iorder < expected_order_count; iorder += 10) {
-                console.log(
-                    'sending request for order: ' + iorder + ' onwards'
-                );
-                request_scheduler.schedule(
-                    generateQueryString(iorder),
-                    receiveOrdersPage,
-                    '2'
-                );
-            }
-            // We already have the first page.
-            receiveOrdersPage(evt);
-        };
-        const receiveOrdersPage = function(evt) {
-            const p = new DOMParser();
-            const d = p.parseFromString(evt.target.responseText, 'text/html');
             let ordersElem;
             try {
                 ordersElem = d.getElementById('ordersContainer');
@@ -344,7 +333,7 @@ let amazon_order_history_order = (function() {
                 );
                 return;
             }
-            const orders = amazon_order_history_util.findMultipleNodeValues(
+            const order_elems = amazon_order_history_util.findMultipleNodeValues(
                 './/*[contains(concat(" ", ' +
                     'normalize-space(@class), ' +
                     '" "), ' +
@@ -352,14 +341,38 @@ let amazon_order_history_order = (function() {
                 d,
                 ordersElem
             );
+            order_elems.forEach(elem => Object.freeze(elem));
+            return {
+                expected_order_count: expected_order_count,
+                order_elems: order_elems,
+            };
+        };
+        const receiveOrdersCount = function(orders_page_data) {
+            const expected_order_count = orders_page_data.expected_order_count;
+            check_complete_callback();
+            // TODO: restore efficiency - the first ten orders are visible in the page we got expected_order_count from.
+            for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
+                console.log(
+                    'sending request for order: ' + iorder + ' onwards'
+                );
+                request_scheduler.schedule(
+                    generateQueryString(iorder),
+                    convertOrdersPage,
+                    receiveOrdersPageData,
+                    '2'
+                );
+            }
+        };
+        const receiveOrdersPageData = function(orders_page_data) {
+            const order_elems = orders_page_data.order_elems;
             function makeOrderPromise(elem) {
                 return new Promise( (resolve, reject) => {
                     const order = amazon_order_history_order.create(elem, request_scheduler);
                     resolve(order);
                 });
             }
-            orders.forEach(
-                elem => { order_found_callback( makeOrderPromise(elem) ); }
+            order_elems.forEach(
+                elem => order_found_callback( makeOrderPromise(elem) )
             );
         };
 
