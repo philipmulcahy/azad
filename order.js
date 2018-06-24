@@ -348,7 +348,7 @@ let amazon_order_history_order = (function() {
             };
         };
         const receiveOrdersCount = function(orders_page_data) {
-            const expected_order_count = orders_page_data.expected_order_count;
+            expected_order_count = orders_page_data.expected_order_count;
             check_complete_callback();
             // TODO: restore efficiency - the first ten orders are visible in the page we got expected_order_count from.
             for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
@@ -393,7 +393,7 @@ let amazon_order_history_order = (function() {
                         console.log('amazon_order_history_order Fetching ' + order.id);
                     });
                     console.log(
-                        'YearFetcher order_promises.length:' +
+                        'YearFetcher(' + year + ') order_promises.length:' +
                          order_promises.length +
                          ' expected_order_count:' +
                          expected_order_count
