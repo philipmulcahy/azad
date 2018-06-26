@@ -380,6 +380,7 @@ let amazon_order_history_order = (function() {
         return new Promise(
             (resolve, reject) => {
                 check_complete_callback = function() {
+                    console.log('check_complete_callback() actual:' + order_promises.length + ' expected:' + expected_order_count);
                     if(order_promises.length === expected_order_count) {
                         console.log('resolving order_promises for ' + year);
                         resolve(order_promises);
@@ -484,7 +485,7 @@ let amazon_order_history_order = (function() {
             ],
         }[amazon_order_history_util.getSite()];
 
-        let promises_to_promises = templates.map(
+        const promises_to_promises = templates.map(
             template => getOrdersForYearAndQueryTemplate(year, template, request_scheduler)
         );
 
