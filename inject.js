@@ -21,7 +21,7 @@ const amazon_order_history_inject = (function() {
                            .trim();
             }).filter( (element, index, array) => {
                 return(/^\d+$/).test(element);
-            });
+            }).filter( year => (year >= '2004') );
 		}
         console.log('getYears() returning ', getYears.years);
 		return getYears.years;
