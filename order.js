@@ -200,10 +200,101 @@ let amazon_order_history_order = (function() {
                             }
                             return "N/A";
                         }.bind(this);
+                          const cad_gst = function(){
+                            let a = getField(
+                                ['GST', 'HST'].map(
+                                    label => sprintf(
+                                        '//div[contains(@id,"od-subtotals")]//' +
+                                        'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
+                                        'parent::div/following-sibling::div/span',
+                                        label
+                                    )
+                                ).join('|'),
+                                doc,
+                                doc.documentElement
+                            );
+                            if( a !== "?") {
+                                return a;
+                            }
+                            a = getField(
+                                '//*[text()[contains(.,"GST") and not(contains(.,"Before"))]]',
+                                doc,
+                                doc.documentElement
+                            );
+                            if( a !== null ) {
+                                const b = a.match(
+                                    /VAT: *([-$£€0-9.]*)/);
+                                if( b !== null ) {
+                                    return b[1];
+                                }
+                            }
+                            a = getField(
+                                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+                                'span[contains(text(),"GST")]/' +
+                                'parent::div/following-sibling::div/span',
+                                doc,
+                                doc.documentElement
+                            );
+                            if( a !== null ) {
+                                const c = a.match(
+                                    /VAT: *([-$£€0-9.]*)/);
+                                if( c !== null ) {
+                                    return c[1];
+                                }
+                            }
+                            return "N/A";
+                        }.bind(this);
+
+                        const cad_pst = function(){
+                            let a = getField(
+                                ['PST', 'RST', 'QST'].map(
+                                    label => sprintf(
+                                        '//div[contains(@id,"od-subtotals")]//' +
+                                        'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
+                                        'parent::div/following-sibling::div/span',
+                                        label
+                                    )
+                                ).join('|'),
+                                doc,
+                                doc.documentElement
+                            );
+                            if( a !== "?") {
+                                return a;
+                            }
+                            a = getField(
+                                '//*[text()[contains(.,"PST") and not(contains(.,"Before"))]]',
+                                doc,
+                                doc.documentElement
+                            );
+                            if( a !== null ) {
+                                const b = a.match(
+                                    /VAT: *([-$£€0-9.]*)/);
+                                if( b !== null ) {
+                                    return b[1];
+                                }
+                            }
+                            a = getField(
+                                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+                                'span[contains(text(),"PST")]/' +
+                                'parent::div/following-sibling::div/span',
+                                doc,
+                                doc.documentElement
+                            );
+                            if( a !== null ) {
+                                const c = a.match(
+                                    /VAT: *([-$£€0-9.]*)/);
+                                if( c !== null ) {
+                                    return c[1];
+                                }
+                            }
+                            return "N/A";
+                        }.bind(this);                        
                         resolve({
                             postage: postage(),
                             gift: gift(),
-                            vat: vat()
+                            vat: vat(),
+                            gst: cad_gst(),
+                            pst: cad_pst()
                         });
                     }.bind(this);
                     this.request_scheduler.schedule(
