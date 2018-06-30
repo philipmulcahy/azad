@@ -68,6 +68,10 @@ const amazon_order_history_table = (function() {
         { field_name:'vat', type:'detail', property_name:'vat',
           is_numeric:true,
           help:'Caution: when stuff is not supplied by Amazon, then tax is often not listed.' },
+        { field_name:'GST', type:'detail', property_name:'gst',
+          is_numeric:true},
+       { field_name:'PST', type:'detail', property_name:'pst',
+          is_numeric:true},
         { field_name:'payments', type:'payments', property_name:'payments',
           is_numeric:false },
     ];
