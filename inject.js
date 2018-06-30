@@ -21,7 +21,7 @@ const amazon_order_history_inject = (function() {
                            .trim();
             }).filter( (element, index, array) => {
                 return(/^\d+$/).test(element);
-            });
+            }).filter( year => (year >= '2004') );
 		}
         console.log('getYears() returning ', getYears.years);
 		return getYears.years;
@@ -32,7 +32,12 @@ const amazon_order_history_inject = (function() {
             years, request_scheduler
         ).then(
 			orderPromises => {
-				amazon_order_history_table.displayOrders(orderPromises, true);
+                let beautiful = true;
+                if (orderPromises.length >= 50) {
+                    beautiful = false;
+                    alert('500 or more orders found. That\'s a lot! We\'ll start you off with a plain table to make display faster. You can click the blue "datatable" button to restore sorting, filtering etc.');
+                }
+				amazon_order_history_table.displayOrders(orderPromises, beautiful);
 				return document.querySelector('[id=\"order_table\"]');
 			}
 		);

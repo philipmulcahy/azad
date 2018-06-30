@@ -3,7 +3,7 @@
 
 // Uses code from http://eloquentjavascript.net/1st_edition/appendix2.html
 
-let amazon_order_history_request_scheduler = (function() {
+const amazon_order_history_request_scheduler = (function() {
     'use strict';
 
     class BinaryHeap {
@@ -21,9 +21,9 @@ let amazon_order_history_request_scheduler = (function() {
 
         pop() {
             // Store the first element so we can return it later.
-            let result = this.content[0];
+            const result = this.content[0];
             // Get the element at the end of the array.
-            let end = this.content.pop();
+            const end = this.content.pop();
             // If there are any elements left, put the end element at the
             // start, and let it sink down.
             if (this.content.length > 0) {
@@ -34,14 +34,14 @@ let amazon_order_history_request_scheduler = (function() {
         }
 
         remove(node) {
-            let length = this.content.length;
+            const length = this.content.length;
             // To remove a value, we must search through the array to find
             // it.
             for (let i = 0; i < length; i++) {
                 if (this.content[i] != node) continue;
                 // When it is found, the process seen in 'pop' is repeated
                 // to fill up the hole.
-                let end = this.content.pop();
+                const end = this.content.pop();
                 // If the element we popped was the one we needed to remove,
                 // we're done.
                 if (i == length - 1) break;
@@ -60,11 +60,11 @@ let amazon_order_history_request_scheduler = (function() {
 
         bubbleUp(n) {
             // Fetch the element that has to be moved.
-            let element = this.content[n], score = this.scoreFunction(element);
+            const element = this.content[n], score = this.scoreFunction(element);
             // When at 0, an element can not go up any further.
             while (n > 0) {
                 // Compute the parent element's index, and fetch it.
-                let parentN = Math.floor((n + 1) / 2) - 1,
+                const parentN = Math.floor((n + 1) / 2) - 1,
                     parent = this.content[parentN];
                 // If the parent has a lesser score, things are in order and we
                 // are done.
@@ -81,13 +81,14 @@ let amazon_order_history_request_scheduler = (function() {
 
         sinkDown(n) {
             // Look up the target element and its score.
-            let length = this.content.length;
-            let element = this.content[n];
-            let elemScore = this.scoreFunction(element);
+            const length = this.content.length;
+            const element = this.content[n];
+            const elemScore = this.scoreFunction(element);
 
             while(true) {
                 // Compute the indices of the child elements.
-                let child2N = (n + 1) * 2, child1N = child2N - 1;
+                const child2N = (n + 1) * 2;
+                const child1N = child2N - 1;
                 // This is used to store the new position of the element,
                 // if any.
                 let swap = null;
@@ -95,7 +96,7 @@ let amazon_order_history_request_scheduler = (function() {
                 // If the first child exists (is inside the array)...
                 if (child1N < length) {
                     // Look it up and compute its score.
-                    let child1 = this.content[child1N];
+                    const child1 = this.content[child1N];
                     child1Score = this.scoreFunction(child1);
                     // If the score is less than our element's, we need to swap.
                     if (child1Score < elemScore)
@@ -103,8 +104,8 @@ let amazon_order_history_request_scheduler = (function() {
                 }
                 // Do the same checks for the other child.
                 if (child2N < length) {
-                    let child2 = this.content[child2N];
-                    let child2Score = this.scoreFunction(child2);
+                    const child2 = this.content[child2N];
+                    const child2Score = this.scoreFunction(child2);
                     if (child2Score < (swap == null ? elemScore : child1Score))
                         swap = child2N;
                 }
@@ -124,18 +125,19 @@ let amazon_order_history_request_scheduler = (function() {
         constructor() {
             // chrome allows 6 requests per domain at the same time.
             this.CONCURRENCY = 6;  // Chrome allows 6 connections per server.
+            this.cache = {};
             this.queue = new BinaryHeap( item => item.priority );
             this.running_count = 0;
             this.completed_count = 0;
             this.error_count = 0;
             this.signin_warned = false;
-            this.execute = function(query, callback, priority) {
+            this.execute = function(query, event_converter, callback, priority) {
                 console.log(
                     'Executing ' + query +
                     ' with queue size ' + this.queue.size() +
                     ' and priority ' + priority
                 );
-                let req = new XMLHttpRequest();
+                const req = new XMLHttpRequest();
                 req.open('GET', query, true);
                 req.onerror = function() {
                     this.running_count -= 1;
@@ -177,10 +179,17 @@ let amazon_order_history_request_scheduler = (function() {
                     while (this.running_count < this.CONCURRENCY &&
                            this.queue.size() > 0
                     ) {
-                        let task = this.queue.pop();
-                        this.execute(task.query, task.callback, task.priority);
+                        const task = this.queue.pop();
+                        this.execute(
+                            task.query,
+                            task.event_converter,
+                            task.callback,
+                            task.priority
+                        );
                     }
-                    callback(evt);
+                    const converted = event_converter(evt);
+                    this.cache[query] = converted;
+                    callback(converted);
                 }.bind(this);
                 this.running_count += 1;
                 req.send();
@@ -191,11 +200,12 @@ let amazon_order_history_request_scheduler = (function() {
                     'queued' : this.queue.size(),
                     'running' : this.running_count,
                     'completed' : this.completed_count,
-                    'errors' : this.error_count
+                    'errors' : this.error_count,
+                    'cache' : Object.keys(this.cache).length,
                 };
             };
             this.updateProgress = function() {
-                let target = document.getElementById('order_reporter_progress');
+                const target = document.getElementById('order_reporter_progress');
                 if (target != null) {
                     target.textContent = Object.entries(this.statistics())
                                                .map(([k,v]) => {return k + ':' + v;})
@@ -206,17 +216,23 @@ let amazon_order_history_request_scheduler = (function() {
             this.updateProgress();
         }
 
-        schedule(query, callback, priority) {
-            console.log(
-                'Scheduling ' + query + ' with ' + this.queue.size());
-            if (this.running_count < this.CONCURRENCY) {
-                this.execute(query, callback, priority);
+        schedule(query, event_converter, callback, priority) {
+            const cached_response = this.cache[query];
+            if (cached_response != undefined) {
+                console.log('Already had ' + query + ' with ' + this.queue.size());
+                callback(cached_response);
             } else {
-                this.queue.push({
-                    'query': query,
-                    'callback': callback,
-                    'priority': priority
-                });
+                console.log('Scheduling ' + query + ' with ' + this.queue.size());
+                if (this.running_count < this.CONCURRENCY) {
+                    this.execute(query, event_converter ,callback, priority);
+                } else {
+                    this.queue.push({
+                        'query': query,
+                        'event_converter': event_converter,
+                        'callback': callback,
+                        'priority': priority,
+                    });
+                }
             }
         }
     }
