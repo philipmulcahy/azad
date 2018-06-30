@@ -1,11 +1,32 @@
 /* Copyright(c) 2016 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
-let amazon_order_history_order = (function() {
+const amazon_order_history_order = (function() {
     'use strict';
 
+    class OrderTracker  {
+        constructor() {
+            self.promises_by_id = {};
+            self.pending_ids = new Set();
+        }
+
+        constructorStarted(order_object) {
+        }
+
+        idKnown(id) {
+        }
+
+        detailPromiseResolved(id) {
+        }
+
+        paymentsPromiseResolved(id) {
+        }
+    }
+
+    const order_tracker = new OrderTracker();
+
     function getField(xpath, doc, elem) {
-        let valueElem = amazon_order_history_util.findSingleNodeValue(xpath, doc, elem);
+        const valueElem = amazon_order_history_util.findSingleNodeValue(xpath, doc, elem);
         try {
             return valueElem.textContent.trim();
         } catch (_) {
@@ -16,6 +37,7 @@ let amazon_order_history_order = (function() {
     class Order {
         constructor(ordersPageElem, request_scheduler) {
             this.id = null;
+            order_tracker.constructorStarted(this);
             this.date = null;
             this.total = null;
             this.who = null;
@@ -26,7 +48,7 @@ let amazon_order_history_order = (function() {
         }
 
         extractOrder(elem) {
-            let getItems = function(elem) {
+            const getItems = function(elem) {
                 /*
                   <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
                       The Rise and Fall of D.O.D.O.
@@ -46,7 +68,7 @@ let amazon_order_history_order = (function() {
                     './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
                     elem.ownerDocument,
                     elem);
-                let items = {};
+                const items = {};
                 itemResult.forEach(
                     function(item){
                         const name = item.innerText.replace(/[\n\r]/g, " ")
@@ -91,6 +113,7 @@ let amazon_order_history_order = (function() {
                 doc,
                 elem
             );
+            order_tracker.idKnown(this.id);
             this.items = getItems(elem);
             this.detail_promise = new Promise(
                 function(resolve, reject) {
@@ -206,13 +229,13 @@ let amazon_order_history_order = (function() {
                             vat: vat()
                         };
                     }.bind(this);
-                    const callback = function(order_details) {
-                        resolve(order_details);
-                    };
                     this.request_scheduler.schedule(
                         query,
                         event_converter,
-                        callback,
+                        order_details => {
+                            order_tracker.detailPromiseResolved(this.id);
+                            resolve(order_details)
+                        },
                         this.id
                     );
                 }.bind(this)
@@ -220,6 +243,7 @@ let amazon_order_history_order = (function() {
             this.payments_promise = new Promise(
                 function(resolve, reject) {
                     if (this.id.startsWith("D")) {
+                        order_tracker.paymentsPromiseResolved(this.id);
                         resolve([ this.date + ": " + this.total]);
                     } else {
                         const query = amazon_order_history_util.getOrderPaymentUrl(this.id);
@@ -249,13 +273,13 @@ let amazon_order_history_order = (function() {
                             });
                             return payments;
                         }.bind(this);
-                        const callback = function(payments) {
-                            resolve(payments);
-                        };
                         this.request_scheduler.schedule(
                             query,
                             event_converter,
-                            callback,
+                            payments => {
+                                order_tracker.paymentsPromiseResolved(this.id);
+                                resolve(payments);
+                            },
                             this.id
                         );
                     }
@@ -288,7 +312,7 @@ let amazon_order_history_order = (function() {
         let expected_order_count = null;
         let order_found_callback = null;
         let check_complete_callback = null;
-        let order_promises = [];
+        const order_promises = [];
         const sendGetOrderCount = function() {
             request_scheduler.schedule(
                 generateQueryString(0),
@@ -366,10 +390,8 @@ let amazon_order_history_order = (function() {
         const receiveOrdersPageData = function(orders_page_data) {
             const order_elems = orders_page_data.order_elems;
             function makeOrderPromise(elem) {
-                return new Promise( (resolve, reject) => {
-                    const order = amazon_order_history_order.create(elem, request_scheduler);
-                    resolve(order);
-                });
+                const order = amazon_order_history_order.create(elem, request_scheduler);
+                return Promise.resolve(order);
             }
             order_elems.forEach(
                 elem => order_found_callback( makeOrderPromise(elem) )
@@ -407,7 +429,7 @@ let amazon_order_history_order = (function() {
     }
 
     function fetchYear(year, request_scheduler) {
-        let templates = {
+        const templates = {
             'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
                 '?opt=ab&digitalOrders=1' +
                 '&unifiedOrders=1' +
@@ -491,7 +513,7 @@ let amazon_order_history_order = (function() {
 
         return Promise.all( promises_to_promises )
         .then( array2_of_promise => {
-            let order_promises = [];
+            const order_promises = [];
             array2_of_promise.forEach( promises => {
                 promises.forEach( promise => {
                     order_promises.push(promise);
