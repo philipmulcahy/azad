@@ -234,7 +234,7 @@ const amazon_order_history_order = (function() {
                         event_converter,
                         order_details => {
                             order_tracker.detailPromiseResolved(this.id);
-                            resolve(order_details)
+                            resolve(order_details);
                         },
                         this.id
                     );
