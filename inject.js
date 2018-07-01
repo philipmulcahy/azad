@@ -33,7 +33,7 @@ const amazon_order_history_inject = (function() {
         ).then(
 			orderPromises => {
                 let beautiful = true;
-                if (orderPromises.length >= 50) {
+                if (orderPromises.length >= 500) {
                     beautiful = false;
                     alert('500 or more orders found. That\'s a lot! We\'ll start you off with a plain table to make display faster. You can click the blue "datatable" button to restore sorting, filtering etc.');
                 }
