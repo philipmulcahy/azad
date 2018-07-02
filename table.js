@@ -249,7 +249,7 @@ const amazon_order_history_table = (function() {
                         // Remove the formatting to get integer data for summation
                         const floatVal = function(i) {
                             if(typeof i === 'string') {
-                                return i === 'N/A' ?
+                                return (i === 'N/A' || i === '?') ?
                                     0 : parseFloat(i.replace(/^([£$]|CAD|EUR|GBP) */, '')
                                                     .replace(/,/, '.'));
                             }
@@ -259,19 +259,18 @@ const amazon_order_history_table = (function() {
                         let col_index = 0;
                         cols.forEach( col_spec => {
                             if(col_spec.is_numeric) {
-                                col_spec.sum = floatVal(api
-                                    .column(col_index)
-                                    .data()
-                                    .reduce( (a, b) => {
-                                        return floatVal(a) + floatVal(b);
-                                    }));
-                                col_spec.pageSum = floatVal(api
-                                    .column(col_index, { page: 'current' })
-                                    .data()
-                                    .reduce( (a, b) => {
-                                        return floatVal(a) + floatVal(b);
-                                    }, 0));
-
+                                col_spec.sum = floatVal(
+                                    api.column(col_index)
+                                       .data()
+                                       .map( v => floatVal(v) )
+                                       .reduce( (a, b) => a + b, 0 )
+                                );
+                                col_spec.pageSum = floatVal(
+                                    api.column(col_index, { page: 'current' })
+                                       .data()
+                                       .map( v => floatVal(v) )
+                                       .reduce( (a, b) => a + b, 0 )
+                                );
                                 $(api.column(col_index).footer()).html(
                                     sprintf('page sum=%s; all=%s',
                                         col_spec.pageSum.toFixed(2),
