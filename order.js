@@ -163,7 +163,7 @@ const amazon_order_history_order = (function() {
                         }.bind(this);
                         const postage = function() {
                             let a = getField(
-                                ['Postage', 'Shipping', 'Livraison'].map(
+                                ['Postage', 'Shipping', 'Livraison', 'Delivery'].map(
                                     label => sprintf(
                                         '//div[contains(@id,"od-subtotals")]//' +
                                         'span[contains(text(),"%s")]/' +
