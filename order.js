@@ -534,6 +534,13 @@ const amazon_order_history_order = (function() {
                 '&returnTo=' +
                 '&orderFilter=year-%(year)s' +
                 '&startIndex=%(startOrderPos)s'],
+            'smile.amazon.de': ['https://%(site)s/gp/css/order-history' +
+                '?opt=ab&digitalOrders=1' +
+                '&unifiedOrders=1' +
+                '&returnTo=' +
+                '&orderFilter=year-%(year)s' +
+                '&startIndex=%(startOrderPos)s' +
+                '&language=en_GB'],
             'www.amazon.de': ['https://%(site)s/gp/css/order-history' +
                 '?opt=ab&digitalOrders=1' +
                 '&unifiedOrders=1' +
