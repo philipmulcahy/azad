@@ -312,13 +312,32 @@ const amazon_order_history_order = (function() {
                                 }
                             }
                             return "N/A";
-                        }.bind(this);                        
+                        }.bind(this);
+                        const refund = function () {
+                            let a = getField(
+                                ['Refund'].map( //TODO other field names?
+                                    label => sprintf(
+                                        '//div[contains(@id,"od-subtotals")]//' +
+                                        'span[contains(text(),"%s")]/' +
+                                        'ancestor::div[1]/following-sibling::div/span',
+                                        label
+                                    )
+                                ).join('|'),
+                                doc,
+                                doc.documentElement
+                            );
+                            if (a !== "?") {
+                                return a;
+                            }
+                            return "N/A";
+                        }.bind(this);
                         resolve({
                             postage: postage(),
                             gift: gift(),
                             vat: vat(),
                             gst: cad_gst(),
-                            pst: cad_pst()
+                            pst: cad_pst(),
+                            refund: refund()
                         });
                     }.bind(this);
                     this.request_scheduler.schedule(
