@@ -47,6 +47,7 @@
                 "csv.js",
                 "order.js",
                 "table.js",
+                "moment.js",
                 "inject.js"
             ]
         }
