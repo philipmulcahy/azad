@@ -132,7 +132,7 @@ const amazon_order_history_order = (function() {
                                 doc.documentElement
                             );
                             let b;
-                            if( a !== "?") {
+                            if( a !== '?') {
                                 return a.replace('-', '');
                             }
                             a = getField(
@@ -159,7 +159,7 @@ const amazon_order_history_order = (function() {
                                     return b[1];
                                 }
                             }
-                            return "N/A";
+                            return 'N/A';
                         }.bind(this);
                         const postage = function() {
                             let a = getField(
@@ -174,10 +174,10 @@ const amazon_order_history_order = (function() {
                                 doc,
                                 doc.documentElement
                             );
-                            if (a !== "?") {
+                            if (a !== '?') {
                                 return a;
                             }
-                            return "N/A";
+                            return 'N/A';
                         }.bind(this);
                         const vat = function(){
                             let a = getField(
@@ -192,7 +192,7 @@ const amazon_order_history_order = (function() {
                                 doc,
                                 doc.documentElement
                             );
-                            if( a !== "?") {
+                            if( a !== '?') {
                                 return a;
                             }
                             a = getField(
@@ -221,7 +221,7 @@ const amazon_order_history_order = (function() {
                                     return c[1];
                                 }
                             }
-                            return "N/A";
+                            return 'N/A';
                         }.bind(this);
 
                         const cad_gst = function() {
@@ -237,7 +237,7 @@ const amazon_order_history_order = (function() {
                                 doc,
                                 doc.documentElement
                             );
-                            if( a !== "?") {
+                            if( a !== '?') {
                                 return a;
                             }
                             a = getField(
@@ -266,7 +266,7 @@ const amazon_order_history_order = (function() {
                                     return c[1];
                                 }
                             }
-                            return "N/A";
+                            return 'N/A';
                         }.bind(this);
 
                         const cad_pst = function(){
@@ -282,7 +282,7 @@ const amazon_order_history_order = (function() {
                                 doc,
                                 doc.documentElement
                             );
-                            if( a !== "?") {
+                            if( a !== '?') {
                                 return a;
                             }
                             a = getField(
@@ -311,7 +311,7 @@ const amazon_order_history_order = (function() {
                                     return c[1];
                                 }
                             }
-                            return "N/A";
+                            return 'N/A';
                         }.bind(this);
                         const refund = function () {
                             let a = getField(
@@ -326,10 +326,10 @@ const amazon_order_history_order = (function() {
                                 doc,
                                 doc.documentElement
                             );
-                            if (a !== "?") {
+                            if (a !== '?') {
                                 return a;
                             }
-                            return "N/A";
+                            return 'N/A';
                         }.bind(this);
                         resolve({
                             postage: postage(),
