@@ -112,6 +112,12 @@ const amazon_order_history_table = (function() {
             sites: ['www.amazon.ca', 'smile.amazon.ca'],
         },
         {
+            field_name: 'refund',
+            type: 'detail',
+            property_name: 'refund',
+            is_numeric: true,
+        },
+        {
             field_name: 'payments',
             type: 'payments',
             property_name: 'payments',

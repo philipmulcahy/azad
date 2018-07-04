@@ -132,7 +132,7 @@ const amazon_order_history_order = (function() {
                                 doc.documentElement
                             );
                             let b;
-                            if( a !== "?") {
+                            if( a !== '?') {
                                 return a.replace('-', '');
                             }
                             a = getField(
@@ -159,11 +159,11 @@ const amazon_order_history_order = (function() {
                                     return b[1];
                                 }
                             }
-                            return "N/A";
+                            return 'N/A';
                         }.bind(this);
                         const postage = function() {
                             let a = getField(
-                                ['Postage', 'Shipping', 'Livraison'].map(
+                                ['Postage', 'Shipping', 'Livraison', 'Delivery'].map(
                                     label => sprintf(
                                         '//div[contains(@id,"od-subtotals")]//' +
                                         'span[contains(text(),"%s")]/' +
@@ -174,10 +174,10 @@ const amazon_order_history_order = (function() {
                                 doc,
                                 doc.documentElement
                             );
-                            if (a !== "?") {
+                            if (a !== '?') {
                                 return a;
                             }
-                            return "N/A";
+                            return 'N/A';
                         }.bind(this);
                         const vat = function(){
                             let a = getField(
@@ -192,7 +192,7 @@ const amazon_order_history_order = (function() {
                                 doc,
                                 doc.documentElement
                             );
-                            if( a !== "?") {
+                            if( a !== '?') {
                                 return a;
                             }
                             a = getField(
@@ -221,7 +221,7 @@ const amazon_order_history_order = (function() {
                                     return c[1];
                                 }
                             }
-                            return "N/A";
+                            return 'N/A';
                         }.bind(this);
 
                         const cad_gst = function() {
@@ -237,7 +237,7 @@ const amazon_order_history_order = (function() {
                                 doc,
                                 doc.documentElement
                             );
-                            if( a !== "?") {
+                            if( a !== '?') {
                                 return a;
                             }
                             a = getField(
@@ -266,7 +266,7 @@ const amazon_order_history_order = (function() {
                                     return c[1];
                                 }
                             }
-                            return "N/A";
+                            return 'N/A';
                         }.bind(this);
 
                         const cad_pst = function(){
@@ -282,7 +282,7 @@ const amazon_order_history_order = (function() {
                                 doc,
                                 doc.documentElement
                             );
-                            if( a !== "?") {
+                            if( a !== '?') {
                                 return a;
                             }
                             a = getField(
@@ -311,14 +311,33 @@ const amazon_order_history_order = (function() {
                                     return c[1];
                                 }
                             }
-                            return "N/A";
-                        }.bind(this);                        
+                            return 'N/A';
+                        }.bind(this);
+                        const refund = function () {
+                            let a = getField(
+                                ['Refund'].map( //TODO other field names?
+                                    label => sprintf(
+                                        '//div[contains(@id,"od-subtotals")]//' +
+                                        'span[contains(text(),"%s")]/' +
+                                        'ancestor::div[1]/following-sibling::div/span',
+                                        label
+                                    )
+                                ).join('|'),
+                                doc,
+                                doc.documentElement
+                            );
+                            if (a !== '?') {
+                                return a;
+                            }
+                            return 'N/A';
+                        }.bind(this);
                         resolve({
                             postage: postage(),
                             gift: gift(),
                             vat: vat(),
                             gst: cad_gst(),
-                            pst: cad_pst()
+                            pst: cad_pst(),
+                            refund: refund()
                         });
                     }.bind(this);
                     this.request_scheduler.schedule(
