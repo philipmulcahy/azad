@@ -184,7 +184,9 @@ const amazon_order_history_order = (function() {
                                 ['VAT', 'tax', 'TVA'].map(
                                     label => sprintf(
                                         '//div[contains(@id,"od-subtotals")]//' +
-                                        'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
+                                        'span[contains(text(),"%s") ' +
+                                        'and not(contains(text(),"Before") ' +
+                                        ')]/' +
                                         'parent::div/following-sibling::div/span',
                                         label
                                     )
@@ -223,7 +225,47 @@ const amazon_order_history_order = (function() {
                             }
                             return 'N/A';
                         }.bind(this);
-
+                        const us_tax = function(){
+                            let a = getField(
+                                '//div[contains(@id,"od-subtotals")]//' +
+                                'span[contains(text(),"tax") ' +
+                                'and not(contains(text(),"before") ' +
+                                ')]/' +
+                                'parent::div/following-sibling::div/span',
+                                doc,
+                                doc.documentElement
+                            );
+                            if( a !== '?') {
+                                return a;
+                            }
+                            a = getField(
+                                '//*[text()[contains(.,"tax") and not(contains(.,"before"))]]',
+                                doc,
+                                doc.documentElement
+                            );
+                            if( a !== null ) {
+                                const b = a.match(
+                                    /VAT: *([-$£€0-9.]*)/);
+                                if( b !== null ) {
+                                    return b[1];
+                                }
+                            }
+                            a = getField(
+                                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+                                'span[contains(text(),"tax")]/' +
+                                'parent::div/following-sibling::div/span',
+                                doc,
+                                doc.documentElement
+                            );
+                            if( a !== null ) {
+                                const c = a.match(
+                                    /tax: *([-$£€0-9.]*)/);
+                                if( c !== null ) {
+                                    return c[1];
+                                }
+                            }
+                            return 'N/A';
+                        }.bind(this);
                         const cad_gst = function() {
                             let a = getField(
                                 ['GST', 'HST'].map(
@@ -334,6 +376,7 @@ const amazon_order_history_order = (function() {
                         resolve({
                             postage: postage(),
                             gift: gift(),
+                            us_tax: us_tax(),
                             vat: vat(),
                             gst: cad_gst(),
                             pst: cad_pst(),
