@@ -49,82 +49,89 @@ const amazon_order_history_table = (function() {
                     amazon_order_history_util.getOrderDetailUrl(order.id)
                 );
             },
-            is_numeric: false,
+            is_numeric: false
         },
         {
             field_name: 'items',
             type: 'func',
             func: (order, row) => addElemCell(row, order.itemsHtml(document)),
-            is_numeric: false,
+            is_numeric: false
         },
         {
             field_name: 'to',
             type: 'plain',
             property_name: 'who',
-            is_numeric: false,
+            is_numeric: false
         },
         {
             field_name: 'date',
             type: 'plain',
             property_name: 'date',
-            is_numeric: false,
+            is_numeric: false
         },
         {
             field_name: 'total',
             type: 'plain',
             property_name: 'total',
-            is_numeric: true,
+            is_numeric: true
         },
         {
             field_name: 'postage',
             type: 'detail',
             property_name: 'postage',
             is_numeric: true,
-            help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.',
+            help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.'
         },
         {
             field_name: 'gift',
             type: 'detail',
             property_name: 'gift',
-            is_numeric: true,
+            is_numeric: true
         },
         {
-            // TODO: split this into VAT for EU countries and Tax for US
-            // and get rid of the getSite logic that renames VAT to tax for US only.
             field_name: 'VAT',
             type: 'detail',
             property_name: 'vat',
             is_numeric: true,
             help: 'Caution: when stuff is not supplied by Amazon, then tax is often not listed.',
+            sites: new RegExp('amazon(?!.com)')
+        },
+        {
+            field_name: 'TAX',
+            type: 'detail',
+            property_name: 'us_tax',
+            is_numeric: true,
+            help: 'Caution: when stuff is not supplied by Amazon, then tax is often not listed.',
+            sites: new RegExp('\.com$')
         },
         {
             field_name: 'GST',
             type: 'detail',
             property_name: 'gst',
             is_numeric: true,
-            sites: ['www.amazon.ca', 'smile.amazon.ca'],
+            sites: new RegExp('\.ca$')
         },
         {
             field_name: 'PST',
             type: 'detail',
             property_name: 'pst',
             is_numeric: true,
-            sites: ['www.amazon.ca', 'smile.amazon.ca'],
+            sites: new RegExp('\.ca$')
         },
         {
             field_name: 'refund',
             type: 'detail',
             property_name: 'refund',
-            is_numeric: true,
+            is_numeric: true
         },
         {
             field_name: 'payments',
             type: 'payments',
             property_name: 'payments',
-            is_numeric: false,
-        },
+            is_numeric: false
+        }
     ].filter( col => ('sites' in col) ?
-        amazon_order_history_util.getSite() in col.sites :
+        col.sites.test(amazon_order_history_util.getSite()):
         true
     );
 
@@ -218,16 +225,7 @@ const amazon_order_history_table = (function() {
             const fr = document.createElement('tr');
             tfoot.appendChild(fr);
 
-            const is_us = amazon_order_history_util.getSite().endsWith('\.com');
-
             cols.forEach( col_spec => {
-                const fieldName = col_spec.field_name;
-                if (is_us && fieldName === 'vat') {
-                    col_spec.field_name = 'tax';
-                }
-                if (is_us && fieldName === 'postage') {
-                    col_spec.field_name = 'shipping';
-                }
                 addHeader(hr, col_spec.field_name, col_spec.help);
                 addHeader(fr, col_spec.field_name, col_spec.help);
             });
