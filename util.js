@@ -2,7 +2,7 @@
 /* jshint strict: true, esversion: 6 */
 /* global XPathResult */
 
-var amazon_order_history_util = (function(){
+const amazon_order_history_util = (function(){
     "use strict";
     function getSite() {
         var href = window.location.href;
