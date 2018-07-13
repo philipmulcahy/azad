@@ -17,6 +17,14 @@
     padding-top: 12px;
     padding-bottom: 12px;
     text-align: left;
-    background-color: #4CAF50;
+    background-color: #0000B0;
     color: white;
+}
+
+#results_table .good {
+    background-color: #D0FFD0;
+}
+
+#results_table .bad {
+    background-color: #FFD0D0;
 }

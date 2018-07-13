@@ -27,6 +27,7 @@ const tests = (() => {
                     row.appendChild(result_td);
                     key_td.textContent = key;
                     result_td.textContent = passed;
+                    result_td.setAttribute('class', passed ? 'good' : 'bad');
                 });
         });
     }
