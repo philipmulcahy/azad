@@ -4,8 +4,13 @@
 const date = (() => {
     "use strict";
 
+    function localDateFromMoment(m) {
+        const d = m.toDate();
+        return sprintf('%d-%02d-%02d', d.getYear()+1900, d.getMonth()+1, d.getDate());
+    }
+
     function normalizeDateString(ds) {
-        return moment(ds, ['DD MMM YYYY'], 'fr').toISOString()
+        return localDateFromMoment(moment(ds, ['DD MMM YYYY'], 'fr'));
     }
 
     return {
