@@ -9,8 +9,20 @@ const date = (() => {
         return sprintf('%d-%02d-%02d', d.getYear()+1900, d.getMonth()+1, d.getDate());
     }
 
+    const FORMATS = [
+        {format: 'DD MMM YYYY', locale: 'fr'},
+        {format: 'MMMM DD, YYYY', locale: 'en-gb'},
+        {format: 'MMMM DD, YYYY', locale: 'en'},
+        {format: 'DD MMMM YYYY', locale: 'en'}
+    ];
     function normalizeDateString(ds) {
-        return localDateFromMoment(moment(ds, ['DD MMM YYYY'], 'fr'));
+        const mom = FORMATS.map( rule => moment(ds, rule.format, rule.locale, true) )
+                           .filter( m => m.isValid() )[0];
+        if (!mom) {
+            console.warn('could not parse date: ' + ds);
+            return ds;
+        }
+        return localDateFromMoment(mom);
     }
 
     return {
