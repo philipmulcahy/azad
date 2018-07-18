@@ -4,22 +4,45 @@
 const date_tests = (() => {
     "use strict";
 
-    const fr_locale_test = () => {
-         return date.normalizeDateString('29 mai 2018') == '2018-05-29';
+    const de_test = () => {
+         return (
+             date.normalizeDateString('29 Dezember 2017') == '2017-12-29' &&
+             date.normalizeDateString('29. Dezember 2017') == '2017-12-29'
+         );
     };
 
-    const generic_test = () => {
+    const fr_test = () => {
          return (
-             date.normalizeDateString('October 14, 2016') == '2016-10-14' && // US
-             date.normalizeDateString('15 July 2018') == '2018-07-15' &&     // UK
-             date.normalizeDateString('29 mai 2018') == '2018-05-29'         // FR
+             date.normalizeDateString('29 mai 2018') == '2018-05-29' &&
+             date.normalizeDateString('29. mai 2018') == '2018-05-29'
+         );
+    };
+
+    const it_test = () => {
+         return (
+             date.normalizeDateString('22. luglio 2016') == '2016-07-22'
+         );
+    };
+
+    const uk_test = () => {
+         return (
+             date.normalizeDateString('15 July 2018') == '2018-07-15'
+         );
+    };
+
+    const us_test = () => {
+         return (
+             date.normalizeDateString('October 14, 2016') == '2016-10-14'
          );
     };
 
     return {
-        fr_locale_test: fr_locale_test,
-        generic_test: generic_test
+        de_test: de_test,
+        fr_test: fr_test,
+        it_test: it_test,
+        uk_test: uk_test,
+        us_test: us_test
     };
 })()
 
-tests.register(date_tests);
+tests.register('date', date_tests);
