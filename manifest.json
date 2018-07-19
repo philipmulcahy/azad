@@ -45,6 +45,7 @@
                 "util.js",
                 "request_scheduler.js",
                 "csv.js",
+                "date.js",
                 "order.js",
                 "table.js",
                 "moment.js",
