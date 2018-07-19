@@ -26,7 +26,8 @@ const date_tests = (() => {
 
     const uk_test = () => {
          return (
-             date.normalizeDateString('15 July 2018') == '2018-07-15'
+             date.normalizeDateString('15 July 2018') == '2018-07-15' &&
+             date.normalizeDateString('4 March 2018') == '2018-03-04'
          );
     };
 
