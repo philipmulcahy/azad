@@ -81,16 +81,18 @@ const amazon_order_history_order = (function() {
                 return items;
             };
             const doc = elem.ownerDocument;
-            this.date = getField(
-                ['Commande effectuée', 'Order placed'].map(
-                    label => sprintf(
-                        './/div[contains(span,"%s")]' +
-                        '/../div/span[contains(@class,"value")]',
-                        label
-                    )
-                ).join('|'),
-                doc,
-                elem
+            this.date = date.normalizeDateString(
+                getField(
+                    ['Commande effectuée', 'Order placed'].map(
+                        label => sprintf(
+                            './/div[contains(span,"%s")]' +
+                            '/../div/span[contains(@class,"value")]',
+                            label
+                        )
+                    ).join('|'),
+                    doc,
+                    elem
+                )
             );
             this.total = getField('.//div[contains(span,"Total")]' +
                 '/../div/span[contains(@class,"value")]', doc, elem);
