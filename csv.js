@@ -31,7 +31,7 @@ var amazon_order_history_csv = (function(){
             };
             return row.map(processCell).join(',');
         };
-        var csvFile = tableToArrayOfArrays(table).map(processRow).join('\n');
+        var csvFile = '\ufeff' + tableToArrayOfArrays(table).map(processRow).join('\n');
         var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
         var link = document.createElement("a");
         var url = URL.createObjectURL(blob);
