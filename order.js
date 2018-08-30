@@ -375,7 +375,7 @@ const amazon_order_history_order = (function() {
                             }
                             return 'N/A';
                         }.bind(this);
-                        resolve({
+                        return {
                             postage: postage(),
                             gift: gift(),
                             us_tax: us_tax(),
@@ -383,7 +383,7 @@ const amazon_order_history_order = (function() {
                             gst: cad_gst(),
                             pst: cad_pst(),
                             refund: refund()
-                        });
+                        };
                     }.bind(this);
                     this.request_scheduler.schedule(
                         query,
