@@ -83,7 +83,7 @@ const amazon_order_history_order = (function() {
             const doc = elem.ownerDocument;
             this.date = date.normalizeDateString(
                 getField(
-                    ['Commande effectuée', 'Order placed'].map(
+                    ['Commande effectuée', 'Order placed', 'Ordine effettuato'].map(
                         label => sprintf(
                             './/div[contains(span,"%s")]' +
                             '/../div/span[contains(@class,"value")]',
@@ -102,7 +102,7 @@ const amazon_order_history_order = (function() {
                 this.who = 'N/A';
             }
             this.id = getField(
-                ['Order #', 'commande'].map(
+                ['Order #', 'commande', 'Ordine #'].map(
                     label => sprintf(
                         './/div[contains(@class,"a-row")]' +
                         '[span[contains(@class,"label")]]' +
@@ -128,7 +128,7 @@ const amazon_order_history_order = (function() {
                         const gift = function(){
                             let a = getField(
                                 '//div[contains(@id,"od-subtotals")]//' +
-                                'span[contains(text(),"Gift")]/' +
+                                'span[contains(text(),"Gift") or contains(text(),"Importo Buono Regalo")]/' +
                                     'parent::div/following-sibling::div/span',
                                 doc,
                                 doc.documentElement
@@ -165,7 +165,7 @@ const amazon_order_history_order = (function() {
                         }.bind(this);
                         const postage = function() {
                             let a = getField(
-                                ['Postage', 'Shipping', 'Livraison', 'Delivery'].map(
+                                ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
                                     label => sprintf(
                                         '//div[contains(@id,"od-subtotals")]//' +
                                         'span[contains(text(),"%s")]/' +
@@ -183,11 +183,11 @@ const amazon_order_history_order = (function() {
                         }.bind(this);
                         const vat = function(){
                             let a = getField(
-                                ['VAT', 'tax', 'TVA'].map(
+                                ['VAT', 'tax', 'TVA', 'IVA'].map(
                                     label => sprintf(
                                         '//div[contains(@id,"od-subtotals")]//' +
                                         'span[contains(text(),"%s") ' +
-                                        'and not(contains(text(),"Before") ' +
+                                        'and not(contains(text(),"Before") or contains(text(), "esclusa") ' +
                                         ')]/' +
                                         'parent::div/following-sibling::div/span',
                                         label
