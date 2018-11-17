@@ -11,6 +11,13 @@ const date_tests = (() => {
          );
     };
 
+    const es_test = () => {
+        return (
+            date.normalizeDateString('16 de noviembre de 2018') == '2018-11-16' &&
+            date.normalizeDateString('23 de agosto de 2016') == '2016-08-23' 
+        );
+   };
+
     const fr_test = () => {
          return (
              date.normalizeDateString('29 mai 2018') == '2018-05-29' &&
@@ -39,6 +46,7 @@ const date_tests = (() => {
 
     return {
         de_test: de_test,
+        es_test: es_test,
         fr_test: fr_test,
         it_test: it_test,
         uk_test: uk_test,
