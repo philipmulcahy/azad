@@ -102,7 +102,7 @@ const amazon_order_history_order = (function() {
                 this.who = 'N/A';
             }
             this.id = getField(
-                ['Order #', 'commande', 'Ordine #'].map(
+                ['Order #', 'commande', 'Ordine #', 'Pedido n.º'].map(
                     label => sprintf(
                         './/div[contains(@class,"a-row")]' +
                         '[span[contains(@class,"label")]]' +
