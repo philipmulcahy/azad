@@ -9,7 +9,7 @@ const date = (() => {
         return sprintf('%d-%02d-%02d', d.getYear()+1900, d.getMonth()+1, d.getDate());
     }
 
-    const LOCALES = ['de', 'en', 'en-gb', 'fr', 'it'];
+    const LOCALES = ['de', 'en', 'en-gb', 'es', 'fr', 'it'];
 
     function normalizeDateString(ds) {
         const mom = LOCALES.map( locale => moment(ds, 'LL', locale, true) )

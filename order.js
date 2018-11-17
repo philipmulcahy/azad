@@ -83,7 +83,7 @@ const amazon_order_history_order = (function() {
             const doc = elem.ownerDocument;
             this.date = date.normalizeDateString(
                 getField(
-                    ['Commande effectuée', 'Order placed', 'Ordine effettuato'].map(
+                    ['Commande effectuée', 'Order placed', 'Ordine effettuato', 'Pedido realizado'].map(
                         label => sprintf(
                             './/div[contains(span,"%s")]' +
                             '/../div/span[contains(@class,"value")]',
