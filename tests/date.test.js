@@ -14,7 +14,7 @@ const date_tests = (() => {
     const es_test = () => {
         return (
             date.normalizeDateString('16 de noviembre de 2018') == '2018-11-16' &&
-            date.normalizeDateString('23 de agosto de 2016') == '2016-08-23' 
+            date.normalizeDateString('23 de agosto de 2016') == '2016-08-23'
         );
    };
 
