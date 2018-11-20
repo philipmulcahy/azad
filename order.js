@@ -83,7 +83,7 @@ const amazon_order_history_order = (function() {
             const doc = elem.ownerDocument;
             this.date = date.normalizeDateString(
                 getField(
-                    ['Commande effectuée', 'Order placed', 'Ordine effettuato'].map(
+                    ['Commande effectuée', 'Order placed', 'Ordine effettuato', 'Pedido realizado'].map(
                         label => sprintf(
                             './/div[contains(span,"%s")]' +
                             '/../div/span[contains(@class,"value")]',
@@ -102,7 +102,7 @@ const amazon_order_history_order = (function() {
                 this.who = 'N/A';
             }
             this.id = getField(
-                ['Order #', 'commande', 'Ordine #'].map(
+                ['Order #', 'commande', 'Ordine #', 'Pedido n.º'].map(
                     label => sprintf(
                         './/div[contains(@class,"a-row")]' +
                         '[span[contains(@class,"label")]]' +
@@ -611,6 +611,13 @@ const amazon_order_history_order = (function() {
                 '&startIndex=%(startOrderPos)s' +
                 '&language=en_GB'],
             'www.amazon.de': ['https://%(site)s/gp/css/order-history' +
+                '?opt=ab&digitalOrders=1' +
+                '&unifiedOrders=1' +
+                '&returnTo=' +
+                '&orderFilter=year-%(year)s' +
+                '&startIndex=%(startOrderPos)s' +
+                '&language=en_GB'],
+            'www.amazon.es': ['https://%(site)s/gp/css/order-history' +
                 '?opt=ab&digitalOrders=1' +
                 '&unifiedOrders=1' +
                 '&returnTo=' +
