@@ -11,10 +11,38 @@ const date = (() => {
 
     const LOCALES = ['de', 'en', 'en-gb', 'es', 'fr', 'it'];
 
-    function normalizeDateString(ds) {
-        const mom = LOCALES.map( locale => moment(ds, 'LL', locale, true) )
-                           .filter( m => m.isValid() )[0];
+    const ALT_FORMATS = [
+        {format: 'DD MMM YYYY', locale: 'fr'},
+        {format: 'D MMM YYYY', locale: 'fr'},
+        {format: 'DD. MMM YYYY', locale: 'fr'},
+        {format: 'D. MMM YYYY', locale: 'fr'},
+        {format: 'MMMM DD, YYYY', locale: 'en'},
+        {format: 'DD MMMM YYYY', locale: 'en'},
+        {format: 'D MMMM YYYY', locale: 'en'},
+        {format: 'DD MMMM YYYY', locale: 'de'},
+        {format: 'D MMMM YYYY', locale: 'de'},
+        {format: 'DD. MMMM YYYY', locale: 'de'},
+        {format: 'D. MMMM YYYY', locale: 'de'},
+        {format: 'DD MMMM YYYY', locale: 'it'},
+        {format: 'D MMMM YYYY', locale: 'it'},
+        {format: 'DD. MMMM YYYY', locale: 'it'},
+        {format: 'D. MMMM YYYY', locale: 'it'}
+    ];
 
+    function getMoms(ds) {
+        return LOCALES.map( locale => moment(ds, 'LL', locale, true) ).concat(
+            ALT_FORMATS.map(
+                rule => moment(ds, rule.format, rule.locale, true)
+            )
+        );
+    }
+
+    function  getMom(ds) {
+        return getMoms(ds).filter( m => m.isValid() )[0];
+    }
+
+    function normalizeDateString(ds) {
+        const mom = getMom(ds);
         if (!mom) {
             console.warn('could not parse date: ' + ds);
             return ds;
