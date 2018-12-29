@@ -43,9 +43,11 @@
             "css": ["datatables.css"],
             "js": [
                 "datatables.js",
+				"lzjs.js",
                 "sprintf.js",
                 "util.js",
                 "request_scheduler.js",
+				"cache.js",
                 "csv.js",
                 "date.js",
                 "order.js",
