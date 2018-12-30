@@ -8,7 +8,7 @@ const tests = (() => {
 
     function register(name, test_suite) {
         if (name in test_suites) {
-            throw 'name already registered';
+            throw 'name already registered: ' + name;
         }
         test_suites[name] = test_suite;
     }
@@ -16,11 +16,11 @@ const tests = (() => {
     function runAll(doc) {
         const table = $(doc.body).find('#results_table')[0];
         Object.keys(test_suites).forEach( suite_name => {
+            console.log('found test suite: ' + suite_name);
             const suite = test_suites[suite_name];
             Object.keys(suite)
                 .filter( key => key.endsWith('_test') )
                 .forEach( key => {
-                    console.log('found test suite: ' + key);
                     const test = suite[key];
                     const passed = test();
                     const row = doc.createElement('tr');
