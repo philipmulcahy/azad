@@ -8,7 +8,7 @@ var cachestuff = (function(){
         return (new Date()).getTime();
     }
 
-    reallySet(key, value) {
+    function reallySet(key, value) {
         window.localStorage.setItem(
             key,
             JSON.stringify({
