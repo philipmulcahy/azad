@@ -9,8 +9,16 @@ const cache_tests = (() => {
         return cachestuff.get('test_key') == 'the quick brown fox';
     };
 
+    const fill_test = () => {
+        Array.from(Array(100000).keys()).forEach( i => {
+            cachestuff.set('test_key' + i, 'the quick brown fox');
+        });
+        return true;
+    };
+
     return {
         endtoend_test: endtoend_test,
+        fill_test: fill_test,
     };
 })()
 
