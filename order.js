@@ -492,7 +492,7 @@ const amazon_order_history_order = (function() {
             const d = p.parseFromString(evt.target.responseText, 'text/html');
             const countSpan = amazon_order_history_util.findSingleNodeValue(
                 './/span[@class="num-orders"]', d, d);
-            if (countSpan == null) {
+            if (countSpan === null) {
                 console.warn(
                     'Error: cannot find order count elem in: ' + evt.target.responseText
                 );

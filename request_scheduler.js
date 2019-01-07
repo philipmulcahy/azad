@@ -106,12 +106,12 @@ const amazon_order_history_request_scheduler = (function() {
                 if (child2N < length) {
                     const child2 = this.content[child2N];
                     const child2Score = this.scoreFunction(child2);
-                    if (child2Score < (swap == null ? elemScore : child1Score))
+                    if (child2Score < (swap === null ? elemScore : child1Score))
                         swap = child2N;
                 }
 
                 // No need to swap further, we are done.
-                if (swap == null) break;
+                if (swap === null) break;
 
                 // Otherwise, swap and continue.
                 this.content[n] = this.content[swap];
@@ -206,7 +206,7 @@ const amazon_order_history_request_scheduler = (function() {
             };
             this.updateProgress = function() {
                 const target = document.getElementById('order_reporter_progress');
-                if (target != null) {
+                if (target !== null) {
                     target.textContent = Object.entries(this.statistics())
                                                .map(([k,v]) => {return k + ':' + v;})
                                                .join('; ');
@@ -218,7 +218,7 @@ const amazon_order_history_request_scheduler = (function() {
 
         schedule(query, event_converter, callback, priority) {
             const cached_response = this.cache[query];
-            if (cached_response != undefined) {
+            if (cached_response !== undefined) {
                 console.log('Already had ' + query + ' with ' + this.queue.size());
                 callback(cached_response);
             } else {
