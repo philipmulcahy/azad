@@ -8,9 +8,9 @@ var cachestuff = (function(){
         return (new Date()).getTime();
     }
 
-    function reallySet(key, value) {
+    function reallySet(real_key, value) {
         window.localStorage.setItem(
-            key,
+            real_key,
             JSON.stringify({
                 timestamp: millisNow(),
                 value: value
@@ -19,21 +19,27 @@ var cachestuff = (function(){
     }
 
     function set(key, value) {
+        const real_key = 'AZAD_' + key;
         try {
-            reallySet(key, value);
+            reallySet(real_key, value);
         } catch(error) {
-            console.warn('failed to set: ' + error);
+            console.log('failed to set ' + key + ': ' + error);
             trim();
-            reallySet(key, value);
+            reallySet(real_key, value);
+            console.log('set ' + key + ' on second attempt after trimming cache');
         }
     }
 
     function get(key) {
-        return JSON.parse(window.localStorage.getItem(key)).value;
+        const real_key = 'AZAD_' + key;
+        return JSON.parse(window.localStorage.getItem(real_key)).value;
     }
 
     function trim() {
-        const keys = Object.keys(window.localStorage);
+        console.log('trimming cache');
+        const keys = Object.keys(window.localStorage).filter(
+            key => key.startsWith('AZAD_')
+        );
         const timestamps_by_key = {};
         keys.forEach( key => {
             try {

@@ -10,7 +10,7 @@ const cache_tests = (() => {
     };
 
     const fill_test = () => {
-        Array.from(Array(100000).keys()).forEach( i => {
+        Array.from(Array(10000).keys()).forEach( i => {
             cachestuff.set('test_key' + i, 'the quick brown fox');
         });
         return true;
