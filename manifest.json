@@ -45,6 +45,7 @@
                 "datatables.js",
 				"lzjs.js",
                 "sprintf.js",
+                "dom2json.js",
                 "util.js",
                 "request_scheduler.js",
 				"cache.js",
