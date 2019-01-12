@@ -4,21 +4,26 @@
 const cache_tests = (() => {
     "use strict";
 
-    const endtoend_test = () => {
-        cachestuff.set('test_key', 'the quick brown fox');
-        return cachestuff.get('test_key') == 'the quick brown fox';
+    const endtoendTest = () => {
+        const cache = cachestuff.createCache('TESTENDTOEND');
+        cache.clear();
+        cache.set('test_key', 'the quick brown fox');
+        return cache.get('test_key') == 'the quick brown fox';
     };
 
-    const fill_test = () => {
+    const fillTest = () => {
+        const cache = cachestuff.createCache('TESTFILL');
+        cache.clear();
         Array.from(Array(10000).keys()).forEach( i => {
-            cachestuff.set('test_key' + i, 'the quick brown fox');
+            cache.set('test_key' + i, 'the quick brown fox');
         });
+        cache.clear();
         return true;
     };
 
     return {
-        endtoend_test: endtoend_test,
-        fill_test: fill_test,
+        endtoend_test: endtoendTest,
+        fill_test: fillTest,
     };
 })()
 
