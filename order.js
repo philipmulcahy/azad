@@ -26,7 +26,9 @@ const amazon_order_history_order = (function() {
     const order_tracker = new OrderTracker();
 
     function getField(xpath, doc, elem) {
-        const valueElem = amazon_order_history_util.findSingleNodeValue(xpath, doc, elem);
+        const valueElem = amazon_order_history_util.findSingleNodeValue(
+			xpath, doc, elem
+		);
         try {
             return valueElem.textContent.trim();
         } catch (_) {
@@ -529,10 +531,9 @@ const amazon_order_history_order = (function() {
                 d,
                 ordersElem
             );
-            order_elems.forEach(elem => Object.freeze(elem));
             return {
                 expected_order_count: expected_order_count,
-                order_elems: order_elems,
+                order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
             };
         };
         const receiveOrdersCount = function(orders_page_data) {
@@ -552,7 +553,9 @@ const amazon_order_history_order = (function() {
             }
         };
         const receiveOrdersPageData = function(orders_page_data) {
-            const order_elems = orders_page_data.order_elems;
+            const order_elems = orders_page_data.order_elems.map(
+				elem => dom2json.toDOM(elem)
+		);
             function makeOrderPromise(elem) {
                 const order = amazon_order_history_order.create(elem, request_scheduler);
                 return Promise.resolve(order);

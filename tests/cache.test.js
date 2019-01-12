@@ -21,9 +21,28 @@ const cache_tests = (() => {
         return true;
     };
 
+    const deepSerializationTest = () => {
+        const cache = cachestuff.createCache('TESTDEEPSERIALIZATION');
+        cache.clear();
+        cache.set('X', {
+            'a': {
+                'b': {
+                    'c': {
+                        'd': {
+                            'e': true
+                        },
+                    },
+                },
+            },
+        });
+        const retrieved = cache.get('X');
+        return retrieved.a.b.c.d.e;
+    }
+
     return {
         endtoend_test: endtoendTest,
         fill_test: fillTest,
+        deep_serialization_test: deepSerializationTest,
     };
 })()
 

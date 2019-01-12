@@ -1,7 +1,7 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
-var cachestuff = (function(){
+const cachestuff = (function(){
     "use strict";
 
     function millisNow() {
@@ -48,8 +48,7 @@ var cachestuff = (function(){
                 const packed = JSON.parse(encoded);
                 return packed.value;
             } catch(err) {
-    //            TODO return undefined;
-                return 'XXX';
+                return undefined;
             }
         }
 
@@ -95,7 +94,7 @@ var cachestuff = (function(){
             set: (key, value) => cache.set(key, value),
             get: key => cache.get(key),
             clear: () => cache.clear(),
-            getEntryCount: cache.getRealKeys().length
+            getEntryCount: () => cache.getRealKeys().length
         }
     }
 
