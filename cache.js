@@ -4,6 +4,8 @@
 var cachestuff = (function(){
     "use strict";
 
+    TODO: make it a class, and have named caches - tests are mullering us!
+
     function millisNow() {
         return (new Date()).getTime();
     }
@@ -32,14 +34,29 @@ var cachestuff = (function(){
 
     function get(key) {
         const real_key = 'AZAD_' + key;
-        return JSON.parse(window.localStorage.getItem(real_key)).value;
+        try {
+            const encoded = window.localStorage.getItem(real_key);
+            const packed = JSON.parse(encoded);
+            return packed.value;
+        } catch(err) {
+//            return undefined;
+            return 'XXX';
+        }
+    }
+
+    function getKeys() {
+        return Object.keys(window.localStorage).filter(
+            key => key.startsWith('AZAD_')
+        );
+    }
+
+    function entry_count() {
+        return getKeys().length;
     }
 
     function trim() {
         console.log('trimming cache');
-        const keys = Object.keys(window.localStorage).filter(
-            key => key.startsWith('AZAD_')
-        );
+        const keys = getKeys();
         const timestamps_by_key = {};
         keys.forEach( key => {
             try {
@@ -60,6 +77,7 @@ var cachestuff = (function(){
 
     return {
         set: set,
-        get: get
+        get: get,
+        entry_count: entry_count
     };
 })();

@@ -81,6 +81,9 @@ const amazon_order_history_order = (function() {
                 return items;
             };
             const doc = elem.ownerDocument;
+            if(!doc) {
+                console.warn('TODO - get rid of these');
+            }
             this.date = date.normalizeDateString(
                 getField(
                     ['Commande effectuée', 'Order placed', 'Ordine effettuato', 'Pedido realizado'].map(

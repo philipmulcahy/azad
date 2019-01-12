@@ -125,7 +125,7 @@ const amazon_order_history_request_scheduler = (function() {
         constructor() {
             // chrome allows 6 requests per domain at the same time.
             this.CONCURRENCY = 6;  // Chrome allows 6 connections per server.
-            this.cache = {};
+            this.cache = cachestuff;
             this.queue = new BinaryHeap( item => item.priority );
             this.running_count = 0;
             this.completed_count = 0;
@@ -155,7 +155,7 @@ const amazon_order_history_request_scheduler = (function() {
                     }
                     if ( req.responseURL.includes('/ap/signin?') ) {
                         this.error_count += 1;
-                        console.warn('Got sign-in redirect from: ' + query);
+                        console.log('Got sign-in redirect from: ' + query);
                         if ( !this.signin_warned ) {
                             alert('Amazon Order History Reporter Chrome Extension\n\n' +
                                   'It looks like you might have been logged out of Amazon.\n' +
@@ -188,7 +188,7 @@ const amazon_order_history_request_scheduler = (function() {
                         );
                     }
                     const converted = event_converter(evt);
-                    this.cache[query] = converted;
+                    this.cache.set(query, converted);
                     callback(converted);
                 }.bind(this);
                 this.running_count += 1;
@@ -201,7 +201,7 @@ const amazon_order_history_request_scheduler = (function() {
                     'running' : this.running_count,
                     'completed' : this.completed_count,
                     'errors' : this.error_count,
-                    'cache' : Object.keys(this.cache).length,
+                    'cache' : this.cache.entry_count(),
                 };
             };
             this.updateProgress = function() {
@@ -217,7 +217,7 @@ const amazon_order_history_request_scheduler = (function() {
         }
 
         schedule(query, event_converter, callback, priority) {
-            const cached_response = this.cache[query];
+            const cached_response = this.cache.get(query);
             if (cached_response !== undefined) {
                 console.log('Already had ' + query + ' with ' + this.queue.size());
                 callback(cached_response);
