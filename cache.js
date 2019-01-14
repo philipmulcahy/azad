@@ -9,7 +9,7 @@ const cachestuff = (function(){
     }
 
 
-    class CacheImpl {
+    class LocalCacheImpl {
         constructor(cache_name) {
             this.cache_name = cache_name;
             this.key_stem = 'AZAD_' + this.cache_name + '_';
@@ -24,7 +24,7 @@ const cachestuff = (function(){
                 real_key,
                 JSON.stringify({
                     timestamp: millisNow(),
-                    value: value
+                    value: lzjs.compress(JSON.stringify(value)),
                 })
             );
         }
@@ -36,7 +36,13 @@ const cachestuff = (function(){
             } catch(error) {
                 console.log('failed to set ' + key + ': ' + error);
                 this.trim();
-                this.reallySet(real_key, value);
+				try {
+					this.reallySet(real_key, value);
+				} catch (second_error) {
+					console.warn(
+						'couldn\'t save ' + key + ' to cache on second attempt'
+					);
+				}
                 console.log('set ' + key + ' on second attempt after trimming cache');
             }
         }
@@ -46,7 +52,7 @@ const cachestuff = (function(){
             try {
                 const encoded = window.localStorage.getItem(real_key);
                 const packed = JSON.parse(encoded);
-                return packed.value;
+                return JSON.parse(lzjs.decompress(packed.value));
             } catch(err) {
                 return undefined;
             }
@@ -71,12 +77,15 @@ const cachestuff = (function(){
             });
             const timestamps = Object.values(timestamps_by_key);
             timestamps.sort();
-            const cutoff_timestamp = timestamps[Math.floor(real_keys.length * 0.1)];
+            const cutoff_timestamp = timestamps[Math.floor(real_keys.length * 0.25)];
+			let removed_count = 0;
             Object.keys(timestamps_by_key).forEach( key => {
                 if (timestamps_by_key[key] <= cutoff_timestamp) {
                     window.localStorage.removeItem(key);        
+					++removed_count;
                 }
             });
+			console.log('removed ' + removed_count + ' entries');
         }
 
         clear() {
@@ -88,17 +97,17 @@ const cachestuff = (function(){
     }
 
     
-    const createCache = (cache_name) => {
-        const cache = new CacheImpl(cache_name);
+    const createLocalCache = (cache_name) => {
+        const cache = new LocalCacheImpl(cache_name);
         return {
             set: (key, value) => cache.set(key, value),
             get: key => cache.get(key),
             clear: () => cache.clear(),
             getEntryCount: () => cache.getRealKeys().length
-        }
-    }
+        };
+    };
 
     return {
-        createCache: createCache
+        createLocalCache: createLocalCache
     };
 })();

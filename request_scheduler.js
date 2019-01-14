@@ -125,7 +125,7 @@ const amazon_order_history_request_scheduler = (function() {
         constructor() {
             // chrome allows 6 requests per domain at the same time.
             this.CONCURRENCY = 6;  // Chrome allows 6 connections per server.
-            this.cache = cachestuff.createCache('REQUESTSCHEDULER');
+            this.cache = cachestuff.createLocalCache('REQUESTSCHEDULER');
             this.queue = new BinaryHeap( item => item.priority );
             this.running_count = 0;
             this.completed_count = 0;
@@ -201,7 +201,7 @@ const amazon_order_history_request_scheduler = (function() {
                     'running' : this.running_count,
                     'completed' : this.completed_count,
                     'errors' : this.error_count,
-                    'cache' : this.cache.getEntryCount(),
+                    'cache' : '?' //this.cache.getEntryCount(),
                 };
             };
             this.updateProgress = function() {

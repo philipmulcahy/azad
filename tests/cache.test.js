@@ -5,14 +5,14 @@ const cache_tests = (() => {
     "use strict";
 
     const endtoendTest = () => {
-        const cache = cachestuff.createCache('TESTENDTOEND');
+        const cache = cachestuff.createLocalCache('TESTENDTOEND');
         cache.clear();
         cache.set('test_key', 'the quick brown fox');
         return cache.get('test_key') == 'the quick brown fox';
     };
 
     const fillTest = () => {
-        const cache = cachestuff.createCache('TESTFILL');
+        const cache = cachestuff.createLocalCache('TESTFILL');
         cache.clear();
         Array.from(Array(10000).keys()).forEach( i => {
             cache.set('test_key' + i, 'the quick brown fox');
@@ -22,7 +22,7 @@ const cache_tests = (() => {
     };
 
     const deepSerializationTest = () => {
-        const cache = cachestuff.createCache('TESTDEEPSERIALIZATION');
+        const cache = cachestuff.createLocalCache('TESTDEEPSERIALIZATION');
         cache.clear();
         cache.set('X', {
             'a': {
