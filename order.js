@@ -26,7 +26,9 @@ const amazon_order_history_order = (function() {
     const order_tracker = new OrderTracker();
 
     function getField(xpath, doc, elem) {
-        const valueElem = amazon_order_history_util.findSingleNodeValue(xpath, doc, elem);
+        const valueElem = amazon_order_history_util.findSingleNodeValue(
+			xpath, doc, elem
+		);
         try {
             return valueElem.textContent.trim();
         } catch (_) {
@@ -81,6 +83,9 @@ const amazon_order_history_order = (function() {
                 return items;
             };
             const doc = elem.ownerDocument;
+            if(!doc) {
+                console.warn('TODO - get rid of these');
+            }
             this.date = date.normalizeDateString(
                 getField(
                     ['Commande effectuée', 'Order placed', 'Ordine effettuato', 'Pedido realizado'].map(
@@ -464,7 +469,12 @@ const amazon_order_history_order = (function() {
         }
     }
 
-    function getOrdersForYearAndQueryTemplate(year, query_template, request_scheduler) {
+    function getOrdersForYearAndQueryTemplate(
+        year,
+        query_template,
+        request_scheduler,
+        nocache_top_level
+    ) {
         let expected_order_count = null;
         let order_found_callback = null;
         let check_complete_callback = null;
@@ -474,7 +484,8 @@ const amazon_order_history_order = (function() {
                 generateQueryString(0),
                 convertOrdersPage,
                 receiveOrdersCount,
-                '00000'
+                '00000',
+                nocache_top_level
             );
         };
         const generateQueryString = function(startOrderPos) {
@@ -492,7 +503,7 @@ const amazon_order_history_order = (function() {
             const d = p.parseFromString(evt.target.responseText, 'text/html');
             const countSpan = amazon_order_history_util.findSingleNodeValue(
                 './/span[@class="num-orders"]', d, d);
-            if (countSpan == null) {
+            if (countSpan === null) {
                 console.warn(
                     'Error: cannot find order count elem in: ' + evt.target.responseText
                 );
@@ -526,10 +537,9 @@ const amazon_order_history_order = (function() {
                 d,
                 ordersElem
             );
-            order_elems.forEach(elem => Object.freeze(elem));
             return {
                 expected_order_count: expected_order_count,
-                order_elems: order_elems,
+                order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
             };
         };
         const receiveOrdersCount = function(orders_page_data) {
@@ -549,7 +559,9 @@ const amazon_order_history_order = (function() {
             }
         };
         const receiveOrdersPageData = function(orders_page_data) {
-            const order_elems = orders_page_data.order_elems;
+            const order_elems = orders_page_data.order_elems.map(
+				elem => dom2json.toDOM(elem)
+		);
             function makeOrderPromise(elem) {
                 const order = amazon_order_history_order.create(elem, request_scheduler);
                 return Promise.resolve(order);
@@ -589,7 +601,7 @@ const amazon_order_history_order = (function() {
         );
     }
 
-    function fetchYear(year, request_scheduler) {
+    function fetchYear(year, request_scheduler, nocache_top_level) {
         const templates = {
             'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
                 '?opt=ab&digitalOrders=1' +
@@ -683,7 +695,12 @@ const amazon_order_history_order = (function() {
         }[amazon_order_history_util.getSite()];
 
         const promises_to_promises = templates.map(
-            template => getOrdersForYearAndQueryTemplate(year, template, request_scheduler)
+            template => getOrdersForYearAndQueryTemplate(
+                year,
+                template,
+                request_scheduler,
+                nocache_top_level
+            )
         );
 
         return Promise.all( promises_to_promises )
@@ -699,13 +716,14 @@ const amazon_order_history_order = (function() {
     }
 
     /* Returns array of Order Promise */
-    function getOrdersByYear(years, request_scheduler) {
+    function getOrdersByYear(years, request_scheduler, latest_year) {
         // At return time we may not know how many orders there are, only
         // how many years in which orders have been queried for.
         return Promise.all(
             years.map(
                 function(year) {
-                    return fetchYear(year, request_scheduler);
+                    const nocache_top_level = (year == latest_year);
+                    return fetchYear(year, request_scheduler, nocache_top_level);
                 }
             )
         ).then(
