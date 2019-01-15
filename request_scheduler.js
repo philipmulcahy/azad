@@ -201,7 +201,7 @@ const amazon_order_history_request_scheduler = (function() {
                     'running' : this.running_count,
                     'completed' : this.completed_count,
                     'errors' : this.error_count,
-                    'cache' : '?' //this.cache.getEntryCount(),
+                    'cache_hits' : this.cache.hitCount(),
                 };
             };
             this.updateProgress = function() {
