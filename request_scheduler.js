@@ -106,12 +106,12 @@ const amazon_order_history_request_scheduler = (function() {
                 if (child2N < length) {
                     const child2 = this.content[child2N];
                     const child2Score = this.scoreFunction(child2);
-                    if (child2Score < (swap == null ? elemScore : child1Score))
+                    if (child2Score < (swap === null ? elemScore : child1Score))
                         swap = child2N;
                 }
 
                 // No need to swap further, we are done.
-                if (swap == null) break;
+                if (swap === null) break;
 
                 // Otherwise, swap and continue.
                 this.content[n] = this.content[swap];
@@ -125,7 +125,7 @@ const amazon_order_history_request_scheduler = (function() {
         constructor() {
             // chrome allows 6 requests per domain at the same time.
             this.CONCURRENCY = 6;  // Chrome allows 6 connections per server.
-            this.cache = {};
+            this.cache = cachestuff.createLocalCache('REQUESTSCHEDULER');
             this.queue = new BinaryHeap( item => item.priority );
             this.running_count = 0;
             this.completed_count = 0;
@@ -155,7 +155,7 @@ const amazon_order_history_request_scheduler = (function() {
                     }
                     if ( req.responseURL.includes('/ap/signin?') ) {
                         this.error_count += 1;
-                        console.warn('Got sign-in redirect from: ' + query);
+                        console.log('Got sign-in redirect from: ' + query);
                         if ( !this.signin_warned ) {
                             alert('Amazon Order History Reporter Chrome Extension\n\n' +
                                   'It looks like you might have been logged out of Amazon.\n' +
@@ -188,7 +188,7 @@ const amazon_order_history_request_scheduler = (function() {
                         );
                     }
                     const converted = event_converter(evt);
-                    this.cache[query] = converted;
+                    this.cache.set(query, converted);
                     callback(converted);
                 }.bind(this);
                 this.running_count += 1;
@@ -201,12 +201,12 @@ const amazon_order_history_request_scheduler = (function() {
                     'running' : this.running_count,
                     'completed' : this.completed_count,
                     'errors' : this.error_count,
-                    'cache' : Object.keys(this.cache).length,
+                    'cache_hits' : this.cache.hitCount(),
                 };
             };
             this.updateProgress = function() {
                 const target = document.getElementById('order_reporter_progress');
-                if (target != null) {
+                if (target !== null) {
                     target.textContent = Object.entries(this.statistics())
                                                .map(([k,v]) => {return k + ':' + v;})
                                                .join('; ');
@@ -216,15 +216,17 @@ const amazon_order_history_request_scheduler = (function() {
             this.updateProgress();
         }
 
-        schedule(query, event_converter, callback, priority) {
-            const cached_response = this.cache[query];
-            if (cached_response != undefined) {
+        schedule(query, event_converter, callback, priority, nocache) {
+            const cached_response = nocache ?
+				undefined :
+				this.cache.get(query);
+            if (cached_response !== undefined) {
                 console.log('Already had ' + query + ' with ' + this.queue.size());
                 callback(cached_response);
             } else {
                 console.log('Scheduling ' + query + ' with ' + this.queue.size());
                 if (this.running_count < this.CONCURRENCY) {
-                    this.execute(query, event_converter ,callback, priority);
+                    this.execute(query, event_converter, callback, priority);
                 } else {
                     this.queue.push({
                         'query': query,
