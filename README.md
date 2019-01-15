@@ -6,9 +6,9 @@ https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilaj
 
 Maybe the UID on the end of the URL changes when we publish a new version?
 
-### linting (use npm's jshint linter)
+### linting (uses npm lint tools)
 ```
-node_modules/jshint/bin/jshint csv.js inject.js order.js table.js util.js
+./lint.sh
 ```
 
 ### installing locally on chrome
@@ -18,3 +18,4 @@ node_modules/jshint/bin/jshint csv.js inject.js order.js table.js util.js
 
 ### edit-test-loop
 Remember to refresh/reload both on the extension page and targetted amazon page after saving changes to files.
+Test code can be exercised in the browser by opening ./tests/tests.html
