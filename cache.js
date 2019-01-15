@@ -13,6 +13,7 @@ const cachestuff = (function(){
         constructor(cache_name) {
             this.cache_name = cache_name;
             this.key_stem = 'AZAD_' + this.cache_name + '_';
+			this.hit_count = 0;
         }
 
         buildRealKey(key) {
@@ -52,11 +53,16 @@ const cachestuff = (function(){
             try {
                 const encoded = window.localStorage.getItem(real_key);
                 const packed = JSON.parse(encoded);
+				++this.hit_count;
                 return JSON.parse(lzjs.decompress(packed.value));
             } catch(err) {
                 return undefined;
             }
         }
+
+		hitCount() {
+			return this.hit_count;
+		}
 
         getRealKeys() {
             return Object.keys(window.localStorage).filter(
@@ -103,7 +109,7 @@ const cachestuff = (function(){
             set: (key, value) => cache.set(key, value),
             get: key => cache.get(key),
             clear: () => cache.clear(),
-            getEntryCount: () => cache.getRealKeys().length
+            hitCount: () => cache.hitCount(),
         };
     };
 
