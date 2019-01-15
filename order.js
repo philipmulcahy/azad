@@ -469,7 +469,12 @@ const amazon_order_history_order = (function() {
         }
     }
 
-    function getOrdersForYearAndQueryTemplate(year, query_template, request_scheduler) {
+    function getOrdersForYearAndQueryTemplate(
+        year,
+        query_template,
+        request_scheduler,
+        nocache_top_level
+    ) {
         let expected_order_count = null;
         let order_found_callback = null;
         let check_complete_callback = null;
@@ -479,7 +484,8 @@ const amazon_order_history_order = (function() {
                 generateQueryString(0),
                 convertOrdersPage,
                 receiveOrdersCount,
-                '00000'
+                '00000',
+                nocache_top_level
             );
         };
         const generateQueryString = function(startOrderPos) {
@@ -595,7 +601,7 @@ const amazon_order_history_order = (function() {
         );
     }
 
-    function fetchYear(year, request_scheduler) {
+    function fetchYear(year, request_scheduler, nocache_top_level) {
         const templates = {
             'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
                 '?opt=ab&digitalOrders=1' +
@@ -689,7 +695,12 @@ const amazon_order_history_order = (function() {
         }[amazon_order_history_util.getSite()];
 
         const promises_to_promises = templates.map(
-            template => getOrdersForYearAndQueryTemplate(year, template, request_scheduler)
+            template => getOrdersForYearAndQueryTemplate(
+                year,
+                template,
+                request_scheduler,
+                nocache_top_level
+            )
         );
 
         return Promise.all( promises_to_promises )
@@ -705,13 +716,14 @@ const amazon_order_history_order = (function() {
     }
 
     /* Returns array of Order Promise */
-    function getOrdersByYear(years, request_scheduler) {
+    function getOrdersByYear(years, request_scheduler, latest_year) {
         // At return time we may not know how many orders there are, only
         // how many years in which orders have been queried for.
         return Promise.all(
             years.map(
                 function(year) {
-                    return fetchYear(year, request_scheduler);
+                    const nocache_top_level = (year == latest_year);
+                    return fetchYear(year, request_scheduler, nocache_top_level);
                 }
             )
         ).then(
