@@ -216,8 +216,10 @@ const amazon_order_history_request_scheduler = (function() {
             this.updateProgress();
         }
 
-        schedule(query, event_converter, callback, priority) {
-            const cached_response = this.cache.get(query);
+        schedule(query, event_converter, callback, priority, nocache) {
+            const cached_response = nocache ?
+				undefined :
+				this.cache.get(query);
             if (cached_response !== undefined) {
                 console.log('Already had ' + query + ' with ' + this.queue.size());
                 callback(cached_response);

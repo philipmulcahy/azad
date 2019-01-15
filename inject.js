@@ -29,7 +29,9 @@ const amazon_order_history_inject = (function() {
 
     function fetchAndShowOrders(years) {
 		amazon_order_history_order.getOrdersByYear(
-            years, request_scheduler
+            years,
+            request_scheduler,
+            getYears()[0]
         ).then(
 			orderPromises => {
                 let beautiful = true;
