@@ -244,6 +244,9 @@ const amazon_order_history_table = (function() {
         const table = addOrderTable(orders);
         if(beautiful) {
             $(document).ready( () => {
+                if (datatable) {
+                    datatable.destroy();
+                }
                 datatable = $('#order_table').DataTable({
                     'bPaginate': true,
                     'lengthMenu': [ [10, 25, 50, 100, -1],

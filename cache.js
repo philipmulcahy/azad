@@ -8,7 +8,6 @@ const cachestuff = (function(){
         return (new Date()).getTime();
     }
 
-
     class LocalCacheImpl {
         constructor(cache_name) {
             this.cache_name = cache_name;
