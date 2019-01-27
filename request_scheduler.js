@@ -237,6 +237,10 @@ const amazon_order_history_request_scheduler = (function() {
                 }
             }
         }
+
+        clearCache() {
+            this.cache.clear();
+        }
     }
 
     return {

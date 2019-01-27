@@ -99,6 +99,9 @@ const amazon_order_history_order = (function() {
                     elem
                 )
             );
+            // This field is no longer always available, particularly for .com
+            // We replace it (where we know the search pattern for the country) 
+            // with information from the order detail page.
             this.total = getField('.//div[contains(span,"Total")]' +
                 '/../div/span[contains(@class,"value")]', doc, elem);
             this.who = getField('.//div[contains(@class,"recipient")]' +
@@ -130,6 +133,23 @@ const amazon_order_history_order = (function() {
                         const doc = parser.parseFromString(
                             evt.target.responseText, 'text/html'
                         );
+                        const total = function(){
+                            let a = getField(
+                                '//div[contains(@id,"od-subtotals")]//' +
+                                'span[contains(text(),"Grand Total") ' + 
+                                'or contains(text(),"Montant total TTC")' +
+                                'or contains(text(),"Total général du paiement")' +
+                                ']/parent::div/following-sibling::div/span',
+                                doc,
+                                doc.documentElement
+                            );
+                            if( a !== '?') {
+                                return a.replace('-', '');
+                            }
+                            // Fall back on any total we might have got from
+                            // the summary page.
+                            return this.total;
+                        }.bind(this);
                         const gift = function(){
                             let a = getField(
                                 '//div[contains(@id,"od-subtotals")]//' +
@@ -381,6 +401,7 @@ const amazon_order_history_order = (function() {
                             return 'N/A';
                         }.bind(this);
                         return {
+                            total: total(),
                             postage: postage(),
                             gift: gift(),
                             us_tax: us_tax(),
