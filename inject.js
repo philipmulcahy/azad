@@ -68,6 +68,15 @@ const amazon_order_history_inject = (function() {
         });
     }
 
+    function addClearCacheButton() {
+        amazon_order_history_util.addButton(
+            'clear cache',
+            () => {
+                request_scheduler.clearCache();
+            }
+        );
+    }
+
     function addInfoPoints() {
         const progress = document.createElement('div');
         progress.setAttribute('id', 'order_reporter_progress');
@@ -82,5 +91,6 @@ const amazon_order_history_inject = (function() {
 
     console.log('Amazon Order History Reporter starting');
     addYearButtons();
+    addClearCacheButton();
     addInfoPoints();
 })();
