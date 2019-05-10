@@ -123,6 +123,13 @@ const amazon_order_history_order = (function() {
                 doc,
                 elem
             );
+            if (this.id =='?') {
+                this.id = amazon_order_history_util.findSingleNodeValue(
+                    '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
+                    doc,
+                    elem
+                ).getAttribute('href').match(/.*orderID=([^?]*)/)[1];
+            }
             order_tracker.idKnown(this.id);
             this.items = getItems(elem);
             this.detail_promise = new Promise(
@@ -136,19 +143,29 @@ const amazon_order_history_order = (function() {
                         const total = function(){
                             let a = getField(
                                 '//div[contains(@id,"od-subtotals")]//' +
-                                'span[contains(text(),"Grand Total") ' + 
+                                '*[contains(text(),"Grand Total") ' + 
                                 'or contains(text(),"Montant total TTC")' +
                                 'or contains(text(),"Total général du paiement")' +
                                 ']/parent::div/following-sibling::div/span',
                                 doc,
                                 doc.documentElement
                             );
-                            if( a !== '?') {
-                                return a.replace('-', '');
+                            if( a == '?') {
+                                a = getField(
+                                    '//*[contains(text(),"Grand Total:") ' + 
+                                    'or contains(text(),"Montant total TTC:")' +
+                                    'or contains(text(),"Total général du paiement:")' +
+                                    ']',
+                                    doc,
+                                    doc.documentElement
+                                ).split(':')[1];
                             }
-                            // Fall back on any total we might have got from
-                            // the summary page.
-                            return this.total;
+                            if( a == '?' ) {
+                                // Fall back on any total we might have got from
+                                // the summary page.
+                                return this.total;
+                            }
+                            return a.replace('-', '');
                         }.bind(this);
                         const gift = function(){
                             let a = getField(
