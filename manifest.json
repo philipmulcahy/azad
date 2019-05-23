@@ -16,7 +16,8 @@
         "https://www.amazon.fr/",
         "https://www.amazon.in/",
         "https://smile.amazon.it/",
-        "https://www.amazon.it/"
+        "https://www.amazon.it/",
+        "https://www.amazon.au/"        
     ],
     "background": {
         "scripts": [
@@ -38,17 +39,18 @@
                 "https://www.amazon.fr/*",
                 "https://www.amazon.in/*",
                 "https://smile.amazon.it/*",
-                "https://www.amazon.it/*"
+                "https://www.amazon.it/*",
+                "https://www.amazon.au/*"  
             ],
             "css": ["datatables.css"],
             "js": [
                 "datatables.js",
-				"lzjs.js",
+                "lzjs.js",
                 "sprintf.js",
                 "dom2json.js",
                 "util.js",
                 "request_scheduler.js",
-				"cache.js",
+                "cache.js",
                 "csv.js",
                 "date.js",
                 "order.js",
