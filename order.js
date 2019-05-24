@@ -310,6 +310,7 @@ const amazon_order_history_order = (function() {
                             }
                             return 'N/A';
                         }.bind(this);
+
                         const cad_gst = function() {
                             let a = getField(
                                 ['GST', 'HST'].map(
@@ -653,7 +654,7 @@ const amazon_order_history_order = (function() {
                 '&returnTo=' +
                 '&orderFilter=year-%(year)s' +
                 '&startIndex=%(startOrderPos)s'],
-           'www.amazon.co.au': ['https://%(site)s/gp/css/order-history' +
+           'www.amazon.com.au': ['https://%(site)s/gp/css/order-history' +
                 '?opt=ab&digitalOrders=1' +
                 '&unifiedOrders=1' +
                 '&returnTo=' +
