@@ -19,6 +19,8 @@ const date = (() => {
         {format: 'MMMM DD, YYYY', locale: 'en'},
         {format: 'DD MMMM YYYY', locale: 'en'},
         {format: 'D MMMM YYYY', locale: 'en'},
+        {format: 'D MMM. YYYY', locale: 'en'},
+        {format: 'DD MMM. YYYY', locale: 'en'},
         {format: 'DD MMMM YYYY', locale: 'de'},
         {format: 'D MMMM YYYY', locale: 'de'},
         {format: 'DD. MMMM YYYY', locale: 'de'},

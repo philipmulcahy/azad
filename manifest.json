@@ -51,6 +51,7 @@
 				"cache.js",
                 "csv.js",
                 "date.js",
+                "extraction.js",
                 "order.js",
                 "table.js",
                 "moment.js",

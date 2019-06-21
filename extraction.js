@@ -9,7 +9,6 @@ const amazon_order_history_extraction = (function() {
         try {
             a = amazon_order_history_util.findSingleNodeValue(
                 xpath,
-                elem.ownerDocument,
                 elem
             );
         } catch (ex){

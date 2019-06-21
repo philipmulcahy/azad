@@ -65,9 +65,9 @@ const amazon_order_history_table = (function() {
         },
         {
             field_name: 'date',
-            type: 'plain',
+            type: 'detail',
             property_name: 'date',
-            is_numeric: false
+            is_numeric: false,
         },
         {
             field_name: 'total',
