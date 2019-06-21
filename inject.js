@@ -12,8 +12,8 @@ const amazon_order_history_inject = (function() {
             console.log('getYears() needs to do something');
 			const snapshot = amazon_order_history_util.findMultipleNodeValues(
 				'//select[@name=\"orderFilter\"]/option[@value]',
-				document,
-				document);
+				document.documentElement
+            );
 			getYears.years = snapshot.map( elem => {
                 return elem.textContent
                            .replace('en', '')  // amazon.fr
