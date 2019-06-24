@@ -138,23 +138,17 @@ const amazon_order_history_order = (function() {
                             evt.target.responseText, 'text/html'
                         );
                         const order_date = function(){
-                            let a = amazon_order_history_extraction.by_regex(
-                                '//*[contains(@class,"order-date-invoice-item")]/text()',
-                                /Ordered on (.*)/,
+                            const a = amazon_order_history_extraction.by_regex(
+                                [
+                                    '//*[contains(@class,"order-date-invoice-item")]/text()',
+                                    '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',
+                                ],
+                                /(?:Ordered on|Digital Order:) (.*)/i,
                                 doc.documentElement
                             );
                             if (a) {
                                 return date.normalizeDateString(a);
                             }
-                            a = amazon_order_history_extraction.by_regex(
-                                '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',
-                                /Digital Order: (.*)/,
-                                doc.documentElement
-                            );
-                            if (a) {
-                                return date.normalizeDateString(a);
-                            }
-                            // fall back
                             return this.date;
                         }.bind(this);
                         const total = function(){
@@ -261,47 +255,25 @@ const amazon_order_history_order = (function() {
                             return a;
                         }.bind(this);
                         const us_tax = function(){
-                            let a = amazon_order_history_extraction.by_regex(
-                                '//div[contains(@id,"od-subtotals")]//' +
-                                'span[contains(text(),"tax") ' +
-                                'and not(contains(text(),"before") ' +
-                                ')]/' +
-                                'parent::div/following-sibling::div/span',
-                                /.*/,
-                                doc.documentElement
-                            );
-                            if (a) {
-                                return a;
-                            }
-                            a = amazon_order_history_extraction.by_regex(
-                                '//*[text()[contains(.,"tax") and not(contains(.,"before"))]]',
-                                /VAT: *([-$£€0-9.]*)/,
-                                doc.documentElement
-                            );
-                            if (a) {
-                                return a;
-                            }
-                            a = amazon_order_history_extraction.by_regex(
-                                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
-                                'span[contains(text(),"tax")]/' +
-                                'parent::div/following-sibling::div/span',
-                                /tax: *([-$£€0-9.]*)/,
-                                doc.documentElement
-                            );
-                            if (a) {
-                                return a;
-                            }
-                            a = amazon_order_history_extraction.by_regex(
-                                '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "Tax Collected: ")]]',
-                                /Tax Collected: *([-$£€0-9.]*)/,
-                                doc.documentElement
-                            );
-                            if (a) {
-                                return a;
-                            }
-                            a = amazon_order_history_extraction.by_regex(
-                                '//*[contains(text(), "tax to be collected")]/parent::*/following-sibling::*/descendant::*/text()',
-                                /(.*)/,
+                            const a = amazon_order_history_extraction.by_regex(
+                                [
+                                    '//div[contains(@id,"od-subtotals")]//' +
+                                    'span[contains(text(),"tax") ' +
+                                    'and not(contains(text(),"before") ' +
+                                    ')]/' +
+                                    'parent::div/following-sibling::div/span',
+
+                                    '//*[text()[contains(.,"tax") and not(contains(.,"before"))]]',
+
+                                    '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+                                    'span[contains(text(),"tax")]/' +
+                                    'parent::div/following-sibling::div/span',
+
+                                    '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "Tax Collected: ")]]',
+
+                                    '//*[contains(text(), "tax to be collected")]/parent::*/following-sibling::*/descendant::*/text()'
+                                ],
+                                /(?:vat:|tax:|tax collected:)? *((?:GBP |USD |CAD |EUR |AUD)?[-$£€0-9.]*)/i,
                                 doc.documentElement
                             );
                             if (a) {

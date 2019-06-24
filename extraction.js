@@ -4,21 +4,25 @@
 const amazon_order_history_extraction = (function() {
     "use strict";
 
-    const by_regex = function(xpath, regex, elem) {
-        let a;
-        try {
-            a = amazon_order_history_util.findSingleNodeValue(
-                xpath,
-                elem
-            );
-        } catch (ex){
-            console.warn('got ' + ex + ' when evaluating ' + xpath); 
-            return null;
-        }
-        if( a !== null ) {
-            const match = a.textContent.trim().match(regex);
-            if( match !== null ) {
-                return match[1];
+    const by_regex = function(xpaths, regex, elem) {
+        let i;
+        for ( i=0; i!=xpaths.length; i++ ) {
+            let a;
+            const xpath = xpaths[i];
+            try {
+                a = amazon_order_history_util.findSingleNodeValue(
+                    xpath,
+                    elem
+                );
+            } catch (ex) {
+                console.warn('got ' + ex + ' when evaluating ' + xpath); 
+                return null;
+            }
+            if (a !== null) {
+                const match = a.textContent.trim().match(regex);
+                if (match !== null) {
+                    return match[1];
+                }
             }
         }
         return null;
