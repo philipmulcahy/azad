@@ -24,6 +24,17 @@ const amazon_order_history_extraction = (function() {
         return null;
     };
 
+    function getField(xpath, elem) {
+        const valueElem = amazon_order_history_util.findSingleNodeValue(
+			xpath, elem
+		);
+        try {
+            return valueElem.textContent.trim();
+        } catch (_) {
+            return undefined;
+        }
+    }
+
     const payments_from_invoice = function(doc) {
         // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
         const strategy_1 = () => {
@@ -82,7 +93,29 @@ const amazon_order_history_extraction = (function() {
         return [];
     };
 
+    const best_match = function(
+        patterns,
+        default_value,
+        element
+    ){
+        if (!Array.isArray(patterns)) {
+            const msg = 'patterns isn\'t an array: ' + patterns;
+            console.error(msg);
+            throw msg;
+        }
+        let i;
+        for (i = 0; i < patterns.length; i++) { 
+            const pattern = patterns[i];
+            const a = getField(pattern, element);
+            if (typeof(a) != 'undefined') {
+                return a;
+            }
+        }
+        return default_value;
+    };
+
     return {
+        best_match: best_match,
         by_regex: by_regex,
         payments_from_invoice: payments_from_invoice
     };

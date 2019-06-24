@@ -82,7 +82,8 @@ const amazon_order_history_inject = (function() {
         progress.setAttribute('id', 'order_reporter_progress');
         progress.setAttribute('class', 'order_reporter_progress');
         progress.setAttribute(
-            'style', 'position:absolute; top:0; right:0; color:orange; padding:0.2em; font-size:75%');
+            'style',
+            'position:absolute; top:0; right:0; color:orange; padding:0.2em; font-size:75%; z-index:-1;');
         document.body.insertBefore(
             progress,
             document.body.firstChild

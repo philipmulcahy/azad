@@ -158,81 +158,63 @@ const amazon_order_history_order = (function() {
                             return this.date;
                         }.bind(this);
                         const total = function(){
-                            let a = getField(
-                                '//div[contains(@id,"od-subtotals")]//' +
-                                '*[contains(text(),"Grand Total") ' + 
-                                'or contains(text(),"Montant total TTC")' +
-                                'or contains(text(),"Total général du paiement")' +
-                                ']/parent::div/following-sibling::div/span',
-                                doc.documentElement
-                            );
-                            if( a == '?') {
-                                a = getField(
+                            return amazon_order_history_extraction.best_match(
+                                [
+                                    '//div[contains(@id,"od-subtotals")]//' +
+                                    '*[contains(text(),"Grand Total") ' + 
+                                    'or contains(text(),"Montant total TTC")' +
+                                    'or contains(text(),"Total général du paiement")' +
+                                    ']/parent::div/following-sibling::div/span',
+
                                     '//*[contains(text(),"Grand Total:") ' + 
+                                    'or contains(text(),"Total for this order:")' +
                                     'or contains(text(),"Montant total TTC:")' +
                                     'or contains(text(),"Total général du paiement:")' +
                                     ']',
-                                    doc.documentElement
-                                ).split(':')[1];
-                            }
-                            if( a == '?' || typeof(a) == 'undefined' ) {
-                                // Fall back on any total we might have got from
-                                // the summary page.
-                                return this.total;
-                            }
-                            return a.replace('-', '');
+                                ],
+                                this.total,
+                                doc.documentElement
+                            ).replace(/.*: /, '').replace('-', '');
                         }.bind(this);
                         const gift = function(){
-                            let a = getField(
-                                '//div[contains(@id,"od-subtotals")]//' +
-                                'span[contains(text(),"Gift") or contains(text(),"Importo Buono Regalo")]/' +
+                            const a = amazon_order_history_extraction.best_match(
+                                [
+                                    '//div[contains(@id,"od-subtotals")]//' +
+                                    'span[contains(text(),"Gift") or contains(text(),"Importo Buono Regalo")]/' +
                                     'parent::div/following-sibling::div/span',
+                                
+                                    '//*[text()[contains(.,"Gift Certificate")]]',
+
+                                    '//*[text()[contains(.,"Gift Card")]]',
+                                ],
+                                null,
                                 doc.documentElement
                             );
-                            let b;
-                            if( a !== '?') {
+                            if (a !== null) {
+                                const b = a.match(
+                                    /Gift (?:Certificate|Card) Amount: *([$£€0-9.]*)/);
+                                if( b !== null ) {
+                                    return b[1];
+                                }
                                 return a.replace('-', '');
-                            }
-                            a = getField(
-                                '//*[text()[contains(.,"Gift Certificate")]]',
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                b = a.match(
-                                    /Gift Certificate.Card Amount: *([$£€0-9.]*)/);
-                                if( b !== null ) {
-                                    return b[1];
-                                }
-                            }
-                            a = getField(
-                                '//*[text()[contains(.,"Gift Card")]]',
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                b = a.match(
-                                    /Gift Card Amount: *([$£€0-9.]*)/);
-                                if( b !== null ) {
-                                    return b[1];
-                                }
                             }
                             return 'N/A';
                         }.bind(this);
                         const postage = function() {
-                            let a = getField(
-                                ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
-                                    label => sprintf(
-                                        '//div[contains(@id,"od-subtotals")]//' +
-                                        'span[contains(text(),"%s")]/' +
-                                        'parent::div/following-sibling::div/span',
-                                        label
-                                    )
-                                ).join('|'),
+                            return amazon_order_history_extraction.best_match(
+                                [
+                                    ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
+                                        label => sprintf(
+                                            '//div[contains(@id,"od-subtotals")]//' +
+                                            'span[contains(text(),"%s")]/' +
+                                            'parent::div/following-sibling::div/span',
+                                            label
+                                        )
+                                    ).join('|')
+                                ],
+                                'N/A',
                                 doc.documentElement
                             );
-                            if (a !== '?') {
-                                return a;
-                            }
-                            return 'N/A';
                         }.bind(this);
                         const vat = function(){
                             let a = getField(
