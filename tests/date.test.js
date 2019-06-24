@@ -38,6 +38,13 @@ const date_tests = (() => {
          );
     };
 
+    const au_test = () => {
+         return (
+             date.normalizeDateString('15 July 2018') == '2018-07-15' &&
+             date.normalizeDateString('4 March 2018') == '2018-03-04'
+         );
+    };
+
     const us_test = () => {
          return (
              date.normalizeDateString('October 14, 2016') == '2016-10-14'
@@ -50,6 +57,7 @@ const date_tests = (() => {
         fr_test: fr_test,
         it_test: it_test,
         uk_test: uk_test,
+        au_test: au_test
         us_test: us_test
     };
 })()
