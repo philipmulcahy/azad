@@ -51,13 +51,17 @@ const amazon_order_history_util = (function(){
 	}
 
     function findSingleNodeValue(xpath, elem) {
-        return elem.ownerDocument.evaluate(
-            xpath,
-            elem,
-            null,
-            XPathResult.FIRST_ORDERED_NODE_TYPE,
-            null
-        ).singleNodeValue;
+        try {
+            return elem.ownerDocument.evaluate(
+                xpath,
+                elem,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue;
+        } catch (ex) {
+            console.warn('findSingleNodeValue blew up with: ' + xpath);
+        }
     }
 
     function findMultipleNodeValues(xpath, elem) {
