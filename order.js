@@ -196,7 +196,9 @@ const amazon_order_history_order = (function() {
                                 if( b !== null ) {
                                     return b[1];
                                 }
-                                return a.replace('-', '');
+                                if (/\d/.test(a)) {
+                                    return a.replace('-', '');
+                                }
                             }
                             return 'N/A';
                         }.bind(this);
@@ -217,58 +219,46 @@ const amazon_order_history_order = (function() {
                             );
                         }.bind(this);
                         const vat = function(){
-                            let a = getField(
-                                ['VAT', 'tax', 'TVA', 'IVA'].map(
-                                    label => sprintf(
-                                        '//div[contains(@id,"od-subtotals")]//' +
-                                        'span[contains(text(),"%s") ' +
-                                        'and not(contains(text(),"Before") or contains(text(), "esclusa") ' +
-                                        ')]/' +
-                                        'parent::div/following-sibling::div/span',
-                                        label
-                                    )
-                                ).join('|'),
+                            const a = amazon_order_history_extraction.best_match(
+                                [
+                                    ['VAT', 'tax', 'TVA', 'IVA'].map(
+                                        label => sprintf(
+                                            '//div[contains(@id,"od-subtotals")]//' +
+                                            'span[contains(text(),"%s") ' +
+                                            'and not(contains(text(),"Before") or contains(text(), "esclusa") ' +
+                                            ')]/' +
+                                            'parent::div/following-sibling::div/span',
+                                            label
+                                        )
+                                    ).join('|'),
+                                    ['VAT', 'tax', 'TVA', 'IVA'].map(
+                                        label => sprintf(
+                                            '//div[contains(@id,"od-subtotals")]//' +
+                                            'span[contains(text(),"%s") ' +
+                                            'and not(contains(text(),"Before") or contains(text(), "esclusa") ' +
+                                            ')]/' +
+                                            'parent::div/following-sibling::div/span',
+                                            label
+                                        )
+                                    ).join('|'),
+                                    '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+                                    'span[contains(text(),"VAT")]/' +
+                                    'parent::div/following-sibling::div/span',
+
+                                    '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "Vat: ")]]',
+                                ],
+                                'N/A',
                                 doc.documentElement
                             );
-                            if( a !== '?') {
-                                return a;
-                            }
-                            a = getField(
-                                '//*[text()[contains(.,"VAT") and not(contains(.,"Before"))]]',
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
+                            if( a != null ) {
                                 const b = a.match(
-                                    /VAT: *([-$£€0-9.]*)/);
+                                    /VAT: *([-$£€0-9.]*)/i
+                                );
                                 if( b !== null ) {
                                     return b[1];
                                 }
                             }
-                            a = getField(
-                                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
-                                'span[contains(text(),"VAT")]/' +
-                                'parent::div/following-sibling::div/span',
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                const c = a.match(
-                                    /VAT: *([-$£€0-9.]*)/);
-                                if( c !== null ) {
-                                    return c[1];
-                                }
-                            }
-                            a = amazon_order_history_util.findSingleNodeValue(
-                                '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "Vat: ")]]',
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                const d = a.textContent.match(
-                                    /Vat: *([-$£€0-9.]*)/);
-                                if( d !== null ) {
-                                    return d[1];
-                                }
-                            }
-                            return 'N/A';
+                            return a;
                         }.bind(this);
                         const us_tax = function(){
                             let a = amazon_order_history_extraction.by_regex(
