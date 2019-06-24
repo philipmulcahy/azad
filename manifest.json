@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "Amazon Order History Reporter",
     "description": "This extension extracts order history from your Amazon account.",
-    "version": "1.8.22",
+    "version": "1.8.23",
     "permissions": [
         "https://smile.amazon.ca/",
         "https://www.amazon.ca/",
@@ -16,7 +16,8 @@
         "https://www.amazon.fr/",
         "https://www.amazon.in/",
         "https://smile.amazon.it/",
-        "https://www.amazon.it/"
+        "https://www.amazon.it/",
+        "https://www.amazon.com.au/"        
     ],
     "background": {
         "scripts": [
@@ -38,17 +39,18 @@
                 "https://www.amazon.fr/*",
                 "https://www.amazon.in/*",
                 "https://smile.amazon.it/*",
-                "https://www.amazon.it/*"
+                "https://www.amazon.it/*",
+                "https://www.amazon.com.au/*"  
             ],
             "css": ["datatables.css"],
             "js": [
                 "datatables.js",
-				"lzjs.js",
+                "lzjs.js",
                 "sprintf.js",
                 "dom2json.js",
                 "util.js",
                 "request_scheduler.js",
-				"cache.js",
+                "cache.js",
                 "csv.js",
                 "date.js",
                 "extraction.js",
