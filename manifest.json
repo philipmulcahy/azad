@@ -17,7 +17,7 @@
         "https://www.amazon.in/",
         "https://smile.amazon.it/",
         "https://www.amazon.it/",
-        "https://www.amazon.com.au/"        
+        "https://www.amazon.com.au/"
     ],
     "background": {
         "scripts": [
@@ -40,7 +40,7 @@
                 "https://www.amazon.in/*",
                 "https://smile.amazon.it/*",
                 "https://www.amazon.it/*",
-                "https://www.amazon.com.au/*"  
+                "https://www.amazon.com.au/*"
             ],
             "css": ["datatables.css"],
             "js": [

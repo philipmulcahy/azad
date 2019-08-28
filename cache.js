@@ -86,7 +86,7 @@ const cachestuff = (function(){
 			let removed_count = 0;
             Object.keys(timestamps_by_key).forEach( key => {
                 if (timestamps_by_key[key] <= cutoff_timestamp) {
-                    window.localStorage.removeItem(key);        
+                    window.localStorage.removeItem(key);
 					++removed_count;
                 }
             });
@@ -101,7 +101,6 @@ const cachestuff = (function(){
         }
     }
 
-    
     const createLocalCache = (cache_name) => {
         const cache = new LocalCacheImpl(cache_name);
         return {

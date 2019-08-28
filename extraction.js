@@ -4,10 +4,10 @@
 const amazon_order_history_extraction = (function() {
     "use strict";
 
-    const by_regex = function(xpaths, regex, elem) {
+    const by_regex = function(xpaths, regex, default_value, elem) {
         let i;
         for ( i=0; i!=xpaths.length; i++ ) {
-            let a;
+            let a = null;
             const xpath = xpaths[i];
             try {
                 a = amazon_order_history_util.findSingleNodeValue(
@@ -15,17 +15,22 @@ const amazon_order_history_extraction = (function() {
                     elem
                 );
             } catch (ex) {
-                console.warn('got ' + ex + ' when evaluating ' + xpath); 
-                return null;
+                console.warn('got ' + ex + ' when evaluating ' + xpath);
             }
-            if (a !== null) {
-                const match = a.textContent.trim().match(regex);
-                if (match !== null) {
-                    return match[1];
+            if ( a ) {
+                if ( regex ) {
+                    const match = a.textContent.trim().match(regex);
+                    if (match !== null) {
+                        return match[1];
+                    }
+                } else {
+                    return a.textContent.trim();
                 }
             }
         }
-        return null;
+        return $.isNumeric(default_value) ?
+            default_value.toString() :
+            default_value;
     };
 
     function getField(xpath, elem) {
@@ -97,29 +102,7 @@ const amazon_order_history_extraction = (function() {
         return [];
     };
 
-    const best_match = function(
-        patterns,
-        default_value,
-        element
-    ){
-        if (!Array.isArray(patterns)) {
-            const msg = 'patterns isn\'t an array: ' + patterns;
-            console.error(msg);
-            throw msg;
-        }
-        let i;
-        for (i = 0; i < patterns.length; i++) { 
-            const pattern = patterns[i];
-            const a = getField(pattern, element);
-            if (typeof(a) != 'undefined') {
-                return a;
-            }
-        }
-        return default_value;
-    };
-
     return {
-        best_match: best_match,
         by_regex: by_regex,
         payments_from_invoice: payments_from_invoice
     };
