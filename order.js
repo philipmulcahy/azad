@@ -166,11 +166,13 @@ const amazon_order_history_order = (function() {
                     'span[contains(text(),"tax")]/' +
                     'parent::div/following-sibling::div/span',
 
+                    // Example: 'Tax Collected: $0.77'
                     '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "Tax Collected: ")]]',
 
                     '//*[contains(text(), "tax to be collected")]/parent::*/following-sibling::*/descendant::*/text()'
                 ],
-                /(?:vat:|tax:|tax collected:)? *((?:GBP |USD |CAD |EUR |AUD)?[-$£€0-9.]*)/i,
+                /(?:vat:|tax:|tax collected:)? *((?:GBP |USD |CAD |EUR |AUD)?[$£€]?-?[.0-9]+)/i,
+                '9.99',
                 doc.documentElement
             );
             if (a) {
@@ -197,6 +199,7 @@ const amazon_order_history_order = (function() {
                     'parent::div/following-sibling::div/span',
                 ],
                 /(:?VAT:)? *([-$£€0-9.]*)/i,
+                null,
                 doc.documentElement
             );
             if (a) {
@@ -223,6 +226,7 @@ const amazon_order_history_order = (function() {
                     'parent::div/following-sibling::div/span',
                 ],
                 /(VAT: *)([-$£€0-9.]*)/i,
+                null,
                 doc.documentElement
             );
             if (a) {
