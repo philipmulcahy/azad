@@ -1,3 +1,5 @@
+/* Copyright(c) 2018 Philip Mulcahy. */
+
 (function(window) {
     var re = {
         not_string: /[^s]/,

@@ -1,3 +1,4 @@
+/* Copyright(c) 2018 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
 function registerListener() {
