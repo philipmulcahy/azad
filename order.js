@@ -25,16 +25,266 @@ const amazon_order_history_order = (function() {
 
     const order_tracker = new OrderTracker();
 
-    function getField(xpath, doc, elem) {
+    function getField(xpath, elem) {
         const valueElem = amazon_order_history_util.findSingleNodeValue(
-			xpath, doc, elem
+			xpath, elem
 		);
         try {
             return valueElem.textContent.trim();
         } catch (_) {
-            return '?';
+            return null;
         }
     }
+
+    function extractDetailFromDoc(order, doc) {
+        const order_date = function(){
+            return date.normalizeDateString(
+                amazon_order_history_extraction.by_regex(
+                    [
+                        '//*[contains(@class,"order-date-invoice-item")]/text()',
+                        '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',
+                    ],
+                    /(?:Ordered on|Digital Order:) (.*)/i,
+                    order.date,
+                    doc.documentElement
+                )
+            );
+        };
+        const total = function(){
+            return amazon_order_history_extraction.by_regex(
+                [
+                    '//div[contains(@id,"od-subtotals")]//' +
+                    '*[contains(text(),"Grand Total") ' +
+                    'or contains(text(),"Montant total TTC")' +
+                    'or contains(text(),"Total général du paiement")' +
+                    ']/parent::div/following-sibling::div/span',
+
+                    '//*[contains(text(),"Grand Total:") ' +
+                    'or contains(text(),"Total for this order:")' +
+                    'or contains(text(),"Montant total TTC:")' +
+                    'or contains(text(),"Total général du paiement:")' +
+                    ']',
+                ],
+                null,
+                order.total,
+                doc.documentElement
+            ).replace(/.*: /, '').replace('-', '');
+        };
+        const gift = function(){
+            const a = amazon_order_history_extraction.by_regex(
+                [
+                    '//div[contains(@id,"od-subtotals")]//' +
+                    'span[contains(text(),"Gift") or contains(text(),"Importo Buono Regalo")]/' +
+                    'parent::div/following-sibling::div/span',
+
+                    '//*[text()[contains(.,"Gift Certificate")]]',
+
+                    '//*[text()[contains(.,"Gift Card")]]',
+                ],
+                null,
+                null,
+                doc.documentElement
+            );
+            if ( a ) {
+                const b = a.match(
+                    /Gift (?:Certificate|Card) Amount: *([$£€0-9.]*)/);
+                if( b !== null ) {
+                    return b[1];
+                }
+                if (/\d/.test(a)) {
+                    return a.replace('-', '');
+                }
+            }
+            return 'N/A';
+        };
+        const postage = function() {
+            return amazon_order_history_extraction.by_regex(
+                [
+                    ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
+                        label => sprintf(
+                            '//div[contains(@id,"od-subtotals")]//' +
+                            'span[contains(text(),"%s")]/' +
+                            'parent::div/following-sibling::div/span',
+                            label
+                        )
+                    ).join('|')
+                ],
+                null,
+                'N/A',
+                doc.documentElement
+            );
+        };
+        const vat = function() {
+            if ( order.id == 'D01-9960417-3589456' ) {
+                console.log('TODO - remove');
+            }
+            const a = amazon_order_history_extraction.by_regex(
+                [
+                    ['VAT', 'tax', 'TVA', 'IVA'].map(
+                        label => sprintf(
+                            '//div[contains(@id,"od-subtotals")]//' +
+                            'span[contains(text(),"%s") ' +
+                            'and not(contains(text(),"Before") or contains(text(), "esclusa") ' +
+                            ')]/' +
+                            'parent::div/following-sibling::div/span',
+                            label
+                        )
+                    ).join('|'),
+
+                    '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+                    'span[contains(lower-case(text()),"vat")]/' +
+                    'parent::div/following-sibling::div/span',
+
+                    '//div[@id="digitalOrderSummaryContainer"]//*[lower-case(text())[contains(., "vat: ")]]',
+                ],
+                null,
+                'N/A',
+                doc.documentElement
+            );
+            if( a != null ) {
+                const b = a.match(
+                    /VAT: *([-$£€0-9.]*)/i
+                );
+                if( b !== null ) {
+                    return b[1];
+                }
+            }
+            return a;
+        };
+        const us_tax = function(){
+            const a = amazon_order_history_extraction.by_regex(
+                [
+                    '//div[contains(@id,"od-subtotals")]//' +
+                    'span[contains(text(),"tax") ' +
+                    'and not(contains(text(),"before") ' +
+                    ')]/' +
+                    'parent::div/following-sibling::div/span',
+
+                    '//*[text()[contains(.,"tax") and not(contains(.,"before"))]]',
+
+                    '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+                    'span[contains(text(),"tax")]/' +
+                    'parent::div/following-sibling::div/span',
+
+                    // Example: 'Tax Collected: $0.77'
+                    '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "Tax Collected: ")]]',
+
+                    '//*[contains(text(), "tax to be collected")]/parent::*/following-sibling::*/descendant::*/text()'
+                ],
+                /(?:vat:|tax:|tax collected:)? *((?:GBP |USD |CAD |EUR |AUD)?[$£€]?-?[.0-9]+)/i,
+                '9.99',
+                doc.documentElement
+            );
+            if (a) {
+                return a;
+            }
+            return 'N/A';
+        };
+        const cad_gst = function() {
+            const a = amazon_order_history_extraction.by_regex(
+                [
+                    ['GST', 'HST'].map(
+                        label => sprintf(
+                            '//div[contains(@id,"od-subtotals")]//' +
+                            'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
+                            'parent::div/following-sibling::div/span',
+                            label
+                        )
+                    ).join('|'),
+
+                    '//*[text()[contains(.,"GST") and not(contains(.,"Before"))]]',
+
+                    '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+                    'span[contains(text(),"GST")]/' +
+                    'parent::div/following-sibling::div/span',
+                ],
+                /(:?VAT:)? *([-$£€0-9.]*)/i,
+                null,
+                doc.documentElement
+            );
+            if (a) {
+                return a;
+            }
+            return 'N/A';
+        };
+        const cad_pst = function(){
+            const a = amazon_order_history_extraction.by_regex(
+                [
+                    ['PST', 'RST', 'QST'].map(
+                        label => sprintf(
+                            '//div[contains(@id,"od-subtotals")]//' +
+                            'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
+                            'parent::div/following-sibling::div/span',
+                            label
+                        )
+                    ).join('|'),
+
+                    '//*[text()[contains(.,"PST") and not(contains(.,"Before"))]]',
+
+                    '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+                    'span[contains(text(),"PST")]/' +
+                    'parent::div/following-sibling::div/span',
+                ],
+                /(VAT: *)([-$£€0-9.]*)/i,
+                null,
+                doc.documentElement
+            );
+            if (a) {
+                return a;
+            }
+            return 'N/A';
+        };
+        const refund = function () {
+            let a = getField(
+                ['Refund'].map( //TODO other field names?
+                    label => sprintf(
+                        '//div[contains(@id,"od-subtotals")]//' +
+                        'span[contains(text(),"%s")]/' +
+                        'ancestor::div[1]/following-sibling::div/span',
+                        label
+                    )
+                ).join('|'),
+                doc.documentElement
+            );
+            if ( a ) {
+                return a;
+            }
+            return 'N/A';
+        };
+        return {
+            date: order_date(),
+            total: total(),
+            postage: postage(),
+            gift: gift(),
+            us_tax: us_tax(),
+            vat: vat(),
+            gst: cad_gst(),
+            pst: cad_pst(),
+            refund: refund()
+        };
+    }
+
+    const extractDetailPromise = (order, request_scheduler) => new Promise(
+        function(resolve, reject) {
+            const query = amazon_order_history_util.getOrderDetailUrl(order.id);
+            const event_converter = function(evt) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(
+                    evt.target.responseText, 'text/html'
+                );
+                return extractDetailFromDoc(order, doc);
+            };
+            request_scheduler.schedule(
+                query,
+                event_converter,
+                order_details => {
+                    order_tracker.detailPromiseResolved(order.id);
+                    resolve(order_details);
+                },
+                order.id
+            );
+        }
+    );
 
     class Order {
         constructor(ordersPageElem, request_scheduler) {
@@ -68,8 +318,8 @@ const amazon_order_history_order = (function() {
                 */
                 const itemResult = amazon_order_history_util.findMultipleNodeValues(
                     './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
-                    elem.ownerDocument,
-                    elem);
+                    elem
+                );
                 const items = {};
                 itemResult.forEach(
                     function(item){
@@ -95,18 +345,17 @@ const amazon_order_history_order = (function() {
                             label
                         )
                     ).join('|'),
-                    doc,
                     elem
                 )
             );
             // This field is no longer always available, particularly for .com
-            // We replace it (where we know the search pattern for the country) 
+            // We replace it (where we know the search pattern for the country)
             // with information from the order detail page.
             this.total = getField('.//div[contains(span,"Total")]' +
-                '/../div/span[contains(@class,"value")]', doc, elem);
+                '/../div/span[contains(@class,"value")]', elem);
             this.who = getField('.//div[contains(@class,"recipient")]' +
-                '//span[@class="trigger-text"]', doc, elem);
-            if (this.who === '?') {
+                '//span[@class="trigger-text"]', elem);
+            if (!this.who) {
                 this.who = 'N/A';
             }
             this.id = getField(
@@ -120,326 +369,17 @@ const amazon_order_history_order = (function() {
                         label
                     )
                 ).join(' | '),
-                doc,
                 elem
             );
-            if (this.id =='?') {
+            if (!this.id) {
                 this.id = amazon_order_history_util.findSingleNodeValue(
                     '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
-                    doc,
                     elem
                 ).getAttribute('href').match(/.*orderID=([^?]*)/)[1];
             }
             order_tracker.idKnown(this.id);
             this.items = getItems(elem);
-            this.detail_promise = new Promise(
-                function(resolve, reject) {
-                    const query = amazon_order_history_util.getOrderDetailUrl(this.id);
-                    const event_converter = function(evt) {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(
-                            evt.target.responseText, 'text/html'
-                        );
-                        const total = function(){
-                            let a = getField(
-                                '//div[contains(@id,"od-subtotals")]//' +
-                                '*[contains(text(),"Grand Total") ' + 
-                                'or contains(text(),"Montant total TTC")' +
-                                'or contains(text(),"Total général du paiement")' +
-                                ']/parent::div/following-sibling::div/span',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a == '?') {
-                                a = getField(
-                                    '//*[contains(text(),"Grand Total:") ' + 
-                                    'or contains(text(),"Montant total TTC:")' +
-                                    'or contains(text(),"Total général du paiement:")' +
-                                    ']',
-                                    doc,
-                                    doc.documentElement
-                                ).split(':')[1];
-                            }
-                            if( a == '?' ) {
-                                // Fall back on any total we might have got from
-                                // the summary page.
-                                return this.total;
-                            }
-                            return a.replace('-', '');
-                        }.bind(this);
-                        const gift = function(){
-                            let a = getField(
-                                '//div[contains(@id,"od-subtotals")]//' +
-                                'span[contains(text(),"Gift") or contains(text(),"Importo Buono Regalo")]/' +
-                                    'parent::div/following-sibling::div/span',
-                                doc,
-                                doc.documentElement
-                            );
-                            let b;
-                            if( a !== '?') {
-                                return a.replace('-', '');
-                            }
-                            a = getField(
-                                '//*[text()[contains(.,"Gift Certificate")]]',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                b = a.match(
-                                    /Gift Certificate.Card Amount: *([$£€0-9.]*)/);
-                                if( b !== null ) {
-                                    return b[1];
-                                }
-                            }
-                            a = getField(
-                                '//*[text()[contains(.,"Gift Card")]]',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                b = a.match(
-                                    /Gift Card Amount: *([$£€0-9.]*)/);
-                                if( b !== null ) {
-                                    return b[1];
-                                }
-                            }
-                            return 'N/A';
-                        }.bind(this);
-                        const postage = function() {
-                            let a = getField(
-                                ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
-                                    label => sprintf(
-                                        '//div[contains(@id,"od-subtotals")]//' +
-                                        'span[contains(text(),"%s")]/' +
-                                        'parent::div/following-sibling::div/span',
-                                        label
-                                    )
-                                ).join('|'),
-                                doc,
-                                doc.documentElement
-                            );
-                            if (a !== '?') {
-                                return a;
-                            }
-                            return 'N/A';
-                        }.bind(this);
-                        const vat = function(){
-                            let a = getField(
-                                ['VAT', 'tax', 'TVA', 'IVA'].map(
-                                    label => sprintf(
-                                        '//div[contains(@id,"od-subtotals")]//' +
-                                        'span[contains(text(),"%s") ' +
-                                        'and not(contains(text(),"Before") or contains(text(), "esclusa") ' +
-                                        ')]/' +
-                                        'parent::div/following-sibling::div/span',
-                                        label
-                                    )
-                                ).join('|'),
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== '?') {
-                                return a;
-                            }
-                            a = getField(
-                                '//*[text()[contains(.,"VAT") and not(contains(.,"Before"))]]',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                const b = a.match(
-                                    /VAT: *([-$£€0-9.]*)/);
-                                if( b !== null ) {
-                                    return b[1];
-                                }
-                            }
-                            a = getField(
-                                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
-                                'span[contains(text(),"VAT")]/' +
-                                'parent::div/following-sibling::div/span',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                const c = a.match(
-                                    /VAT: *([-$£€0-9.]*)/);
-                                if( c !== null ) {
-                                    return c[1];
-                                }
-                            }
-                            return 'N/A';
-                        }.bind(this);
-                        const us_tax = function(){
-                            let a = getField(
-                                '//div[contains(@id,"od-subtotals")]//' +
-                                'span[contains(text(),"tax") ' +
-                                'and not(contains(text(),"before") ' +
-                                ')]/' +
-                                'parent::div/following-sibling::div/span',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== '?') {
-                                return a;
-                            }
-                            a = getField(
-                                '//*[text()[contains(.,"tax") and not(contains(.,"before"))]]',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                const b = a.match(
-                                    /VAT: *([-$£€0-9.]*)/);
-                                if( b !== null ) {
-                                    return b[1];
-                                }
-                            }
-                            a = getField(
-                                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
-                                'span[contains(text(),"tax")]/' +
-                                'parent::div/following-sibling::div/span',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                const c = a.match(
-                                    /tax: *([-$£€0-9.]*)/);
-                                if( c !== null ) {
-                                    return c[1];
-                                }
-                            }
-                            return 'N/A';
-                        }.bind(this);
-
-                        const cad_gst = function() {
-                            let a = getField(
-                                ['GST', 'HST'].map(
-                                    label => sprintf(
-                                        '//div[contains(@id,"od-subtotals")]//' +
-                                        'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
-                                        'parent::div/following-sibling::div/span',
-                                        label
-                                    )
-                                ).join('|'),
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== '?') {
-                                return a;
-                            }
-                            a = getField(
-                                '//*[text()[contains(.,"GST") and not(contains(.,"Before"))]]',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                const b = a.match(
-                                    /VAT: *([-$£€0-9.]*)/);
-                                if( b !== null ) {
-                                    return b[1];
-                                }
-                            }
-                            a = getField(
-                                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
-                                'span[contains(text(),"GST")]/' +
-                                'parent::div/following-sibling::div/span',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                const c = a.match(
-                                    /VAT: *([-$£€0-9.]*)/);
-                                if( c !== null ) {
-                                    return c[1];
-                                }
-                            }
-                            return 'N/A';
-                        }.bind(this);
-
-                        const cad_pst = function(){
-                            let a = getField(
-                                ['PST', 'RST', 'QST'].map(
-                                    label => sprintf(
-                                        '//div[contains(@id,"od-subtotals")]//' +
-                                        'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
-                                        'parent::div/following-sibling::div/span',
-                                        label
-                                    )
-                                ).join('|'),
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== '?') {
-                                return a;
-                            }
-                            a = getField(
-                                '//*[text()[contains(.,"PST") and not(contains(.,"Before"))]]',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                const b = a.match(
-                                    /VAT: *([-$£€0-9.]*)/);
-                                if( b !== null ) {
-                                    return b[1];
-                                }
-                            }
-                            a = getField(
-                                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
-                                'span[contains(text(),"PST")]/' +
-                                'parent::div/following-sibling::div/span',
-                                doc,
-                                doc.documentElement
-                            );
-                            if( a !== null ) {
-                                const c = a.match(
-                                    /VAT: *([-$£€0-9.]*)/);
-                                if( c !== null ) {
-                                    return c[1];
-                                }
-                            }
-                            return 'N/A';
-                        }.bind(this);
-                        const refund = function () {
-                            let a = getField(
-                                ['Refund'].map( //TODO other field names?
-                                    label => sprintf(
-                                        '//div[contains(@id,"od-subtotals")]//' +
-                                        'span[contains(text(),"%s")]/' +
-                                        'ancestor::div[1]/following-sibling::div/span',
-                                        label
-                                    )
-                                ).join('|'),
-                                doc,
-                                doc.documentElement
-                            );
-                            if (a !== '?') {
-                                return a;
-                            }
-                            return 'N/A';
-                        }.bind(this);
-                        return {
-                            total: total(),
-                            postage: postage(),
-                            gift: gift(),
-                            us_tax: us_tax(),
-                            vat: vat(),
-                            gst: cad_gst(),
-                            pst: cad_pst(),
-                            refund: refund()
-                        };
-                    }.bind(this);
-                    this.request_scheduler.schedule(
-                        query,
-                        event_converter,
-                        order_details => {
-                            order_tracker.detailPromiseResolved(this.id);
-                            resolve(order_details);
-                        },
-                        this.id
-                    );
-                }.bind(this)
-            );
+            this.detail_promise = extractDetailPromise(this, this.request_scheduler);
             this.payments_promise = new Promise(
                 function(resolve, reject) {
                     if (this.id.startsWith("D")) {
@@ -450,27 +390,10 @@ const amazon_order_history_order = (function() {
                         const event_converter = function(evt) {
                             const parser = new DOMParser();
                             const doc = parser.parseFromString(
-                                evt.target.responseText, "text/html"
+                                evt.target.responseText, 'text/html'
                             );
-                            const payments = amazon_order_history_util.findMultipleNodeValues(
-                                [
-                                    'Credit Card transactions',
-                                    'Transactions de carte de crédit'
-                                ].map(
-                                    label => sprintf(
-                                        '//b[contains(text(),"%s")]/' +
-                                        '../../..//td[contains(text(),":")]/..',
-                                        label
-                                    )
-                                ).join('|'),
-                                doc,
-                                doc
-                            ).map(function(row){
-                                return row.textContent
-                                          .replace(/[\n\r]/g, ' ')
-                                          .replace(/  */g, '\xa0')  //&nbsp;
-                                          .trim();
-                            });
+                            const payments = amazon_order_history_extraction.payments_from_invoice(doc);
+                            // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
                             return payments;
                         }.bind(this);
                         this.request_scheduler.schedule(
@@ -541,7 +464,7 @@ const amazon_order_history_order = (function() {
             const p = new DOMParser();
             const d = p.parseFromString(evt.target.responseText, 'text/html');
             const countSpan = amazon_order_history_util.findSingleNodeValue(
-                './/span[@class="num-orders"]', d, d);
+                './/span[@class="num-orders"]', d.documentElement);
             if (countSpan === null) {
                 console.warn(
                     'Error: cannot find order count elem in: ' + evt.target.responseText
@@ -573,7 +496,6 @@ const amazon_order_history_order = (function() {
                     'normalize-space(@class), ' +
                     '" "), ' +
                     '" order ")]',
-                d,
                 ordersElem
             );
             return {
@@ -789,6 +711,9 @@ const amazon_order_history_order = (function() {
             return new Order(ordersPageElem, request_scheduler);
         },
         // Return Array of Order Promise.
-        getOrdersByYear: getOrdersByYear
+        getOrdersByYear: getOrdersByYear,
+
+        // For unit testing.
+        extractDetailFromDoc: extractDetailFromDoc,
     };
 })();
