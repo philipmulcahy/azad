@@ -1,3 +1,5 @@
+/* Copyright(c) 2018 Philip Mulcahy. */
+
 // from: https://momentjs.com/downloads/moment-with-locales.js
 // version: 2.22.2
 
