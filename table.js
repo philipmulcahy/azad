@@ -65,9 +65,9 @@ const amazon_order_history_table = (function() {
         },
         {
             field_name: 'date',
-            type: 'plain',
+            type: 'detail',
             property_name: 'date',
-            is_numeric: false
+            is_numeric: false,
         },
         {
             field_name: 'total',
@@ -279,7 +279,7 @@ const amazon_order_history_table = (function() {
                                        .reduce( (a, b) => a + b, 0 )
                                 );
                                 $(api.column(col_index).footer()).html(
-                                    sprintf('page sum=%s; all=%s',
+                                    sprintf('page=%s; all=%s',
                                         col_spec.pageSum.toFixed(2),
                                         col_spec.sum.toFixed(2))
                                 );

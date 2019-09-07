@@ -57,7 +57,7 @@ const date_tests = (() => {
         fr_test: fr_test,
         it_test: it_test,
         uk_test: uk_test,
-        au_test: au_test
+        au_test: au_test,
         us_test: us_test
     };
 })()

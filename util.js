@@ -50,20 +50,24 @@ const amazon_order_history_util = (function(){
 		}
 	}
 
-    function findSingleNodeValue(xpath, doc, elem) {
-        return doc.evaluate(
-            xpath,
-            elem,
-            null,
-            XPathResult.FIRST_ORDERED_NODE_TYPE,
-            null
-        ).singleNodeValue;
+    function findSingleNodeValue(xpath, elem) {
+        try {
+            return elem.ownerDocument.evaluate(
+                xpath,
+                elem,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue;
+        } catch (ex) {
+            console.warn('findSingleNodeValue blew up with: ' + xpath);
+        }
     }
 
-    function findMultipleNodeValues(xpath, doc, elem) {
+    function findMultipleNodeValues(xpath, elem) {
         var snapshot;
         try {
-            snapshot = doc.evaluate(
+            snapshot = elem.ownerDocument.evaluate(
                 xpath,
                 elem,
                 null,
@@ -71,7 +75,7 @@ const amazon_order_history_util = (function(){
                 null
             );
         } catch(err) {
-            log(
+            console.warn(
                 "Error: maybe you\"re not logged into " +
                 "https://" + getSite() + "/gp/css/order-history " +
                 err
