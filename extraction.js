@@ -75,7 +75,7 @@ const amazon_order_history_extraction = (function() {
             );
             // "Item(s) Subtotal: GBP 9.63 Shipping & Handling: GBP 4.24 ----- Total before tax: GBP 13.87 Estimated tax to be collected: GBP 1.22 ----- Grand Total: GBP 15.09 Payment Method: American Express | Last digits: 1416 Billing address Mr Philip Mulcahy Somewhere in the UK"
             const card_names = new_style_payments.map(
-                s => /Payment Method: ([A-Za-z0-9 ]*) \|/.exec(s)[1].trim()
+                s => /Payment Method: ([A-Za-z0-9 /]*) \|/.exec(s)[1].trim()
             );
             const card_number_suffixes = new_style_payments.map(
                 s => /Last digits: (\d+)/.exec(s)[1]
