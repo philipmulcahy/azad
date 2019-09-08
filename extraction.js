@@ -65,6 +65,7 @@ const amazon_order_history_extraction = (function() {
                           .replace(/  */g, '\xa0')  //&nbsp;
                           .trim();
             });
+            return payments;
         };
         const strategy_2 = () => {
             const new_style_payments = amazon_order_history_util.findMultipleNodeValues(
@@ -83,12 +84,13 @@ const amazon_order_history_extraction = (function() {
             const payment_amounts = new_style_payments.map(
                 s => /Grand Total: (.*) Payment Method/.exec(s)[1].trim()
             );
-            const count = Math.min( [card_names, card_number_suffixes, payment_amounts].map( l => l.length ) );
+            const count = Math.min( ...[card_names, card_number_suffixes, payment_amounts].map( l => l.length ) );
             const payments = [];
             let i = 0;
             for ( i = 0; i < count; i++ ) {
                 payments.push( card_names[i] + ' ending in ' + card_number_suffixes[i] + ': ' + payment_amounts[i] );
             }
+            return payments;
         };
         const strategies = [strategy_1, strategy_2];
         let i = 0;
