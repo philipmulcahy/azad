@@ -24,7 +24,7 @@ var options = {
   mode: process.env.NODE_ENV || "development",
   entry: {
     background: path.join(__dirname, "src", "js", "background.js"),
-    tab: path.join(__dirname, "src", "js", "tab.js"),
+    inject: path.join(__dirname, "src", "js", "inject.js"),
     tests: path.join(__dirname, "src", "tests", "tests.js")
   },
   output: {
@@ -71,10 +71,10 @@ var options = {
     new HtmlWebpackPlugin({
       template: path.join(__dirname, "src", "inject.js"),
       filename: "inject.js",
-      chunks: ["tab"]
+      chunks: ["inject"]
     }),
     new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "privacy.html"),
+      template: path.join(__dirname, "src/html", "privacy.html"),
       filename: "privacy.html",
       chunks: []
     }),
