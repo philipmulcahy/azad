@@ -48,21 +48,12 @@
                 "lzjs.js",
                 "sprintf.js",
                 "dom2json.js",
-                "util.js",
-                "request_scheduler.js",
-                "cache.js",
-                "csv.js",
-                "date.js",
-                "extraction.js",
-                "order.js",
-                "table.js",
-                "moment.js",
                 "inject.js"
             ]
         }
     ],
     "icons": {
-        "48": "icon48.png",
-        "128": "icon128.png"
+        "48": "img/icon48.png",
+        "128": "img/icon128.png"
     }
 }
