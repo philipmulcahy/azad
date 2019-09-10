@@ -69,12 +69,12 @@ var options = {
       }
     }]),
     new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "inject.js"),
+      template: path.join(__dirname, "src", "js", "inject.js"),
       filename: "inject.js",
       chunks: ["inject"]
     }),
     new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src/html", "privacy.html"),
+      template: path.join(__dirname, "src", "html", "privacy.html"),
       filename: "privacy.html",
       chunks: []
     }),
