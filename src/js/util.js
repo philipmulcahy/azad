@@ -6,10 +6,23 @@
 
 "use strict";
 
+function getWindow() {
+    try {
+        return window; 
+    } catch {
+        console.warn('window global not defined');
+        return {};
+    }
+}
+
 function getSite() {
-    var href = window.location.href;
-    var stem = /https:\/\/((www|smile)\.amazon\.[^\/]+)/.exec(href)[1];
-    return stem;
+    try {
+        const href = getWindow().location.href;
+        const stem = /https:\/\/((www|smile)\.amazon\.[^\/]+)/.exec(href)[1];
+        return stem;
+    } catch {
+        return 'TEST_SITE';
+    }
 }
 
 function getOrderDetailUrl(orderId) {

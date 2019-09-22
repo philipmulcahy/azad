@@ -7,6 +7,8 @@
 
 'use strict';
 
+import cachestuff from './cachestuff';
+
 class BinaryHeap {
     constructor(scoreFunction) {
         this.content = [];
@@ -206,13 +208,17 @@ class RequestScheduler {
             };
         };
         this.updateProgress = function() {
-            const target = document.getElementById('order_reporter_progress');
-            if (target !== null) {
-                target.textContent = Object.entries(this.statistics())
-                                           .map(([k,v]) => {return k + ':' + v;})
-                                           .join('; ');
+            try {
+                const target = document.getElementById('order_reporter_progress');
+                if (target !== null) {
+                    target.textContent = Object.entries(this.statistics())
+                                               .map(([k,v]) => {return k + ':' + v;})
+                                               .join('; ');
+                }
+                setTimeout(function() { this.updateProgress(); }.bind(this), 2000);
+            } catch(ex) {
+                console.warn('could not update progress - maybe we are in node?: ' + ex);
             }
-            setTimeout(function() { this.updateProgress(); }.bind(this), 2000);
         };
         this.updateProgress();
     }
