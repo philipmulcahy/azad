@@ -1,94 +1,82 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 
-var webpack = require("webpack"),
+const webpack = require("webpack"),
     path = require("path"),
     fileSystem = require("fs"),
     env = require("./utils/env"),
     CleanWebpackPlugin = require("clean-webpack-plugin"),
     CopyWebpackPlugin = require("copy-webpack-plugin"),
-    HtmlWebpackPlugin = require("html-webpack-plugin"),
     WriteFilePlugin = require("write-file-webpack-plugin");
 
 // load the secrets
-var alias = {};
+const alias = {};
 
-var secretsPath = path.join(__dirname, ("secrets." + env.NODE_ENV + ".js"));
+const fileExtensions = ["jpg", "jpeg", "png", "gif", "svg"];
 
-var fileExtensions = ["jpg", "jpeg", "png", "gif", "eot", "otf", "svg", "ttf", "woff", "woff2"];
-
-if (fileSystem.existsSync(secretsPath)) {
-  alias["secrets"] = secretsPath;
-}
-
-var options = {
-  mode: process.env.NODE_ENV || "development",
-  entry: {
-    background: path.join(__dirname, "src", "js", "background.js"),
-    inject: path.join(__dirname, "src", "js", "inject.js"),
-    tests: path.join(__dirname, "src", "tests", "tests.js")
-  },
-  output: {
-    path: path.join(__dirname, "build"),
-    filename: "[name].bundle.js"
-  },
-  module: {
-    rules: [
-      {
-        test: /\.css$/,
-        loader: "style-loader!css-loader",
-      },
-      {
-        test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
-        loader: "file-loader?name=[name].[ext]",
-        exclude: /node_modules/
-      },
-      {
-        test: /\.html$/,
-        loader: "html-loader",
-        exclude: /node_modules/
-      }
+const options = {
+    mode: process.env.NODE_ENV || "development",
+    entry: {
+        inject: path.join(__dirname, "src", "js", "inject.js"),
+        background: path.join(__dirname, "src", "js", "background.js")
+    },
+    output: {
+        path: path.join(__dirname, "build"),
+        filename: "[name].bundle.js"
+    },
+    module: {
+        rules: [
+            {
+                test: /\.css$/,
+                use: ['style-loader','css-loader']
+            },
+            {
+                test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
+                loader: "file-loader?name=[name].[ext]",
+                exclude: /node_modules/
+            },
+            {
+                test: /\.html$/,
+                loader: "html-loader",
+                exclude: /node_modules/
+            }
+        ]
+    },
+    resolve: {
+        alias: alias
+    },
+    plugins: [
+        // clean the build folder
+        new CleanWebpackPlugin(["build"]),
+        // expose and write the allowed env vars on the compiled bundle
+        new webpack.EnvironmentPlugin(["NODE_ENV"]),
+        new CopyWebpackPlugin([{
+            from: "src/manifest.json",
+            transform: function (content, path) {
+                // generates the manifest file using the package.json informations
+                return Buffer.from(
+                    JSON.stringify({
+                        description: process.env.npm_package_description,
+                        version: process.env.npm_package_version,
+                        ...JSON.parse(content.toString())
+                    })
+                )
+            }
+        }]),
+        new CopyWebpackPlugin([{
+            from: "src/img/icon48.png"
+        }]),
+        new CopyWebpackPlugin([{
+            from: "src/img/icon128.png"
+        }]),
+        new CopyWebpackPlugin([{
+            from: "node_modules/datatables/media/css/jquery.dataTables.min.css"
+        }])
     ]
-  },
-  resolve: {
-    alias: alias
-  },
-  plugins: [
-    // clean the build folder
-    new CleanWebpackPlugin(["build"]),
-    // expose and write the allowed env vars on the compiled bundle
-    new webpack.EnvironmentPlugin(["NODE_ENV"]),
-    new CopyWebpackPlugin([{
-      from: "src/manifest.json",
-      transform: function (content, path) {
-        // generates the manifest file using the package.json informations
-        return Buffer.from(JSON.stringify({
-          description: process.env.npm_package_description,
-          version: process.env.npm_package_version,
-          ...JSON.parse(content.toString())
-        }))
-      }
-    }]),
-    new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "js", "inject.js"),
-      filename: "inject.js",
-      chunks: ["inject"]
-    }),
-    new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "html", "privacy.html"),
-      filename: "privacy.html",
-      chunks: []
-    }),
-    new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "tests/tests.html"),
-      filename: "tests/tests.html",
-      chunks: ["tests"]
-    }),
-    new WriteFilePlugin()
-  ]
 };
 
 if (env.NODE_ENV === "development") {
-  options.devtool = "inline-source-map";
+    options.devtool = "inline-source-map";
 }
 
 module.exports = options;
+console.log('Hello Webpack World');

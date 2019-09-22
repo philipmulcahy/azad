@@ -1,17 +1,21 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
 
-/* global window */
 /* jshint strict: true, esversion: 6 */
 
 'use strict';
 
-const request_scheduler = amazon_order_history_request_scheduler.create();
+import util from './util';
+import request_scheduler from './request_scheduler';
+import azad_order from './order';
+import azad_table from './table';
+
+const scheduler = request_scheduler.create();
 
 function getYears() {
     if(typeof(getYears.years) === 'undefined') {
         console.log('getYears() needs to do something');
-        const snapshot = amazon_order_history_util.findMultipleNodeValues(
+        const snapshot = util.findMultipleNodeValues(
             '//select[@name=\"orderFilter\"]/option[@value]',
             document.documentElement
         );
@@ -29,9 +33,9 @@ function getYears() {
 }
 
 function fetchAndShowOrders(years) {
-    amazon_order_history_order.getOrdersByYear(
+    azad_order.getOrdersByYear(
         years,
-        request_scheduler,
+        scheduler,
         getYears()[0]
     ).then(
         orderPromises => {
@@ -40,7 +44,7 @@ function fetchAndShowOrders(years) {
                 beautiful = false;
                 alert('500 or more orders found. That\'s a lot! We\'ll start you off with a plain table to make display faster. You can click the blue "datatable" button to restore sorting, filtering etc.');
             }
-            amazon_order_history_table.displayOrders(orderPromises, beautiful);
+            azad_table.displayOrders(orderPromises, beautiful);
             return document.querySelector('[id=\"order_table\"]');
         }
     );
@@ -50,7 +54,7 @@ function addYearButtons() {
     console.log('addYearButtons starting');
     const years = getYears();
     if(years.length > 0) {
-        amazon_order_history_util.addButton(
+        util.addButton(
             'All years',
             () => {
                 fetchAndShowOrders(years);
@@ -60,7 +64,7 @@ function addYearButtons() {
         console.log('addYearButtons no years found');
     }
     years.forEach( year => {
-        amazon_order_history_util.addButton(
+        util.addButton(
             [year],
             () => {
                 fetchAndShowOrders([year]);
@@ -70,10 +74,10 @@ function addYearButtons() {
 }
 
 function addClearCacheButton() {
-    amazon_order_history_util.addButton(
+    util.addButton(
         'clear cache',
         () => {
-            request_scheduler.clearCache();
+            scheduler.clearCache();
         }
     );
 }

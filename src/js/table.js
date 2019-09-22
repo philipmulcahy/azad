@@ -1,8 +1,13 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
 
-/* global window */
 /* jshint strict: true, esversion: 6 */
+
+import util from './util';
+import csv from './csv';
+import $ from 'jquery';
+import 'datatables';
+import sprintf from 'sprintf-js';
 
 'use strict';
 
@@ -48,7 +53,7 @@ const cols = [
         func: function(order, row){
             addLinkCell(
                 row, order.id,
-                amazon_order_history_util.getOrderDetailUrl(order.id)
+                util.getOrderDetailUrl(order.id)
             );
         },
         is_numeric: false
@@ -133,7 +138,7 @@ const cols = [
         is_numeric: false
     }
 ].filter( col => ('sites' in col) ?
-    col.sites.test(amazon_order_history_util.getSite()):
+    col.sites.test(util.getSite()):
     true
 );
 
@@ -181,7 +186,7 @@ function reallyDisplayOrders(orders, beautiful) {
                                 const a = document.createElement('a');
                                 li.appendChild(a);
                                 a.textContent = payment + '; ';
-                                a.href = amazon_order_history_util.getOrderPaymentUrl(order.id);
+                                a.href = util.getOrderPaymentUrl(order.id);
                             });
                             elem.textContent = '';
                             elem.appendChild(ul);
@@ -242,7 +247,7 @@ function reallyDisplayOrders(orders, beautiful) {
 
         return table;
     };
-    amazon_order_history_util.clearBody();
+    util.clearBody();
     const table = addOrderTable(orders);
     if(beautiful) {
         $(document).ready( () => {
@@ -290,8 +295,8 @@ function reallyDisplayOrders(orders, beautiful) {
                     });
                 }
             });
-            amazon_order_history_util.removeButton('data table');
-            amazon_order_history_util.addButton(
+            util.removeButton('data table');
+            util.addButton(
                 'plain table',
                 function() {
                     console.log('amazon_order_history_table plain table button clicked');
@@ -301,8 +306,8 @@ function reallyDisplayOrders(orders, beautiful) {
             );
         });
     } else {
-        amazon_order_history_util.removeButton('plain table');
-        amazon_order_history_util.addButton(
+        util.removeButton('plain table');
+        util.addButton(
             'data table',
             function() {
                 console.log('amazon_order_history_table data table button clicked');
@@ -311,11 +316,11 @@ function reallyDisplayOrders(orders, beautiful) {
             'background-color:cornflowerblue; color:white'
         );
     }
-    amazon_order_history_util.addButton(
+    util.addButton(
         'download csv',
         function() {
             displayOrders(orders, false).then(
-                (table) => { amazon_order_history_csv.download(table); }
+                (table) => { csv.download(table); }
             );
         },
         'background-color:cornflowerblue; color:white'

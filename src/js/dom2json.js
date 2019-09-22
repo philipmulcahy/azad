@@ -4,7 +4,7 @@
 
 function toJSON(node) {
   node = node || this;
-  var obj = {
+  const obj = {
     nodeType: node.nodeType
   };
   if (node.tagName) {
@@ -16,19 +16,19 @@ function toJSON(node) {
   if (node.nodeValue) {
     obj.nodeValue = node.nodeValue;
   }
-  var attrs = node.attributes;
+  const attrs = node.attributes;
   if (attrs) {
-    var length = attrs.length;
-    var arr = obj.attributes = new Array(length);
+    const length = attrs.length;
+    const arr = obj.attributes = new Array(length);
     for (var i = 0; i < length; i++) {
-      attr = attrs[i];
+      const attr = attrs[i];
       arr[i] = [attr.nodeName, attr.nodeValue];
     }
   }
-  var childNodes = node.childNodes;
+  const childNodes = node.childNodes;
   if (childNodes) {
-    length = childNodes.length;
-    arr = obj.childNodes = new Array(length);
+    const length = childNodes.length;
+    const arr = obj.childNodes = new Array(length);
     for (i = 0; i < length; i++) {
       arr[i] = toJSON(childNodes[i]);
     }
@@ -40,14 +40,17 @@ function toDOM(obj) {
   if (typeof obj == 'string') {
     obj = JSON.parse(obj);
   }
-  var node, nodeType = obj.nodeType;
+  var node;
+  const nodeType = obj.nodeType;
   switch (nodeType) {
     case 1: //ELEMENT_NODE
       node = document.createElement(obj.tagName);
-      var attributes = obj.attributes || [];
-      for (var i = 0, len = attributes.length; i < len; i++) {
-        var attr = attributes[i];
-        node.setAttribute(attr[0], attr[1]);
+      {
+          const attributes = obj.attributes || [];
+          for (var i = 0, len = attributes.length; i < len; i++) {
+            const attr = attributes[i];
+            node.setAttribute(attr[0], attr[1]);
+          }
       }
       break;
     case 3: //TEXT_NODE
@@ -69,7 +72,7 @@ function toDOM(obj) {
       return node;
   }
   if (nodeType == 1 || nodeType == 11) {
-    var childNodes = obj.childNodes || [];
+    const childNodes = obj.childNodes || [];
     for (i = 0, len = childNodes.length; i < len; i++) {
       node.appendChild(toDOM(childNodes[i]));
     }

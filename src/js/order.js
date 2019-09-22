@@ -5,10 +5,16 @@
 
 'use strict';
 
+import util from './util';
+import date from './date';
+import extraction from './extraction';
+import sprintf from 'sprintf-js';
+import dom2json from 'dom2json';
+
 class OrderTracker  {
     constructor() {
-        self.promises_by_id = {};
-        self.pending_ids = new Set();
+        this.promises_by_id = {};
+        this.pending_ids = new Set();
     }
 
     constructorStarted(order_object) {
@@ -27,7 +33,7 @@ class OrderTracker  {
 const order_tracker = new OrderTracker();
 
 function getField(xpath, elem) {
-    const valueElem = amazon_order_history_util.findSingleNodeValue(
+    const valueElem = util.findSingleNodeValue(
         xpath, elem
     );
     try {
@@ -40,7 +46,7 @@ function getField(xpath, elem) {
 function extractDetailFromDoc(order, doc) {
     const order_date = function(){
         return date.normalizeDateString(
-            amazon_order_history_extraction.by_regex(
+            extraction.by_regex(
                 [
                     '//*[contains(@class,"order-date-invoice-item")]/text()',
                     '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',
@@ -52,7 +58,7 @@ function extractDetailFromDoc(order, doc) {
         );
     };
     const total = function(){
-        return amazon_order_history_extraction.by_regex(
+        return extraction.by_regex(
             [
                 '//div[contains(@id,"od-subtotals")]//' +
                 '*[contains(text(),"Grand Total") ' +
@@ -72,7 +78,7 @@ function extractDetailFromDoc(order, doc) {
         ).replace(/.*: /, '').replace('-', '');
     };
     const gift = function(){
-        const a = amazon_order_history_extraction.by_regex(
+        const a = extraction.by_regex(
             [
                 '//div[contains(@id,"od-subtotals")]//' +
                 'span[contains(text(),"Gift") or contains(text(),"Importo Buono Regalo")]/' +
@@ -99,7 +105,7 @@ function extractDetailFromDoc(order, doc) {
         return 'N/A';
     };
     const postage = function() {
-        return amazon_order_history_extraction.by_regex(
+        return extraction.by_regex(
             [
                 ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
                     label => sprintf(
@@ -119,7 +125,7 @@ function extractDetailFromDoc(order, doc) {
         if ( order.id == 'D01-9960417-3589456' ) {
             console.log('TODO - remove');
         }
-        const a = amazon_order_history_extraction.by_regex(
+        const a = extraction.by_regex(
             [
                 ['VAT', 'tax', 'TVA', 'IVA'].map(
                     label => sprintf(
@@ -153,7 +159,7 @@ function extractDetailFromDoc(order, doc) {
         return a;
     };
     const us_tax = function(){
-        const a = amazon_order_history_extraction.by_regex(
+        const a = extraction.by_regex(
             [
                 '//div[contains(@id,"od-subtotals")]//' +
                 'span[contains(text(),"tax") ' +
@@ -182,7 +188,7 @@ function extractDetailFromDoc(order, doc) {
         return 'N/A';
     };
     const cad_gst = function() {
-        const a = amazon_order_history_extraction.by_regex(
+        const a = extraction.by_regex(
             [
                 ['GST', 'HST'].map(
                     label => sprintf(
@@ -209,7 +215,7 @@ function extractDetailFromDoc(order, doc) {
         return 'N/A';
     };
     const cad_pst = function(){
-        const a = amazon_order_history_extraction.by_regex(
+        const a = extraction.by_regex(
             [
                 ['PST', 'RST', 'QST'].map(
                     label => sprintf(
@@ -267,7 +273,7 @@ function extractDetailFromDoc(order, doc) {
 
 const extractDetailPromise = (order, request_scheduler) => new Promise(
     function(resolve, reject) {
-        const query = amazon_order_history_util.getOrderDetailUrl(order.id);
+        const query = util.getOrderDetailUrl(order.id);
         const event_converter = function(evt) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(
@@ -317,7 +323,7 @@ class Order {
                   link from href attribute
                   item: not sure what we use this for - will it still work?
             */
-            const itemResult = amazon_order_history_util.findMultipleNodeValues(
+            const itemResult = util.findMultipleNodeValues(
                 './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
                 elem
             );
@@ -373,7 +379,7 @@ class Order {
             elem
         );
         if (!this.id) {
-            this.id = amazon_order_history_util.findSingleNodeValue(
+            this.id = util.findSingleNodeValue(
                 '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
                 elem
             ).getAttribute('href').match(/.*orderID=([^?]*)/)[1];
@@ -387,13 +393,13 @@ class Order {
                     order_tracker.paymentsPromiseResolved(this.id);
                     resolve([ this.date + ": " + this.total]);
                 } else {
-                    const query = amazon_order_history_util.getOrderPaymentUrl(this.id);
+                    const query = util.getOrderPaymentUrl(this.id);
                     const event_converter = function(evt) {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(
                             evt.target.responseText, 'text/html'
                         );
-                        const payments = amazon_order_history_extraction.payments_from_invoice(doc);
+                        const payments = extraction.payments_from_invoice(doc);
                         // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
                         return payments;
                     }.bind(this);
@@ -455,7 +461,7 @@ function getOrdersForYearAndQueryTemplate(
         return sprintf(
             query_template,
             {
-                site: amazon_order_history_util.getSite(),
+                site: util.getSite(),
                 year: year,
                 startOrderPos: startOrderPos
             }
@@ -464,7 +470,7 @@ function getOrdersForYearAndQueryTemplate(
     const convertOrdersPage = function(evt) {
         const p = new DOMParser();
         const d = p.parseFromString(evt.target.responseText, 'text/html');
-        const countSpan = amazon_order_history_util.findSingleNodeValue(
+        const countSpan = util.findSingleNodeValue(
             './/span[@class="num-orders"]', d.documentElement);
         if (countSpan === null) {
             console.warn(
@@ -487,12 +493,12 @@ function getOrdersForYearAndQueryTemplate(
         } catch(err) {
             console.warn(
                 'Error: maybe you\'re not logged into ' +
-                'https://' + amazon_order_history_util.getSite() + '/gp/css/order-history ' +
+                'https://' + util.getSite() + '/gp/css/order-history ' +
                 err
             );
             return;
         }
-        const order_elems = amazon_order_history_util.findMultipleNodeValues(
+        const order_elems = util.findMultipleNodeValues(
             './/*[contains(concat(" ", ' +
                 'normalize-space(@class), ' +
                 '" "), ' +
@@ -525,7 +531,7 @@ function getOrdersForYearAndQueryTemplate(
             elem => dom2json.toDOM(elem)
     );
         function makeOrderPromise(elem) {
-            const order = amazon_order_history_order.create(elem, request_scheduler);
+            const order = extraction.create(elem, request_scheduler);
             return Promise.resolve(order);
         }
         order_elems.forEach(
@@ -548,7 +554,7 @@ function getOrdersForYearAndQueryTemplate(
                 order_promises.push(order_promise);
                 order_promise.then( order => {
                     // TODO is "Fetching" the right message for this stage?
-                    console.log('amazon_order_history_order Fetching ' + order.id);
+                    console.log('azad_order Fetching ' + order.id);
                 });
                 console.log(
                     'YearFetcher(' + year + ') order_promises.length:' +
@@ -660,7 +666,7 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&unifiedOrders=0' +
             '&startIndex=%(startOrderPos)s',
         ],
-    }[amazon_order_history_util.getSite()];
+    }[util.getSite()];
 
     const promises_to_promises = templates.map(
         template => getOrdersForYearAndQueryTemplate(
@@ -707,7 +713,7 @@ function getOrdersByYear(years, request_scheduler, latest_year) {
 }
 
 
-return {
+export default {
     create: function(ordersPageElem, request_scheduler) {
         return new Order(ordersPageElem, request_scheduler);
     },

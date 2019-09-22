@@ -1,12 +1,11 @@
 {
     "name": "azad",
-    "version": "1.0.0",
-    "description": "",
+    "version": "1.8.24",
+    "description": "This extension extracts order history from your Amazon account.",
     "license": "Apache-2.0",
     "main": "background.js",
     "scripts": {
         "build": "node utils/build.js",
-        "start": "node utils/webserver.js",
         "lint": "eslint src/js",
         "package": "utils/package.sh"
     },
@@ -24,14 +23,17 @@
         "html-loader": "^0.5.5",
         "html-webpack-plugin": "^3.2.0",
         "style-loader": "^0.23.1",
-        "webpack": "^4.28.4",
-        "webpack-cli": "^3.2.1",
+        "webpack": "^4.39.3",
+        "webpack-cli": "^3.3.9",
         "webpack-dev-server": "^3.1.14",
         "write-file-webpack-plugin": "^4.5.0"
     },
     "dependencies": {
+        "datatables": "^1.10.18",
         "jquery": "^3.3.1",
         "lzjs": "^1.3.0",
+        "moment": "^2.24.0",
+        "sprintf-js": "^1.1.2",
         "sprintf.js": "^0.1.4"
     }
 }

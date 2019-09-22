@@ -3,6 +3,8 @@
 
 "use strict";
 
+import lzjs from './lzjs'
+
 function millisNow() {
     return (new Date()).getTime();
 }
@@ -100,7 +102,7 @@ class LocalCacheImpl {
     }
 }
 
-const createLocalCache = (cache_name) => {
+function createLocalCache(cache_name) {
     const cache = new LocalCacheImpl(cache_name);
     return {
         set: (key, value) => cache.set(key, value),
@@ -108,7 +110,7 @@ const createLocalCache = (cache_name) => {
         clear: () => cache.clear(),
         hitCount: () => cache.hitCount(),
     };
-};
+}
 
 export default {
     createLocalCache: createLocalCache

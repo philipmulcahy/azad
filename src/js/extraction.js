@@ -2,6 +2,10 @@
 
 /* jshint strict: true, esversion: 6 */
 
+import util from './util';
+import $ from 'jquery';
+import sprintf from 'sprintf-js';
+
 "use strict";
 
 const by_regex = function(xpaths, regex, default_value, elem) {
@@ -10,7 +14,7 @@ const by_regex = function(xpaths, regex, default_value, elem) {
         let a = null;
         const xpath = xpaths[i];
         try {
-            a = amazon_order_history_util.findSingleNodeValue(
+            a = util.findSingleNodeValue(
                 xpath,
                 elem
             );
@@ -34,7 +38,7 @@ const by_regex = function(xpaths, regex, default_value, elem) {
 };
 
 function getField(xpath, elem) {
-    const valueElem = amazon_order_history_util.findSingleNodeValue(
+    const valueElem = util.findSingleNodeValue(
         xpath, elem
     );
     try {
@@ -47,7 +51,7 @@ function getField(xpath, elem) {
 const payments_from_invoice = function(doc) {
     // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
     const strategy_1 = () => {
-        const payments = amazon_order_history_util.findMultipleNodeValues(
+        const payments = util.findMultipleNodeValues(
             [
                 'Credit Card transactions',
                 'Transactions de carte de crédit'
@@ -67,7 +71,7 @@ const payments_from_invoice = function(doc) {
         });
     };
     const strategy_2 = () => {
-        const new_style_payments = amazon_order_history_util.findMultipleNodeValues(
+        const new_style_payments = util.findMultipleNodeValues(
             '//*[contains(text(), "Payment Method")]/../self::*',
             doc.documentElement
         ).map(
@@ -102,7 +106,7 @@ const payments_from_invoice = function(doc) {
     return [];
 };
 
-return {
+export default {
     by_regex: by_regex,
     payments_from_invoice: payments_from_invoice
 };
