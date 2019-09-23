@@ -664,7 +664,7 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&digitalOrders=1' +
             '&orderFilter=year-%(year)s' +
             '&unifiedOrders=0' +
-            '&startIndex=%(startOrderPos)s',
+            '&startIndex=%(startOrderPos)s'],
         'www.amazon.com.mx': [
             'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_date' +
             '?ie=UTF8' +
@@ -675,8 +675,7 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&digitalOrders=1' +
             '&orderFilter=year-%(year)s' +
             '&unifiedOrders=0' +
-            '&startIndex=%(startOrderPos)s',
-        ],
+            '&startIndex=%(startOrderPos)s'],
     }[util.getSite()];
 
     const promises_to_promises = templates.map(
