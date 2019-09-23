@@ -1,0 +1,9 @@
+table.dataTable thead .sorting {
+  background-image: url("https://cdn.datatables.net/1.10.19/images/sort_both.png");
+}
+table.dataTable thead .sorting_asc {
+  background-image: url("https://cdn.datatables.net/1.10.19/images/sort_asc.png");
+}
+table.dataTable thead .sorting_desc {
+  background-image: url("https://cdn.datatables.net/1.10.19/images/sort_desc.png");
+}

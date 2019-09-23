@@ -56,7 +56,7 @@ const payments_from_invoice = function(doc) {
                 'Credit Card transactions',
                 'Transactions de carte de crédit'
             ].map(
-                label => sprintf(
+                label => sprintf.sprintf(
                     '//b[contains(text(),"%s")]/' +
                     '../../..//td[contains(text(),":")]/..',
                     label

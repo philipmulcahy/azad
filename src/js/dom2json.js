@@ -2,6 +2,8 @@
 
 // Thanks to Simon Sturmer: sstur/dom-to-json.js
 
+'use strict';
+
 function toJSON(node) {
   node = node || this;
   const obj = {
@@ -82,5 +84,5 @@ function toDOM(obj) {
 
 export default {
     toJSON: toJSON,
-    toDOM: toDOM,
+    toDOM: toDOM
 };

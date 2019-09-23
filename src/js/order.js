@@ -9,7 +9,7 @@ import util from './util';
 import date from './date';
 import extraction from './extraction';
 import sprintf from 'sprintf-js';
-import dom2json from 'dom2json';
+import dom2json from './dom2json';
 
 class OrderTracker  {
     constructor() {
@@ -108,7 +108,7 @@ function extractDetailFromDoc(order, doc) {
         return extraction.by_regex(
             [
                 ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
-                    label => sprintf(
+                    label => sprintf.sprintf(
                         '//div[contains(@id,"od-subtotals")]//' +
                         'span[contains(text(),"%s")]/' +
                         'parent::div/following-sibling::div/span',
@@ -128,7 +128,7 @@ function extractDetailFromDoc(order, doc) {
         const a = extraction.by_regex(
             [
                 ['VAT', 'tax', 'TVA', 'IVA'].map(
-                    label => sprintf(
+                    label => sprintf.sprintf(
                         '//div[contains(@id,"od-subtotals")]//' +
                         'span[contains(text(),"%s") ' +
                         'and not(contains(text(),"Before") or contains(text(), "esclusa") ' +
@@ -191,7 +191,7 @@ function extractDetailFromDoc(order, doc) {
         const a = extraction.by_regex(
             [
                 ['GST', 'HST'].map(
-                    label => sprintf(
+                    label => sprintf.sprintf(
                         '//div[contains(@id,"od-subtotals")]//' +
                         'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
                         'parent::div/following-sibling::div/span',
@@ -218,7 +218,7 @@ function extractDetailFromDoc(order, doc) {
         const a = extraction.by_regex(
             [
                 ['PST', 'RST', 'QST'].map(
-                    label => sprintf(
+                    label => sprintf.sprintf(
                         '//div[contains(@id,"od-subtotals")]//' +
                         'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
                         'parent::div/following-sibling::div/span',
@@ -244,7 +244,7 @@ function extractDetailFromDoc(order, doc) {
     const refund = function () {
         let a = getField(
             ['Refund'].map( //TODO other field names?
-                label => sprintf(
+                label => sprintf.sprintf(
                     '//div[contains(@id,"od-subtotals")]//' +
                     'span[contains(text(),"%s")]/' +
                     'ancestor::div[1]/following-sibling::div/span',
@@ -346,7 +346,7 @@ class Order {
         this.date = date.normalizeDateString(
             getField(
                 ['Commande effectuée', 'Order placed', 'Ordine effettuato', 'Pedido realizado'].map(
-                    label => sprintf(
+                    label => sprintf.sprintf(
                         './/div[contains(span,"%s")]' +
                         '/../div/span[contains(@class,"value")]',
                         label
@@ -367,7 +367,7 @@ class Order {
         }
         this.id = getField(
             ['Order #', 'commande', 'Ordine #', 'Pedido n.º'].map(
-                label => sprintf(
+                label => sprintf.sprintf(
                     './/div[contains(@class,"a-row")]' +
                     '[span[contains(@class,"label")]]' +
                     '[span[contains(@class,"value")]]' +
@@ -458,7 +458,7 @@ function getOrdersForYearAndQueryTemplate(
         );
     };
     const generateQueryString = function(startOrderPos) {
-        return sprintf(
+        return sprintf.sprintf(
             query_template,
             {
                 site: util.getSite(),
@@ -531,7 +531,7 @@ function getOrdersForYearAndQueryTemplate(
             elem => dom2json.toDOM(elem)
     );
         function makeOrderPromise(elem) {
-            const order = extraction.create(elem, request_scheduler);
+            const order = create(elem, request_scheduler);
             return Promise.resolve(order);
         }
         order_elems.forEach(
@@ -712,11 +712,13 @@ function getOrdersByYear(years, request_scheduler, latest_year) {
     );
 }
 
+function create(ordersPageElem, request_scheduler) {
+    return new Order(ordersPageElem, request_scheduler);
+}
 
 export default {
-    create: function(ordersPageElem, request_scheduler) {
-        return new Order(ordersPageElem, request_scheduler);
-    },
+    create: create,
+
     // Return Array of Order Promise.
     getOrdersByYear: getOrdersByYear,
 

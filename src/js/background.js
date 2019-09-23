@@ -1,9 +1,6 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
-import 'src/img/icon48.png'
-import 'src/img/icon128.png'
-
 function registerListener() {
     "use strict";
     chrome.runtime.onMessage.addListener( (request, sender, sendResponse) => {

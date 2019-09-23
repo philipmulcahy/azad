@@ -69,7 +69,19 @@ const options = {
             from: "src/img/icon128.png"
         }]),
         new CopyWebpackPlugin([{
+            from: "src/img/sort_asc.png"
+        }]),
+        new CopyWebpackPlugin([{
+            from: "src/img/sort_both.png"
+        }]),
+        new CopyWebpackPlugin([{
+            from: "src/img/sort_desc.png"
+        }]),
+        new CopyWebpackPlugin([{
             from: "node_modules/datatables/media/css/jquery.dataTables.min.css"
+        }]),
+        new CopyWebpackPlugin([{
+            from: "src/styles/datatables_override.css"
         }])
     ]
 };
