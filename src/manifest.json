@@ -40,7 +40,7 @@
                 "https://www.amazon.it/*",
                 "https://www.amazon.com.au/*"
             ],
-            "css": ["jquery.dataTables.min.css"],
+            "css": ["jquery.dataTables.min.css", "datatables_override.css"],
             "js": [
                 "inject.bundle.js"
             ]

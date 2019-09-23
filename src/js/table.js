@@ -286,7 +286,7 @@ function reallyDisplayOrders(orders, beautiful) {
                                    .reduce( (a, b) => a + b, 0 )
                             );
                             $(api.column(col_index).footer()).html(
-                                sprintf('page=%s; all=%s',
+                                sprintf.sprintf('page=%s; all=%s',
                                     col_spec.pageSum.toFixed(2),
                                     col_spec.sum.toFixed(2))
                             );
