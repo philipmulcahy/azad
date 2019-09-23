@@ -15,6 +15,7 @@
         "https://www.amazon.in/",
         "https://smile.amazon.it/",
         "https://www.amazon.it/",
+        "https://www.amazon.com.mx/",
         "https://www.amazon.com.au/"
     ],
     "background": {
@@ -38,7 +39,8 @@
                 "https://www.amazon.in/*",
                 "https://smile.amazon.it/*",
                 "https://www.amazon.it/*",
-                "https://www.amazon.com.au/*"
+                "https://www.amazon.com.au/*",
+                "https://www.amazon.com.mx/*"
             ],
             "css": ["jquery.dataTables.min.css", "datatables_override.css"],
             "js": [
