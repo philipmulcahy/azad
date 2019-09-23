@@ -665,6 +665,17 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&orderFilter=year-%(year)s' +
             '&unifiedOrders=0' +
             '&startIndex=%(startOrderPos)s',
+        'www.amazon.com.mx': [
+            'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_date' +
+            '?ie=UTF8' +
+            '&orderFilter=year-%(year)s' +
+            '&startIndex=%(startOrderPos)s',
+            'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_yo_new_digital' +
+            '?ie=UTF8' +
+            '&digitalOrders=1' +
+            '&orderFilter=year-%(year)s' +
+            '&unifiedOrders=0' +
+            '&startIndex=%(startOrderPos)s',
         ],
     }[util.getSite()];
 
