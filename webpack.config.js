@@ -17,7 +17,8 @@ const options = {
     mode: process.env.NODE_ENV || "development",
     entry: {
         inject: path.join(__dirname, "src", "js", "inject.js"),
-        background: path.join(__dirname, "src", "js", "background.js")
+        background: path.join(__dirname, "src", "js", "background.js"),
+        alltests: path.join(__dirname, "src", "tests", "all.js")
     },
     output: {
         path: path.join(__dirname, "build"),
