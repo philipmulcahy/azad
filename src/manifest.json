@@ -2,6 +2,7 @@
     "manifest_version": 2,
     "name": "Amazon Order History Reporter",
     "permissions": [
+        "contextMenus",
         "https://smile.amazon.ca/",
         "https://www.amazon.ca/",
         "https://smile.amazon.com/",
@@ -48,6 +49,10 @@
             ]
         }
     ],
+    "browser_action": {
+          "default_title": "Amazon Order History Reporter",
+          "default_popup": "popup.html"
+        },
     "icons": {
         "48": "icon48.png",
         "128": "icon128.png"
