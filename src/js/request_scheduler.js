@@ -145,8 +145,8 @@ class RequestScheduler {
             req.onerror = function() {
                 this.running_count -= 1;
                 this.error_count += 1;
-                console.log(
-                    'Unknown error fetching ' + query);
+                this.updateProgress();
+                console.log( 'Unknown error fetching ' + query );
             };
             req.onload = function(evt) {
                 this.running_count -= 1;
