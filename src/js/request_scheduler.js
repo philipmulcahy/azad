@@ -192,7 +192,7 @@ class RequestScheduler {
                 }
                 const converted = event_converter(evt);
                 this.cache.set(query, converted);
-                callback(converted);
+                callback(converted, query);
             }.bind(this);
             this.running_count += 1;
             req.send();
@@ -229,7 +229,7 @@ class RequestScheduler {
             this.cache.get(query);
         if (cached_response !== undefined) {
             console.log('Already had ' + query + ' with ' + this.queue.size());
-            callback(cached_response);
+            callback(cached_response, query);
         } else {
             console.log('Scheduling ' + query + ' with ' + this.queue.size());
             if (this.running_count < this.CONCURRENCY) {
