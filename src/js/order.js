@@ -440,6 +440,23 @@ class Order {
         }
         return ul;
     }
+
+    assembleDiagnostics() {
+        const diagnostics = {};
+        [
+            'id',
+            'list_url',
+            'detail_url',
+            'invoice_url',
+            'date',
+            'total',
+            'who',
+            'items'
+        ].forEach(
+            field_name => { diagnostics[field_name] = this[field_name]; }
+        );
+        return diagnostics;
+    }
 }
 
 function getOrdersForYearAndQueryTemplate(

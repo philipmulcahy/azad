@@ -13,6 +13,7 @@ import sprintf from 'sprintf-js';
 
 const tableStyle = 'border: 1px solid black;';
 let datatable = null;
+const order_map = {};
 
 /**
  * Add a td to the row tr element, and return the td.
@@ -144,6 +145,9 @@ const cols = [
 
 function reallyDisplayOrders(orders, beautiful) {
     console.log('amazon_order_history_table.reallyDisplayOrders starting');
+    for (let entry in order_map) {
+        delete order_map[entry];
+    }
     const addOrderTable = function(orders) {
         const addHeader = function(row, value, help) {
             const th = row.ownerDocument.createElement('th');
@@ -159,7 +163,6 @@ function reallyDisplayOrders(orders, beautiful) {
         const appendOrderRow = function(table, order) {
             const tr = document.createElement('tr');
             tr.setAttribute('style', tableStyle);
-            tr.order = order;
             table.appendChild(tr);
             cols.forEach( col_spec => {
                 let elem = null;
@@ -242,6 +245,7 @@ function reallyDisplayOrders(orders, beautiful) {
         table.appendChild(tbody);
 
         orders.forEach( order => {
+            order_map[order.id] = order;
             appendOrderRow(tbody, order);
             console.log('Added row for ' + order.id);
         });
@@ -342,8 +346,17 @@ function displayOrders(orderPromises, beautiful) {
     });
 }
 
-function dumpOrderDiagnostics(detail_link) {
-    console.log('dumpOrderDiagnostics: ' + detail_link);
+function getOrderByDetailLink(detail_link) {
+
+}
+
+function dumpOrderDiagnostics(order_id) {
+    console.log('dumpOrderDiagnostics: ' + order_id);
+    const order = order_map[order_id];
+    if (order) {
+        const diagnostics = order.assembleDiagnostics();
+        console.log(diagnostics);
+    }
 }
 
 export default {
