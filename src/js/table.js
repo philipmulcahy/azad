@@ -355,9 +355,9 @@ function dumpOrderDiagnostics(order_id) {
     console.log('dumpOrderDiagnostics: ' + order_id);
     const order = order_map[order_id];
     if (order) {
-        const diagnostics = order.assembleDiagnostics();
-        console.log(diagnostics);
-        diagnostic_download.save_json_to_file(diagnostics, order_id + '.json');
+        order.assembleDiagnostics().then(
+            diagnostics => diagnostic_download.save_json_to_file(diagnostics, order_id + '.json')
+        );
     }
 }
 

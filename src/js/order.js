@@ -294,9 +294,9 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
 );
 
 class Order {
-    constructor(ordersPageElem, request_scheduler) {
+    constructor(ordersPageElem, request_scheduler, src_query) {
         this.id = null;
-        this.list_url = ordersPageElem.ownerDocument.URL;
+        this.list_url = src_query;
         this.detail_url = null;
         this.invoice_url = null;
         order_tracker.constructorStarted(this);
@@ -455,7 +455,17 @@ class Order {
         ].forEach(
             field_name => { diagnostics[field_name] = this[field_name]; }
         );
-        return diagnostics;
+        return Promise.all([
+            fetch(this.list_url)
+                .then( response => response.text() )
+                .then( text => { diagnostics.list_html = text; } ),
+            fetch(this.detail_url)
+                .then( response => response.text() )
+                .then( text => { diagnostics.detail_html = text; } ),
+            fetch(this.invoice_url)
+                .then( response => response.text() )
+                .then( text => { diagnostics.invoice_html = text; } )
+        ]).then( () => diagnostics );
     }
 }
 
@@ -547,12 +557,12 @@ function getOrdersForYearAndQueryTemplate(
             );
         }
     };
-    const receiveOrdersPageData = function(orders_page_data) {
+    const receiveOrdersPageData = function(orders_page_data, src_query) {
         const order_elems = orders_page_data.order_elems.map(
             elem => dom2json.toDOM(elem)
-    );
+        );
         function makeOrderPromise(elem) {
-            const order = create(elem, request_scheduler);
+            const order = create(elem, request_scheduler, src_query);
             return Promise.resolve(order);
         }
         order_elems.forEach(
@@ -743,8 +753,8 @@ function getOrdersByYear(years, request_scheduler, latest_year) {
     );
 }
 
-function create(ordersPageElem, request_scheduler) {
-    return new Order(ordersPageElem, request_scheduler);
+function create(ordersPageElem, request_scheduler, src_query) {
+    return new Order(ordersPageElem, request_scheduler, src_query);
 }
 
 export default {
