@@ -1,24 +1,39 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
+const diagnostics_dumpers = {};
 
-function registerPopups() {
+function listenForOrderDiagnosticDumpers() {
+    chrome.runtime.onConnect.addListener( port => {
+        port.onDisconnect.addListener( () => {
+            delete diagnostics_dumpers[port.sender.tab.id];
+        } );
+        diagnostics_dumpers[port.sender.tab.id] = 
+            order_detail_url => port.postMessage({order_detail_url: order_detail_url});
+    });
+}
+
+function registerRightClickActions() {
     chrome.contextMenus.create(
         {
             id: 'save_order_debug_info',
             title: 'save order debug info',
             contexts: ['link']
-//            onclick: () => console.log('save order debug info clicked')
         }
     );
     chrome.contextMenus.onClicked.addListener(info => {
         console.log('context menu item: ' + info.menuItemId + ' clicked;');
+        if (info.menuItemId == 'save_order_debug_info') {
+            if ( /orderID=/.test(info.linkUrl) ) {
+                Object.values(diagnostics_dumpers).forEach( dumper => dumper(info.linkUrl) );
+            }
+        }
     });
 }
 
-function registerListener() {
+function registerNewTabListener() {
     "use strict";
-    chrome.runtime.onMessage.addListener( (request, sender, sendResponse) => {
+    chrome.runtime.onMessage.addListener( (request, sender) => {
         console.log(
             sender.tab
                 ? 'from a content script:' + sender.tab.url
@@ -28,9 +43,12 @@ function registerListener() {
             chrome.tabs.create(
                 { url: request.url }
             );
+        } else {
+            console.warn('unknown action: ' + request.action);
         }
     });
 }
 
-registerPopups();
-registerListener();
+listenForOrderDiagnosticDumpers();
+registerRightClickActions();
+registerNewTabListener();

@@ -64,12 +64,6 @@ const options = {
             }
         }]),
         new CopyWebpackPlugin([{
-            from: "src/html/popup.html"
-        }]),
-        new CopyWebpackPlugin([{
-            from: "src/styles/popup.css"
-        }]),
-        new CopyWebpackPlugin([{
             from: "src/img/icon48.png"
         }]),
         new CopyWebpackPlugin([{

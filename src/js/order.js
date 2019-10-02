@@ -296,6 +296,9 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
 class Order {
     constructor(ordersPageElem, request_scheduler) {
         this.id = null;
+        this.list_url = ordersPageElem.ownerDocument.URL;
+        this.detail_url = null;
+        this.invoice_url = null;
         order_tracker.constructorStarted(this);
         this.date = null;
         this.total = null;
@@ -378,6 +381,8 @@ class Order {
             ).join(' | '),
             elem
         );
+        this.detail_url = util.getOrderDetailUrl(this.id);
+        this.invoice_url = util.getOrderPaymentUrl(this.id);
         if (!this.id) {
             this.id = util.findSingleNodeValue(
                 '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
@@ -393,7 +398,6 @@ class Order {
                     order_tracker.paymentsPromiseResolved(this.id);
                     resolve([ this.date + ": " + this.total]);
                 } else {
-                    const query = util.getOrderPaymentUrl(this.id);
                     const event_converter = function(evt) {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(
@@ -404,7 +408,7 @@ class Order {
                         return payments;
                     }.bind(this);
                     this.request_scheduler.schedule(
-                        query,
+                        this.invoice_url,
                         event_converter,
                         payments => {
                             order_tracker.paymentsPromiseResolved(this.id);
