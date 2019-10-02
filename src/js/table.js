@@ -159,6 +159,7 @@ function reallyDisplayOrders(orders, beautiful) {
         const appendOrderRow = function(table, order) {
             const tr = document.createElement('tr');
             tr.setAttribute('style', tableStyle);
+            tr.order = order;
             table.appendChild(tr);
             cols.forEach( col_spec => {
                 let elem = null;
@@ -329,6 +330,8 @@ function reallyDisplayOrders(orders, beautiful) {
     return table;
 }
 
+// TODO: refactor so that order retrieval belongs to azaz_table, but 
+// diagnostics building belongs to azad_order.
 function displayOrders(orderPromises, beautiful) {
     console.log('amazon_order_history_table.displayOrders starting');
     return Promise.all(orderPromises).then( orders => {
@@ -339,6 +342,12 @@ function displayOrders(orderPromises, beautiful) {
     });
 }
 
+function dumpOrderDiagnostics(detail_link) {
+    console.log('dumpOrderDiagnostics: ' + detail_link);
+}
+
 export default {
-    displayOrders: displayOrders
+    displayOrders: displayOrders,
+
+    dumpOrderDiagnostics: dumpOrderDiagnostics
 };

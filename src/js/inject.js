@@ -95,7 +95,15 @@ function addInfoPoints() {
     );
 }
 
+function registerContentScript() {
+    const background_port = chrome.runtime.connect();
+    background_port.onMessage.addListener(
+        msg => azad_table.dumpOrderDiagnostics(msg.order_detail_url)
+    );
+}
+
 console.log('Amazon Order History Reporter starting');
 addYearButtons();
 addClearCacheButton();
 addInfoPoints();
+registerContentScript();
