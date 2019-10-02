@@ -25,7 +25,11 @@ function registerRightClickActions() {
         console.log('context menu item: ' + info.menuItemId + ' clicked;');
         if (info.menuItemId == 'save_order_debug_info') {
             if ( /orderID=/.test(info.linkUrl) ) {
-                Object.values(diagnostics_dumpers).forEach( dumper => dumper(info.linkUrl) );
+                const match =info.linkUrl.match(/.*orderID=([0-9-]*)$/);
+                if (match) {
+                    const order_id = match[1];
+                    Object.values(diagnostics_dumpers).forEach( dumper => dumper(order_id) );
+                }
             }
         }
     });
