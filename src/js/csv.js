@@ -4,25 +4,25 @@
 "use strict";
 
 function download(table) {
-    var tableToArrayOfArrays = function(table) {
-        var rows = table.rows;
-        var result = [];
-        for(var i=0; i<rows.length; ++i) {
-            var cells = rows[i].cells;
-            var cell_array = [];
-            for(var j=0; j<cells.length; ++j) {
+    const tableToArrayOfArrays = function(table) {
+        const rows = table.rows;
+        const result = [];
+        for(let i=0; i<rows.length; ++i) {
+            let cells = rows[i].cells;
+            let cell_array = [];
+            for(let j=0; j<cells.length; ++j) {
                 cell_array.push(cells[j].textContent);
             }
             result.push(cell_array);
         }
         return result;
     };
-    var processRow = function(row) {
-        var processCell = function (cell) {
+    const processRow = function(row) {
+        const processCell = function (cell) {
             if (cell === null) {
                 return '';
             }
-            var processed = cell.replace(/"/g, '""');
+            let processed = cell.replace(/"/g, '""');
             if (processed.search(/("|,|\n)/g) >= 0) {
                 processed = '"' + processed + '"';
             }
@@ -30,10 +30,10 @@ function download(table) {
         };
         return row.map(processCell).join(',');
     };
-    var csvFile = '\ufeff' + tableToArrayOfArrays(table).map(processRow).join('\n');
-    var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
-    var link = document.createElement("a");
-    var url = URL.createObjectURL(blob);
+    const csvFile = '\ufeff' + tableToArrayOfArrays(table).map(processRow).join('\n');
+    const blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
     link.setAttribute("download", 'amazon_order_history.csv');
     link.style.visibility = 'hidden';
