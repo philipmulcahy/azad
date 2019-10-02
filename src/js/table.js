@@ -3,11 +3,12 @@
 
 /* jshint strict: true, esversion: 6 */
 
-import util from './util';
-import csv from './csv';
 import $ from 'jquery';
 import 'datatables';
+import util from './util';
+import csv from './csv';
 import sprintf from 'sprintf-js';
+import diagnostic_download from './diagnostic_download';
 
 'use strict';
 
@@ -356,6 +357,7 @@ function dumpOrderDiagnostics(order_id) {
     if (order) {
         const diagnostics = order.assembleDiagnostics();
         console.log(diagnostics);
+        diagnostic_download.save_json_to_file(diagnostics, order_id + '.json');
     }
 }
 
