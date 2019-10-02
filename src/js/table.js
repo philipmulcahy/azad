@@ -330,7 +330,7 @@ function reallyDisplayOrders(orders, beautiful) {
     return table;
 }
 
-// TODO: refactor so that order retrieval belongs to azaz_table, but 
+// TODO: refactor so that order retrieval belongs to azad_table, but 
 // diagnostics building belongs to azad_order.
 function displayOrders(orderPromises, beautiful) {
     console.log('amazon_order_history_table.displayOrders starting');
