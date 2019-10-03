@@ -37,17 +37,6 @@ const by_regex = function(xpaths, regex, default_value, elem) {
         default_value;
 };
 
-function getField(xpath, elem) {
-    const valueElem = util.findSingleNodeValue(
-        xpath, elem
-    );
-    try {
-        return valueElem.textContent.trim();
-    } catch (_) {
-        return undefined;
-    }
-}
-
 const payments_from_invoice = function(doc) {
     // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
     const strategy_1 = () => {

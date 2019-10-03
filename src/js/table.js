@@ -3,16 +3,18 @@
 
 /* jshint strict: true, esversion: 6 */
 
-import util from './util';
-import csv from './csv';
 import $ from 'jquery';
 import 'datatables';
+import util from './util';
+import csv from './csv';
 import sprintf from 'sprintf-js';
+import diagnostic_download from './diagnostic_download';
 
 'use strict';
 
 const tableStyle = 'border: 1px solid black;';
 let datatable = null;
+const order_map = {};
 
 /**
  * Add a td to the row tr element, and return the td.
@@ -109,21 +111,21 @@ const cols = [
         property_name: 'us_tax',
         is_numeric: true,
         help: 'Caution: when stuff is not supplied by Amazon, then tax is often not listed.',
-        sites: new RegExp('\.com$')
+        sites: new RegExp('\\.com$')
     },
     {
         field_name: 'GST',
         type: 'detail',
         property_name: 'gst',
         is_numeric: true,
-        sites: new RegExp('\.ca$')
+        sites: new RegExp('\\.ca$')
     },
     {
         field_name: 'PST',
         type: 'detail',
         property_name: 'pst',
         is_numeric: true,
-        sites: new RegExp('\.ca$')
+        sites: new RegExp('\\.ca$')
     },
     {
         field_name: 'refund',
@@ -144,6 +146,9 @@ const cols = [
 
 function reallyDisplayOrders(orders, beautiful) {
     console.log('amazon_order_history_table.reallyDisplayOrders starting');
+    for (let entry in order_map) {
+        delete order_map[entry];
+    }
     const addOrderTable = function(orders) {
         const addHeader = function(row, value, help) {
             const th = row.ownerDocument.createElement('th');
@@ -241,6 +246,7 @@ function reallyDisplayOrders(orders, beautiful) {
         table.appendChild(tbody);
 
         orders.forEach( order => {
+            order_map[order.id] = order;
             appendOrderRow(tbody, order);
             console.log('Added row for ' + order.id);
         });
@@ -258,7 +264,7 @@ function reallyDisplayOrders(orders, beautiful) {
                 'bPaginate': true,
                 'lengthMenu': [ [10, 25, 50, 100, -1],
                     [10, 25, 50, 100, 'All'] ],
-                'footerCallback': function(row, data, start, end, display) {
+                'footerCallback': function() {
                     const api = this.api();
                     // Remove the formatting to get integer data for summation
                     const floatVal = function(i) {
@@ -329,6 +335,8 @@ function reallyDisplayOrders(orders, beautiful) {
     return table;
 }
 
+// TODO: refactor so that order retrieval belongs to azad_table, but 
+// diagnostics building belongs to azad_order.
 function displayOrders(orderPromises, beautiful) {
     console.log('amazon_order_history_table.displayOrders starting');
     return Promise.all(orderPromises).then( orders => {
@@ -339,6 +347,18 @@ function displayOrders(orderPromises, beautiful) {
     });
 }
 
+function dumpOrderDiagnostics(order_id) {
+    console.log('dumpOrderDiagnostics: ' + order_id);
+    const order = order_map[order_id];
+    if (order) {
+        order.assembleDiagnostics().then(
+            diagnostics => diagnostic_download.save_json_to_file(diagnostics, order_id + '.json')
+        );
+    }
+}
+
 export default {
-    displayOrders: displayOrders
+    displayOrders: displayOrders,
+
+    dumpOrderDiagnostics: dumpOrderDiagnostics
 };

@@ -11,27 +11,6 @@ import extraction from './extraction';
 import sprintf from 'sprintf-js';
 import dom2json from './dom2json';
 
-class OrderTracker  {
-    constructor() {
-        this.promises_by_id = {};
-        this.pending_ids = new Set();
-    }
-
-    constructorStarted(order_object) {
-    }
-
-    idKnown(id) {
-    }
-
-    detailPromiseResolved(id) {
-    }
-
-    paymentsPromiseResolved(id) {
-    }
-}
-
-const order_tracker = new OrderTracker();
-
 function getField(xpath, elem) {
     const valueElem = util.findSingleNodeValue(
         xpath, elem
@@ -272,7 +251,7 @@ function extractDetailFromDoc(order, doc) {
 }
 
 const extractDetailPromise = (order, request_scheduler) => new Promise(
-    function(resolve, reject) {
+    resolve => {
         const query = util.getOrderDetailUrl(order.id);
         const event_converter = function(evt) {
             const parser = new DOMParser();
@@ -285,7 +264,6 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
             query,
             event_converter,
             order_details => {
-                order_tracker.detailPromiseResolved(order.id);
                 resolve(order_details);
             },
             order.id
@@ -294,9 +272,11 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
 );
 
 class Order {
-    constructor(ordersPageElem, request_scheduler) {
+    constructor(ordersPageElem, request_scheduler, src_query) {
         this.id = null;
-        order_tracker.constructorStarted(this);
+        this.list_url = src_query;
+        this.detail_url = null;
+        this.invoice_url = null;
         this.date = null;
         this.total = null;
         this.who = null;
@@ -378,22 +358,21 @@ class Order {
             ).join(' | '),
             elem
         );
+        this.detail_url = util.getOrderDetailUrl(this.id);
+        this.invoice_url = util.getOrderPaymentUrl(this.id);
         if (!this.id) {
             this.id = util.findSingleNodeValue(
                 '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
                 elem
             ).getAttribute('href').match(/.*orderID=([^?]*)/)[1];
         }
-        order_tracker.idKnown(this.id);
         this.items = getItems(elem);
         this.detail_promise = extractDetailPromise(this, this.request_scheduler);
         this.payments_promise = new Promise(
-            function(resolve, reject) {
+            (resolve => {
                 if (this.id.startsWith("D")) {
-                    order_tracker.paymentsPromiseResolved(this.id);
                     resolve([ this.date + ": " + this.total]);
                 } else {
-                    const query = util.getOrderPaymentUrl(this.id);
                     const event_converter = function(evt) {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(
@@ -404,16 +383,15 @@ class Order {
                         return payments;
                     }.bind(this);
                     this.request_scheduler.schedule(
-                        query,
+                        this.invoice_url,
                         event_converter,
                         payments => {
-                            order_tracker.paymentsPromiseResolved(this.id);
                             resolve(payments);
                         },
                         this.id
                     );
                 }
-            }.bind(this)
+            }).bind(this)
         );
     }
 
@@ -435,6 +413,33 @@ class Order {
             }
         }
         return ul;
+    }
+
+    assembleDiagnostics() {
+        const diagnostics = {};
+        [
+            'id',
+            'list_url',
+            'detail_url',
+            'invoice_url',
+            'date',
+            'total',
+            'who',
+            'items'
+        ].forEach(
+            field_name => { diagnostics[field_name] = this[field_name]; }
+        );
+        return Promise.all([
+            fetch(this.list_url)
+                .then( response => response.text() )
+                .then( text => { diagnostics.list_html = text; } ),
+            fetch(this.detail_url)
+                .then( response => response.text() )
+                .then( text => { diagnostics.detail_html = text; } ),
+            fetch(this.invoice_url)
+                .then( response => response.text() )
+                .then( text => { diagnostics.invoice_html = text; } )
+        ]).then( () => diagnostics );
     }
 }
 
@@ -526,12 +531,12 @@ function getOrdersForYearAndQueryTemplate(
             );
         }
     };
-    const receiveOrdersPageData = function(orders_page_data) {
+    const receiveOrdersPageData = function(orders_page_data, src_query) {
         const order_elems = orders_page_data.order_elems.map(
             elem => dom2json.toDOM(elem)
-    );
+        );
         function makeOrderPromise(elem) {
-            const order = create(elem, request_scheduler);
+            const order = create(elem, request_scheduler, src_query);
             return Promise.resolve(order);
         }
         order_elems.forEach(
@@ -541,7 +546,7 @@ function getOrdersForYearAndQueryTemplate(
 
     // Promise to array of Order Promise.
     return new Promise(
-        (resolve, reject) => {
+        resolve => {
             check_complete_callback = function() {
                 console.log('check_complete_callback() actual:' + order_promises.length + ' expected:' + expected_order_count);
                 if(order_promises.length === expected_order_count) {
@@ -722,8 +727,8 @@ function getOrdersByYear(years, request_scheduler, latest_year) {
     );
 }
 
-function create(ordersPageElem, request_scheduler) {
-    return new Order(ordersPageElem, request_scheduler);
+function create(ordersPageElem, request_scheduler, src_query) {
+    return new Order(ordersPageElem, request_scheduler, src_query);
 }
 
 export default {

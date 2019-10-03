@@ -2,6 +2,7 @@
     "manifest_version": 2,
     "name": "Amazon Order History Reporter",
     "permissions": [
+        "contextMenus",
         "https://smile.amazon.ca/",
         "https://www.amazon.ca/",
         "https://smile.amazon.com/",
