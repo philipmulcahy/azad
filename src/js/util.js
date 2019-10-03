@@ -8,7 +8,7 @@
 
 function getSite() {
     const href = window.location.href;
-    const stem = /https:\/\/((www|smile)\.amazon\.[^\/]+)/.exec(href)[1];
+    const stem = new RegExp('https:\\/\\/((www|smile)\\.amazon\\.[^\\/]+)').exec(href)[1];
     return stem;
 }
 

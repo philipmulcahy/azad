@@ -88,7 +88,7 @@ class BinaryHeap {
         const element = this.content[n];
         const elemScore = this.scoreFunction(element);
 
-        while(true) {
+        for (;;) {
             // Compute the indices of the child elements.
             const child2N = (n + 1) * 2;
             const child1N = child2N - 1;
@@ -134,92 +134,6 @@ class RequestScheduler {
         this.completed_count = 0;
         this.error_count = 0;
         this.signin_warned = false;
-        this.execute = function(query, event_converter, callback, priority) {
-            console.log(
-                'Executing ' + query +
-                ' with queue size ' + this.queue.size() +
-                ' and priority ' + priority
-            );
-            const req = new XMLHttpRequest();
-            req.open('GET', query, true);
-            req.onerror = function() {
-                this.running_count -= 1;
-                this.error_count += 1;
-                console.log(
-                    'Unknown error fetching ' + query);
-            };
-            req.onload = function(evt) {
-                this.running_count -= 1;
-                if ( req.status != 200 ) {
-                    this.error_count += 1;
-                    console.log(
-                        'Got HTTP' + req.status + ' fetching ' + query);
-                    return;
-                }
-                if ( req.responseURL.includes('/ap/signin?') ) {
-                    this.error_count += 1;
-                    console.log('Got sign-in redirect from: ' + query);
-                    if ( !this.signin_warned ) {
-                        alert('Amazon Order History Reporter Chrome Extension\n\n' +
-                              'It looks like you might have been logged out of Amazon.\n' +
-                              'Sometimes this can be "partial" - some types of order info stay logged in and some do not.\n' +
-                              'I will now attempt to open a new tab with a login prompt. Please use it to login,\n' +
-                              'and then retry your chosen orange button.');
-                        this.signin_warned = true;
-                        chrome.runtime.sendMessage(
-                            {
-                                action: 'open_tab',
-                                url: query
-                            }
-                        );
-                    }
-                    return;
-                }
-                this.completed_count += 1;
-                console.log(
-                  'Finished ' + query +
-                    ' with queue size ' + this.queue.size());
-                while (this.running_count < this.CONCURRENCY &&
-                       this.queue.size() > 0
-                ) {
-                    const task = this.queue.pop();
-                    this.execute(
-                        task.query,
-                        task.event_converter,
-                        task.callback,
-                        task.priority
-                    );
-                }
-                const converted = event_converter(evt);
-                this.cache.set(query, converted);
-                callback(converted);
-            }.bind(this);
-            this.running_count += 1;
-            req.send();
-            this.updateProgress();
-        };
-        this.statistics = function() {
-            return {
-                'queued' : this.queue.size(),
-                'running' : this.running_count,
-                'completed' : this.completed_count,
-                'errors' : this.error_count,
-                'cache_hits' : this.cache.hitCount(),
-            };
-        };
-        this.updateProgress = function() {
-            try {
-                const target = document.getElementById('order_reporter_progress');
-                if (target !== null) {
-                    target.textContent = Object.entries(this.statistics())
-                                               .map(([k,v]) => {return k + ':' + v;})
-                                               .join('; ');
-                }
-                setTimeout(function() { this.updateProgress(); }.bind(this), 2000);
-            } catch(ex) {
-                console.warn('could not update progress - maybe we are in node?: ' + ex);
-            }
-        };
         this.updateProgress();
     }
 
@@ -229,7 +143,7 @@ class RequestScheduler {
             this.cache.get(query);
         if (cached_response !== undefined) {
             console.log('Already had ' + query + ' with ' + this.queue.size());
-            callback(cached_response);
+            callback(cached_response, query);
         } else {
             console.log('Scheduling ' + query + ' with ' + this.queue.size());
             if (this.running_count < this.CONCURRENCY) {
@@ -247,6 +161,95 @@ class RequestScheduler {
 
     clearCache() {
         this.cache.clear();
+    }
+
+    execute(query, event_converter, callback, priority) {
+        console.log(
+            'Executing ' + query +
+            ' with queue size ' + this.queue.size() +
+            ' and priority ' + priority
+        );
+        const req = new XMLHttpRequest();
+        req.open('GET', query, true);
+        req.onerror = function() {
+            this.running_count -= 1;
+            this.error_count += 1;
+            this.updateProgress();
+            console.log( 'Unknown error fetching ' + query );
+        };
+        req.onload = function(evt) {
+            this.running_count -= 1;
+            if ( req.status != 200 ) {
+                this.error_count += 1;
+                console.log(
+                    'Got HTTP' + req.status + ' fetching ' + query);
+                return;
+            }
+            if ( req.responseURL.includes('/ap/signin?') ) {
+                this.error_count += 1;
+                console.log('Got sign-in redirect from: ' + query);
+                if ( !this.signin_warned ) {
+                    alert('Amazon Order History Reporter Chrome Extension\n\n' +
+                          'It looks like you might have been logged out of Amazon.\n' +
+                          'Sometimes this can be "partial" - some types of order info stay logged in and some do not.\n' +
+                          'I will now attempt to open a new tab with a login prompt. Please use it to login,\n' +
+                          'and then retry your chosen orange button.');
+                    this.signin_warned = true;
+                    chrome.runtime.sendMessage(
+                        {
+                            action: 'open_tab',
+                            url: query
+                        }
+                    );
+                }
+                return;
+            }
+            this.completed_count += 1;
+            console.log(
+              'Finished ' + query +
+                ' with queue size ' + this.queue.size());
+            while (this.running_count < this.CONCURRENCY &&
+                   this.queue.size() > 0
+            ) {
+                const task = this.queue.pop();
+                this.execute(
+                    task.query,
+                    task.event_converter,
+                    task.callback,
+                    task.priority
+                );
+            }
+            const converted = event_converter(evt);
+            this.cache.set(query, converted);
+            callback(converted, query);
+        }.bind(this);
+        this.running_count += 1;
+        req.send();
+        this.updateProgress();
+    }
+
+    statistics() {
+        return {
+            'queued' : this.queue.size(),
+            'running' : this.running_count,
+            'completed' : this.completed_count,
+            'errors' : this.error_count,
+            'cache_hits' : this.cache.hitCount(),
+        };
+    }
+
+    updateProgress() {
+        try {
+            const target = document.getElementById('order_reporter_progress');
+            if (target !== null) {
+                target.textContent = Object.entries(this.statistics())
+                                           .map(([k,v]) => {return k + ':' + v;})
+                                           .join('; ');
+            }
+            setTimeout(function() { this.updateProgress(); }.bind(this), 2000);
+        } catch(ex) {
+            console.warn('could not update progress - maybe we are in node?: ' + ex);
+        }
     }
 }
 
