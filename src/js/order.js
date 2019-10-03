@@ -11,27 +11,6 @@ import extraction from './extraction';
 import sprintf from 'sprintf-js';
 import dom2json from './dom2json';
 
-class OrderTracker  {
-    constructor() {
-        this.promises_by_id = {};
-        this.pending_ids = new Set();
-    }
-
-    constructorStarted(order_object) {
-    }
-
-    idKnown(id) {
-    }
-
-    detailPromiseResolved(id) {
-    }
-
-    paymentsPromiseResolved(id) {
-    }
-}
-
-const order_tracker = new OrderTracker();
-
 function getField(xpath, elem) {
     const valueElem = util.findSingleNodeValue(
         xpath, elem
@@ -272,7 +251,7 @@ function extractDetailFromDoc(order, doc) {
 }
 
 const extractDetailPromise = (order, request_scheduler) => new Promise(
-    function(resolve, reject) {
+    resolve => {
         const query = util.getOrderDetailUrl(order.id);
         const event_converter = function(evt) {
             const parser = new DOMParser();
@@ -285,7 +264,6 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
             query,
             event_converter,
             order_details => {
-                order_tracker.detailPromiseResolved(order.id);
                 resolve(order_details);
             },
             order.id
@@ -299,7 +277,6 @@ class Order {
         this.list_url = src_query;
         this.detail_url = null;
         this.invoice_url = null;
-        order_tracker.constructorStarted(this);
         this.date = null;
         this.total = null;
         this.who = null;
@@ -389,13 +366,11 @@ class Order {
                 elem
             ).getAttribute('href').match(/.*orderID=([^?]*)/)[1];
         }
-        order_tracker.idKnown(this.id);
         this.items = getItems(elem);
         this.detail_promise = extractDetailPromise(this, this.request_scheduler);
         this.payments_promise = new Promise(
-            function(resolve, reject) {
+            (resolve => {
                 if (this.id.startsWith("D")) {
-                    order_tracker.paymentsPromiseResolved(this.id);
                     resolve([ this.date + ": " + this.total]);
                 } else {
                     const event_converter = function(evt) {
@@ -411,13 +386,12 @@ class Order {
                         this.invoice_url,
                         event_converter,
                         payments => {
-                            order_tracker.paymentsPromiseResolved(this.id);
                             resolve(payments);
                         },
                         this.id
                     );
                 }
-            }.bind(this)
+            }).bind(this)
         );
     }
 
@@ -572,7 +546,7 @@ function getOrdersForYearAndQueryTemplate(
 
     // Promise to array of Order Promise.
     return new Promise(
-        (resolve, reject) => {
+        resolve => {
             check_complete_callback = function() {
                 console.log('check_complete_callback() actual:' + order_promises.length + ' expected:' + expected_order_count);
                 if(order_promises.length === expected_order_count) {
