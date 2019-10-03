@@ -111,21 +111,21 @@ const cols = [
         property_name: 'us_tax',
         is_numeric: true,
         help: 'Caution: when stuff is not supplied by Amazon, then tax is often not listed.',
-        sites: new RegExp('\.com$')
+        sites: new RegExp('\\.com$')
     },
     {
         field_name: 'GST',
         type: 'detail',
         property_name: 'gst',
         is_numeric: true,
-        sites: new RegExp('\.ca$')
+        sites: new RegExp('\\.ca$')
     },
     {
         field_name: 'PST',
         type: 'detail',
         property_name: 'pst',
         is_numeric: true,
-        sites: new RegExp('\.ca$')
+        sites: new RegExp('\\.ca$')
     },
     {
         field_name: 'refund',
@@ -264,7 +264,7 @@ function reallyDisplayOrders(orders, beautiful) {
                 'bPaginate': true,
                 'lengthMenu': [ [10, 25, 50, 100, -1],
                     [10, 25, 50, 100, 'All'] ],
-                'footerCallback': function(row, data, start, end, display) {
+                'footerCallback': function() {
                     const api = this.api();
                     // Remove the formatting to get integer data for summation
                     const floatVal = function(i) {
@@ -345,10 +345,6 @@ function displayOrders(orderPromises, beautiful) {
         console.log('amazon_order_history_table.displayOrders then func returning');
         return return_val;
     });
-}
-
-function getOrderByDetailLink(detail_link) {
-
 }
 
 function dumpOrderDiagnostics(order_id) {

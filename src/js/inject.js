@@ -16,7 +16,7 @@ function getYears() {
     if(typeof(getYears.years) === 'undefined') {
         console.log('getYears() needs to do something');
         const snapshot = util.findMultipleNodeValues(
-            '//select[@name=\"orderFilter\"]/option[@value]',
+            '//select[@name="orderFilter"]/option[@value]',
             document.documentElement
         );
         getYears.years = snapshot.map( elem => {
@@ -24,7 +24,7 @@ function getYears() {
                        .replace('en', '')  // amazon.fr
                        .replace('nel', '')  // amazon.it
                        .trim();
-        }).filter( (element, index, array) => {
+        }).filter( element => {
             return(/^\d+$/).test(element);
         }).filter( year => (year >= '2004') );
     }
@@ -45,7 +45,7 @@ function fetchAndShowOrders(years) {
                 alert('500 or more orders found. That\'s a lot! We\'ll start you off with a plain table to make display faster. You can click the blue "datatable" button to restore sorting, filtering etc.');
             }
             azad_table.displayOrders(orderPromises, beautiful);
-            return document.querySelector('[id=\"order_table\"]');
+            return document.querySelector('[id="order_table"]');
         }
     );
 }
