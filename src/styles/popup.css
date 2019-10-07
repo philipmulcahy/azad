@@ -1,0 +1,39 @@
+button.azad_year_button {
+    background-color: orange;
+    color: white;
+}
+
+button.azad_action {
+    display: inline-block;
+    background-color: royalblue; 
+    border-radius: 0px;
+    margin: 0px;
+}
+
+td div input.azad_action {
+    display: inline-block;
+    color: white;
+    background-color: royalblue; 
+    border-radius: 0px;
+    margin: 0px;
+    width: 100%;
+    height: 100%;
+    margin: 0px;
+    border: 0px;
+    padding: 5px;
+}
+
+td div {
+    width: 100%;
+    height: 100%;
+    margin: 0px;
+    border: 0px;
+    padding: 0px;
+}
+
+td{
+    height: 50px;
+    margin: 0px;
+    border: 0px;
+    padding: 0px;
+}

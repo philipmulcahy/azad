@@ -70,6 +70,12 @@ const options = {
             from: "src/img/icon128.png"
         }]),
         new CopyWebpackPlugin([{
+            from: "src/html/popup.html"
+        }]),
+        new CopyWebpackPlugin([{
+            from: "src/styles/popup.css"
+        }]),
+        new CopyWebpackPlugin([{
             from: "src/img/sort_asc.png"
         }]),
         new CopyWebpackPlugin([{
