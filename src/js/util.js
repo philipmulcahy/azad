@@ -67,25 +67,15 @@ function findSingleNodeValue(xpath, elem) {
 }
 
 function findMultipleNodeValues(xpath, elem) {
-    var snapshot;
-    try {
-        snapshot = elem.ownerDocument.evaluate(
-            xpath,
-            elem,
-            null,
-            XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-            null
-        );
-    } catch(err) {
-        console.warn(
-            "Error: maybe you\"re not logged into " +
-            "https://" + getSite() + "/gp/css/order-history " +
-            err
-        );
-        return [];
-    }
-    var values = [];
-    var i;
+    const snapshot = elem.ownerDocument.evaluate(
+        xpath,
+        elem,
+        null,
+        XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+        null
+    );
+    const values = [];
+    let i;
     for(i = 0; i !== snapshot.snapshotLength; i += 1) {
         values.push(snapshot.snapshotItem(i));
     }
