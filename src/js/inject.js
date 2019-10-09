@@ -19,14 +19,15 @@ function getYears() {
             '//select[@name="orderFilter"]/option[@value]',
             document.documentElement
         );
-        getYears.years = snapshot.map( elem => {
-            return elem.textContent
-                       .replace('en', '')  // amazon.fr
-                       .replace('nel', '')  // amazon.it
-                       .trim();
-        }).filter( element => {
-            return(/^\d+$/).test(element);
-        }).filter( year => (year >= '2004') );
+        getYears.years = snapshot.map(
+            elem => elem.textContent
+                        .replace('en', '')  // amazon.fr
+                        .replace('nel', '')  // amazon.it
+                        .trim()
+        )
+        .filter( element => (/^\d+$/).test(element) )
+        .filter( year => (year >= '2004') );
+        advertiseYears(getYears.years);
     }
     console.log('getYears() returning ', getYears.years);
     return getYears.years;
@@ -95,15 +96,32 @@ function addInfoPoints() {
     );
 }
 
+function advertiseYears(years) {
+    console.log('advertising years', years);
+    background_port.postMessage({
+        action: 'advertise_years',
+        years: years
+    });
+}
+
+let background_port = null;
+
 function registerContentScript() {
-    const background_port = chrome.runtime.connect();
-    background_port.onMessage.addListener(
-        msg => azad_table.dumpOrderDiagnostics(msg.order_detail_url)
-    );
+    background_port = chrome.runtime.connect(null, {name: 'azad_inject'});
+    background_port.onMessage.addListener( msg => {
+        switch(msg.action) {
+            case 'dump_order_detail':
+                azad_table.dumpOrderDiagnostics(msg.order_detail_url)
+                break;
+            default:
+                console.warn('unknown action: ' + msg.action);
+        }
+    } );
+    console.log('script registered');
 }
 
 console.log('Amazon Order History Reporter starting');
+registerContentScript();
 addYearButtons();
 addClearCacheButton();
 addInfoPoints();
-registerContentScript();
