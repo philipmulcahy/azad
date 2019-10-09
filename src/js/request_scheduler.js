@@ -1,9 +1,16 @@
+/* Copyright(c) 2019 Philip Mulcahy. */
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
 
-/* jshint strict: true, esversion: 6 */
-
 // Uses code from http://eloquentjavascript.net/1st_edition/appendix2.html
+
+// 2019-10-08 ScottMcNay -- Added input-checking to RequestScheduler.schedule.
+// 2019-10-08 ScottMcNay -- Added input-checking to RequestScheduler.execute.
+// 2019-10-08 ScottMcNay -- Updated copyright notice.
+// 2019-10-08 ScottMcNay -- Replace "orange" with "date" in sign-in redirect message.
+// 2019-10-08 ScottMcNay -- Adjust word-wrap in sign-in redirect message.
+
+/* jshint strict: true, esversion: 6 */
 
 'use strict';
 
@@ -138,6 +145,7 @@ class RequestScheduler {
     }
 
     schedule(query, event_converter, callback, priority, nocache) {
+        if ( query === "N/A" ) { return; }
         const cached_response = nocache ?
             undefined :
             this.cache.get(query);
@@ -164,6 +172,7 @@ class RequestScheduler {
     }
 
     execute(query, event_converter, callback, priority) {
+        if ( query === "N/A" ) { return; }
         console.log(
             'Executing ' + query +
             ' with queue size ' + this.queue.size() +
@@ -192,8 +201,8 @@ class RequestScheduler {
                     alert('Amazon Order History Reporter Chrome Extension\n\n' +
                           'It looks like you might have been logged out of Amazon.\n' +
                           'Sometimes this can be "partial" - some types of order info stay logged in and some do not.\n' +
-                          'I will now attempt to open a new tab with a login prompt. Please use it to login,\n' +
-                          'and then retry your chosen orange button.');
+                          'I will now attempt to open a new tab with a login prompt.\n' +
+                          'Please use it to login, and then return here and retry your chosen date button.');
                     this.signin_warned = true;
                     chrome.runtime.sendMessage(
                         {
@@ -234,7 +243,7 @@ class RequestScheduler {
             'running' : this.running_count,
             'completed' : this.completed_count,
             'errors' : this.error_count,
-            'cache_hits' : this.cache.hitCount(),
+            'cache_hits' : this.cache.hitCount()
         };
     }
 

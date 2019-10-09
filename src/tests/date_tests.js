@@ -1,5 +1,10 @@
+/* Copyright(c) 2019 Philip Mulcahy. */
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
+
+// 2019-10-6 ScottMcNay -- Added ISO test
+// 2019-10-6 ScottMcNay -- Added other tests (commented out); see samples at https://ipfs.io/ipfs/QmXoypizjW3WknFiJnKLwHCnL72vedxjQkDDP1mXWo6uco/wiki/Date_format_by_country.html
+// 2019-10-6 ScottMcNay -- Updated copyright
 
 'use strict';
 
@@ -53,6 +58,30 @@ const us_test = () => {
      );
 };
 
+const iso_test = () => {
+     return (
+         date.normalizeDateString('2016-10-14') == '2016-10-14'
+     );
+};
+
+// const other_test1 = () => {
+//      return (
+//          date.normalizeDateString('14.10.2016') == '2016-10-14'
+//          date.normalizeDateString('14. 10. 2016') == '2016-10-14'
+//          date.normalizeDateString('14-10-2016') == '2016-10-14'
+//          date.normalizeDateString('14/10/2016') == '2016-10-14'
+//          date.normalizeDateString('2016 10 14') == '2016-10-14'
+//          date.normalizeDateString('20161014') == '2016-10-14'
+//          date.normalizeDateString('2016.10.14') == '2016-10-14'
+//          date.normalizeDateString('2016/10/14') == '2016-10-14'
+//          date.normalizeDateString('14/10 2016') == '2016-10-14' //oddball
+//          date.normalizeDateString('14/10-2016') == '2016-10-14' //oddball
+//          date.normalizeDateString('10/14/2016') == '2016-10-14' //oddball
+//          date.normalizeDateString('10-14/-2016') == '2016-10-14' //oddball
+//          date.normalizeDateString('2016.14.10') == '2016-10-14' //oddball
+//      );
+// };
+
 const date_tests = {
     de_test: de_test,
     es_test: es_test,
@@ -60,7 +89,8 @@ const date_tests = {
     it_test: it_test,
     uk_test: uk_test,
     au_test: au_test,
-    us_test: us_test
+    us_test: us_test,
+    iso_test: iso_test
 };
 
 tests.register('date_tests', date_tests);

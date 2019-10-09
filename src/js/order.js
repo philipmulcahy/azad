@@ -1,5 +1,10 @@
+/* Copyright(c) 2019 Philip Mulcahy. */
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
+
+// 2019-10-06 ScottMcNay -- Added blank lines in example, for readability.
+// 2019-10-06 ScottMcNay -- Updated copyright notice.
+// 2019-10-08 ScottMcNay -- Added input-checking to extractDetailFromDoc.total.
 
 /* jshint strict: true, esversion: 6 */
 
@@ -37,6 +42,7 @@ function extractDetailFromDoc(order, doc) {
         );
     };
     const total = function(){
+        if ( order.total === null ) { return "N/A"; }
         return extraction.by_regex(
             [
                 '//div[contains(@id,"od-subtotals")]//' +
@@ -288,21 +294,26 @@ class Order {
 
     extractOrder(elem) {
         const getItems = function(elem) {
-            /*
+
+            /* *****************************************************************************************************
               <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
                   The Rise and Fall of D.O.D.O.
               </a>
+
               or
+
               <a class="a-link-normal" href="/gp/product/B06X9BZNDM/ref=oh_aui_d_detailpage_o00_?ie=UTF8&amp;psc=1">
                   Provenance
               </a>
+
               but a-link-normal is more common than this, so we need to match on gp/product
               like this: .//div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]
               then we get:
                   name from contained text
                   link from href attribute
                   item: not sure what we use this for - will it still work?
-            */
+            ***************************************************************************************************** */
+
             const itemResult = util.findMultipleNodeValues(
                 './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
                 elem

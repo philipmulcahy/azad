@@ -1,5 +1,9 @@
+/* Copyright(c) 2019 Philip Mulcahy. */
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
+
+// 2019-10-08 ScottMcNay -- added input-checking to getOrderPaymentURL
+// 2019-10-08 ScottMcNay -- Updated copyright notice.
 
 /* jshint strict: true, esversion: 6 */
 /* global XPathResult */
@@ -18,6 +22,7 @@ function getOrderDetailUrl(orderId) {
 }
 
 function getOrderPaymentUrl(orderId) {
+    if ( orderId === null ) { return "N/A"; }
     return orderId.startsWith("D") ?
         "https://" + getSite() + "/gp/digital/your-account/order-summary.html" +
             "?ie=UTF8&orderID=" + orderId + "&print=1&" :
@@ -62,7 +67,7 @@ function findSingleNodeValue(xpath, elem) {
             null
         ).singleNodeValue;
     } catch (ex) {
-        console.warn('findSingleNodeValue blew up with: ' + xpath);
+        console.warn('findSingleNodeValue blew up with: ', xpath);
     }
 }
 

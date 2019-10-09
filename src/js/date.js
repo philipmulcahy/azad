@@ -1,4 +1,8 @@
+/* Copyright(c) 2019 Philip Mulcahy. */
 /* Copyright(c) 2018 Philip Mulcahy. */
+
+// 2019-10-08 ScottMcNay -- added input-checking to normalizeDateString
+// 2019-10-08 ScottMcNay -- updated copyright
 
 /* jshint strict: true, esversion: 6 */
 
@@ -47,6 +51,7 @@ function  getMom(ds) {
 }
 
 function normalizeDateString(ds) {
+    if ( ds === null ) { return "N/A"; }
     const mom = getMom(ds);
     if (!mom) {
         console.warn('could not parse date: ' + ds);
