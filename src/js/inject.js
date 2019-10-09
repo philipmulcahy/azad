@@ -1,5 +1,9 @@
+/* Copyright(c) 2019 Philip Mulcahy. */
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
+
+// 2019-10-08 ScottMcNay -- Added header to '500 or more' alert, adjusted wording.
+// 2019-10-08 ScottMcNay -- Updated copyright
 
 /* jshint strict: true, esversion: 6 */
 
@@ -42,7 +46,8 @@ function fetchAndShowOrders(years) {
             let beautiful = true;
             if (orderPromises.length >= 500) {
                 beautiful = false;
-                alert('500 or more orders found. That\'s a lot! We\'ll start you off with a plain table to make display faster. You can click the blue "datatable" button to restore sorting, filtering etc.');
+                alert('Amazon Order History Reporter Chrome Extension\n\n' +
+                      '500 or more orders found. Since that\'s a lot, we\'ll start you off with a plain table to make display faster. You can click the blue "datatable" button to restore sorting, filtering etc.');
             }
             azad_table.displayOrders(orderPromises, beautiful);
             return document.querySelector('[id="order_table"]');

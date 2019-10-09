@@ -15,7 +15,8 @@ MacOS, Windows
 #### Windows install
 * Install Node.js® from https://nodejs.org. Enable the option to install Chocolatey, Python 2, and Visual Studio Build Tools.
 * Install GitHub Desktop from https://desktop.github.com.
-* Open GitHub Desktop, go to File, Clone Repository, clone from philipmulcahy/azad.
+* Go to https://github.com/philipmulcahy/azad and create a fork.
+* Open GitHub Desktop, go to File, Clone Repository, clone from your azad fork.
 * Start CMD
 * 	CD %UserProfile%\Documents\GitHub\azad
 (This is the path shown by GitHub Desktop)

@@ -21,7 +21,6 @@ powershell -ExecutionPolicy ByPass -Command Compress-Archive %Source% %ZipFile%
 
 echo.
 echo To test changes, go to chrome://extensions, click "Load unpacked", and navigate to %CD%\%Source%.
-echo.
 echo If you are the extension owner, go to https://chrome.google.com/webstore/developer/edit/mgkilgclilajckgnedgjgnfdokkgnibi and upload the zip file.
 
 endlocal
