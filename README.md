@@ -23,7 +23,6 @@ MacOS, Windows
 
 
 ### linting (uses npm lint tools)
-You'll need to build first, the first time.
 ```
 npm run lint
 ```
