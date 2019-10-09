@@ -1,8 +1,9 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
+'use strict';
 
-const diagnostics_dumpers = {};
+const content_ports = {};
 let control_port = null;
 let advertised_years = [];
 
@@ -12,7 +13,7 @@ function registerConnectionListener() {
         switch(port.name) {
             case 'azad_inject':
                 port.onDisconnect.addListener( () => {
-                    delete diagnostics_dumpers[port.sender.tab.id];
+                    delete content_ports[port.sender.tab.id];
                 } );
                 port.onMessage.addListener( msg => {
                     switch(msg.action) {
@@ -37,14 +38,35 @@ function registerConnectionListener() {
                             console.warn('unknown action: ' + msg.action);
                     }
                 } );
-                diagnostics_dumpers[port.sender.tab.id] = 
-                    order_detail_url => port.postMessage({
-                        action: 'dump_order_detail',
-                        order_detail_url: order_detail_url
-                    });
+                content_ports[port.sender.tab.id] = port;
                 break;
             case 'azad_control':
                 control_port = port;
+                port.onMessage.addListener( msg => {
+                    switch(msg.action) {
+                        case 'scrape_years':
+                            console.log('forwarding scrape_years', + msg.years);
+                            Object.values(content_ports).forEach( port =>
+                                port.postMessage({
+                                    action: msg.action,
+                                    years: msg.years
+                                })
+                            );
+                            break;
+                        case 'clear_cache':
+                            Object.values(content_ports).forEach( port =>
+                                port.postMessage({
+                                    action: msg.action
+                                })
+                            );
+                            break;
+                        case 'stop':
+                            window.alert('stop isn\'t implemented yet: sorry!');
+                            break;
+                        default:
+                            console.warn('unknown action: ' + msg.action);
+                    }
+                });
                 advertiseYears();
                 break;
             default:
@@ -64,9 +86,14 @@ function registerRightClickActions() {
         if (info.menuItemId == 'save_order_debug_info') {
             if ( /orderID=/.test(info.linkUrl) ) {
                 const match =info.linkUrl.match(/.*orderID=([0-9-]*)$/);
+                const order_id = match[1];
                 if (match) {
-                    const order_id = match[1];
-                    Object.values(diagnostics_dumpers).forEach( dumper => dumper(order_id) );
+                    Object.values(content_ports).forEach( port => {
+                        port.postMessage({
+                            action: 'dump_order_detail',
+                            order_detail_url: order_id
+                        });
+                    });
                 }
             }
         }
@@ -74,7 +101,6 @@ function registerRightClickActions() {
 }
 
 function registerMessageListener() {
-    "use strict";
     chrome.runtime.onMessage.addListener( (request, sender) => {
         console.log(
             sender.tab

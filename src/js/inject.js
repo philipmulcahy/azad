@@ -27,7 +27,6 @@ function getYears() {
         )
         .filter( element => (/^\d+$/).test(element) )
         .filter( year => (year >= '2004') );
-        advertiseYears(getYears.years);
     }
     console.log('getYears() returning ', getYears.years);
     return getYears.years;
@@ -51,38 +50,6 @@ function fetchAndShowOrders(years) {
     );
 }
 
-function addYearButtons() {
-    console.log('addYearButtons starting');
-    const years = getYears();
-    if(years.length > 0) {
-        util.addButton(
-            'All years',
-            () => {
-                fetchAndShowOrders(years);
-            }
-        );
-    } else {
-        console.log('addYearButtons no years found');
-    }
-    years.forEach( year => {
-        util.addButton(
-            [year],
-            () => {
-                fetchAndShowOrders([year]);
-            }
-        );
-    });
-}
-
-function addClearCacheButton() {
-    util.addButton(
-        'clear cache',
-        () => {
-            scheduler.clearCache();
-        }
-    );
-}
-
 function addInfoPoints() {
     const progress = document.createElement('div');
     progress.setAttribute('id', 'order_reporter_progress');
@@ -96,7 +63,8 @@ function addInfoPoints() {
     );
 }
 
-function advertiseYears(years) {
+function advertiseYears() {
+    const years = getYears();
     console.log('advertising years', years);
     background_port.postMessage({
         action: 'advertise_years',
@@ -113,6 +81,12 @@ function registerContentScript() {
             case 'dump_order_detail':
                 azad_table.dumpOrderDiagnostics(msg.order_detail_url)
                 break;
+            case 'scrape_years':
+                fetchAndShowOrders(msg.years);
+                break;
+            case 'clear_cache':
+                scheduler.clearCache();
+                break;
             default:
                 console.warn('unknown action: ' + msg.action);
         }
@@ -122,6 +96,5 @@ function registerContentScript() {
 
 console.log('Amazon Order History Reporter starting');
 registerContentScript();
-addYearButtons();
-addClearCacheButton();
+advertiseYears();
 addInfoPoints();
