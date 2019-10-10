@@ -244,12 +244,13 @@ function reallyDisplayOrders(orders, beautiful) {
 
         const tbody = document.createElement('tbody');
         table.appendChild(tbody);
-
+        console.log('Adding' , orders.length, 'order rows');
         orders.forEach( order => {
             order_map[order.id] = order;
             appendOrderRow(tbody, order);
-            console.log('Added row for ' + order.id);
+            console.log('Added row for ', order.id);
         });
+        console.log('Added' , orders.length, 'order rows');
 
         return table;
     };

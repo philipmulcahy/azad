@@ -15,12 +15,13 @@ function activateIdle() {
     console.log('hello world');
 }
 
-function activateScraping(years) {
+// Not used; comment to keep lint quiet
+// function activateScraping(years) {
+// }
 
-}
-
-function activateYearsDone(years) {
-}
+// Not used; comment to keep lint quiet
+// function activateYearsDone(years) {
+// }
 
 $(document).ready( activateIdle );
 

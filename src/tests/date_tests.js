@@ -64,21 +64,24 @@ const iso_test = () => {
      );
 };
 
-// const other_test1 = () => {
-//      return (
-//          date.normalizeDateString('14.10.2016') == '2016-10-14'
-//          date.normalizeDateString('14. 10. 2016') == '2016-10-14'
-//          date.normalizeDateString('14-10-2016') == '2016-10-14'
-//          date.normalizeDateString('14/10/2016') == '2016-10-14'
-//          date.normalizeDateString('2016 10 14') == '2016-10-14'
-//          date.normalizeDateString('20161014') == '2016-10-14'
-//          date.normalizeDateString('2016.10.14') == '2016-10-14'
-//          date.normalizeDateString('2016/10/14') == '2016-10-14'
-//          date.normalizeDateString('14/10 2016') == '2016-10-14' //oddball
-//          date.normalizeDateString('14/10-2016') == '2016-10-14' //oddball
-//          date.normalizeDateString('10/14/2016') == '2016-10-14' //oddball
-//          date.normalizeDateString('10-14/-2016') == '2016-10-14' //oddball
-//          date.normalizeDateString('2016.14.10') == '2016-10-14' //oddball
+// const other_test = () => {
+// -----------------------------------------
+// Note that these will fail; the normalization is for text dates.
+// -----------------------------------------
+//     return (
+//         date.normalizeDateString('14.10.2016') == '2016-10-14'
+//         date.normalizeDateString('14. 10. 2016') == '2016-10-14'
+//         date.normalizeDateString('14-10-2016') == '2016-10-14'
+//         date.normalizeDateString('14/10/2016') == '2016-10-14'
+//         date.normalizeDateString('2016 10 14') == '2016-10-14'
+//         date.normalizeDateString('20161014') == '2016-10-14'
+//         date.normalizeDateString('2016.10.14') == '2016-10-14'
+//         date.normalizeDateString('2016/10/14') == '2016-10-14'
+//         date.normalizeDateString('14/10 2016') == '2016-10-14' //oddball
+//         date.normalizeDateString('14/10-2016') == '2016-10-14' //oddball
+//         date.normalizeDateString('10/14/2016') == '2016-10-14' //oddball
+//         date.normalizeDateString('10-14/-2016') == '2016-10-14' //oddball
+//         date.normalizeDateString('2016.14.10') == '2016-10-14' //oddball
 //      );
 // };
 
@@ -90,6 +93,7 @@ const date_tests = {
     uk_test: uk_test,
     au_test: au_test,
     us_test: us_test,
+//    other_test: other_test,
     iso_test: iso_test
 };
 

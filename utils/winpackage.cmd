@@ -29,6 +29,11 @@ goto :EOF
 
 :: The text below is skipped.
 
+
+
+
+
+
 :: Use this instead of powershell for older versions of Windows; supposedly will support back to Windows 98 or Internet Explorer 5.
 :: Note that this version has a kludgy time delay.
 

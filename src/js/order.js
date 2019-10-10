@@ -42,7 +42,10 @@ function extractDetailFromDoc(order, doc) {
         );
     };
     const total = function(){
-        if ( order.total === null ) { return "N/A"; }
+        if ( order.total === null ) { 
+            console.log("Total: ", order, doc.DocumentElement)
+            return "N/A";
+        }
         return extraction.by_regex(
             [
                 '//div[contains(@id,"od-subtotals")]//' +
