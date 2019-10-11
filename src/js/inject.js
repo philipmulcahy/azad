@@ -76,6 +76,12 @@ let background_port = null;
 
 function registerContentScript() {
     background_port = chrome.runtime.connect(null, {name: 'azad_inject'});
+    scheduler.setProgressReceiver(
+        msg => background_port.postMessage({
+            action: 'statistics_update',
+            statistics: msg,
+        })
+    );
     background_port.onMessage.addListener( msg => {
         switch(msg.action) {
             case 'dump_order_detail':
