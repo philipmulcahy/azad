@@ -39,6 +39,9 @@ function connectToBackground() {
             case 'advertise_years':
                 showYearButtons(msg.years);
                 break;
+            case 'statistics_update':
+                $('#azad_statistics').text(msg.statistics);
+                break;
             default:
                 console.warn('unknown action: ' + msg.action); 
         }

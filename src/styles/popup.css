@@ -1,41 +1,70 @@
+html {
+    font-family: arial,sans-serif;
+}
+
 input.azad_action {
     color: white;
     background-color: royalblue; 
+    font-size: 120%;
     height: 25px;
-    width: 21%;
+    width: 30%;
     margin: 0px;
     border: 0px;
     padding: 5px;
 }
 
+div#azad_actions, div#azad_year_list, div#azad_info, div.azad_separator {
+    width: 300px;
+    margin: 0px;
+}
+
+#azad_year_list {
+    margin: 0px;
+    border: 0px;
+    padding: 0px;
+}
+
 input.azad_year_button {
     background-color: orange;
     color: white;
-}
-
-div#azad_actions, div#azad_year_list, div#azad_info, div.azad_separator {
-    width: 300px;
-}
-
-div#azad_info {
-    depth: 75px;
+    width: 32px;
+    margin: 1px;
+    border: 0px;
+    padding: 2px;
 }
 
 div.azad_separator {
     height: 10px;
     background-color: white;
+    margin: 0px;
+    border: 0px;
+    padding: 0px;
+}
+
+div#azad_info {
+    margin: 0px;
+    border: 0px;
+    padding: 0px;
 }
 
 div#azad_state {
-    width: 45px;
-    display: inline-block;
-    background-color: red;
+    font-weight: bold;
+    font-size: 120%;
+    color: orange;
+    height: 60px;
+    width: 110px;
+    margin: 0px;
+    border: 0px;
+    padding: 5px;
 }
 
 div#azad_statistics {
-    width: 45px;
-    display: inline-block;
-    background-color: green;
+    color: orange;
+    height: 60px;
+    width: 180px;
+    margin: 0px;
+    border: 0px;
+    padding: 5px;
 }
 
 input.hidden {

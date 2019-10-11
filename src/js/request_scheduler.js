@@ -134,7 +134,12 @@ class RequestScheduler {
         this.completed_count = 0;
         this.error_count = 0;
         this.signin_warned = false;
+        this.progress_update_receiver = null;
         this.updateProgress();
+    }
+
+    setProgressReceiver(progress_update_receiver) {
+        this.progress_update_receiver = progress_update_receiver;
     }
 
     schedule(query, event_converter, callback, priority, nocache) {
@@ -239,12 +244,16 @@ class RequestScheduler {
     }
 
     updateProgress() {
+        const msg = Object.entries(this.statistics())
+            .map(([k,v]) => {return k + ':' + v;})
+            .join('; ');
+        if (this.progress_update_receiver) {
+            this.progress_update_receiver(msg);
+        }
         try {
             const target = document.getElementById('order_reporter_progress');
             if (target !== null) {
-                target.textContent = Object.entries(this.statistics())
-                                           .map(([k,v]) => {return k + ':' + v;})
-                                           .join('; ');
+                target.textContent = msg; 
             }
             setTimeout(function() { this.updateProgress(); }.bind(this), 2000);
         } catch(ex) {
