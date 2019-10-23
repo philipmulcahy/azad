@@ -7,6 +7,47 @@ const content_ports = {};
 let control_port = null;
 let advertised_years = [];
 
+const state = function() {
+    let _activity = 'IDLE';
+    let _years = null; 
+    const listeners = [];
+    const VALID_ACTIVITIES = ['IDLE', 'SCRAPING', 'STOPPED'];
+    const set = (activity, years) => {
+        if (VALID_ACTIVITIES.includes(activity)) {
+            years.forEach( year => {
+                if (isNaN(year) && year < 2025 && year > 1998 ) {
+                    throw 'bad year: ' + years;
+                }
+            });
+            _activity = activity;
+            _years = years;
+            listeners.forEach( listener => listener(
+                {
+                    new_state: {
+                        activity: _activity,
+                        years: _years,
+                    },
+                }
+            ) );
+        } else {
+            throw 'bad activity: ' + activity;
+        }
+    };
+    return {
+        get: () => {
+            return {
+                activity: _activity,
+                years: _years,
+            }
+        },
+        set: set,
+        stop: () => set('STOPPED', _years),
+        start: years => set('SCRAPING', years),
+        isActive: () => ['SCRAPING'].includes(_activity),
+        addListener: listener => listeners.push(listener),
+    };
+}();
+
 function registerConnectionListener() {
     chrome.runtime.onConnect.addListener( port => {
         console.log('new connection from ' + port.name);
@@ -34,6 +75,11 @@ function registerConnectionListener() {
                                 statistics: msg.statistics
                             });
                             break;
+                        case 'notify_stopped':
+                            control_port.postMessage({
+                                action: 'injected_stopped',
+                            });
+                            break;
                         default:
                             console.warn('unknown action: ' + msg.action);
                     }
@@ -52,6 +98,7 @@ function registerConnectionListener() {
                                     years: msg.years
                                 })
                             );
+                            state.start(msg.years);
                             break;
                         case 'clear_cache':
                             Object.values(content_ports).forEach( port =>
@@ -61,7 +108,11 @@ function registerConnectionListener() {
                             );
                             break;
                         case 'stop':
-                            window.alert('stop isn\'t implemented yet: sorry!');
+                            Object.values(content_ports).forEach( port =>
+                                port.postMessage({
+                                    action: 'stop',
+                                })
+                            );
                             break;
                         default:
                             console.warn('unknown action: ' + msg.action);
