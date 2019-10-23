@@ -135,14 +135,23 @@ class RequestScheduler {
         this.error_count = 0;
         this.signin_warned = false;
         this.progress_update_receiver = null;
+        this.finished_receiver = null
         this.updateProgress();
+        this.live = true;
     }
 
     setProgressReceiver(progress_update_receiver) {
         this.progress_update_receiver = progress_update_receiver;
     }
 
+    setFinishedReceiver(finished_receiver) {
+        this.finished_receiver = finished_receiver;
+    }
+
     schedule(query, event_converter, callback, priority, nocache) {
+        if (!this.live) {
+            throw 'scheduler has aborted';
+        }
         const cached_response = nocache ?
             undefined :
             this.cache.get(query);
@@ -164,11 +173,20 @@ class RequestScheduler {
         }
     }
 
+    abort() {
+        // Prevent (irreversably) this scheduler from doing any more work.
+        this.live = false;
+        this.finished_receiver();
+    }
+
     clearCache() {
         this.cache.clear();
     }
 
     execute(query, event_converter, callback, priority) {
+        if (!this.live) {
+            return;
+        }
         console.log(
             'Executing ' + query +
             ' with queue size ' + this.queue.size() +
@@ -184,6 +202,9 @@ class RequestScheduler {
         };
         req.onload = function(evt) {
             this.running_count -= 1;
+            if (!this.live) {
+                return;
+            }
             if ( req.status != 200 ) {
                 this.error_count += 1;
                 console.log(
@@ -227,6 +248,9 @@ class RequestScheduler {
             const converted = event_converter(evt);
             this.cache.set(query, converted);
             callback(converted, query);
+            if (this.queue.size() == 0) {
+                this.finished_receiver();
+            }
         }.bind(this);
         this.running_count += 1;
         req.send();

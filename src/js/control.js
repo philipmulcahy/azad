@@ -6,19 +6,21 @@
 
 import $ from 'jquery';
 
+let year = null;
+
 function activateIdle() {
     console.log('activateIdle');
     showOnly(['azad_clear_cache', 'azad_hide_controls']);
     console.log('hello world');
 }
 
-function activateScraping(year) {
+function activateScraping() {
     console.log('activateScraping');
     showOnly(['azad_stop', 'azad_hide_controls']);
     $('#azad_state').text('scraping ' + year);
 }
 
-function activateDone(years) {
+function activateDone() {
     console.log('activateDone');
     showOnly(['azad_clear_cache', 'azad_hide_controls']);
 }
@@ -42,6 +44,11 @@ function connectToBackground() {
             case 'statistics_update':
                 $('#azad_statistics').text(msg.statistics);
                 break;
+
+            case 'injected_stopped':
+                year = msg.year;
+                activateDone();
+                break;
             default:
                 console.warn('unknown action: ' + msg.action); 
         }
@@ -50,7 +57,7 @@ function connectToBackground() {
 
 function registerActionButtons() {
     $('#azad_clear_cache').on('click', () => background_port.postMessage({action: 'clear_cache'}));
-    $('#azad_stop').on('click', () => background_port.postMessage({action: 'stop'}));
+    $('#azad_stop').on('click', () => handleStopClick());
     $('#azad_hide_controls').on('click', () => {
         console.log('closing popup');
         window.close();
@@ -70,8 +77,8 @@ function showYearButtons(years) {
 }
 
 function handleYearClick(evt) {
-    const year = evt.target.value;
-    activateScraping(year);
+    year = evt.target.value;
+    activateScraping();
     if (background_port) {
         console.log('sending scrape_years', year);
         background_port.postMessage({
@@ -81,6 +88,10 @@ function handleYearClick(evt) {
     } else {
         console.warn('background_port not set');
     }
+}
+
+function handleStopClick() {
+    background_port.postMessage({action: 'stop'});
 }
 
 function init() {

@@ -10,7 +10,36 @@ import request_scheduler from './request_scheduler';
 import azad_order from './order';
 import azad_table from './table';
 
-const scheduler = request_scheduler.create();
+let scheduler = null;
+let background_port = null;
+
+function getScheduler() {
+    return scheduler;
+}
+
+function getBackgroundPort() {
+    return background_port;
+}
+
+function resetScheduler() {
+    if (scheduler) {
+        scheduler.abort();
+    }
+    scheduler = request_scheduler.create();
+    scheduler.setProgressReceiver(
+        msg => getBackgroundPort().postMessage({
+            action: 'statistics_update',
+            statistics: msg,
+        })
+    );
+    scheduler.setFinishedReceiver(
+        () => {
+            getBackgroundPort().postMessage({
+                action: 'notify_stopped',
+            });
+        }
+    );
+}
 
 function getYears() {
     if(typeof(getYears.years) === 'undefined') {
@@ -35,7 +64,7 @@ function getYears() {
 function fetchAndShowOrders(years) {
     azad_order.getOrdersByYear(
         years,
-        scheduler,
+        getScheduler(),
         getYears()[0]
     ).then(
         orderPromises => {
@@ -66,23 +95,15 @@ function addInfoPoints() {
 function advertiseYears() {
     const years = getYears();
     console.log('advertising years', years);
-    background_port.postMessage({
+    getBackgroundPort().postMessage({
         action: 'advertise_years',
         years: years
     });
 }
 
-let background_port = null;
-
 function registerContentScript() {
     background_port = chrome.runtime.connect(null, {name: 'azad_inject'});
-    scheduler.setProgressReceiver(
-        msg => background_port.postMessage({
-            action: 'statistics_update',
-            statistics: msg,
-        })
-    );
-    background_port.onMessage.addListener( msg => {
+    getBackgroundPort().onMessage.addListener( msg => {
         switch(msg.action) {
             case 'dump_order_detail':
                 azad_table.dumpOrderDiagnostics(msg.order_detail_url)
@@ -91,7 +112,10 @@ function registerContentScript() {
                 fetchAndShowOrders(msg.years);
                 break;
             case 'clear_cache':
-                scheduler.clearCache();
+                getScheduler().clearCache();
+                break;
+            case 'stop':
+                resetScheduler();
                 break;
             default:
                 console.warn('unknown action: ' + msg.action);
@@ -102,5 +126,6 @@ function registerContentScript() {
 
 console.log('Amazon Order History Reporter starting');
 registerContentScript();
+resetScheduler();
 advertiseYears();
 addInfoPoints();
