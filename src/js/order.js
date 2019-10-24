@@ -477,7 +477,7 @@ function getOrdersForYearAndQueryTemplate(
         const d = p.parseFromString(evt.target.responseText, 'text/html');
         const countSpan = util.findSingleNodeValue(
             './/span[@class="num-orders"]', d.documentElement);
-        if (countSpan === null) {
+        if ( !countSpan ) {
             console.warn(
                 'Error: cannot find order count elem in: ' + evt.target.responseText
             );

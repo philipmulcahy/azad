@@ -21,7 +21,7 @@ function download(table) {
     };
     const processRow = function(row) {
         const processCell = function (cell) {
-            if (cell === null) {
+            if ( !cell ) {
                 return '';
             }
             let processed = cell.replace(/"/g, '""');
