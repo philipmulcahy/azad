@@ -176,7 +176,8 @@ class RequestScheduler {
     abort() {
         // Prevent (irreversably) this scheduler from doing any more work.
         this.live = false;
-        this.finished_receiver();
+        // We don't call this.finished_receiver, because we've probably not done
+        // all we intended to do.
     }
 
     clearCache() {
@@ -268,20 +269,9 @@ class RequestScheduler {
     }
 
     updateProgress() {
-        const msg = Object.entries(this.statistics())
-            .map(([k,v]) => {return k + ':' + v;})
-            .join('; ');
+        const stats = this.statistics();
         if (this.progress_update_receiver) {
-            this.progress_update_receiver(msg);
-        }
-        try {
-            const target = document.getElementById('order_reporter_progress');
-            if (target !== null) {
-                target.textContent = msg; 
-            }
-            setTimeout(function() { this.updateProgress(); }.bind(this), 2000);
-        } catch(ex) {
-            console.warn('could not update progress - maybe we are in node?: ' + ex);
+            this.progress_update_receiver(stats);
         }
     }
 }
