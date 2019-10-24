@@ -92,4 +92,4 @@ if (env.NODE_ENV === "development") {
 }
 
 module.exports = options;
-console.log('Hello Webpack World');
+// console.log('Hello Webpack World');
