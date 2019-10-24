@@ -6,23 +6,22 @@
 
 import $ from 'jquery';
 
-let year = null;
-
 function activateIdle() {
     console.log('activateIdle');
     showOnly(['azad_clear_cache', 'azad_hide_controls']);
     console.log('hello world');
 }
 
-function activateScraping() {
+function activateScraping(years) {
     console.log('activateScraping');
     showOnly(['azad_stop', 'azad_hide_controls']);
-    $('#azad_state').text('scraping ' + year);
+    $('#azad_state').text('scraping ' + years.join(','));
 }
 
-function activateDone() {
+function activateDone(years) {
     console.log('activateDone');
     showOnly(['azad_clear_cache', 'azad_hide_controls']);
+    $('#azad_state').text(years.join(','));
 }
 
 function showOnly(button_ids) {
@@ -42,12 +41,18 @@ function connectToBackground() {
                 showYearButtons(msg.years);
                 break;
             case 'statistics_update':
-                $('#azad_statistics').text(msg.statistics);
+                {
+                    const text = Object.entries(msg.statistics)
+                        .map(([k,v]) => {return k + ':' + v;})
+                        .join('; ');
+                    $('#azad_statistics').text(text);
+                    if (msg.statistics.queued + msg.statistics.running > 0) {
+                        activateScraping(msg.years);
+                    }
+                }
                 break;
-
-            case 'injected_stopped':
-                year = msg.year;
-                activateDone();
+            case 'scraping_completed':
+                activateDone(msg.years);
                 break;
             default:
                 console.warn('unknown action: ' + msg.action); 
@@ -77,13 +82,14 @@ function showYearButtons(years) {
 }
 
 function handleYearClick(evt) {
-    year = evt.target.value;
-    activateScraping();
+    const year = evt.target.value;
+    const years = [year];
+    activateScraping(years);
     if (background_port) {
         console.log('sending scrape_years', year);
         background_port.postMessage({
             action: 'scrape_years',
-            years: [year]
+            years: years, 
         });
     } else {
         console.warn('background_port not set');
@@ -91,7 +97,7 @@ function handleYearClick(evt) {
 }
 
 function handleStopClick() {
-    background_port.postMessage({action: 'stop'});
+    background_port.postMessage({action: 'abort'});
 }
 
 function init() {

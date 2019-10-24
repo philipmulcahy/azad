@@ -12,6 +12,7 @@ import azad_table from './table';
 
 let scheduler = null;
 let background_port = null;
+let years = null;
 
 function getScheduler() {
     return scheduler;
@@ -30,12 +31,14 @@ function resetScheduler() {
         msg => getBackgroundPort().postMessage({
             action: 'statistics_update',
             statistics: msg,
+            years: years,
         })
     );
     scheduler.setFinishedReceiver(
         () => {
             getBackgroundPort().postMessage({
-                action: 'notify_stopped',
+                action: 'scraping_completed',
+                years: years,
             });
         }
     );
@@ -79,19 +82,6 @@ function fetchAndShowOrders(years) {
     );
 }
 
-function addInfoPoints() {
-    const progress = document.createElement('div');
-    progress.setAttribute('id', 'order_reporter_progress');
-    progress.setAttribute('class', 'order_reporter_progress');
-    progress.setAttribute(
-        'style',
-        'position:absolute; top:0; right:0; color:orange; padding:0.2em; font-size:75%; z-index:-1;');
-    document.body.insertBefore(
-        progress,
-        document.body.firstChild
-    );
-}
-
 function advertiseYears() {
     const years = getYears();
     console.log('advertising years', years);
@@ -109,12 +99,13 @@ function registerContentScript() {
                 azad_table.dumpOrderDiagnostics(msg.order_detail_url)
                 break;
             case 'scrape_years':
-                fetchAndShowOrders(msg.years);
+                years = msg.years;
+                fetchAndShowOrders(years);
                 break;
             case 'clear_cache':
                 getScheduler().clearCache();
                 break;
-            case 'stop':
+            case 'abort':
                 resetScheduler();
                 break;
             default:
@@ -128,4 +119,3 @@ console.log('Amazon Order History Reporter starting');
 registerContentScript();
 resetScheduler();
 advertiseYears();
-addInfoPoints();
