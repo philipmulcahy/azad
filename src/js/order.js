@@ -39,23 +39,43 @@ function extractDetailFromDoc(order, doc) {
     const total = function(){
         return extraction.by_regex(
             [
+                '//span[@class="a-color-price a-text-bold"]/text()',    //Scott 112-7790528-5248242 en_US as of 20191024
+
+                '//b[contains(text(),"Total for this Order")]/text()',  //Scott D01-0235439-4093031 en_US as of 20191024
+
                 '//div[contains(@id,"od-subtotals")]//' +
                 '*[contains(text(),"Grand Total") ' +
                 'or contains(text(),"Montant total TTC")' +
                 'or contains(text(),"Total général du paiement")' +
                 ']/parent::div/following-sibling::div/span',
 
-                '//*[contains(text(),"Grand Total:") ' +
-                'or contains(text(),"Total for this order:")' +
-                'or contains(text(),"Montant total TTC:")' +
-                'or contains(text(),"Total général du paiement:")' +
+                '//*[contains(text(),"Grand Total:") ' +               //(Summary, Invoice)Digital Kindle Payment grand total/.com/(en_US, es_US-->en) as of 20191015
+                'or  contains(text(),"Total general:")' +              //(Summary, Invoice)Digital Kindle Payment grand total/.com/(es_US) as of 20191015
+                'or  contains(text(),"Total for this order:")' +
+                'or  contains(text(),"Total of this order:")' +        //(Summary, Invoice)Digital Kindle Payment grand total/.com/es_US-->en as of 20191015
+                'or  contains(text(),"Total de este pedido:")' +       //(Summary, Invoice)Digital Kindle Payment grand total/.com/es_US as of 20191015
+                'or  contains(text(),"Total del pedido:")' +           //(Summary, Invoice)Physical Order total/.com/es_US as of 20191015
+                'or  contains(text(),"Montant total TTC:")' +
+                'or  contains(text(),"Total général du paiement:")' +
                 ']',
+
+                '//*[contains(text(),"Grand Total:") ' +               //(Summary, Invoice)Digital Kindle Payment grand total/.com/(en_US, es_US-->en) as of 20191015
+                'or  contains(text(),"Total general:")' +              //(Summary, Invoice)Digital Kindle Payment grand total/.com/(es_US) as of 20191015
+                'or  contains(text(),"Total for this order:")' +
+                'or  contains(text(),"Total of this order:")' +        //(Summary, Invoice)Digital Kindle Payment grand total/.com/es_US-->en as of 20191015
+                'or  contains(text(),"Total de este pedido:")' +       //(Summary, Invoice)Digital Kindle Payment grand total/.com/es_US as of 20191015
+                'or  contains(text(),"Order Total:")' +                //(Summary, Invoice)Physical Order total/.com/es_US-->en as of 20191015
+                'or  contains(text(),"Total del pedido:")' +           //(Summary, Invoice)Physical Order total/.com/es_US as of 20191015
+                'or  contains(text(),"Montant total TTC:")' +
+                'or  contains(text(),"Total général du paiement:")' +
+                ']/parent::*',
             ],
             null,
             order.total,
             doc.documentElement
         ).replace(/.*: /, '').replace('-', '');
     };
+// BUG: Need to exclude gift wrap
     const gift = function(){
         const a = extraction.by_regex(
             [
@@ -138,34 +158,62 @@ function extractDetailFromDoc(order, doc) {
         return a;
     };
     const us_tax = function(){
-        const a = extraction.by_regex(
-            [
-                '//div[contains(@id,"od-subtotals")]//' +
-                'span[contains(text(),"tax") ' +
-                'and not(contains(text(),"before") ' +
-                ')]/' +
-                'parent::div/following-sibling::div/span',
+        var a
+        try {
+            a = extraction.by_regex(
+                [
+                    './/tr[contains(td,"Tax Collected:")]',
+                ],
+                null,
+                'n/a',
+                doc.documentElement
+                );
+            a = a.match('Tax Collected:\\s+(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))')[1];
+        } catch (_) { 
+            try {
+                a = extraction.by_regex(
+                    [
+                        './/span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span'
+                    ],
+                    null,
+                    'n/a',
+                    doc.documentElement
+                    );
+                a = a.match('(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))')[1];
+            } catch (_) {
+                try {
+                    a = extraction.by_regex(
+                        [
+                            '//div[contains(@id,"od-subtotals")]//' +
+                            'span[contains(text(),"tax") ' +
+                            'and not(contains(text(),"before") ' +
+                            ')]/' +
+                            'parent::div/following-sibling::div/span',
 
-                '//*[text()[contains(.,"tax") and not(contains(.,"before"))]]',
+                            '//*[text()[contains(.,"tax") and not(contains(.,"before"))]]',
 
-                '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
-                'span[contains(text(),"tax")]/' +
-                'parent::div/following-sibling::div/span',
+                            '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+                            'span[contains(text(),"tax")]/' +
+                            'parent::div/following-sibling::div/span',
 
-                // Example: 'Tax Collected: $0.77'
-                '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "Tax Collected: ")]]',
+                            // Example: 'Tax Collected: $0.77'
+                            '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "Tax Collected: ")]]',
 
-                '//*[contains(text(), "tax to be collected")]/parent::*/following-sibling::*/descendant::*/text()'
-            ],
-            /(?:vat:|tax:|tax collected:)? *((?:GBP |USD |CAD |EUR |AUD)?[$£€]?-?[.0-9]+)/i,
-            '9.99',
-            doc.documentElement
-        );
-        if (a) {
-            return a;
+                            '//*[contains(text(), "tax to be collected")]/parent::*/following-sibling::*/descendant::*/text()'
+                        ],
+                        /(?:vat:|tax:|tax collected:)? *((?:GBP |USD |CAD |EUR |AUD)?[$£€]?-?[.0-9]+)/i,
+                        'N/A',
+                        doc.documentElement
+                    );
+                } catch (_) {
+// Note: pre-orders don't have tax yet.
+                    a = "n/a"
+                }
+            }
         }
-        return 'N/A';
+        return a;
     };
+
     const cad_gst = function() {
         const a = extraction.by_regex(
             [
