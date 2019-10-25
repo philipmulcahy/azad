@@ -152,25 +152,15 @@ class RequestScheduler {
         if (!this.live) {
             throw 'scheduler has aborted';
         }
-        const cached_response = nocache ?
-            undefined :
-            this.cache.get(query);
-        if (cached_response !== undefined) {
-            console.log('Already had ' + query + ' with ' + this.queue.size());
-            callback(cached_response, query);
-        } else {
-            console.log('Scheduling ' + query + ' with ' + this.queue.size());
-            if (this.running_count < this.CONCURRENCY) {
-                this.execute(query, event_converter, callback, priority);
-            } else {
-                this.queue.push({
-                    'query': query,
-                    'event_converter': event_converter,
-                    'callback': callback,
-                    'priority': priority,
-                });
-            }
-        }
+        console.log('Queuing ' + query + ' with ' + this.queue.size());
+        this.queue.push({
+            'query': query,
+            'event_converter': event_converter,
+            'callback': callback,
+            'priority': priority,
+            'nocache': nocache,
+        });
+        this._executeSomeIfPossible();
     }
 
     abort() {
@@ -184,7 +174,9 @@ class RequestScheduler {
         this.cache.clear();
     }
 
-    execute(query, event_converter, callback, priority) {
+    // Process a single de-queued request either by retrieving from the cache
+    // or by sending it out.
+    _execute(query, event_converter, callback, priority, nocache) {
         if (!this.live) {
             return;
         }
@@ -193,6 +185,20 @@ class RequestScheduler {
             ' with queue size ' + this.queue.size() +
             ' and priority ' + priority
         );
+        const cached_response = nocache ?
+            undefined :
+            this.cache.get(query);
+        if (cached_response !== undefined) {
+            console.log('Already had ' + query + ' with ' + this.queue.size());
+            callback(cached_response, query);
+            this.completed_count += 1;
+            this._checkDone();
+        } else {
+            this._sendOne(query, event_converter, callback, nocache);
+        }
+    }
+
+    _sendOne(query, event_converter, callback, nocache) {
         const req = new XMLHttpRequest();
         req.open('GET', query, true);
         req.onerror = function() {
@@ -235,27 +241,38 @@ class RequestScheduler {
             console.log(
               'Finished ' + query +
                 ' with queue size ' + this.queue.size());
-            while (this.running_count < this.CONCURRENCY &&
-                   this.queue.size() > 0
-            ) {
-                const task = this.queue.pop();
-                this.execute(
-                    task.query,
-                    task.event_converter,
-                    task.callback,
-                    task.priority
-                );
-            }
+            this._executeSomeIfPossible();
             const converted = event_converter(evt);
-            this.cache.set(query, converted);
-            callback(converted, query);
-            if (this.queue.size() == 0) {
-                this.finished_receiver();
+            if (!nocache) {
+                this.cache.set(query, converted);
             }
+            callback(converted, query);
+            this._checkDone();
         }.bind(this);
         this.running_count += 1;
         req.send();
         this.updateProgress();
+    }
+
+    _executeSomeIfPossible() {
+        while (this.running_count < this.CONCURRENCY &&
+               this.queue.size() > 0
+        ) {
+            const task = this.queue.pop();
+            this._execute(
+                task.query,
+                task.event_converter,
+                task.callback,
+                task.priority,
+                task.nocache,
+            );
+        }
+    }
+
+    _checkDone() {
+        if (this.queue.size() == 0) {
+            this.finished_receiver();
+        }
     }
 
     statistics() {

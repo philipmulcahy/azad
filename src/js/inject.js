@@ -36,6 +36,7 @@ function resetScheduler() {
     );
     scheduler.setFinishedReceiver(
         () => {
+            console.log('sending scraping_completed message');
             getBackgroundPort().postMessage({
                 action: 'scraping_completed',
                 years: years,
