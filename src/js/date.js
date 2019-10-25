@@ -47,6 +47,7 @@ function  getMom(ds) {
 }
 
 function normalizeDateString(ds) {
+    if ( !ds ) { return "N/A"; }
     const mom = getMom(ds);
     if (!mom) {
         console.warn('could not parse date: ' + ds);
