@@ -6,7 +6,7 @@ input.azad_action {
     color: white;
     background-color: royalblue; 
     font-size: 120%;
-    height: 25px;
+    height: 23px;
     width: 30%;
     margin: 0px;
     border: 0px;
@@ -51,7 +51,6 @@ div#azad_state {
     font-weight: bold;
     font-size: 120%;
     color: orange;
-    height: 60px;
     width: 110px;
     margin: 0px;
     border: 0px;
