@@ -18,7 +18,7 @@ function getOrderDetailUrl(orderId) {
 }
 
 function getOrderPaymentUrl(orderId) {
-    if ( !ordeID ) {return "NA"; }
+    if ( !orderId ) {return "NA"; }
     return orderId.startsWith("D") ?
         "https://" + getSite() + "/gp/digital/your-account/order-summary.html" +
             "?ie=UTF8&orderID=" + orderId + "&print=1&" :
