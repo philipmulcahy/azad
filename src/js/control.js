@@ -46,13 +46,12 @@ function connectToBackground() {
                         .map(([k,v]) => {return k + ':' + v;})
                         .join('; ');
                     $('#azad_statistics').text(text);
-                    if (msg.statistics.queued + msg.statistics.running > 0) {
+                    if ((msg.statistics.queued + msg.statistics.running) > 0) {
                         activateScraping(msg.years);
+                    } else {
+                        activateDone(msg.years);
                     }
                 }
-                break;
-            case 'scraping_completed':
-                activateDone(msg.years);
                 break;
             default:
                 console.warn('unknown action: ' + msg.action); 
