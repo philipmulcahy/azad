@@ -134,23 +134,12 @@ class RequestScheduler {
         this.completed_count = 0;
         this.error_count = 0;
         this.signin_warned = false;
-        this.progress_update_receiver = null;
-        this.finished_receiver = null
-        this.updateProgress();
         this.live = true;
-    }
-
-    setProgressReceiver(progress_update_receiver) {
-        this.progress_update_receiver = progress_update_receiver;
-    }
-
-    setFinishedReceiver(finished_receiver) {
-        this.finished_receiver = finished_receiver;
     }
 
     schedule(query, event_converter, callback, priority, nocache) {
         if (!this.live) {
-            throw 'scheduler has aborted';
+            throw 'scheduler has aborted or finished, and cannot accept more queries';
         }
         console.log('Queuing ' + query + ' with ' + this.queue.size());
         this.queue.push({
@@ -166,12 +155,20 @@ class RequestScheduler {
     abort() {
         // Prevent (irreversably) this scheduler from doing any more work.
         this.live = false;
-        // We don't call this.finished_receiver, because we've probably not done
-        // all we intended to do.
     }
 
     clearCache() {
         this.cache.clear();
+    }
+
+    statistics() {
+        return {
+            'queued' : this.queue.size(),
+            'running' : this.running_count,
+            'completed' : this.completed_count,
+            'errors' : this.error_count,
+            'cache_hits' : this.cache.hitCount(),
+        };
     }
 
     // Process a single de-queued request either by retrieving from the cache
@@ -204,18 +201,18 @@ class RequestScheduler {
         req.onerror = function() {
             this.running_count -= 1;
             this.error_count += 1;
-            this.updateProgress();
             console.log( 'Unknown error fetching ' + query );
         };
         req.onload = function(evt) {
-            this.running_count -= 1;
             if (!this.live) {
+                this.running_count -= 1;
                 return;
             }
             if ( req.status != 200 ) {
                 this.error_count += 1;
                 console.log(
                     'Got HTTP' + req.status + ' fetching ' + query);
+                this.running_count -= 1;
                 return;
             }
             if ( req.responseURL.includes('/ap/signin?') ) {
@@ -235,6 +232,7 @@ class RequestScheduler {
                         }
                     );
                 }
+                this.running_count -= 1;
                 return;
             }
             this.completed_count += 1;
@@ -247,11 +245,11 @@ class RequestScheduler {
                 this.cache.set(query, converted);
             }
             callback(converted, query);
+            this.running_count -= 1;
             this._checkDone();
         }.bind(this);
         this.running_count += 1;
         req.send();
-        this.updateProgress();
     }
 
     _executeSomeIfPossible() {
@@ -270,25 +268,8 @@ class RequestScheduler {
     }
 
     _checkDone() {
-        if (this.queue.size() == 0) {
-            this.finished_receiver();
-        }
-    }
-
-    statistics() {
-        return {
-            'queued' : this.queue.size(),
-            'running' : this.running_count,
-            'completed' : this.completed_count,
-            'errors' : this.error_count,
-            'cache_hits' : this.cache.hitCount(),
-        };
-    }
-
-    updateProgress() {
-        const stats = this.statistics();
-        if (this.progress_update_receiver) {
-            this.progress_update_receiver(stats);
+        if (this.queue.size() == 0 && this.running_count == 0) {
+            this.live = false;
         }
     }
 }

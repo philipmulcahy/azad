@@ -13,8 +13,12 @@ import azad_table from './table';
 let scheduler = null;
 let background_port = null;
 let years = null;
+let stats_timeout = null;
 
 function getScheduler() {
+    if (!scheduler) {
+        resetScheduler();
+    }
     return scheduler;
 }
 
@@ -22,27 +26,30 @@ function getBackgroundPort() {
     return background_port;
 }
 
+function setStatsTimeout() {
+    const sendStatsMsg = () => {
+        getBackgroundPort().postMessage({
+            action: 'statistics_update',
+            statistics: getScheduler().statistics(),
+            years: years,
+        });
+    }
+    clearTimeout(stats_timeout);
+    stats_timeout = setTimeout(
+        () => {
+            setStatsTimeout();
+            sendStatsMsg();
+        },
+        2000
+    ); 
+}
+
 function resetScheduler() {
     if (scheduler) {
         scheduler.abort();
     }
     scheduler = request_scheduler.create();
-    scheduler.setProgressReceiver(
-        msg => getBackgroundPort().postMessage({
-            action: 'statistics_update',
-            statistics: msg,
-            years: years,
-        })
-    );
-    scheduler.setFinishedReceiver(
-        () => {
-            console.log('sending scraping_completed message');
-            getBackgroundPort().postMessage({
-                action: 'scraping_completed',
-                years: years,
-            });
-        }
-    );
+    setStatsTimeout();
 }
 
 function getYears() {
@@ -66,6 +73,7 @@ function getYears() {
 }
 
 function fetchAndShowOrders(years) {
+    resetScheduler();
     azad_order.getOrdersByYear(
         years,
         getScheduler(),
@@ -118,5 +126,4 @@ function registerContentScript() {
 
 console.log('Amazon Order History Reporter starting');
 registerContentScript();
-resetScheduler();
 advertiseYears();

@@ -33,12 +33,7 @@ function registerConnectionListener() {
                         case 'statistics_update':
                             control_port.postMessage({
                                 action: 'statistics_update',
-                                statistics: msg.statistics
-                            });
-                            break;
-                        case 'scraping_completed':
-                            control_port.postMessage({
-                                action: 'scraping_completed',
+                                statistics: msg.statistics,
                                 years: msg.years,
                             });
                             break;
