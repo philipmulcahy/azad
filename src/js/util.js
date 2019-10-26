@@ -63,7 +63,7 @@ function findSingleNodeValue(xpath, elem) {
             null
         ).singleNodeValue;
     } catch (ex) {
-        console.log('findSingleNodeValue blew up with: ', xpath);
+        console.log('findSingleNodeValue didn't match: ', xpath);
     }
 }
 
