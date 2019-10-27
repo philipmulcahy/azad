@@ -124,6 +124,18 @@ function registerContentScript() {
     console.log('script registered');
 }
 
+function addPopupButton() {
+    util.addButton(
+        'where have my order history buttons gone?',
+        () => {
+            window.alert(
+                'You can get to the controls popup by clicking on the extension icon at the top right of the Chrome window:  Look for an orange upper case A. The button that you have just clicked will be removed in a future version of the order history extension.'
+            );
+        }
+    );
+}
+
 console.log('Amazon Order History Reporter starting');
 registerContentScript();
 advertiseYears();
+addPopupButton();

@@ -18,10 +18,7 @@ function registerConnectionListener() {
                 port.onMessage.addListener( msg => {
                     switch(msg.action) {
                         case 'scrape_complete':
-                            control_port.postMessage({
-                                action: 'scrape_complete',
-                                years: msg.years
-                            });
+                            control_port.postMessage(msg);
                             break;
                         case 'advertise_years':
                             console.log('forwarding advertise_years', msg.years);
@@ -31,11 +28,7 @@ function registerConnectionListener() {
                             advertiseYears();
                             break;
                         case 'statistics_update':
-                            control_port.postMessage({
-                                action: 'statistics_update',
-                                statistics: msg.statistics,
-                                years: msg.years,
-                            });
+                            control_port.postMessage(msg);
                             break;
                         default:
                             console.warn('unknown action: ' + msg.action);
