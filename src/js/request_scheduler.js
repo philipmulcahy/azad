@@ -174,7 +174,11 @@ class RequestScheduler {
         req.onerror = function() {
             this.running_count -= 1;
             this.error_count += 1;
-            this.updateProgress();
+            if ( typeof(this.updateProgress) === 'function' ) {
+                this.updateProgress();
+            } else {
+                alert('Try again; there seems to be a connection issue');
+            }
             console.log( 'Unknown error fetching ' + query );
         };
         req.onload = function(evt) {
