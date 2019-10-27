@@ -27,6 +27,7 @@ const by_regex = function(xpaths, regex, default_value, elem) {
                 if (match !== null) {
                     return match[1];
                 }
+                return a.textContent.trim();
             } else {
                 return a.textContent.trim();
             }

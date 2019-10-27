@@ -18,6 +18,7 @@ function getOrderDetailUrl(orderId) {
 }
 
 function getOrderPaymentUrl(orderId) {
+    if ( !orderId ) {return "N/A"; }
     return orderId.startsWith("D") ?
         "https://" + getSite() + "/gp/digital/your-account/order-summary.html" +
             "?ie=UTF8&orderID=" + orderId + "&print=1&" :
@@ -62,7 +63,7 @@ function findSingleNodeValue(xpath, elem) {
             null
         ).singleNodeValue;
     } catch (ex) {
-        console.warn('findSingleNodeValue blew up with: ' + xpath);
+        console.log('findSingleNodeValue didn\'t match: ', xpath);
     }
 }
 
