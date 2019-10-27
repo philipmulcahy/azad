@@ -1,3 +1,4 @@
+/* Copyright(c) 2019 Philip Mulcahy. */
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
 
@@ -10,6 +11,9 @@
 import cachestuff from './cachestuff';
 
 class BinaryHeap {
+    // TODO: This was class written/cribbed before I started using npm and webpack.
+    // It is extremely unlikely there isn't a viable npm module that would
+    // fit the bill and allow us to reduce the amount of code in this extension.
     constructor(scoreFunction) {
         this.content = [];
         this.scoreFunction = scoreFunction;
@@ -186,13 +190,33 @@ class RequestScheduler {
             undefined :
             this.cache.get(query);
         if (cached_response !== undefined) {
-            console.log('Already had ' + query + ' with ' + this.queue.size());
-            callback(cached_response, query);
-            this.completed_count += 1;
-            this._checkDone();
+            this._pretendToSendOne(query, callback, cached_response);
         } else {
             this._sendOne(query, event_converter, callback, nocache);
         }
+    }
+
+    _pretendToSendOne(query, callback, cached_response) {
+        // "Return" results asynchronously...
+        // ...make it happen as soon as possible after any current 
+        // synchronous code has finished - e.g. pretend it's coming back
+        // from the internet.
+        // Why? Because otherwise the scheduler will get confused about
+        // whether it has finished all of its work: the caller of this
+        // function may be intending to schedule multiple actions, and if
+        // we finish all of the work from the first call before the caller
+        // has a chance to tell us about the rest of the work, then the
+        // scheduler will shut down by setting this.live to false.
+        this.running_count += 1;
+        setTimeout(
+            () => {
+                this._executeSomeIfPossible();
+                callback(cached_response, query);
+                this.running_count -= 1;
+                this.completed_count += 1;
+                this._checkDone();
+            }
+        );
     }
 
     _sendOne(query, event_converter, callback, nocache) {
@@ -235,7 +259,6 @@ class RequestScheduler {
                 this.running_count -= 1;
                 return;
             }
-            this.completed_count += 1;
             console.log(
               'Finished ' + query +
                 ' with queue size ' + this.queue.size());
@@ -246,6 +269,7 @@ class RequestScheduler {
             }
             callback(converted, query);
             this.running_count -= 1;
+            this.completed_count += 1;
             this._checkDone();
         }.bind(this);
         this.running_count += 1;
@@ -268,7 +292,11 @@ class RequestScheduler {
     }
 
     _checkDone() {
-        if (this.queue.size() == 0 && this.running_count == 0) {
+        if (
+            this.queue.size() == 0 &&
+            this.running_count == 0 &&
+            this.completed_count > 0  // make sure we don't kill a brand-new scheduler
+        ) {
             this.live = false;
         }
     }
