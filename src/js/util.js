@@ -13,32 +13,31 @@ function getSite() {
 }
 
 function getOrderDetailUrl(orderId) {
-    return "https://" + getSite() + "/gp/your-account/order-details/" +
-        "ref=oh_aui_or_o01_?ie=UTF8&orderID=" + orderId;
+    return 'https://' + getSite() + '/gp/your-account/order-details/' +
+        'ref=oh_aui_or_o01_?ie=UTF8&orderID=' + orderId;
 }
 
 function getOrderPaymentUrl(orderId) {
-    if ( !orderId ) {return "N/A"; }
-    return orderId.startsWith("D") ?
-        "https://" + getSite() + "/gp/digital/your-account/order-summary.html" +
-            "?ie=UTF8&orderID=" + orderId + "&print=1&" :
-        "https://" + getSite() + "/gp/css/summary/print.html" +
-            "/ref=oh_aui_ajax_pi?ie=UTF8&orderID=" + orderId;
+    if ( !orderId ) {return 'N/A'; }
+    return orderId.startsWith('D') ?
+        'https://' + getSite() + '/gp/digital/your-account/order-summary.html' +
+            '?ie=UTF8&orderID=' + orderId + '&print=1&' :
+        'https://' + getSite() + '/gp/css/summary/print.html' +
+            '/ref=oh_aui_ajax_pi?ie=UTF8&orderID=' + orderId;
 }
 
-function addButton(name, cb, style) {
+function addButton(name, cb, button_class) {
     var existing = document.querySelector('[button_name="' + name + '"]');
     if ( existing !== null ) {
         existing.parentNode.removeChild(existing);
     }
-    var a = document.createElement("button");
-    if(typeof(style) === "undefined") {
-        style = "background-color:orange; color:white";
+    var a = document.createElement('button');
+    if(typeof(button_class) === 'undefined') {
+        button_class = 'azad_default_button';
     }
     a.innerText = name;
-    a.setAttribute("style", style);
-    a.setAttribute("class", "order_reporter_button");
-    a.setAttribute("button_name", name);
+    a.setAttribute('class', button_class);
+    a.setAttribute('button_name', name);
     a.onclick = cb;
     document.body.insertBefore(
         a,
@@ -87,8 +86,8 @@ function clearBody() {
     Array.from(document.body.children).forEach(
         function(elem) {
             if( !(
-                elem.hasAttribute("class") &&
-                elem.getAttribute("class").includes("order_reporter_")
+                elem.hasAttribute('class') &&
+                elem.getAttribute('class').includes('order_reporter_')
             )) {
                 document.body.removeChild(elem);
             }

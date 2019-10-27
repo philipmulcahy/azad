@@ -308,8 +308,9 @@ function reallyDisplayOrders(orders, beautiful) {
                     console.log('amazon_order_history_table plain table button clicked');
                     displayOrders(orders, false);
                 },
-                'background-color:cornflowerblue; color:white'
+                'azad_table_button'
             );
+            addCsvButton(orders);
         });
     } else {
         util.removeButton('plain table');
@@ -319,20 +320,26 @@ function reallyDisplayOrders(orders, beautiful) {
                 console.log('amazon_order_history_table data table button clicked');
                 displayOrders(orders, true);
             },
-            'background-color:cornflowerblue; color:white'
+            'azad_table_button'
         );
+        addCsvButton(orders);
     }
+    console.log('amazon_order_history_table.reallyDisplayOrders returning');
+    return table;
+}
+
+function addCsvButton(orders) {
+    const title = 'download csv';
+    util.removeButton(title);
     util.addButton(
-        'download csv',
+        title,
         function() {
             displayOrders(orders, false).then(
                 (table) => { csv.download(table); }
             );
         },
-        'background-color:cornflowerblue; color:white'
+        'azad_table_button'
     );
-    console.log('amazon_order_history_table.reallyDisplayOrders returning');
-    return table;
 }
 
 // TODO: refactor so that order retrieval belongs to azad_table, but 
