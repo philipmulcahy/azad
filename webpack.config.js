@@ -89,6 +89,9 @@ const options = {
             from: "node_modules/datatables/media/css/jquery.dataTables.min.css"
         }]),
         new CopyWebpackPlugin([{
+            from: "src/styles/inject.css"
+        }]),
+        new CopyWebpackPlugin([{
             from: "src/styles/datatables_override.css"
         }])
     ]
