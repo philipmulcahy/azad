@@ -50,24 +50,17 @@ function registerConnectionListener() {
                         case 'scrape_years':
                             console.log('forwarding scrape_years', + msg.years);
                             Object.values(content_ports).forEach( port =>
-                                port.postMessage({
-                                    action: msg.action,
-                                    years: msg.years
-                                })
+                                port.postMessage(msg)
                             );
                             break;
                         case 'clear_cache':
                             Object.values(content_ports).forEach( port =>
-                                port.postMessage({
-                                    action: msg.action
-                                })
+                                port.postMessage(msg)
                             );
                             break;
                         case 'abort':
                             Object.values(content_ports).forEach( port =>
-                                port.postMessage({
-                                    action: 'abort',
-                                })
+                                port.postMessage(msg)
                             );
                             break;
                         default:
