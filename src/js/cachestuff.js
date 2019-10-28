@@ -1,9 +1,10 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
+/* jslint node:true */
 
 "use strict";
 
-import lzjs from 'lzjs'
+import lzjs from 'lzjs';
 
 function millisNow() {
     return (new Date()).getTime();

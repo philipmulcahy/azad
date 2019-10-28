@@ -1,10 +1,11 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
-
 /* jshint strict: true, esversion: 6 */
-/* global XPathResult */
+/* jslint node:true */
 
-"use strict";
+//globalXPathResult//
+
+'use strict';
 
 function getSite() {
     const href = window.location.href;
@@ -64,6 +65,7 @@ function findSingleNodeValue(xpath, elem) {
         ).singleNodeValue;
     } catch (ex) {
         console.log('findSingleNodeValue didn\'t match: ', xpath);
+        return;
     }
 }
 

@@ -2,7 +2,7 @@
 
 const webpack = require("webpack"),
     path = require("path"),
-    fileSystem = require("fs"),
+//    fileSystem = require("fs"),
     env = require("./utils/env"),
     CleanWebpackPlugin = require("clean-webpack-plugin"),
     CopyWebpackPlugin = require("copy-webpack-plugin"),
@@ -31,7 +31,7 @@ const options = {
                 use: ['style-loader','css-loader']
             },
             {
-                test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
+                test: new RegExp('.(' + fileExtensions.join('|') + ')$'),
                 loader: "file-loader?name=[name].[ext]",
                 exclude: /node_modules/
             },
@@ -60,7 +60,7 @@ const options = {
                         version: process.env.npm_package_version,
                         ...JSON.parse(content.toString())
                     })
-                )
+                );
             }
         }]),
         new CopyWebpackPlugin([{

@@ -1,9 +1,9 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
+// Uses code from http://eloquentjavascript.net/1st_edition/appendix2.html
 
 /* jshint strict: true, esversion: 6 */
-
-// Uses code from http://eloquentjavascript.net/1st_edition/appendix2.html
+/* jslint node:true */
 
 'use strict';
 
@@ -41,13 +41,13 @@ class BinaryHeap {
         // To remove a value, we must search through the array to find
         // it.
         for (let i = 0; i < length; i++) {
-            if (this.content[i] != node) continue;
+            if (this.content[i] !== node) continue;
             // When it is found, the process seen in 'pop' is repeated
             // to fill up the hole.
             const end = this.content.pop();
             // If the element we popped was the one we needed to remove,
             // we're done.
-            if (i == length - 1) break;
+            if (i === length - 1) break;
             // Otherwise, we replace the removed element with the popped
             // one, and allow it to float up or sink down as appropriate.
             this.content[i] = end;
@@ -183,7 +183,7 @@ class RequestScheduler {
         };
         req.onload = function(evt) {
             this.running_count -= 1;
-            if ( req.status != 200 ) {
+            if ( req.status !== 200 ) {
                 this.error_count += 1;
                 console.log(
                     'Got HTTP' + req.status + ' fetching ' + query);

@@ -1,6 +1,8 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
+/* jslint node:true */
 
+'use strict';
 
 const order_D01_9960417_3589456_html = function() {
     return `
@@ -3921,7 +3923,7 @@ attribution:"performanceMetrics"})}}})(ue_csm,window);
 
 </body></html>
     `;
-}
+};
 
 const old_order_D01_9960417_3589456_html = function() {
     return `
@@ -7857,4 +7859,6 @@ attribution:"performanceMetrics"})}}})(ue_csm,window);
 
 export default {
     order_D01_9960417_3589456_html: order_D01_9960417_3589456_html,
+// Keep linter from whining about unused variables:
+    old_order_D01_9960417_3589456_html: old_order_D01_9960417_3589456_html,
 };

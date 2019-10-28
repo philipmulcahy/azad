@@ -1,7 +1,7 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
-
 /* jshint strict: true, esversion: 6 */
+/* jslint node:true */
 
 'use strict';
 
@@ -48,6 +48,7 @@ function fetchAndShowOrders(years) {
             return document.querySelector('[id="order_table"]');
         }
     );
+    return;
 }
 
 function addYearButtons() {

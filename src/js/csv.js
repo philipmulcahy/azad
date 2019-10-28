@@ -1,5 +1,6 @@
 /* Copyright(c) 2017 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
+/* jslint node:true */
 
 "use strict";
 

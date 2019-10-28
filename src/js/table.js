@@ -1,7 +1,9 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
-
 /* jshint strict: true, esversion: 6 */
+/* jslint node:true */
+
+"use strict";
 
 import $ from 'jquery';
 import 'datatables';
@@ -9,8 +11,6 @@ import util from './util';
 import csv from './csv';
 import sprintf from 'sprintf-js';
 import diagnostic_download from './diagnostic_download';
-
-'use strict';
 
 const tableStyle = 'border: 1px solid black;';
 let datatable = null;
@@ -179,6 +179,7 @@ function reallyDisplayOrders(orders, beautiful) {
                                 datatable.rows().invalidate();
                                 datatable.draw();
                             }
+                            return;
                         });
                         break;
                     case 'payments':
@@ -199,10 +200,14 @@ function reallyDisplayOrders(orders, beautiful) {
                                 datatable.rows().invalidate();
                                 datatable.draw();
                             }
+                            return;
                         });
                         break;
                     case 'func':
                         col_spec.func(order, tr);
+                        break;
+                    default:
+                        console.warn("Can't find ", col_spec.type);
                         break;
                 }
                 if ('help' in col_spec) {
@@ -328,6 +333,7 @@ function reallyDisplayOrders(orders, beautiful) {
             displayOrders(orders, false).then(
                 (table) => { csv.download(table); }
             );
+            return;
         },
         'background-color:cornflowerblue; color:white'
     );
@@ -355,6 +361,7 @@ function dumpOrderDiagnostics(order_id) {
             diagnostics => diagnostic_download.save_json_to_file(diagnostics, order_id + '.json')
         );
     }
+    return null;
 }
 
 export default {

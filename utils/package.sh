@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd $(dirname $0)/..
+cd "$(dirname $0)/.." || return
 npm run build
 rm -f azad.zip
 zip -r azad.zip build
