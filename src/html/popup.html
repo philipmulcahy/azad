@@ -1,0 +1,47 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
+  <head>
+    <title>Amazon Order History Reporter: Control Panel</title>
+    <link rel="stylesheet" type="text/css" href="./popup.css" />
+  </head>
+  <body>
+      <div id="azad_actions">
+          <input type="button" class="azad_action" id="azad_clear_cache"
+                 value="clear cache" title="empty the query cache"/>
+          <input type="button" class="azad_action" id="azad_stop"
+                 value="stop" title="stop scraping"/>
+          <input type="button" class="azad_action" id="azad_hide_controls"
+                 value="&#x2716" title="hide this popup"/>
+      </div>
+      <div class="azad_separator"></div>
+      <div id="azad_year_list">
+          <input type="button" class="azad_year_button" value="2027" />
+          <input type="button" class="azad_year_button" value="2097" />
+      </div>
+      <div class="azad_separator"></div>
+      <div id="azad_info">
+          <table>
+              <tr>
+                  <td>
+                      <div id="azad_state">idle</div>
+                  </td>
+                  <td>
+                      <div id="azad_statistics" />
+                  </td>
+              </tr>
+          </table>
+      </div>
+      <div id="footer">
+          <a href='http://www.justgiving.com/azad-pah'
+             title='JustGiving - Sponsor me now!'
+             target='_blank' >
+              <img src='http://www.justgiving.com/App_Themes/JustGiving/images/badges/badge9.gif'
+                   width='80'
+                   height='60'
+                   alt='JustGiving - Sponsor me now!' />
+          </a>
+      </div>
+      <script src="control.bundle.js"></script> 
+  </body>
+</html>

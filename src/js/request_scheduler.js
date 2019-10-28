@@ -1,3 +1,4 @@
+/* Copyright(c) 2019 Philip Mulcahy. */
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
 
@@ -10,6 +11,9 @@
 import cachestuff from './cachestuff';
 
 class BinaryHeap {
+    // TODO: This was class written/cribbed before I started using npm and webpack.
+    // It is extremely unlikely there isn't a viable npm module that would
+    // fit the bill and allow us to reduce the amount of code in this extension.
     constructor(scoreFunction) {
         this.content = [];
         this.scoreFunction = scoreFunction;
@@ -134,59 +138,105 @@ class RequestScheduler {
         this.completed_count = 0;
         this.error_count = 0;
         this.signin_warned = false;
-        this.updateProgress();
+        this.live = true;
     }
 
     schedule(query, event_converter, callback, priority, nocache) {
-        const cached_response = nocache ?
-            undefined :
-            this.cache.get(query);
-        if (cached_response !== undefined) {
-            console.log('Already had ' + query + ' with ' + this.queue.size());
-            callback(cached_response, query);
-        } else {
-            console.log('Scheduling ' + query + ' with ' + this.queue.size());
-            if (this.running_count < this.CONCURRENCY) {
-                this.execute(query, event_converter, callback, priority);
-            } else {
-                this.queue.push({
-                    'query': query,
-                    'event_converter': event_converter,
-                    'callback': callback,
-                    'priority': priority,
-                });
-            }
+        if (!this.live) {
+            throw 'scheduler has aborted or finished, and cannot accept more queries';
         }
+        console.log('Queuing ' + query + ' with ' + this.queue.size());
+        this.queue.push({
+            'query': query,
+            'event_converter': event_converter,
+            'callback': callback,
+            'priority': priority,
+            'nocache': nocache,
+        });
+        this._executeSomeIfPossible();
+    }
+
+    abort() {
+        // Prevent (irreversably) this scheduler from doing any more work.
+        this.live = false;
     }
 
     clearCache() {
         this.cache.clear();
     }
 
-    execute(query, event_converter, callback, priority) {
+    statistics() {
+        return {
+            'queued' : this.queue.size(),
+            'running' : this.running_count,
+            'completed' : this.completed_count,
+            'errors' : this.error_count,
+            'cache_hits' : this.cache.hitCount(),
+        };
+    }
+
+    // Process a single de-queued request either by retrieving from the cache
+    // or by sending it out.
+    _execute(query, event_converter, callback, priority, nocache) {
+        if (!this.live) {
+            return;
+        }
         console.log(
             'Executing ' + query +
             ' with queue size ' + this.queue.size() +
             ' and priority ' + priority
         );
+        const cached_response = nocache ?
+            undefined :
+            this.cache.get(query);
+        if (cached_response !== undefined) {
+            this._pretendToSendOne(query, callback, cached_response);
+        } else {
+            this._sendOne(query, event_converter, callback, nocache);
+        }
+    }
+
+    _pretendToSendOne(query, callback, cached_response) {
+        // "Return" results asynchronously...
+        // ...make it happen as soon as possible after any current 
+        // synchronous code has finished - e.g. pretend it's coming back
+        // from the internet.
+        // Why? Because otherwise the scheduler will get confused about
+        // whether it has finished all of its work: the caller of this
+        // function may be intending to schedule multiple actions, and if
+        // we finish all of the work from the first call before the caller
+        // has a chance to tell us about the rest of the work, then the
+        // scheduler will shut down by setting this.live to false.
+        this.running_count += 1;
+        setTimeout(
+            () => {
+                this._executeSomeIfPossible();
+                callback(cached_response, query);
+                this.running_count -= 1;
+                this.completed_count += 1;
+                this._checkDone();
+            }
+        );
+    }
+
+    _sendOne(query, event_converter, callback, nocache) {
         const req = new XMLHttpRequest();
         req.open('GET', query, true);
         req.onerror = function() {
             this.running_count -= 1;
             this.error_count += 1;
-            if ( typeof(this.updateProgress) === 'function' ) {
-                this.updateProgress();
-            } else {
-                alert('Try again; there seems to be a connection issue');
-            }
             console.log( 'Unknown error fetching ' + query );
         };
         req.onload = function(evt) {
-            this.running_count -= 1;
+            if (!this.live) {
+                this.running_count -= 1;
+                return;
+            }
             if ( req.status != 200 ) {
                 this.error_count += 1;
                 console.log(
                     'Got HTTP' + req.status + ' fetching ' + query);
+                this.running_count -= 1;
                 return;
             }
             if ( req.responseURL.includes('/ap/signin?') ) {
@@ -206,53 +256,48 @@ class RequestScheduler {
                         }
                     );
                 }
+                this.running_count -= 1;
                 return;
             }
-            this.completed_count += 1;
             console.log(
               'Finished ' + query +
                 ' with queue size ' + this.queue.size());
-            while (this.running_count < this.CONCURRENCY &&
-                   this.queue.size() > 0
-            ) {
-                const task = this.queue.pop();
-                this.execute(
-                    task.query,
-                    task.event_converter,
-                    task.callback,
-                    task.priority
-                );
-            }
+            this._executeSomeIfPossible();
             const converted = event_converter(evt);
-            this.cache.set(query, converted);
+            if (!nocache) {
+                this.cache.set(query, converted);
+            }
             callback(converted, query);
+            this.running_count -= 1;
+            this.completed_count += 1;
+            this._checkDone();
         }.bind(this);
         this.running_count += 1;
         req.send();
-        this.updateProgress();
     }
 
-    statistics() {
-        return {
-            'queued' : this.queue.size(),
-            'running' : this.running_count,
-            'completed' : this.completed_count,
-            'errors' : this.error_count,
-            'cache_hits' : this.cache.hitCount(),
-        };
+    _executeSomeIfPossible() {
+        while (this.running_count < this.CONCURRENCY &&
+               this.queue.size() > 0
+        ) {
+            const task = this.queue.pop();
+            this._execute(
+                task.query,
+                task.event_converter,
+                task.callback,
+                task.priority,
+                task.nocache,
+            );
+        }
     }
 
-    updateProgress() {
-        try {
-            const target = document.getElementById('order_reporter_progress');
-            if (target !== null) {
-                target.textContent = Object.entries(this.statistics())
-                                           .map(([k,v]) => {return k + ':' + v;})
-                                           .join('; ');
-            }
-            setTimeout(function() { this.updateProgress(); }.bind(this), 2000);
-        } catch(ex) {
-            console.warn('could not update progress - maybe we are in node?: ' + ex);
+    _checkDone() {
+        if (
+            this.queue.size() == 0 &&
+            this.running_count == 0 &&
+            this.completed_count > 0  // make sure we don't kill a brand-new scheduler
+        ) {
+            this.live = false;
         }
     }
 }

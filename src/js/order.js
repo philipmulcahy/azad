@@ -160,20 +160,25 @@ function extractDetailFromDoc(order, doc) {
         return a;
     };
     const us_tax = function(){
-        const moneyRegEx = '\\s+(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))'
-        // Result
-        // 0: "Tax Collected: USD $0.00"
-        // 1: "USD $0.00"
-        // 2:   "USD"
-        // 3:   "$0.00"
-        // 4:     "$"
-        // 5:     "0.00"
-
-        var a
-        a = getField('//span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span/text()', doc.documentElement);
+        let a = getField(
+            '//span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span/text()',
+            doc.documentElement
+        );
         if ( !a ) {
             a = getField('.//tr[contains(td,"Tax Collected:")]', doc.documentElement);
-            a = a.match(moneyRegEx)[1];
+            if (a) {
+                const moneyRegEx = '\\s+(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))'
+                // Result
+                // 0: "Tax Collected: USD $0.00"
+                // 1: "USD $0.00"
+                // 2:   "USD"
+                // 3:   "$0.00"
+                // 4:     "$"
+                // 5:     "0.00"
+                a = a.match(moneyRegEx)[1];
+            } else {
+                a = 'N/A';
+            }
         }
         return a;
     };
@@ -272,14 +277,18 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
             );
             return extractDetailFromDoc(order, doc);
         };
-        request_scheduler.schedule(
-            query,
-            event_converter,
-            order_details => {
-                resolve(order_details);
-            },
-            order.id
-        );
+        try {
+            request_scheduler.schedule(
+                query,
+                event_converter,
+                order_details => {
+                    resolve(order_details);
+                },
+                order.id
+            );
+        } catch (ex) {
+            console.error('scheduler rejected ' + order.id + ' ' + query);
+        }
     }
 );
 
