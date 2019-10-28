@@ -358,8 +358,12 @@ function dumpOrderDiagnostics(order_id) {
     console.log('dumpOrderDiagnostics: ' + order_id);
     const order = order_map[order_id];
     if (order) {
+        const utc_today = new Date().toISOString().substr(0,10);
         order.assembleDiagnostics().then(
-            diagnostics => diagnostic_download.save_json_to_file(diagnostics, order_id + '.json')
+            diagnostics => diagnostic_download.save_json_to_file(
+                diagnostics,
+                order_id + '_' + utc_today + '.json'
+            )
         );
     }
 }
