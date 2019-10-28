@@ -18,6 +18,7 @@ const options = {
     entry: {
         inject: path.join(__dirname, "src", "js", "inject.js"),
         background: path.join(__dirname, "src", "js", "background.js"),
+        control: path.join(__dirname, "src", "js", "control.js"),
         alltests: path.join(__dirname, "src", "tests", "all.js")
     },
     output: {
@@ -68,6 +69,12 @@ const options = {
         }]),
         new CopyWebpackPlugin([{
             from: "src/img/icon128.png"
+        }]),
+        new CopyWebpackPlugin([{
+            from: "src/html/popup.html"
+        }]),
+        new CopyWebpackPlugin([{
+            from: "src/styles/popup.css"
         }]),
         new CopyWebpackPlugin([{
             from: "src/img/sort_asc.png"
