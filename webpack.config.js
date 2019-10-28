@@ -19,7 +19,8 @@ const options = {
         inject: path.join(__dirname, "src", "js", "inject.js"),
         background: path.join(__dirname, "src", "js", "background.js"),
         control: path.join(__dirname, "src", "js", "control.js"),
-        alltests: path.join(__dirname, "src", "tests", "all.js")
+        alltests: path.join(__dirname, "src", "tests", "all.js"),
+        order_tests: path.join(__dirname, "src", "tests", "order_tests.js"),
     },
     output: {
         path: path.join(__dirname, "build"),
