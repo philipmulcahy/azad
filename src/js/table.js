@@ -204,6 +204,9 @@ function reallyDisplayOrders(orders, beautiful) {
                     case 'func':
                         col_spec.func(order, tr);
                         break;
+                    default:
+                        console.warn('Missing switch for ', col_spec.type);
+                        break;
                 }
                 if ('help' in col_spec) {
                     elem.setAttribute('title', col_spec.help);
