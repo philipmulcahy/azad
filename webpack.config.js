@@ -32,7 +32,7 @@ const options = {
                 use: ['style-loader','css-loader']
             },
             {
-                test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
+                test: new RegExp('.(' + fileExtensions.join('|') + ')$'),
                 loader: "file-loader?name=[name].[ext]",
                 exclude: /node_modules/
             },
