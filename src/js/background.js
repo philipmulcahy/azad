@@ -97,7 +97,7 @@ function registerRightClickActions() {
 function registerMessageListener() {
     chrome.runtime.onMessage.addListener( (request, sender) => {
         console.log(
-            sender.tab
+            sender.tab //'?'
                 ? 'from a content script:' + sender.tab.url
                 : 'from the extension'
         );
