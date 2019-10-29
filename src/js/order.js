@@ -424,7 +424,7 @@ class Order {
     itemsHtml(doc) {
         const ul = doc.createElement('ul');
         for(let title in this.items) {
-            if(this.items.hasOwnProperty(title)) {
+            if(Object.prototype.hasOwnProperty.call(this.items, "title")) {
                 const li = doc.createElement('li');
                 ul.appendChild(li);
                 const a = doc.createElement('a');
