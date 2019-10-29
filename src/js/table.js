@@ -212,7 +212,7 @@ function reallyDisplayOrders(orders, beautiful) {
         };
         // remove any old table
         let table = document.querySelector('[id="order_table"]');
-        if ( table !== null ) {
+        if ( table ) {
             console.log('removing old table');
             table.parentNode.removeChild(table);
             console.log('removed old table');

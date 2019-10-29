@@ -45,13 +45,13 @@ class BinaryHeap {
         // To remove a value, we must search through the array to find
         // it.
         for (let i = 0; i < length; i++) {
-            if (this.content[i] != node) continue;
+            if (this.content[i] !== node) continue;
             // When it is found, the process seen in 'pop' is repeated
             // to fill up the hole.
             const end = this.content.pop();
             // If the element we popped was the one we needed to remove,
             // we're done.
-            if (i == length - 1) break;
+            if (i === length - 1) break;
             // Otherwise, we replace the removed element with the popped
             // one, and allow it to float up or sink down as appropriate.
             this.content[i] = end;
@@ -232,7 +232,7 @@ class RequestScheduler {
                 this.running_count -= 1;
                 return;
             }
-            if ( req.status != 200 ) {
+            if ( req.status !== 200 ) {
                 this.error_count += 1;
                 console.log(
                     'Got HTTP' + req.status + ' fetching ' + query);
@@ -293,8 +293,8 @@ class RequestScheduler {
 
     _checkDone() {
         if (
-            this.queue.size() == 0 &&
-            this.running_count == 0 &&
+            this.queue.size() === 0 &&
+            this.running_count === 0 &&
             this.completed_count > 0  // make sure we don't kill a brand-new scheduler
         ) {
             this.live = false;

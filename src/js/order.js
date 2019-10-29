@@ -121,7 +121,7 @@ function extractDetailFromDoc(order, doc) {
         );
     };
     const vat = function() {
-        if ( order.id == 'D01-9960417-3589456' ) {
+        if ( order.id === 'D01-9960417-3589456' ) {
             console.log('TODO - remove');
         }
         const a = extraction.by_regex(
@@ -149,11 +149,11 @@ function extractDetailFromDoc(order, doc) {
             'N/A',
             doc.documentElement
         );
-        if( a != null ) {
+        if( a ) {
             const b = a.match(
                 /VAT: *([-$£€0-9.]*)/i
             );
-            if( b !== null ) {
+            if( b ) {
                 return b[1];
             }
         }
@@ -732,7 +732,7 @@ function getOrdersByYear(years, request_scheduler, latest_year) {
     return Promise.all(
         years.map(
             function(year) {
-                const nocache_top_level = (year == latest_year);
+                const nocache_top_level = (year === latest_year);
                 return fetchYear(year, request_scheduler, nocache_top_level);
             }
         )

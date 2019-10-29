@@ -41,7 +41,7 @@ function toJSON(node) {
 }
 
 function toDOM(obj) {
-  if (typeof obj == 'string') {
+  if (typeof obj === 'string') {
     obj = JSON.parse(obj);
   }
   var node;
@@ -75,7 +75,7 @@ function toDOM(obj) {
     default:
       return node;
   }
-  if (nodeType == 1 || nodeType == 11) {
+  if (nodeType === 1 || nodeType === 11) {
     const childNodes = obj.childNodes || [];
     for (i = 0, len = childNodes.length; i < len; i++) {
       node.appendChild(toDOM(childNodes[i]));

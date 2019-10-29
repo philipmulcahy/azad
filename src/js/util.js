@@ -29,7 +29,7 @@ function getOrderPaymentUrl(orderId) {
 
 function addButton(name, cb, button_class) {
     var existing = document.querySelector('[button_name="' + name + '"]');
-    if ( existing !== null ) {
+    if ( existing ) {
         existing.parentNode.removeChild(existing);
     }
     var a = document.createElement('button');
@@ -48,7 +48,7 @@ function addButton(name, cb, button_class) {
 
 function removeButton(name) {
     var elem = document.querySelector('[button_name="' + name + '"]');
-    if ( elem !== null ) {
+    if ( elem ) {
         elem.parentNode.removeChild(elem);
     }
 }

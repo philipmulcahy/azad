@@ -77,7 +77,7 @@ function registerRightClickActions() {
     } );
     chrome.contextMenus.onClicked.addListener( info => {
         console.log('context menu item: ' + info.menuItemId + ' clicked;');
-        if (info.menuItemId == 'save_order_debug_info') {
+        if (info.menuItemId === 'save_order_debug_info') {
             if ( /orderID=/.test(info.linkUrl) ) {
                 const match =info.linkUrl.match(/.*orderID=([0-9-]*)$/);
                 const order_id = match[1];

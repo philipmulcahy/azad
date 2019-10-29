@@ -28,7 +28,7 @@ const detailExtractionTest = () => {
         'N/A',
         doc.documentElement
     );
-    return basic.substring(3) == '0.90';
+    return basic.substring(3) === '0.90';
 };
 
 const extraction_tests = {

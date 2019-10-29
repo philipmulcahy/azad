@@ -11,7 +11,7 @@ const endtoendTest = () => {
     const cache = cachestuff.createLocalCache('TESTENDTOEND');
     cache.clear();
     cache.set('test_key', 'the quick brown fox');
-    return cache.get('test_key') == 'the quick brown fox';
+    return cache.get('test_key') === 'the quick brown fox';
 };
 
 const fillTest = () => {
