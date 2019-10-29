@@ -531,6 +531,7 @@ function getOrdersForYearAndQueryTemplate(
                 '" order ")]',
             ordersElem
         );
+// FYI, lint says there should be no return here.
         return {
             expected_order_count: expected_order_count,
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
