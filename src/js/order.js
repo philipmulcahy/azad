@@ -453,13 +453,13 @@ class Order {
         return Promise.all([
             fetch(this.list_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.list_html = text; } ),
+                .then( text => { diagnostics.list_html = text; return; } ),
             fetch(this.detail_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.detail_html = text; } ),
+                .then( text => { diagnostics.detail_html = text; return; } ),
             fetch(this.invoice_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.invoice_html = text; } )
+                .then( text => { diagnostics.invoice_html = text; return; } )
         ]).then( () => diagnostics );
     }
 }
@@ -581,6 +581,7 @@ function getOrdersForYearAndQueryTemplate(
                 order_promise.then( order => {
                     // TODO is "Fetching" the right message for this stage?
                     console.log('azad_order Fetching ' + order.id);
+                    return;
                 });
                 console.log(
                     'YearFetcher(' + year + ') order_promises.length:' +
