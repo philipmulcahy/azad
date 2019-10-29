@@ -7866,7 +7866,20 @@ function orderFromTestData(
     collection_date,
     site
 ) {
-    // TODO
+    const path = './src/tests/data/' + site + '/input/' + order_id + '_' + collection_date + '.json';
+    const json_promise = new Promise( (resolve, reject) => {
+        fs.readFile(path, 'utf8', (err, json) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(json)
+            }
+        })
+    });
+    const dump_promise = json_promise.then( json => JSON.parse(json) );
+    dump_promise.then( dump => {
+        console.log(dump.list_url);
+    });
 }
 
 
