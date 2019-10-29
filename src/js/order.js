@@ -474,25 +474,7 @@ function getOrdersForYearAndQueryTemplate(
     let order_found_callback = null;
     let check_complete_callback = null;
     const order_promises = [];
-    const sendGetOrderCount = function() {
-        request_scheduler.schedule(
-            generateQueryString(0),
-            convertOrdersPage,
-            receiveOrdersCount,
-            '00000',
-            nocache_top_level
-        );
-    };
-    const generateQueryString = function(startOrderPos) {
-        return sprintf.sprintf(
-            query_template,
-            {
-                site: util.getSite(),
-                year: year,
-                startOrderPos: startOrderPos
-            }
-        );
-    };
+
     const convertOrdersPage = function(evt) {
         const p = new DOMParser();
         const d = p.parseFromString(evt.target.responseText, 'text/html');
@@ -537,6 +519,18 @@ function getOrdersForYearAndQueryTemplate(
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
         };
     };
+
+    const generateQueryString = function(startOrderPos) {
+        return sprintf.sprintf(
+            query_template,
+            {
+                site: util.getSite(),
+                year: year,
+                startOrderPos: startOrderPos
+            }
+        );
+    };
+
     const receiveOrdersCount = function(orders_page_data) {
         expected_order_count = orders_page_data.expected_order_count;
         check_complete_callback();
@@ -553,6 +547,17 @@ function getOrdersForYearAndQueryTemplate(
             );
         }
     };
+
+    const sendGetOrderCount = function() {
+        request_scheduler.schedule(
+            generateQueryString(0),
+            convertOrdersPage,
+            receiveOrdersCount,
+            '00000',
+            nocache_top_level
+        );
+    };
+
     const receiveOrdersPageData = function(orders_page_data, src_query) {
         const order_elems = orders_page_data.order_elems.map(
             elem => dom2json.toDOM(elem)
