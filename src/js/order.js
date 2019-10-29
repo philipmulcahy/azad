@@ -167,7 +167,7 @@ function extractDetailFromDoc(order, doc) {
         if ( !a ) {
             a = getField('.//tr[contains(td,"Tax Collected:")]', doc.documentElement);
             if (a) {
-                const moneyRegEx = '\\s+(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))'
+                const moneyRegEx = '\\s+(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))';
                 // Result
                 // 0: "Tax Collected: USD $0.00"
                 // 1: "USD $0.00"

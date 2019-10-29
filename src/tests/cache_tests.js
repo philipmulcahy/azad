@@ -40,7 +40,7 @@ const deepSerializationTest = () => {
     });
     const retrieved = cache.get('X');
     return retrieved.a.b.c.d.e;
-}
+};
 
 const cache_tests = {
     endtoend_test: endtoendTest,

@@ -4,7 +4,7 @@
 /* jslint node:true */
 'use strict';
 
-import lzjs from 'lzjs'
+import lzjs from 'lzjs';
 
 function millisNow() {
     return (new Date()).getTime();

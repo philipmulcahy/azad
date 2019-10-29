@@ -4,7 +4,7 @@
 /* jslint node:true */
 'use strict';
 
-import $ from 'jquery'
+import $ from 'jquery';
 
 const test_suites = {};
 
@@ -44,4 +44,4 @@ function runAll(doc) {
 export default {
     register: register,
     runAll: runAll
-}
+};
