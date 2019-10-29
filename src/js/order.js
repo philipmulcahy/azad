@@ -402,7 +402,7 @@ class Order {
                         const payments = extraction.payments_from_invoice(doc);
                         // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
                         return payments;
-                    }.bind(this);
+                    };  //.bind(this);
                     this.request_scheduler.schedule(
                         this.invoice_url,
                         event_converter,
@@ -412,7 +412,7 @@ class Order {
                         this.id
                     );
                 }
-            }).bind(this)
+            }); //.bind(this)
         );
     }
 
