@@ -3925,6 +3925,7 @@ attribution:"performanceMetrics"})}}})(ue_csm,window);
     `;
 }
 
+/*
 const old_order_D01_9960417_3589456_html = function() {
     return `
 <!doctype html><html class="a-no-js" data-19ax5a9jf="dingo">
@@ -7856,6 +7857,8 @@ attribution:"performanceMetrics"})}}})(ue_csm,window);
 </html>
 `;
 };
+
+*/
 
 export default {
     order_D01_9960417_3589456_html: order_D01_9960417_3589456_html,
