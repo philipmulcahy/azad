@@ -1,6 +1,7 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
-/* jshint strict: true, esversion: 6 */
 
+/* jshint strict: true, esversion: 6 */
+/* jslint node:true */
 'use strict';
 
 import cache_tests from './cache_tests'

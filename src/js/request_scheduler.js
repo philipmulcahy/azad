@@ -2,10 +2,10 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
 
-/* jshint strict: true, esversion: 6 */
-
 // Uses code from http://eloquentjavascript.net/1st_edition/appendix2.html
 
+/* jshint strict: true, esversion: 6 */
+/* jslint node:true */
 'use strict';
 
 import cachestuff from './cachestuff';

@@ -1,8 +1,8 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
-
-"use strict";
+/* jslint node:true */
+'use strict';
 
 import moment from 'moment';
 import sprintf from 'sprintf-js';

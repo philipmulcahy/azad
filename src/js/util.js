@@ -1,10 +1,11 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
 
-/* jshint strict: true, esversion: 6 */
 /* global XPathResult */
 
-"use strict";
+/* jshint strict: true, esversion: 6 */
+/* jslint node:true */
+'use strict';
 
 function getSite() {
     const href = window.location.href;

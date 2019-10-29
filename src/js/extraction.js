@@ -1,12 +1,12 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
+/* jslint node:true */
+'use strict';
 
 import util from './util';
 import $ from 'jquery';
 import sprintf from 'sprintf-js';
-
-"use strict";
 
 const by_regex = function(xpaths, regex, default_value, elem) {
     let i;

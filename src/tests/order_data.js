@@ -1,6 +1,8 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
-/* jshint strict: true, esversion: 6 */
 
+/* jshint strict: true, esversion: 6 */
+/* jslint node:true */
+'use strict';
 
 const order_D01_9960417_3589456_html = function() {
     return `

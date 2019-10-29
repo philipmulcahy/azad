@@ -2,6 +2,8 @@
 
 // Thanks to Simon Sturmer: sstur/dom-to-json.js
 
+/* jshint strict: true, esversion: 6 */
+/* jslint node:true */
 'use strict';
 
 function toJSON(node) {

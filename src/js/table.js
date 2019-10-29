@@ -2,6 +2,8 @@
 /* Copyright(c) 2016 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
+/* jslint node:true */
+'use strict';
 
 import $ from 'jquery';
 import 'datatables';
@@ -9,8 +11,6 @@ import util from './util';
 import csv from './csv';
 import sprintf from 'sprintf-js';
 import diagnostic_download from './diagnostic_download';
-
-'use strict';
 
 const tableStyle = 'border: 1px solid black;';
 let datatable = null;
