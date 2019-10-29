@@ -59,7 +59,7 @@ const options = {
                     JSON.stringify({
                         description: process.env.npm_package_description,
                         version: process.env.npm_package_version,
-                        ...JSON.parse(content.toString());
+                        ...JSON.parse(content.toString())
                     })
                 )
             }

@@ -412,7 +412,7 @@ class Order {
                         this.id
                     );
                 }
-            }); //.bind(this)
+            }) //.bind(this)
         );
     }
 

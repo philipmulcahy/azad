@@ -341,7 +341,6 @@ function addCsvButton(orders) {
         function() {
             displayOrders(orders, false).then(
                 (table) => { csv.download(table); }
-            return;
             );
         },
         'azad_table_button'
@@ -366,7 +365,6 @@ function dumpOrderDiagnostics(order_id) {
     if (order) {
         order.assembleDiagnostics().then(
             diagnostics => diagnostic_download.save_json_to_file(diagnostics, order_id + '.json')
-            return;
         );
     }
 }
