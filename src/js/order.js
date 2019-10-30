@@ -23,6 +23,26 @@ function getField(xpath, elem) {
 }
 
 function extractDetailFromDoc(order, doc) {
+
+    const who = function(){
+        var x
+        x = getField('//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]', doc.documentElement); // US Digital
+        if ( !x ) {
+            x = getField('.//div[contains(@class,"recipient")]' +
+                '//span[@class="trigger-text"]', doc.documentElement);
+            if ( !x ) {
+                x = getField('.//div[contains(text(),"Recipient")]', doc.documentElement);
+                if ( !x ) {
+                    x = getField('//li[contains(@class,"displayAddressFullName")]/text()', doc.documentElement);
+                    if ( !x ) {
+                        x = 'n/a';
+                    }
+                }
+            }
+        }
+        return x;
+    };
+
     const order_date = function(){
         return date.normalizeDateString(
             extraction.by_regex(
@@ -263,7 +283,8 @@ function extractDetailFromDoc(order, doc) {
         vat: vat(),
         gst: cad_gst(),
         pst: cad_pst(),
-        refund: refund()
+        refund: refund(),
+        who: who(),
     };
 }
 

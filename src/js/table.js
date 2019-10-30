@@ -68,13 +68,13 @@ const cols = [
     },
     {
         field_name: 'to',
-        type: 'plain',
+        type: 'text',
         property_name: 'who',
         is_numeric: false
     },
     {
         field_name: 'date',
-        type: 'detail',
+        type: 'text',
         property_name: 'date',
         is_numeric: false,
     },
@@ -170,6 +170,16 @@ function reallyDisplayOrders(orders, beautiful) {
                 switch(col_spec.type) {
                     case 'plain':
                         elem = addCell(tr, order[col_spec.property_name]);
+                        break;
+                    case 'text':
+                        elem = addCell(tr, 'pending');
+                        order.detail_promise.then( detail => {
+                            elem.innerHTML = detail[col_spec.property_name];
+                            if(datatable) {
+                                datatable.rows().invalidate();
+                                datatable.draw();
+                            }
+                        });
                         break;
                     case 'detail':
                         elem = addCell(tr, 'pending');
