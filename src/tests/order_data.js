@@ -7879,6 +7879,7 @@ function orderFromTestData(
     const dump_promise = json_promise.then( json => JSON.parse(json) );
     dump_promise.then( dump => {
         console.log(dump.list_url);
+        console.log(dump.list_html);
     });
 }
 
