@@ -13,14 +13,14 @@ const alias = {};
 
 const fileExtensions = ["jpg", "jpeg", "png", "gif", "svg"];
 
-const options = {
+const chrome_extension_options = {
+    target: 'web',
     mode: process.env.NODE_ENV || "development",
     entry: {
         inject: path.join(__dirname, "src", "js", "inject.js"),
         background: path.join(__dirname, "src", "js", "background.js"),
         control: path.join(__dirname, "src", "js", "control.js"),
         alltests: path.join(__dirname, "src", "tests", "all.js"),
-        order_tests: path.join(__dirname, "src", "tests", "order_tests.js"),
     },
     output: {
         path: path.join(__dirname, "build"),
@@ -98,9 +98,44 @@ const options = {
     ]
 };
 
+const node_options = {
+    target: 'node',
+    mode: process.env.NODE_ENV || "development",
+    entry: {
+        order_tests: path.join(__dirname, "src", "tests", "order_tests.js"),
+    },
+    output: {
+        path: path.join(__dirname, "build-node"),
+        filename: "[name].bundle.js"
+    },
+    module: {
+        rules: [
+            {
+                test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
+                loader: "file-loader?name=[name].[ext]",
+                exclude: /node_modules/
+            },
+            {
+                test: /\.html$/,
+                loader: "html-loader",
+                exclude: /node_modules/
+            }
+        ]
+    },
+    resolve: {
+        alias: alias
+    },
+    plugins: [
+        // clean the build folder
+        new CleanWebpackPlugin(["build-node"]),
+        // expose and write the allowed env vars on the compiled bundle
+        new webpack.EnvironmentPlugin(["NODE_ENV"]),
+    ]
+};
+
 if (env.NODE_ENV === "development") {
-    options.devtool = "inline-source-map";
+    chrome_extension_options.devtool = "inline-source-map";
 }
 
-module.exports = options;
+module.exports = [chrome_extension_options, node_options];
 // console.log('Hello Webpack World');
