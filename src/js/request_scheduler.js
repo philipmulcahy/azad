@@ -186,13 +186,32 @@ class RequestScheduler {
             ' with queue size ' + this.queue.size() +
             ' and priority ' + priority
         );
+
+        const protected_callback = (response, query) => {
+            try {
+                return callback(response, query);
+            } catch (ex) {
+                console.error('callback failed for ' + query + ' with ' + ex);
+                return null;
+            }
+        }
+
+        const protected_converter = evt => {
+            try {
+                return event_converter(evt);
+            } catch (ex) {
+                console.error('event conversion failed for ' + query + ' with ' + ex);
+                return null;
+            }
+        }
+
         const cached_response = nocache ?
             undefined :
             this.cache.get(query);
         if (cached_response !== undefined) {
-            this._pretendToSendOne(query, callback, cached_response);
+            this._pretendToSendOne(query, protected_callback, cached_response);
         } else {
-            this._sendOne(query, event_converter, callback, nocache);
+            this._sendOne(query, protected_converter, protected_callback, nocache);
         }
     }
 
