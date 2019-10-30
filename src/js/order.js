@@ -366,19 +366,11 @@ class Order {
         if (!this.who) {
             this.who = 'N/A';
         }
-        this.id = getField(
-            ['Order #', 'commande', 'Ordine #', 'Pedido n.º'].map(
-                label => sprintf.sprintf(
-                    './/div[contains(@class,"a-row")]' +
-                    '[span[contains(@class,"label")]]' +
-                    '[span[contains(@class,"value")]]' +
-                    '[contains(span,"%s")]' +
-                    '/span[contains(@class,"value")]',
-                    label
-                )
-            ).join(' | '),
-            elem
-        );
+        this.id = Array(...elem.getElementsByTagName('a'))
+            .filter( el => el.hasAttribute('href') )
+            .map( el => el.getAttribute('href') )
+            .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
+            .filter( match => match )[0][1];
         this.detail_url = util.getOrderDetailUrl(this.id);
         this.invoice_url = util.getOrderPaymentUrl(this.id);
         if (!this.id) {
