@@ -392,7 +392,7 @@ class Order {
         this.payments_promise = new Promise(
             (resolve => {
                 if (this.id.startsWith("D")) {
-                    resolve([ this.date + ": " + this.total]);
+                    resolve(( !this.total ? [this.date] : [this.date + ": " + this.total]));
                 } else {
                     const event_converter = function(evt) {
                         const parser = new DOMParser();

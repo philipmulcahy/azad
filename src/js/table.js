@@ -173,9 +173,12 @@ function reallyDisplayOrders(orders, beautiful) {
                         break;
                     case 'detail':
                         elem = addCell(tr, 'pending');
+                        elem.setAttribute('style', tableStyle + 'text-align:right');
                         order.detail_promise.then( detail => {
-                            elem.innerHTML = detail[col_spec.property_name];
-                            if(datatable) {
+                            var a = detail[col_spec.property_name];
+                            if (a === "N/A" || a === "n/a" || a === "?") { a = "-" }
+                            if (parseFloat(a.replace(/^([£$]|CAD|EUR|GBP) */, '').replace(/,/, '.')) + 0 == 0) { a = 0 }
+                            elem.innerHTML = a;                            if(datatable) {
                                 datatable.rows().invalidate();
                                 datatable.draw();
                             }
@@ -190,7 +193,7 @@ function reallyDisplayOrders(orders, beautiful) {
                                 ul.appendChild(li);
                                 const a = document.createElement('a');
                                 li.appendChild(a);
-                                a.textContent = payment + '; ';
+                                if (payment === "N/A" || payment === "n/a" || payment === "?") { a.textContent = "-" } else { a.textContent = payment + '; ' }
                                 a.href = util.getOrderPaymentUrl(order.id);
                             });
                             elem.textContent = '';
@@ -269,7 +272,7 @@ function reallyDisplayOrders(orders, beautiful) {
                     // Remove the formatting to get integer data for summation
                     const floatVal = function(i) {
                         if(typeof i === 'string') {
-                            return (i === 'N/A' || i === '?') ?
+                            return (i === 'N/A' || i === 'n/a' || i === '?' || i === '-') ?
                                 0 : parseFloat(i.replace(/^([£$]|CAD|EUR|GBP) */, '')
                                                 .replace(/,/, '.'));
                         }
