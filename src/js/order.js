@@ -325,7 +325,9 @@ class Order {
                   item: not sure what we use this for - will it still work?
             */
             const itemResult = util.findMultipleNodeValues(
-                './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
+// Note, some items don't have title= links, and some don't have links which contain '/gp/product/'. See D01-9406277-3414619. Confirming "a-row" seems to be enough.
+//                './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
+                './/div[@class="a-row"]/a[@class="a-link-normal"]',
                 elem
             );
             const items = {};
