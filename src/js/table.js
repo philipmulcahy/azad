@@ -102,15 +102,15 @@ const cols = [
         type: 'detail',
         property_name: 'vat',
         is_numeric: true,
-        help: 'Caution: when stuff is not supplied by Amazon, then tax is often not listed.',
+        help: 'Caution: tax is often not listed when stuff is not supplied by Amazon, is cancelled, or is pre-order.',
         sites: new RegExp('amazon(?!.com)')
     },
     {
-        field_name: 'TAX',
+        field_name: 'tax',
         type: 'detail',
         property_name: 'us_tax',
         is_numeric: true,
-        help: 'Caution: when stuff is not supplied by Amazon, then tax is often not listed.',
+        help: 'Caution: tax is often not listed when stuff is not supplied by Amazon, is cancelled, or is pre-order.',
         sites: new RegExp('\\.com$')
     },
     {
@@ -118,6 +118,7 @@ const cols = [
         type: 'detail',
         property_name: 'gst',
         is_numeric: true,
+        help: 'Caution: tax is often not listed when stuff is not supplied by Amazon, is cancelled, or is pre-order.',
         sites: new RegExp('\\.ca$')
     },
     {
@@ -125,6 +126,7 @@ const cols = [
         type: 'detail',
         property_name: 'pst',
         is_numeric: true,
+        help: 'Caution: tax is often not listed when stuff is not supplied by Amazon, is cancelled, or is pre-order.',
         sites: new RegExp('\\.ca$')
     },
     {
@@ -168,22 +170,29 @@ function reallyDisplayOrders(orders, beautiful) {
             cols.forEach( col_spec => {
                 let elem = null;
                 switch(col_spec.type) {
+                    // This seems to be only for when info is available already and no initial prep is needed.
+                    // Seems like the item description could use this also.
                     case 'plain':
                         elem = addCell(tr, order[col_spec.property_name]);
                         break;
+                    // Used for amounts.
                     case 'detail':
                         elem = addCell(tr, 'pending');
                         elem.setAttribute('style', tableStyle + 'text-align:right');
                         order.detail_promise.then( detail => {
                             var a = detail[col_spec.property_name];
+                            // Replace unknown/none with "-" to make it look uninteresting.
                             if (a === "N/A" || a === "n/a" || a === "?") { a = "-" }
+                            // If 0 (without currency type or currency symbol), just show a plain zero to make it look uninteresting.
                             if (parseFloat(a.replace(/^([£$]|CAD|EUR|GBP) */, '').replace(/,/, '.')) + 0 == 0) { a = 0 }
-                            elem.innerHTML = a;                            if(datatable) {
+                            elem.innerHTML = a;
+                            if(datatable) {
                                 datatable.rows().invalidate();
                                 datatable.draw();
                             }
                         });
                         break;
+                    // Credit card info
                     case 'payments':
                         elem = addCell(tr, 'pending');
                         order.payments_promise.then( payments => {
@@ -193,6 +202,7 @@ function reallyDisplayOrders(orders, beautiful) {
                                 ul.appendChild(li);
                                 const a = document.createElement('a');
                                 li.appendChild(a);
+                                // Replace unknown/none with "-" to make it look uninteresting.
                                 if (payment === "N/A" || payment === "n/a" || payment === "?") { a.textContent = "-" } else { a.textContent = payment + '; ' }
                                 a.href = util.getOrderPaymentUrl(order.id);
                             });
