@@ -3,7 +3,6 @@
 /* jshint strict: true, esversion: 6 */
 
 import util from './util';
-import $ from 'jquery';
 import sprintf from 'sprintf-js';
 
 "use strict";
@@ -33,7 +32,7 @@ const by_regex = function(xpaths, regex, default_value, elem) {
             }
         }
     }
-    return $.isNumeric(default_value) ?
+    return util.isNumeric(default_value) ?
         default_value.toString() :
         default_value;
 };

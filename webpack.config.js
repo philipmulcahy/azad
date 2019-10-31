@@ -135,6 +135,7 @@ const node_options = {
 
 if (env.NODE_ENV === "development") {
     chrome_extension_options.devtool = "inline-source-map";
+    node_options.devtool = "inline-source-map";
 }
 
 module.exports = [chrome_extension_options, node_options];

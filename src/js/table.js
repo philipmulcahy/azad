@@ -55,7 +55,7 @@ const cols = [
         func: function(order, row){
             addLinkCell(
                 row, order.id,
-                util.getOrderDetailUrl(order.id)
+                order.detail_url
             );
         },
         is_numeric: false
@@ -191,7 +191,7 @@ function reallyDisplayOrders(orders, beautiful) {
                                 const a = document.createElement('a');
                                 li.appendChild(a);
                                 a.textContent = payment + '; ';
-                                a.href = util.getOrderPaymentUrl(order.id);
+                                a.href = order.invoice_url;
                             });
                             elem.textContent = '';
                             elem.appendChild(ul);
