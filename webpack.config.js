@@ -2,7 +2,6 @@
 
 const webpack = require("webpack"),
     path = require("path"),
-    fileSystem = require("fs"),
     env = require("./utils/env"),
     CleanWebpackPlugin = require("clean-webpack-plugin"),
     CopyWebpackPlugin = require("copy-webpack-plugin"),
@@ -138,5 +137,5 @@ if (env.NODE_ENV === "development") {
     node_options.devtool = "inline-source-map";
 }
 
-module.exports = [chrome_extension_options, node_options];
-// console.log('Hello Webpack World');
+//module.exports = [chrome_extension_options, node_options];
+module.exports = [chrome_extension_options];
