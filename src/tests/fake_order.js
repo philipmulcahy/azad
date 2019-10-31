@@ -44,7 +44,7 @@ function orderFromTestData(
         })
     });
     const dump_promise = json_promise.then( json => JSON.parse(json) );
-    dump_promise.then( order_dump => {
+    return dump_promise.then( order_dump => {
         const url_map = {};
         url_map[order_dump.list_url] = order_dump.list_html;
         url_map[order_dump.detail_url] = order_dump.detail_html;
@@ -65,16 +65,33 @@ function orderFromTestData(
                 .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
                 .filter( match => match )[0][1] == order_dump.id
         )[0];
-        const order = azad_order.create(
+        return azad_order.create(
             list_elem,
             scheduler,
             order_dump.list_url
         );
-        console.log('created order with id=' + order.id);
     });
 }
 
+function expectedFromTestData(
+    order_id,
+    collection_date,
+    site
+) {
+    const path = './src/tests/data/' + site + '/expected/' + order_id + '_' + collection_date + '.json';
+    const json_promise = new Promise( (resolve, reject) => {
+        fs.readFile(path, 'utf8', (err, json) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(json)
+            }
+        })
+    });
+    return json_promise.then( json => JSON.parse(json) );
+}
 
 export default {
     orderFromTestData: orderFromTestData,
+    expectedFromTestData: expectedFromTestData,
 };

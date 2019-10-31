@@ -292,6 +292,7 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
 class Order {
     constructor(ordersPageElem, request_scheduler, src_query) {
         this.id = null;
+        this.site = null;
         this.list_url = src_query;
         this.detail_url = null;
         this.invoice_url = null;
