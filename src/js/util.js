@@ -4,7 +4,25 @@
 /* jshint strict: true, esversion: 6 */
 /* global XPathResult */
 
-"use strict";
+'use strict';
+
+import xpath from 'xpath';
+import jsdom from 'jsdom';
+
+function parseStringToDOM(html) {
+    return new jsdom.JSDOM(html).window.document;
+}
+
+function isNumeric(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
+}
+
+function getXPathResult() {
+    if (typeof(XPathResult) === 'undefined') {
+        return xpath.XPathResult;
+    }
+    return XPathResult;
+}
 
 function getSite() {
     const href = window.location.href;
@@ -12,17 +30,17 @@ function getSite() {
     return stem;
 }
 
-function getOrderDetailUrl(orderId) {
-    return 'https://' + getSite() + '/gp/your-account/order-details/' +
+function getOrderDetailUrl(orderId, site) {
+    return 'https://' + site + '/gp/your-account/order-details/' +
         'ref=oh_aui_or_o01_?ie=UTF8&orderID=' + orderId;
 }
 
-function getOrderPaymentUrl(orderId) {
+function getOrderPaymentUrl(orderId, site) {
     if ( !orderId ) {return 'N/A'; }
     return orderId.startsWith('D') ?
-        'https://' + getSite() + '/gp/digital/your-account/order-summary.html' +
+        'https://' + site + '/gp/digital/your-account/order-summary.html' +
             '?ie=UTF8&orderID=' + orderId + '&print=1&' :
-        'https://' + getSite() + '/gp/css/summary/print.html' +
+        'https://' + site + '/gp/css/summary/print.html' +
             '/ref=oh_aui_ajax_pi?ie=UTF8&orderID=' + orderId;
 }
 
@@ -58,7 +76,7 @@ function findSingleNodeValue(xpath, elem) {
             xpath,
             elem,
             null,
-            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            getXPathResult().FIRST_ORDERED_NODE_TYPE,
             null
         ).singleNodeValue;
     } catch (ex) {
@@ -71,7 +89,7 @@ function findMultipleNodeValues(xpath, elem) {
         xpath,
         elem,
         null,
-        XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+        getXPathResult().ORDERED_NODE_SNAPSHOT_TYPE,
         null
     );
     const values = [];
@@ -103,5 +121,7 @@ export default {
     getOrderDetailUrl: getOrderDetailUrl,
     getOrderPaymentUrl: getOrderPaymentUrl,
     getSite: getSite,
+    isNumeric: isNumeric,
+    parseStringToDOM: parseStringToDOM,
     removeButton: removeButton
 };

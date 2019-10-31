@@ -269,12 +269,9 @@ function extractDetailFromDoc(order, doc) {
 
 const extractDetailPromise = (order, request_scheduler) => new Promise(
     resolve => {
-        const query = util.getOrderDetailUrl(order.id);
+        const query = order.detail_url;
         const event_converter = function(evt) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(
-                evt.target.responseText, 'text/html'
-            );
+            const doc = util.parseStringToDOM( evt.target.responseText );
             return extractDetailFromDoc(order, doc);
         };
         try {
@@ -331,7 +328,7 @@ class Order {
             const items = {};
             itemResult.forEach(
                 function(item){
-                    const name = item.innerText.replace(/[\n\r]/g, " ")
+                    const name = item.innerHTML.replace(/[\n\r]/g, " ")
                                              .replace(/  */g, " ")
                                              .trim();
                     const link = item.getAttribute('href');
@@ -379,8 +376,9 @@ class Order {
             ).join(' | '),
             elem
         );
-        this.detail_url = util.getOrderDetailUrl(this.id);
-        this.invoice_url = util.getOrderPaymentUrl(this.id);
+        this.site = this.list_url.match(/.*\/\/([^/]*)/)[1];
+        this.detail_url = util.getOrderDetailUrl(this.id, this.site);
+        this.invoice_url = util.getOrderPaymentUrl(this.id, this.site);
         if (!this.id) {
             this.id = util.findSingleNodeValue(
                 '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
@@ -395,10 +393,7 @@ class Order {
                     resolve([ this.date + ": " + this.total]);
                 } else {
                     const event_converter = function(evt) {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(
-                            evt.target.responseText, 'text/html'
-                        );
+                        const doc = util.parseStringToDOM( evt.target.responseText );
                         const payments = extraction.payments_from_invoice(doc);
                         // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
                         return payments;
@@ -494,8 +489,7 @@ function getOrdersForYearAndQueryTemplate(
         );
     };
     const convertOrdersPage = function(evt) {
-        const p = new DOMParser();
-        const d = p.parseFromString(evt.target.responseText, 'text/html');
+        const d = util.parseStringToDOM(evt.target.responseText);
         const countSpan = util.findSingleNodeValue(
             './/span[@class="num-orders"]', d.documentElement);
         if ( !countSpan ) {
