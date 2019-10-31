@@ -30,6 +30,3 @@ Promise.all([order_promise, expectations_promise]).then( results => {
         );
     });
 });
-
-
-expectations_promise.then( expectations => console.log(expectations) );
