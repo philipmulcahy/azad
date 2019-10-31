@@ -36,9 +36,5 @@
         "sprintf-js": "^1.1.2",
         "sprintf.js": "^0.1.4",
         "xpath": "0.0.27"
-    },
-    "browser": {
-        "fs": false,
-        "_comment": "https://stackoverflow.com/questions/39249237/node-cannot-find-module-fs-when-using-webpack"
     }
 }
