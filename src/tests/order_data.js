@@ -3,7 +3,6 @@
 
 'use strict';
 
-import azad_order from '../js/order';
 import util from '../js/util';
 
 const order_D01_9960417_3589456_html = function() {

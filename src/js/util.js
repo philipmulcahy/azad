@@ -55,11 +55,11 @@ function getOrderPaymentUrl(orderId, site) {
 }
 
 function addButton(name, cb, button_class) {
-    var existing = document.querySelector('[button_name="' + name + '"]');
+    const existing = document.querySelector('[button_name="' + name + '"]');
     if ( existing !== null ) {
         existing.parentNode.removeChild(existing);
     }
-    var a = document.createElement('button');
+    const a = document.createElement('button');
     if(typeof(button_class) === 'undefined') {
         button_class = 'azad_default_button';
     }
@@ -74,7 +74,7 @@ function addButton(name, cb, button_class) {
 }
 
 function removeButton(name) {
-    var elem = document.querySelector('[button_name="' + name + '"]');
+    const elem = document.querySelector('[button_name="' + name + '"]');
     if ( elem !== null ) {
         elem.parentNode.removeChild(elem);
     }
