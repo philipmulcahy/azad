@@ -97,44 +97,44 @@ const chrome_extension_options = {
     ]
 };
 
-const node_options = {
-    target: 'node',
-    mode: process.env.NODE_ENV || "development",
-    entry: {
-        order_tests: path.join(__dirname, "src", "tests", "order_tests.js"),
-    },
-    output: {
-        path: path.join(__dirname, "build-node"),
-        filename: "[name].bundle.js"
-    },
-    module: {
-        rules: [
-            {
-                test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
-                loader: "file-loader?name=[name].[ext]",
-                exclude: /node_modules/
-            },
-            {
-                test: /\.html$/,
-                loader: "html-loader",
-                exclude: /node_modules/
-            }
-        ]
-    },
-    resolve: {
-        alias: alias
-    },
-    plugins: [
-        // clean the build folder
-        new CleanWebpackPlugin(["build-node"]),
-        // expose and write the allowed env vars on the compiled bundle
-        new webpack.EnvironmentPlugin(["NODE_ENV"]),
-    ]
-};
+//const node_options = {
+//    target: 'node',
+//    mode: process.env.NODE_ENV || "development",
+//    entry: {
+//        order_tests: path.join(__dirname, "src", "tests", "order_tests.js"),
+//    },
+//    output: {
+//        path: path.join(__dirname, "build-node"),
+//        filename: "[name].bundle.js"
+//    },
+//    module: {
+//        rules: [
+//            {
+//                test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
+//                loader: "file-loader?name=[name].[ext]",
+//                exclude: /node_modules/
+//            },
+//            {
+//                test: /\.html$/,
+//                loader: "html-loader",
+//                exclude: /node_modules/
+//            }
+//        ]
+//    },
+//    resolve: {
+//        alias: alias
+//    },
+//    plugins: [
+//        // clean the build folder
+//        new CleanWebpackPlugin(["build-node"]),
+//        // expose and write the allowed env vars on the compiled bundle
+//        new webpack.EnvironmentPlugin(["NODE_ENV"]),
+//    ]
+//};
 
 if (env.NODE_ENV === "development") {
     chrome_extension_options.devtool = "inline-source-map";
-    node_options.devtool = "inline-source-map";
+//    node_options.devtool = "inline-source-map";
 }
 
 //module.exports = [chrome_extension_options, node_options];

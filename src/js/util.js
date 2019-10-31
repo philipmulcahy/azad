@@ -7,14 +7,24 @@
 'use strict';
 
 import xpath from 'xpath';
-import jsdom from 'jsdom';
 
 function parseStringToDOM(html) {
-    return new jsdom.JSDOM(html).window.document;
+    if ( typeof(DOMParser) !== 'undefined' ) {
+        // We're in a browser:
+        const parser = new DOMParser();
+        return parser.parseFromString( html, 'text/html' );
+    } else {
+        // DOMParse not present in node.js, so we need to get our own: jsdom.
+        // We don't use jsdom all the time, because it in turn requires the
+        // fs module which isn't available in browsers. (This was difficult
+        // to debug!).
+        const jsdom = require('jsdom');  // eslint-disable-line no-undef
+        return new jsdom.JSDOM(html).window.document;
+    }
 }
 
 function isNumeric(n) {
-  return !isNaN(parseFloat(n)) && isFinite(n);
+    return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
 function getXPathResult() {
