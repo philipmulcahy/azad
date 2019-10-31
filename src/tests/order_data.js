@@ -1,6 +1,8 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
-/* jshint strict: true, esversion: 6 */
 
+/* jshint strict: true, esversion: 6 */
+/* jslint node:true */
+'use strict';
 
 const order_D01_9960417_3589456_html = function() {
     return `
@@ -3921,8 +3923,9 @@ attribution:"performanceMetrics"})}}})(ue_csm,window);
 
 </body></html>
     `;
-}
+};
 
+/*
 const old_order_D01_9960417_3589456_html = function() {
     return `
 <!doctype html><html class="a-no-js" data-19ax5a9jf="dingo">
@@ -7854,6 +7857,8 @@ attribution:"performanceMetrics"})}}})(ue_csm,window);
 </html>
 `;
 };
+
+*/
 
 export default {
     order_D01_9960417_3589456_html: order_D01_9960417_3589456_html,

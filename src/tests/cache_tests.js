@@ -1,6 +1,7 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
-/* jshint strict: true, esversion: 6 */
 
+/* jshint strict: true, esversion: 6 */
+/* jslint node:true */
 'use strict';
 
 import tests from './tests';
@@ -10,7 +11,7 @@ const endtoendTest = () => {
     const cache = cachestuff.createLocalCache('TESTENDTOEND');
     cache.clear();
     cache.set('test_key', 'the quick brown fox');
-    return cache.get('test_key') == 'the quick brown fox';
+    return cache.get('test_key') === 'the quick brown fox';
 };
 
 const fillTest = () => {
@@ -39,7 +40,7 @@ const deepSerializationTest = () => {
     });
     const retrieved = cache.get('X');
     return retrieved.a.b.c.d.e;
-}
+};
 
 const cache_tests = {
     endtoend_test: endtoendTest,

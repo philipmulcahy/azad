@@ -2,7 +2,7 @@
 /* Copyright(c) 2016 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
-
+/* jslint node:true */
 'use strict';
 
 import util from './util';

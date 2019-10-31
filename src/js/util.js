@@ -1,10 +1,11 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* Copyright(c) 2016 Philip Mulcahy. */
 
-/* jshint strict: true, esversion: 6 */
-/* global XPathResult */
+///global_XPathResult///
 
-"use strict";
+/* jshint strict: true, esversion: 6 */
+/* jslint node:true */
+'use strict';
 
 function getSite() {
     const href = window.location.href;
@@ -28,7 +29,7 @@ function getOrderPaymentUrl(orderId) {
 
 function addButton(name, cb, button_class) {
     var existing = document.querySelector('[button_name="' + name + '"]');
-    if ( existing !== null ) {
+    if ( existing ) {
         existing.parentNode.removeChild(existing);
     }
     var a = document.createElement('button');
@@ -47,7 +48,7 @@ function addButton(name, cb, button_class) {
 
 function removeButton(name) {
     var elem = document.querySelector('[button_name="' + name + '"]');
-    if ( elem !== null ) {
+    if ( elem ) {
         elem.parentNode.removeChild(elem);
     }
 }
@@ -63,6 +64,7 @@ function findSingleNodeValue(xpath, elem) {
         ).singleNodeValue;
     } catch (ex) {
         console.log('findSingleNodeValue didn\'t match: ', xpath);
+        return;
     }
 }
 

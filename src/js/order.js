@@ -2,7 +2,7 @@
 /* Copyright(c) 2016 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
-
+/* jslint node:true */
 'use strict';
 
 import util from './util';
@@ -121,7 +121,7 @@ function extractDetailFromDoc(order, doc) {
         );
     };
     const vat = function() {
-        if ( order.id == 'D01-9960417-3589456' ) {
+        if ( order.id === 'D01-9960417-3589456' ) {
             console.log('TODO - remove');
         }
         const a = extraction.by_regex(
@@ -149,11 +149,11 @@ function extractDetailFromDoc(order, doc) {
             'N/A',
             doc.documentElement
         );
-        if( a != null ) {
+        if( a ) {
             const b = a.match(
                 /VAT: *([-$£€0-9.]*)/i
             );
-            if( b !== null ) {
+            if( b ) {
                 return b[1];
             }
         }
@@ -167,7 +167,7 @@ function extractDetailFromDoc(order, doc) {
         if ( !a ) {
             a = getField('.//tr[contains(td,"Tax Collected:")]', doc.documentElement);
             if (a) {
-                const moneyRegEx = '\\s+(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))'
+                const moneyRegEx = '\\s+(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))';
                 // Result
                 // 0: "Tax Collected: USD $0.00"
                 // 1: "USD $0.00"
@@ -396,7 +396,7 @@ class Order {
                         const payments = extraction.payments_from_invoice(doc);
                         // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
                         return payments;
-                    }.bind(this);
+                    };  //.bind(this);
                     this.request_scheduler.schedule(
                         this.invoice_url,
                         event_converter,
@@ -406,7 +406,7 @@ class Order {
                         this.id
                     );
                 }
-            }).bind(this)
+            }) //.bind(this)
         );
     }
 
@@ -418,7 +418,7 @@ class Order {
     itemsHtml(doc) {
         const ul = doc.createElement('ul');
         for(let title in this.items) {
-            if(this.items.hasOwnProperty(title)) {
+            if(Object.prototype.hasOwnProperty.call(this.items, "title")) {
                 const li = doc.createElement('li');
                 ul.appendChild(li);
                 const a = doc.createElement('a');
@@ -447,13 +447,13 @@ class Order {
         return Promise.all([
             fetch(this.list_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.list_html = text; } ),
+                .then( text => { diagnostics.list_html = text; return; } ),
             fetch(this.detail_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.detail_html = text; } ),
+                .then( text => { diagnostics.detail_html = text; return; } ),
             fetch(this.invoice_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.invoice_html = text; } )
+                .then( text => { diagnostics.invoice_html = text; return; } )
         ]).then( () => diagnostics );
     }
 }
@@ -468,25 +468,7 @@ function getOrdersForYearAndQueryTemplate(
     let order_found_callback = null;
     let check_complete_callback = null;
     const order_promises = [];
-    const sendGetOrderCount = function() {
-        request_scheduler.schedule(
-            generateQueryString(0),
-            convertOrdersPage,
-            receiveOrdersCount,
-            '00000',
-            nocache_top_level
-        );
-    };
-    const generateQueryString = function(startOrderPos) {
-        return sprintf.sprintf(
-            query_template,
-            {
-                site: util.getSite(),
-                year: year,
-                startOrderPos: startOrderPos
-            }
-        );
-    };
+
     const convertOrdersPage = function(evt) {
         const p = new DOMParser();
         const d = p.parseFromString(evt.target.responseText, 'text/html');
@@ -525,11 +507,24 @@ function getOrdersForYearAndQueryTemplate(
                 '" order ")]',
             ordersElem
         );
+// FYI, lint says there should be no return here.
         return {
             expected_order_count: expected_order_count,
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
         };
     };
+
+    const generateQueryString = function(startOrderPos) {
+        return sprintf.sprintf(
+            query_template,
+            {
+                site: util.getSite(),
+                year: year,
+                startOrderPos: startOrderPos
+            }
+        );
+    };
+
     const receiveOrdersCount = function(orders_page_data) {
         expected_order_count = orders_page_data.expected_order_count;
         check_complete_callback();
@@ -546,6 +541,17 @@ function getOrdersForYearAndQueryTemplate(
             );
         }
     };
+
+    const sendGetOrderCount = function() {
+        request_scheduler.schedule(
+            generateQueryString(0),
+            convertOrdersPage,
+            receiveOrdersCount,
+            '00000',
+            nocache_top_level
+        );
+    };
+
     const receiveOrdersPageData = function(orders_page_data, src_query) {
         const order_elems = orders_page_data.order_elems.map(
             elem => dom2json.toDOM(elem)
@@ -575,6 +581,7 @@ function getOrdersForYearAndQueryTemplate(
                 order_promise.then( order => {
                     // TODO is "Fetching" the right message for this stage?
                     console.log('azad_order Fetching ' + order.id);
+                    return;
                 });
                 console.log(
                     'YearFetcher(' + year + ') order_promises.length:' +
@@ -726,7 +733,7 @@ function getOrdersByYear(years, request_scheduler, latest_year) {
     return Promise.all(
         years.map(
             function(year) {
-                const nocache_top_level = (year == latest_year);
+                const nocache_top_level = (year === latest_year);
                 return fetchYear(year, request_scheduler, nocache_top_level);
             }
         )

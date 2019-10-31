@@ -1,6 +1,7 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
-/* jshint strict: true, esversion: 6 */
 
+/* jshint strict: true, esversion: 6 */
+/* jslint node:true */
 'use strict';
 
 const content_ports = {};
@@ -76,7 +77,7 @@ function registerRightClickActions() {
     } );
     chrome.contextMenus.onClicked.addListener( info => {
         console.log('context menu item: ' + info.menuItemId + ' clicked;');
-        if (info.menuItemId == 'save_order_debug_info') {
+        if (info.menuItemId === 'save_order_debug_info') {
             if ( /orderID=/.test(info.linkUrl) ) {
                 const match =info.linkUrl.match(/.*orderID=([0-9-]*)$/);
                 const order_id = match[1];
@@ -96,7 +97,7 @@ function registerRightClickActions() {
 function registerMessageListener() {
     chrome.runtime.onMessage.addListener( (request, sender) => {
         console.log(
-            sender.tab
+            sender.tab //'?'
                 ? 'from a content script:' + sender.tab.url
                 : 'from the extension'
         );

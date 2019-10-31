@@ -2,6 +2,8 @@
 /* Copyright(c) 2016 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
+/* jslint node:true */
+'use strict';
 
 import $ from 'jquery';
 import 'datatables';
@@ -9,8 +11,6 @@ import util from './util';
 import csv from './csv';
 import sprintf from 'sprintf-js';
 import diagnostic_download from './diagnostic_download';
-
-'use strict';
 
 const tableStyle = 'border: 1px solid black;';
 let datatable = null;
@@ -179,6 +179,7 @@ function reallyDisplayOrders(orders, beautiful) {
                                 datatable.rows().invalidate();
                                 datatable.draw();
                             }
+                            return;
                         });
                         break;
                     case 'payments':
@@ -198,11 +199,15 @@ function reallyDisplayOrders(orders, beautiful) {
                             if(datatable) {
                                 datatable.rows().invalidate();
                                 datatable.draw();
+                            return;
                             }
                         });
                         break;
                     case 'func':
                         col_spec.func(order, tr);
+                        break;
+                    default:
+                        console.warn('Missing switch for ', col_spec.type);
                         break;
                 }
                 if ('help' in col_spec) {
@@ -212,7 +217,7 @@ function reallyDisplayOrders(orders, beautiful) {
         };
         // remove any old table
         let table = document.querySelector('[id="order_table"]');
-        if ( table !== null ) {
+        if ( table ) {
             console.log('removing old table');
             table.parentNode.removeChild(table);
             console.log('removed old table');

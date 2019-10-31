@@ -1,6 +1,7 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
-/* jshint strict: true, esversion: 6 */
 
+/* jshint strict: true, esversion: 6 */
+/* jslint node:true */
 'use strict';
 
 import tests from './tests';
@@ -27,7 +28,7 @@ const detailExtractionTest = () => {
         'N/A',
         doc.documentElement
     );
-    return basic.substring(3) == '0.90';
+    return basic.substring(3) === '0.90';
 };
 
 const extraction_tests = {
