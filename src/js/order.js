@@ -25,8 +25,7 @@ function getField(xpath, elem) {
 function extractDetailFromDoc(order, doc) {
 
     const who = function(){
-        var x
-        x = getField('//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]', doc.documentElement); // US Digital
+        let x = getField('//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]', doc.documentElement); // US Digital
         if ( !x ) {
             x = getField('.//div[contains(@class,"recipient")]' +
                 '//span[@class="trigger-text"]', doc.documentElement);
