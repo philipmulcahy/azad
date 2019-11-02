@@ -96,8 +96,6 @@ function expectedFromTestData(
 function discoverTestData() {
     const sites_promise = fs.promises.readdir(DATA_ROOT_PATH);
     return sites_promise.then( sites => {
-        console.log('SITES');
-        console.log(sites);
         const expected_promises = [];
         const site_to_expecteds = {}
         sites.forEach( site => {
@@ -116,7 +114,6 @@ function discoverTestData() {
                 expecteds
                     .filter( e => e.match(/.*\.json$/) )
                     .forEach( expected => {
-                        console.log(expected);
                         const target = {
                             site: site,
                             order_id: expected.match(/^([A-Z0-9-]*)_.*\.json/)[1], 
