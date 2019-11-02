@@ -5,7 +5,6 @@ import order_data from './fake_order';
 const assert = require('assert');
 
 const test_targets = order_data.discoverTestData();
-test_targets.then( target => console.log(target) );
 
 function testOneTarget( target ) {
     const result = {
@@ -23,8 +22,8 @@ function testOneTarget( target ) {
         target.scrape_date,
         target.site
     );
-    return Promise.all([order_promise, expectations_promise]).then( results => {
-        const [order, expected] = results;
+    return Promise.all([order_promise, expectations_promise]).then( params => {
+        const [order, expected] = params;
         Object.keys(expected).forEach(key => {
             try {
                 const expected_value = expected[key];
@@ -40,13 +39,12 @@ function testOneTarget( target ) {
         if (result.defects.length == 0) {
             result.passed = true;
         }
-        console.log(result);
         return result;
     });
 }
 
 test_targets.then(
-    targets => targets.map( target => testOneTarget(target) )
+    targets => Promise.all(targets.map( target => testOneTarget(target) ))
 ).then(
     results => console.log(results)
-); 
+);
