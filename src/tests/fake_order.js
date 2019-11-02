@@ -1,5 +1,5 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
-/* jshint strict: true, esversion: 6 */
+/* jshint strict: true, esversion: 9 */
 
 'use strict';
 
@@ -8,6 +8,8 @@ import util from '../js/util';
 const jsdom = require('jsdom');
 const xpath = require('xpath');
 import azad_order from '../js/order';
+
+const DATA_ROOT_PATH = './src/tests/data';
 
 class FakeRequestScheduler {
     constructor(url_html_map) {
@@ -33,7 +35,7 @@ function orderFromTestData(
     collection_date,
     site
 ) {
-    const path = './src/tests/data/' + site + '/input/' + order_id + '_' + collection_date + '.json';
+    const path = DATA_ROOT_PATH + '/' + site + '/input/' + order_id + '_' + collection_date + '.json';
     const json_promise = new Promise( (resolve, reject) => {
         fs.readFile(path, 'utf8', (err, json) => {
             if (err) {
@@ -78,7 +80,7 @@ function expectedFromTestData(
     collection_date,
     site
 ) {
-    const path = './src/tests/data/' + site + '/expected/' + order_id + '_' + collection_date + '.json';
+    const path = DATA_ROOT_PATH + '/' + site + '/expected/' + order_id + '_' + collection_date + '.json';
     const json_promise = new Promise( (resolve, reject) => {
         fs.readFile(path, 'utf8', (err, json) => {
             if (err) {
@@ -91,7 +93,47 @@ function expectedFromTestData(
     return json_promise.then( json => JSON.parse(json) );
 }
 
+function discoverTestData() {
+    const sites_promise = fs.promises.readdir(DATA_ROOT_PATH);
+    return sites_promise.then( sites => {
+        console.log('SITES');
+        console.log(sites);
+        const expected_promises = [];
+        const site_to_expecteds = {}
+        sites.forEach( site => {
+            const expected_promise = fs.promises.readdir(DATA_ROOT_PATH + '/' + site + '/expected');
+            expected_promises.push(expected_promise);
+            expected_promise.then( expecteds => {
+                site_to_expecteds[site] = expecteds;
+            });
+        } );
+        return Promise.all(
+            expected_promises
+        ).then( () => {
+            const test_targets = [];
+            Object.keys(site_to_expecteds).forEach( site => {
+                const expecteds = site_to_expecteds[site];
+                expecteds
+                    .filter( e => e.match(/.*\.json$/) )
+                    .forEach( expected => {
+                        console.log(expected);
+                        const target = {
+                            site: site,
+                            order_id: expected.match(/^([A-Z0-9-]*)_.*\.json/)[1], 
+                            scrape_date: expected.match(/^.*_(\d\d\d\d-\d\d-\d\d).json$/)[1],
+                        };
+                        target.input_path = DATA_ROOT_PATH + '/' + site + + '/input/' + expected;
+                        target.expected_path = DATA_ROOT_PATH + '/' + site + '/expected/' + expected;
+                        test_targets.push(target); 
+                    });
+            } );
+            return test_targets;
+        } );
+    } );
+}
+
 export default {
+    discoverTestData: discoverTestData,
     orderFromTestData: orderFromTestData,
     expectedFromTestData: expectedFromTestData,
 };

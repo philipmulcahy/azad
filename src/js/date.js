@@ -19,6 +19,7 @@ const ALT_FORMATS = [
     {format: 'D MMM YYYY', locale: 'fr'},
     {format: 'DD. MMM YYYY', locale: 'fr'},
     {format: 'D. MMM YYYY', locale: 'fr'},
+    {format: 'YYYY-MM-DD', locale: 'en'},
     {format: 'MMMM DD, YYYY', locale: 'en'},
     {format: 'DD MMMM YYYY', locale: 'en'},
     {format: 'D MMMM YYYY', locale: 'en'},
