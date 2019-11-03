@@ -12,7 +12,11 @@ import diagnostic_download from './diagnostic_download';
 
 'use strict';
 
-const tableStyle = 'border: 1px solid black;';
+const cellClass = 'azad_cellClass ';
+const elemClass = 'azad_elemClass ';
+const linkClass = 'azad_linkClass ';
+const thClass = 'azad_thClass ';
+
 let datatable = null;
 const order_map = {};
 
@@ -21,7 +25,7 @@ const order_map = {};
  */
 const addCell = function(row, value) {
     const td = row.ownerDocument.createElement('td');
-    td.setAttribute('style', tableStyle);
+    td.setAttribute('class', cellClass);
     row.appendChild(td);
     td.textContent = value;
     return td;
@@ -32,17 +36,18 @@ const addCell = function(row, value) {
  */
 const addElemCell = function(row, elem) {
     const td = row.ownerDocument.createElement('td');
-    td.setAttribute('style', tableStyle);
+    td.setAttribute('class', elemClass);
     row.appendChild(td);
     td.appendChild(elem);
     return td;
 };
 
 /**
- * Add a td to the row tr element, and return the td.
+ * Add an a to the row tr element, and return the a.
  */
 const addLinkCell = function(row, text, href) {
     const a = row.ownerDocument.createElement('a');
+    a.setAttribute('Class', linkClass);
     a.textContent = text;
     a.href = href;
     return addElemCell(row, a);
@@ -154,10 +159,11 @@ function reallyDisplayOrders(orders, beautiful) {
     const addOrderTable = function(orders) {
         const addHeader = function(row, value, help) {
             const th = row.ownerDocument.createElement('th');
-            th.setAttribute('style', tableStyle);
+            th.setAttribute('class', thClass);
             row.appendChild(th);
             th.textContent = value;
             if( help ) {
+                th.setAttribute('class', th.getAttribute('class') + 'azad_th_has_help ');
                 th.setAttribute('title', help);
             }
             return th;
@@ -165,7 +171,6 @@ function reallyDisplayOrders(orders, beautiful) {
 
         const appendOrderRow = function(table, order) {
             const tr = document.createElement('tr');
-            tr.setAttribute('style', tableStyle);
             table.appendChild(tr);
             cols.forEach( col_spec => {
                 let elem = null;
@@ -178,11 +183,14 @@ function reallyDisplayOrders(orders, beautiful) {
                     // Used for amounts.
                     case 'detail':
                         elem = addCell(tr, 'pending');
-                        elem.setAttribute('style', tableStyle + 'text-align:right');
                         order.detail_promise.then( detail => {
-                            var a = detail[col_spec.property_name];
-                            // Replace unknown/none with "-" to make it look uninteresting.
-                            if (a === "N/A" || a === "n/a" || a === "?") { a = "-" }
+                            try {
+                                var a = detail[col_spec.property_name];
+                            } catch (_) {
+                                a = 0;
+                            }
+                            // Replace unknown/none with '-' to make it look uninteresting.
+                            if (a === 'N/A') { a = '-' }
                             // If 0 (without currency type or currency symbol), just show a plain zero to make it look uninteresting.
                             if (parseFloat(a.replace(/^([£$]|CAD|EUR|GBP) */, '').replace(/,/, '.')) + 0 == 0) { a = 0 }
                             elem.innerHTML = a;
@@ -203,7 +211,11 @@ function reallyDisplayOrders(orders, beautiful) {
                                 const a = document.createElement('a');
                                 li.appendChild(a);
                                 // Replace unknown/none with "-" to make it look uninteresting.
-                                if (payment === "N/A" || payment === "n/a" || payment === "?") { a.textContent = "-" } else { a.textContent = payment + '; ' }
+                                if (payment === 'N/A') {
+                                    a.textContent = '-'
+                                } else {
+                                    a.textContent = payment + '; '
+                                }
                                 a.href = util.getOrderPaymentUrl(order.id);
                             });
                             elem.textContent = '';
@@ -218,13 +230,20 @@ function reallyDisplayOrders(orders, beautiful) {
                         col_spec.func(order, tr);
                         break;
                 }
-                if ('help' in col_spec) {
-                    elem.setAttribute('title', col_spec.help);
+                if ( elem ) {
+                    elem.setAttribute('class', elem.getAttribute('class') + 
+                            'azad_type_' + col_spec.type + ' ' +
+                            'azad_col_' + col_spec.property_name + ' ' + 
+                            'azad_numeric_' + (col_spec.is_numeric ? 'yes' : 'no' ) + ' ');
+                    if ('help' in col_spec) {
+                        elem.setAttribute('class', elem.getAttribute('class') + 'azad_elem_has_help ');
+                        elem.setAttribute('title', col_spec.help);
+                    }
                 }
             });
         };
         // remove any old table
-        let table = document.querySelector('[id="order_table"]');
+        let table = document.querySelector('[id="azad_order_table"]');
         if ( table !== null ) {
             console.log('removing old table');
             table.parentNode.removeChild(table);
@@ -234,20 +253,23 @@ function reallyDisplayOrders(orders, beautiful) {
         table = document.createElement('table');
         console.log('added table');
         document.body.appendChild(table);
-        table.setAttribute('id', 'order_table');
-        table.setAttribute('class', 'order_reporter_table stripe compact');
-        table.setAttribute('style', tableStyle);
+        table.setAttribute('id', 'azad_order_table');
+        table.setAttribute('class', 'azad_table stripe compact hover order-column ');
 
         const thead = document.createElement('thead');
+        thead.setAttribute('id', 'azad_order_table_head');
         table.appendChild(thead);
 
         const hr = document.createElement('tr');
+        hr.setAttribute('id', 'azad_order_table_hr');
         thead.appendChild(hr);
 
         const tfoot = document.createElement('tfoot');
+        tfoot.setAttribute('id', 'azad_order_table_foot');
         table.appendChild(tfoot);
 
         const fr = document.createElement('tr');
+        fr.setAttribute('id', 'azad_order_table_fr');
         tfoot.appendChild(fr);
 
         cols.forEach( col_spec => {
@@ -273,7 +295,7 @@ function reallyDisplayOrders(orders, beautiful) {
             if (datatable) {
                 datatable.destroy();
             }
-            datatable = $('#order_table').DataTable({
+            datatable = $('#azad_order_table').DataTable({
                 'bPaginate': true,
                 'lengthMenu': [ [10, 25, 50, 100, -1],
                     [10, 25, 50, 100, 'All'] ],
@@ -282,7 +304,7 @@ function reallyDisplayOrders(orders, beautiful) {
                     // Remove the formatting to get integer data for summation
                     const floatVal = function(i) {
                         if(typeof i === 'string') {
-                            return (i === 'N/A' || i === 'n/a' || i === '?' || i === '-') ?
+                            return (i === 'N/A' || i === '-' || i === 'pending') ?
                                 0 : parseFloat(i.replace(/^([£$]|CAD|EUR|GBP) */, '')
                                                 .replace(/,/, '.'));
                         }
@@ -318,7 +340,7 @@ function reallyDisplayOrders(orders, beautiful) {
             util.addButton(
                 'plain table',
                 function() {
-                    console.log('amazon_order_history_table plain table button clicked');
+//                    console.log('azad plain table button clicked');
                     displayOrders(orders, false);
                 },
                 'azad_table_button'
@@ -330,14 +352,14 @@ function reallyDisplayOrders(orders, beautiful) {
         util.addButton(
             'data table',
             function() {
-                console.log('amazon_order_history_table data table button clicked');
+//                console.log('azad data table button clicked');
                 displayOrders(orders, true);
             },
             'azad_table_button'
         );
         addCsvButton(orders);
     }
-    console.log('amazon_order_history_table.reallyDisplayOrders returning');
+    console.log('azad.reallyDisplayOrders returning');
     return table;
 }
 

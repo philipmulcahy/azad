@@ -36,6 +36,7 @@ function extractDetailFromDoc(order, doc) {
             )
         );
     };
+// wrap in try/catch for missing total
     const total = function(){
         return extraction.by_regex(
             [
