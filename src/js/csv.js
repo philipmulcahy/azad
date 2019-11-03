@@ -9,7 +9,7 @@ function download(table) {
     const tableToArrayOfArrays = function(table) {
         const rows = table.rows;
         const result = [];
-        for(let i=0; i<rows.length; ++i) {
+        for(let i=0; i<(rows.length-1); ++i) {
             let cells = rows[i].cells;
             let cell_array = [];
             for(let j=0; j<cells.length; ++j) {
@@ -17,6 +17,22 @@ function download(table) {
             }
             result.push(cell_array);
         }
+        const cells = [
+            '=IF(SUBTOTAL(103,A2:A{LAST})<3,"",SUBTOTAL(103,A2:A{LAST})-2 & " items")',
+            '',
+            '',
+            '',
+            '=SUBTOTAL(109,E2:E{LAST})',
+            '=SUBTOTAL(109,F2:F{LAST})',
+            '=SUBTOTAL(109,G2:G{LAST})',
+            '=SUBTOTAL(109,H2:H{LAST})',
+            '=SUBTOTAL(109,I2:I{LAST})',
+        ]
+        let cell_array = [];
+        for (let j=0; j<cells.length; j++) {
+            cell_array.push(cells[j].replace(/{LAST}/g,cells.length));
+        }
+        result.push(cell_array);
         return result;
     };
     const processRow = function(row) {
