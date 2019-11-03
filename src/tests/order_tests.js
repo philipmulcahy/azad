@@ -6,6 +6,27 @@ const assert = require('assert');
 
 const test_targets = order_data.discoverTestData();
 
+function getOrderValuePromise(order, key) {
+    const detail_keys = [
+        'date',
+        'gift',
+        'gst',
+        'postage',
+        'pst',
+        'refund',
+        'total',
+        'us_tax',
+        'vat',
+    ];
+    if (detail_keys.includes(key)) {
+        return order.detail_promise.then( detail => detail[key] );
+    }
+    if (key == 'payments') {
+        return order.payments_promise;
+    }
+    return Promise.resolve(order[key]);
+}
+
 function testOneTarget( target ) {
     const result = {
         test_id: 'ORDER_SCRAPE_' + target.site + '_' + target.order_id + '_' + target.scrape_date,
@@ -24,22 +45,23 @@ function testOneTarget( target ) {
     );
     return Promise.all([order_promise, expectations_promise]).then( params => {
         const [order, expected] = params;
-        Object.keys(expected).forEach(key => {
-            try {
-                const expected_value = expected[key];
-                const actual_value = order[key];
+        const keys = Object.keys(expected);
+        const key_validation_promises = keys.map(key => {
+            const expected_value = expected[key];
+            const actual_value_promise = getOrderValuePromise(order, key);
+            return actual_value_promise.then( actual_value => {
                 if ( JSON.stringify(actual_value) != JSON.stringify(expected_value) ) {
-                    throw key + ' should be ' +
-                    expected_value + ' but we got ' + actual_value;
+                    const msg = key + ' should be ' + expected_value + ' but we got ' + actual_value;
+                    result.defects.push(msg);
                 }
-            } catch (ex) {
-                result.defects.push(ex);
-            }
+            })
         });
-        if (result.defects.length == 0) {
-            result.passed = true;
-        }
-        return result;
+        return Promise.all(key_validation_promises).then( () => {
+            if (result.defects.length == 0) {
+                result.passed = true;
+            }
+            return result;
+        });
     });
 }
 
