@@ -39,6 +39,12 @@ Bug reports are gratefully accepted (see github link below), with extra points a
    ii) Sending me a translation (better than Google's) of the instructions. 
        I will figure out how to incorporate it and list you in the credits.
 
+Changes in 1.9.0:
+-----------------
+Big user interface change - the orange year buttons are no longer embedded in the page, but have been moved to new popup control panel, accessed via the extension's icon in the top right hand of the chrome "bar".
+Scott McNay has been working to improve data quality, particularly for US/.com users.
+JustGiving page link added to popup control panel - if you were thinking of trying to bribe us, click on that instead.
+
 Changes in 1.8.27:
 ------------------
 * Right click on order link in the table and choose "save order debug info" to download debugging info for that order (useful for you to help developers debug why your order data isn't showing correctly, even when they don't have access to your account and aren't in your country)
