@@ -13,12 +13,12 @@ function download(table) {
             let cells = rows[i].cells;
             let cell_array = [];
             for(let j=0; j<cells.length; ++j) {
-                cell_array.push(cells[j].textContent);
+                cell_array.push(cells[j].textContent.replace('$',''));
             }
             result.push(cell_array);
         }
         const cells = [
-            '=IF(SUBTOTAL(103,A2:A{LAST})<3,"",SUBTOTAL(103,A2:A{LAST})-2 & " items")',
+            '=SUBTOTAL(103,A2:A{LAST}) & " items"',
             '',
             '',
             '',
@@ -30,7 +30,7 @@ function download(table) {
         ]
         let cell_array = [];
         for (let j=0; j<cells.length; j++) {
-            cell_array.push(cells[j].replace(/{LAST}/g,cells.length));
+            cell_array.push(cells[j].replace(/{LAST}/g, cells.length+1));
         }
         result.push(cell_array);
         return result;
