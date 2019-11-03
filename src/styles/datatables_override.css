@@ -1,9 +1,70 @@
 table.dataTable thead .sorting {
-  background-image: url("https://cdn.datatables.net/1.10.19/images/sort_both.png");
+    background-image: url("https://cdn.datatables.net/1.10.19/images/sort_both.png");
 }
 table.dataTable thead .sorting_asc {
-  background-image: url("https://cdn.datatables.net/1.10.19/images/sort_asc.png");
+    background-image: url("https://cdn.datatables.net/1.10.19/images/sort_asc.png");
 }
 table.dataTable thead .sorting_desc {
-  background-image: url("https://cdn.datatables.net/1.10.19/images/sort_desc.png");
+    background-image: url("https://cdn.datatables.net/1.10.19/images/sort_desc.png");
 }
+.azad_thClass, .azad_elemClass, .azad_numeric_no {
+    border: 1px solid black;
+}
+.azad_numeric_yes {
+    border: 1px solid black;
+    text-align: right;
+}
+
+
+
+/* REFERENCE
+This is all of the classes and IDs which appear to be usable
+
+.dataTables_wrapper	dataTables background (around x-entries, search, showing, pagination)
+
+.dataTables_length	Show-entries group
+.dataTables_filter	filter group
+
+.azad_thClass		Header and footer cells
+#azad_order_table	Header and footer cells
+.azad_table		Header and footer cells
+.azad_th_has_help	Header and footer cells with help text
+
+#azad_order_table_head	header cells
+#azad_order_table_hr	header cells
+#azad_order_table_foot	footer cells
+#azad_order_table_fr	footer cells
+
+.sorting		sortable column header cells
+.sorting_desc		descending sort column header cell
+.sorting_asc		ascending sort column header cell
+
+.azad_elemClass		order id and item data columns
+.azad_numeric_no	To, Date, payment data columns
+.azad_numeric_yes	amount data columns
+.azad_elem_has_help	data columns with help text
+.azad_cellClass		non-link data colummns
+.azad_type_plain	'plain' data columns
+.azad_type_detail	'detail' data columns
+.azad_type_payments	'payments' data columns
+
+.azad_col_who		Who data column
+.azad_col_date		Date data column
+.azad_col_total		Total data column
+.azad_col_postage	Postage data column
+.azad_col_gift		Gift data column
+.azad_col_tax		Tax (etc) data column
+.azad_col_refund	Refund data column
+.azad_col_payments	Payments data column
+
+.azad_linkClass		order id link text
+
+.dataTables_info	info group
+
+.paging_simple_numbers	pagination group
+.dataTables_paginate	pagination group
+.paginate_button	active pagination buttons other than current one
+.next			Next button (if active)
+.previous		Previous button (if active)
+
+*/
