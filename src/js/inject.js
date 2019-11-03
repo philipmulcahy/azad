@@ -113,6 +113,8 @@ function registerContentScript() {
                 break;
             case 'clear_cache':
                 getScheduler().clearCache();
+                alert('Amazon Order History Reporter Chrome Extension\n\n' +
+                      'Cache cleared');
                 break;
             case 'abort':
                 resetScheduler();
@@ -128,7 +130,7 @@ function addPopupButton() {
     util.addButton(
         'where have my order history buttons gone?',
         () => {
-            window.alert(
+            window.alert('Amazon Order History Reporter Chrome Extension\n\n' +
                 'You can get to the controls popup by clicking on the extension icon at the top right of the Chrome window:  Look for an orange upper case A. The button that you have just clicked will be removed in a future version of the order history extension.'
             );
         }

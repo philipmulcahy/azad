@@ -55,6 +55,7 @@ function extractDetailFromDoc(order, doc) {
             )
         );
     };
+// wrap in try/catch for missing total
     const total = function(){
         return extraction.by_regex(
             [
@@ -345,7 +346,9 @@ class Order {
                   item: not sure what we use this for - will it still work?
             */
             const itemResult = util.findMultipleNodeValues(
-                './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
+// Note, some items don't have title= links, and some don't have links which contain '/gp/product/'. See D01-9406277-3414619. Confirming "a-row" seems to be enough.
+//                './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
+                './/div[@class="a-row"]/a[@class="a-link-normal"]',
                 elem
             );
             const items = {};
@@ -386,19 +389,11 @@ class Order {
         if (!this.who) {
             this.who = 'N/A';
         }
-        this.id = getField(
-            ['Order #', 'commande', 'Ordine #', 'Pedido n.º'].map(
-                label => sprintf.sprintf(
-                    './/div[contains(@class,"a-row")]' +
-                    '[span[contains(@class,"label")]]' +
-                    '[span[contains(@class,"value")]]' +
-                    '[contains(span,"%s")]' +
-                    '/span[contains(@class,"value")]',
-                    label
-                )
-            ).join(' | '),
-            elem
-        );
+        this.id = Array(...elem.getElementsByTagName('a'))
+            .filter( el => el.hasAttribute('href') )
+            .map( el => el.getAttribute('href') )
+            .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
+            .filter( match => match )[0][1];
         this.detail_url = util.getOrderDetailUrl(this.id);
         this.invoice_url = util.getOrderPaymentUrl(this.id);
         if (!this.id) {
@@ -412,7 +407,7 @@ class Order {
         this.payments_promise = new Promise(
             (resolve => {
                 if (this.id.startsWith("D")) {
-                    resolve([ this.date + ": " + this.total]);
+                    resolve(( !this.total ? [this.date] : [this.date + ": " + this.total]));
                 } else {
                     const event_converter = function(evt) {
                         const parser = new DOMParser();
