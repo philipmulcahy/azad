@@ -1,16 +1,16 @@
 This extension extracts order history from your Amazon account.
-Amazon provides https://www.amazon.com/gp/b2b/reports, but it doesn't include digital orders, and it doesn't work for non-US customers.
+Amazon provides https://www.amazon.com/gp/b2b/reports, but it doesn't include digital orders, shipping, total amount, or payment information, and isn't available for non-US customers.
 
 This extension aims to fix that.
 
-This extension breaks whenever Amazon makes changes. If incorrect information is shown for an order, please RIGHT-click on the order id shown in the table and choose "save order debug info". After the debug file downloads, email it to philip, who is at mulcahyfamily.org, along with a description of the result you get and what you expect to get.
-Please note that the saved data will include everything you can see on the order list pages, order detail pages, and invoice pages, including your billing and shipping addresses, and may also include things such as the order itself, recommendations, and Buy It Again items, which show your shopping preferences.
+This extension breaks whenever Amazon makes changes. If incorrect information is shown for an order, please RIGHT-click on the order id shown in the table and choose "save order debug info". After the debug file downloads, email it to philip, who is at mulcahyfamily.org, along with a description or screenshot of the result you get and what result you expect to get.
+Please note that the saved data will include everything you can see on the order list pages, order detail pages, and invoice pages, including your billing and shipping addresses, and may also include things such as the order itself, recommendations, Buy It Again items, etc., which show your shopping preferences.
 
 How to Use
 ----------
 After you install the extension, you won't see anything until you view your order history on the website (Your Account -> Your Orders).
 
-Get to your orders page, and this extension will add an orange button to the top of the page for each year you've bought stuff.
+Get to your orders page, then click on the extension icon at the top right of the Chrome window; look for an orange upper case A. Once you do this, you  should see buttons with years.
 Clicking on one of these buttons causes the extension to sift through all of your order pages and show you a searchable, sortable table with all of the orders in. It can take a few seconds to get all of the pages.
 A blue button enables you to download a CSV (viewable in Excel or other spreadsheet programs) of the order table the extension has assembled.
 
@@ -26,7 +26,7 @@ smile.amazon.co.uk
 amazon.com
 smile.amazon.com
 
-For other Amazon sites, please submit debug information.
+For other Amazon sites, please submit debug information as described above.
 
 
 Bug reports are gratefully accepted (see github link below), with extra points awarded for:
@@ -38,6 +38,12 @@ Bug reports are gratefully accepted (see github link below), with extra points a
    i) Google translate (don't send it to me!)
    ii) Sending me a translation (better than Google's) of the instructions. 
        I will figure out how to incorporate it and list you in the credits.
+
+Changes in 1.9.0:
+-----------------
+Big user interface change - the orange year buttons are no longer embedded in the page, but have been moved to new popup control panel, accessed via the extension's icon in the top right hand of the chrome "bar".
+Scott McNay has been working to improve data quality, particularly for US/.com users.
+JustGiving page link added to popup control panel - if you were thinking of trying to bribe us, click on that instead.
 
 Changes in 1.8.27:
 ------------------
