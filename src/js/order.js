@@ -25,16 +25,24 @@ function getField(xpath, elem) {
 function extractDetailFromDoc(order, doc) {
 
     const who = function(){
-        let x = getField('//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]', doc.documentElement); // US Digital
+        if(order.who) {
+            return order.who;
+        }
+        const doc_elem = doc.documentElement;
+        let x = getField(
+            // TODO: this seems brittle, depending on the precise path of the element.
+            '//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
+            doc_elem
+        ); // US Digital
         if ( !x ) {
             x = getField('.//div[contains(@class,"recipient")]' +
-                '//span[@class="trigger-text"]', doc.documentElement);
+                '//span[@class="trigger-text"]', doc_elem);
             if ( !x ) {
-                x = getField('.//div[contains(text(),"Recipient")]', doc.documentElement);
+                x = getField('.//div[contains(text(),"Recipient")]', doc_elem);
                 if ( !x ) {
-                    x = getField('//li[contains(@class,"displayAddressFullName")]/text()', doc.documentElement);
+                    x = getField('//li[contains(@class,"displayAddressFullName")]/text()', doc_elem);
                     if ( !x ) {
-                        x = 'n/a';
+                        x = 'null';
                     }
                 }
             }
@@ -337,6 +345,7 @@ class Order {
             'total',
             'us_tax',
             'vat',
+            'who',
         ];
         if (detail_keys.includes(key)) {
             return this.detail_promise.then( detail => detail[key] );
@@ -405,9 +414,6 @@ class Order {
             '/../div/span[contains(@class,"value")]', elem);
         this.who = getField('.//div[contains(@class,"recipient")]' +
             '//span[@class="trigger-text"]', elem);
-        if (!this.who) {
-            this.who = 'N/A';
-        }
         this.id = Array(...elem.getElementsByTagName('a'))
             .filter( el => el.hasAttribute('href') )
             .map( el => el.getAttribute('href') )

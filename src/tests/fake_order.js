@@ -109,9 +109,11 @@ function discoverTestData() {
             expected_promises
         ).then( () => {
             const test_targets = [];
-            Object.keys(site_to_expecteds).forEach( site => {
+            Object.keys(site_to_expecteds).sort().forEach( site => {
                 const expecteds = site_to_expecteds[site];
                 expecteds
+                    .filter( e => e.match(/8755888/) )
+                    .sort()
                     .filter( e => e.match(/.*\.json$/) )
                     .forEach( expected => {
                         const target = {
