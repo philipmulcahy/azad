@@ -38,7 +38,7 @@ function extractDetailFromDoc(order, doc) {
                 '//*[contains(@class,"order-date-invoice-item")]/text()',                                 //20191025
                 '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',   //20191025
             ],
-            /(?:Ordered on|Digital Order:) (.*)/i,                                                        //20191025
+            /(?:Ordered on|Digital Order:) (.*)/i   ,                                                     //20191025
             order.date,
             doc.documentElement
         )
@@ -84,7 +84,7 @@ function extractDetailFromDoc(order, doc) {
             null,
             order.total,
             doc.documentElement
-        ).replace(   /.*: /,   '').replace('-', '');
+        ).replace(   /.*: /   ,'').replace('-', '');
     };
 // BUG: Need to exclude gift wrap
     const gift = function(){

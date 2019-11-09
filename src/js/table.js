@@ -200,7 +200,7 @@ function reallyDisplayOrders(orders, beautiful) {
                             // Replace unknown/none with '-' to make it look uninteresting.
                             if ( !a || a === 'N/A')    { a = '-' }
                             // If 0 (without currency type or currency symbol), just show a plain zero to make it look uninteresting.
-                            if ((parseFloat(a.replace(   /^([£$]|CAD|EUR|GBP) */,   '').replace(   /,/,   '.')) + 0) == 0)    { a = 0 }
+                            if ((parseFloat(a.replace(   /^([£$]|CAD|EUR|GBP) */   ,'').replace(   /,/   ,'.')) + 0) == 0)    { a = 0 }
                             elem.innerHTML = a;
                             if(datatable) {
                                 datatable.rows().invalidate();
@@ -313,8 +313,8 @@ function reallyDisplayOrders(orders, beautiful) {
                             return (
                                 (i === 'N/A' || i === '-' || i === 'pending')
                                 ?   0
-                                :   parseFloat(i.replace(   /^([£$]|CAD|EUR|GBP) */,   '')
-                                                .replace(   /,/,   '.'))
+                                :   parseFloat(i.replace(   /^([£$]|CAD|EUR|GBP) */   ,'')
+                                                .replace(   /,/   ,'.'))
                             );
                         }
                         if(typeof i === 'number')   { return i; }

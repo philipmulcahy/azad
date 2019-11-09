@@ -22,7 +22,7 @@ function download(table) {
     const processRow = function(row) {
         const processCell = function (cell) {
             if ( !cell ) {   return '';   }
-            let processed = cell.replace(   /"/g,   '""');
+            let processed = cell.replace(   /"/g   ,'""');
             if (processed.search(   /("|,|\n)/g   ) >= 0) {
                 processed = '"' + processed + '"';
             }

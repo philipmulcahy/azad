@@ -49,8 +49,8 @@ const payments_from_invoice = function(doc) {
             doc.documentElement
         ).map(function(row){
             return row.textContent
-                      .replace(   /[\n\r]/g,   ' ')
-                      .replace(   /  */g,      '\xa0')    //=&nbsp;
+                      .replace(   /[\n\r]/g   ,' ')
+                      .replace(   /  */g      ,'\xa0')    //=&nbsp;
                       .trim();
         });
         return payments;
@@ -60,7 +60,7 @@ const payments_from_invoice = function(doc) {
             '//*[contains(text(), "Payment Method")]/../self::*',
             doc.documentElement
         ).map(
-            e => e.textContent.replace(   /\s+/g,   ' ').trim()
+            e => e.textContent.replace(   /\s+/g   ,' ').trim()
         );
         // "Item(s) Subtotal: GBP 9.63 Shipping & Handling: GBP 4.24 ----- Total before tax: GBP 13.87 Estimated tax to be collected: GBP 1.22 ----- Grand Total: GBP 15.09 Payment Method: American Express | Last digits: 1416 Billing address Mr Philip Mulcahy Somewhere in the UK"
         const card_names = new_style_payments.map(
