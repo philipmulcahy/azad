@@ -86,7 +86,7 @@ function fetchAndShowOrders(years) {
                 alert('500 or more orders found. That\'s a lot! We\'ll start you off with a plain table to make display faster. You can click the blue "datatable" button to restore sorting, filtering etc.');
             }
             azad_table.displayOrders(orderPromises, beautiful);
-            return document.querySelector('[id="order_table"]');
+            return document.querySelector('[id="azad_order_table"]');
         }
     );
 }
