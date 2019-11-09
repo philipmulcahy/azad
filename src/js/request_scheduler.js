@@ -44,7 +44,7 @@ class BinaryHeap {
         const length = this.content.length;
         // To remove a value, we must search through the array to find
         // it.
-        for (let i = 0; i < length; i++) {
+        for (let i = 0; i < length; ++i) {
             if (this.content[i] != node) continue;
             // When it is found, the process seen in 'pop' is repeated
             // to fill up the hole.
@@ -96,8 +96,7 @@ class BinaryHeap {
             // Compute the indices of the child elements.
             const child2N = (n + 1) * 2;
             const child1N = child2N - 1;
-            // This is used to store the new position of the element,
-            // if any.
+            // This is used to store the new position of the element, if any.
             let swap = null;
             let child1Score = null;
             // If the first child exists (is inside the array)...
@@ -113,7 +112,7 @@ class BinaryHeap {
             if (child2N < length) {
                 const child2 = this.content[child2N];
                 const child2Score = this.scoreFunction(child2);
-                if (child2Score < ( !swap ? elemScore : child1Score))
+                if (child2Score < ( !swap   ?   elemScore   :   child1Score))
                     swap = child2N;
             }
 
@@ -142,9 +141,7 @@ class RequestScheduler {
     }
 
     schedule(query, event_converter, callback, priority, nocache) {
-        if (!this.live) {
-            throw 'scheduler has aborted or finished, and cannot accept more queries';
-        }
+        if (!this.live) {   throw 'scheduler has aborted or finished, and cannot accept more queries';   }
         console.log('Queuing ' + query + ' with ' + this.queue.size());
         this.queue.push({
             'query': query,
@@ -167,20 +164,18 @@ class RequestScheduler {
 
     statistics() {
         return {
-            'queued' : this.queue.size(),
-            'running' : this.running_count,
-            'completed' : this.completed_count,
-            'errors' : this.error_count,
-            'cache_hits' : this.cache.hitCount(),
+            'queued': this.queue.size(),
+            'running': this.running_count,
+            'completed': this.completed_count,
+            'errors': this.error_count,
+            'cache_hits': this.cache.hitCount(),
         };
     }
 
     // Process a single de-queued request either by retrieving from the cache
     // or by sending it out.
     _execute(query, event_converter, callback, priority, nocache) {
-        if (!this.live) {
-            return;
-        }
+        if (!this.live) {   return;   }
         console.log(
             'Executing ' + query +
             ' with queue size ' + this.queue.size() +
@@ -188,7 +183,7 @@ class RequestScheduler {
         );
 
         const protected_callback = (response, query) => {
-            try {
+            try {   
                 return callback(response, query);
             } catch (ex) {
                 console.error('callback failed for ' + query + ' with ' + ex);
@@ -226,13 +221,13 @@ class RequestScheduler {
         // we finish all of the work from the first call before the caller
         // has a chance to tell us about the rest of the work, then the
         // scheduler will shut down by setting this.live to false.
-        this.running_count += 1;
+        ++this.running_count;
         setTimeout(
             () => {
                 this._executeSomeIfPossible();
                 callback(cached_response, query);
-                this.running_count -= 1;
-                this.completed_count += 1;
+                --this.running_count;
+                ++this.completed_count;
                 this._checkDone();
             }
         );
@@ -242,24 +237,24 @@ class RequestScheduler {
         const req = new XMLHttpRequest();
         req.open('GET', query, true);
         req.onerror = function() {
-            this.running_count -= 1;
-            this.error_count += 1;
+            --this.running_count;
+            ++this.error_count;
             console.log( 'Unknown error fetching ' + query );
         };
         req.onload = function(evt) {
             if (!this.live) {
-                this.running_count -= 1;
+                --this.running_count;
                 return;
             }
             if ( req.status != 200 ) {
-                this.error_count += 1;
+                --this.error_count;
                 console.log(
                     'Got HTTP' + req.status + ' fetching ' + query);
-                this.running_count -= 1;
+                --this.running_count;
                 return;
             }
             if ( req.responseURL.includes('/ap/signin?') ) {
-                this.error_count += 1;
+                ++this.error_count;
                 console.log('Got sign-in redirect from: ' + query);
                 if ( !this.signin_warned ) {
                     alert('Amazon Order History Reporter Chrome Extension\n\n' +
@@ -275,7 +270,7 @@ class RequestScheduler {
                         }
                     );
                 }
-                this.running_count -= 1;
+                --this.running_count;
                 return;
             }
             console.log(
@@ -287,11 +282,11 @@ class RequestScheduler {
                 this.cache.set(query, converted);
             }
             callback(converted, query);
-            this.running_count -= 1;
-            this.completed_count += 1;
+            --this.running_count;
+            ++this.completed_count;
             this._checkDone();
         }.bind(this);
-        this.running_count += 1;
+        ++this.running_count;
         req.send();
     }
 

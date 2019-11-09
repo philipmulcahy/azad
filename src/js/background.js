@@ -77,8 +77,8 @@ function registerRightClickActions() {
     chrome.contextMenus.onClicked.addListener( info => {
         console.log('context menu item: ' + info.menuItemId + ' clicked;');
         if (info.menuItemId == 'save_order_debug_info') {
-            if ( /orderID=/.test(info.linkUrl) ) {
-                const match =info.linkUrl.match(/.*orderID=([0-9A-Z-]*)$/);
+            if (   /orderID=/   .test(info.linkUrl) ) {
+                const match =info.linkUrl.match(   /.*orderID=([0-9A-Z-]*)$/   );
                 const order_id = match[1];
                 if (match) {
                     Object.values(content_ports).forEach( port => {
@@ -117,9 +117,7 @@ function advertiseYears() {
             action: 'advertise_years',
             years: advertised_years
         });
-    } else {
-        console.log('cannot advertise years yet: no control port is set');
-    }
+    } else {   console.log('cannot advertise years yet: no control port is set');   }
 }
 
 registerConnectionListener();

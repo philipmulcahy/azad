@@ -185,7 +185,7 @@ function reallyDisplayOrders(orders, beautiful) {
                     case 'text':
                         elem = addCell(tr, 'pending');
                         order.detail_promise.then( detail => {
-                            elem.innerHTML = detail[col_spec.property_name];
+                            elem.innerHTML = ( !detail   ?   '-'   :   detail[col_spec.property_name] );
                             if(datatable) {
                                 datatable.rows().invalidate();
                                 datatable.draw();
@@ -196,15 +196,11 @@ function reallyDisplayOrders(orders, beautiful) {
                         elem = addCell(tr, 'pending');
                         order.detail_promise.then( detail => {
                             let a = null;
-                            try {
-                                a = detail[col_spec.property_name];
-                            } catch (_) {
-                                a = 0;
-                            }
+                            a = ( !detail   ?   0   :   detail[col_spec.property_name] );
                             // Replace unknown/none with '-' to make it look uninteresting.
-                            if (a === 'N/A') { a = '-' }
+                            if ( !a || a === 'N/A')    { a = '-' }
                             // If 0 (without currency type or currency symbol), just show a plain zero to make it look uninteresting.
-                            if (parseFloat(a.replace(/^([£$]|CAD|EUR|GBP) */, '').replace(/,/, '.')) + 0 == 0) { a = 0 }
+                            if ((parseFloat(a.replace(   /^([£$]|CAD|EUR|GBP) */,   '').replace(   /,/,   '.')) + 0) == 0)    { a = 0 }
                             elem.innerHTML = a;
                             if(datatable) {
                                 datatable.rows().invalidate();
@@ -217,19 +213,17 @@ function reallyDisplayOrders(orders, beautiful) {
                         elem = addCell(tr, 'pending');
                         order.payments_promise.then( payments => {
                             const ul = document.createElement('ul');
-                            payments.forEach( payment => {
-                                const li = document.createElement('li');
-                                ul.appendChild(li);
-                                const a = document.createElement('a');
-                                li.appendChild(a);
-                                // Replace unknown/none with "-" to make it look uninteresting.
-                                if (payment === 'N/A') {
-                                    a.textContent = '-'
-                                } else {
-                                    a.textContent = payment + '; '
-                                }
-                                a.href = util.getOrderPaymentUrl(order.id);
-                            });
+                            if ( payments ) {
+                                payments.forEach( payment => {
+                                    const li = document.createElement('li');
+                                    ul.appendChild(li);
+                                    const a = document.createElement('a');
+                                    li.appendChild(a);
+                                    // Replace unknown/none with "-" to make it look uninteresting.
+                                    a.textContent = ( (!payment || payment === 'N/A')   ?   '-'   :   '; ' )
+                                    a.href = util.getOrderPaymentUrl(order.id);
+                                });
+                            }
                             elem.textContent = '';
                             elem.appendChild(ul);
                             if(datatable) {
@@ -246,7 +240,7 @@ function reallyDisplayOrders(orders, beautiful) {
                     elem.setAttribute('class', elem.getAttribute('class') + 
                             'azad_type_' + col_spec.type + ' ' +
                             'azad_col_' + col_spec.property_name + ' ' + 
-                            'azad_numeric_' + (col_spec.is_numeric ? 'yes' : 'no' ) + ' ');
+                            'azad_numeric_' + (col_spec.is_numeric   ?   'yes'   :   'no' ) + ' ');
                     if ('help' in col_spec) {
                         elem.setAttribute('class', elem.getAttribute('class') + 'azad_elem_has_help ');
                         elem.setAttribute('title', col_spec.help);
@@ -316,11 +310,14 @@ function reallyDisplayOrders(orders, beautiful) {
                     // Remove the formatting to get integer data for summation
                     const floatVal = function(i) {
                         if(typeof i === 'string') {
-                            return (i === 'N/A' || i === '-' || i === 'pending') ?
-                                0 : parseFloat(i.replace(/^([£$]|CAD|EUR|GBP) */, '')
-                                                .replace(/,/, '.'));
+                            return (
+                                (i === 'N/A' || i === '-' || i === 'pending')
+                                ?   0
+                                :   parseFloat(i.replace(   /^([£$]|CAD|EUR|GBP) */,   '')
+                                                .replace(   /,/,   '.'))
+                            );
                         }
-                        if(typeof i === 'number') { return i; }
+                        if(typeof i === 'number')   { return i; }
                         return 0;
                     };
                     let col_index = 0;

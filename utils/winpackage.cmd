@@ -14,7 +14,7 @@ set ZipFile=azad.zip
 cd "%~dp0.."
 
 ::  run lint
-node node_modules\eslint\bin\eslint.js src/js
+if "%~1" neq "debug" node node_modules\eslint\bin\eslint.js src/js
 if %errorlevel% gtr 0 goto :EOF
 
 :: run npm build command

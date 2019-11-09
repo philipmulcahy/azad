@@ -15,23 +15,26 @@ function localDateFromMoment(m) {
 const LOCALES = ['de', 'en', 'en-gb', 'es', 'fr', 'it'];
 
 const ALT_FORMATS = [
-    {format: 'DD MMM YYYY', locale: 'fr'},
-    {format: 'D MMM YYYY', locale: 'fr'},
-    {format: 'DD. MMM YYYY', locale: 'fr'},
-    {format: 'D. MMM YYYY', locale: 'fr'},
+    {format: 'DD MMM YYYY',   locale: 'fr'},
+    {format: 'D MMM YYYY',    locale: 'fr'},
+    {format: 'DD. MMM YYYY',  locale: 'fr'},
+    {format: 'D. MMM YYYY',   locale: 'fr'},
+
     {format: 'MMMM DD, YYYY', locale: 'en'},
-    {format: 'DD MMMM YYYY', locale: 'en'},
-    {format: 'D MMMM YYYY', locale: 'en'},
-    {format: 'D MMM. YYYY', locale: 'en'},
-    {format: 'DD MMM. YYYY', locale: 'en'},
-    {format: 'DD MMMM YYYY', locale: 'de'},
-    {format: 'D MMMM YYYY', locale: 'de'},
+    {format: 'DD MMMM YYYY',  locale: 'en'},
+    {format: 'D MMMM YYYY',   locale: 'en'},
+    {format: 'D MMM. YYYY',   locale: 'en'},
+    {format: 'DD MMM. YYYY',  locale: 'en'},
+
+    {format: 'DD MMMM YYYY',  locale: 'de'},
+    {format: 'D MMMM YYYY',   locale: 'de'},
     {format: 'DD. MMMM YYYY', locale: 'de'},
-    {format: 'D. MMMM YYYY', locale: 'de'},
-    {format: 'DD MMMM YYYY', locale: 'it'},
-    {format: 'D MMMM YYYY', locale: 'it'},
+    {format: 'D. MMMM YYYY',  locale: 'de'},
+
+    {format: 'DD MMMM YYYY',  locale: 'it'},
+    {format: 'D MMMM YYYY',   locale: 'it'},
     {format: 'DD. MMMM YYYY', locale: 'it'},
-    {format: 'D. MMMM YYYY', locale: 'it'}
+    {format: 'D. MMMM YYYY',  locale: 'it'}
 ];
 
 function getMoms(ds) {
@@ -47,7 +50,7 @@ function  getMom(ds) {
 }
 
 function normalizeDateString(ds) {
-    if ( !ds ) { return "N/A"; }
+    if ( !ds )   { return "N/A"; }
     const mom = getMom(ds);
     if (!mom) {
         console.warn('could not parse date: ' + ds);

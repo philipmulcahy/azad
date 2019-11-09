@@ -40,9 +40,7 @@ class LocalCacheImpl {
             try {
                 this.reallySet(real_key, value);
             } catch (second_error) {
-                console.warn(
-                    'couldn\'t save ' + key + ' to cache on second attempt'
-                );
+                console.warn(   'couldn\'t save ' + key + ' to cache on second attempt'   );
             }
             console.log('set ' + key + ' on second attempt after trimming cache');
         }
@@ -55,9 +53,7 @@ class LocalCacheImpl {
             const packed = JSON.parse(encoded);
             ++this.hit_count;
             return JSON.parse(lzjs.decompress(packed.value));
-        } catch(err) {
-            return undefined;
-        }
+        } catch(err) {   return undefined;   }
     }
 
     hitCount() {
@@ -77,9 +73,7 @@ class LocalCacheImpl {
         real_keys.forEach( key => {
             try {
                 timestamps_by_key[key] = JSON.parse(window.localStorage.getItem(key)).timestamp;
-            } catch(error) {
-                console.debug('couldn\'t get timestamp for key: ' + key);
-            }
+            } catch(error) {   console.debug('couldn\'t get timestamp for key: ' + key);   }
         });
         const timestamps = Object.values(timestamps_by_key);
         timestamps.sort();
@@ -106,9 +100,9 @@ function createLocalCache(cache_name) {
     const cache = new LocalCacheImpl(cache_name);
     return {
         set: (key, value) => cache.set(key, value),
-        get: key => cache.get(key),
-        clear: () => cache.clear(),
-        hitCount: () => cache.hitCount(),
+        get: key          => cache.get(key),
+        clear: ()         => cache.clear(),
+        hitCount: ()      => cache.hitCount(),
     };
 }
 

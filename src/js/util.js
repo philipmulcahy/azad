@@ -8,7 +8,7 @@
 
 function getSite() {
     const href = window.location.href;
-    const stem = new RegExp('https:\\/\\/((www|smile)\\.amazon\\.[^\\/]+)').exec(href)[1];
+    const stem = new RegExp(   'https:\\/\\/((www|smile)\\.amazon\\.[^\\/]+)')   .exec(href)[1];
     return stem;
 }
 
@@ -18,7 +18,7 @@ function getOrderDetailUrl(orderId) {
 }
 
 function getOrderPaymentUrl(orderId) {
-    if ( !orderId ) {return 'N/A'; }
+    if ( !orderId )   {return 'N/A'; }
     return orderId.startsWith('D') ?
         'https://' + getSite() + '/gp/digital/your-account/order-summary.html' +
             '?ie=UTF8&orderID=' + orderId + '&print=1&' :
@@ -61,9 +61,7 @@ function findSingleNodeValue(xpath, elem) {
             XPathResult.FIRST_ORDERED_NODE_TYPE,
             null
         ).singleNodeValue;
-    } catch (ex) {
-        console.log('findSingleNodeValue didn\'t match: ', xpath);
-    }
+    } catch (ex) {   console.log('findSingleNodeValue didn\'t match: ', xpath);   }
 }
 
 function findMultipleNodeValues(xpath, elem) {

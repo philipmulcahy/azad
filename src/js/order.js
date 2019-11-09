@@ -15,27 +15,17 @@ function getField(xpath, elem) {
     const valueElem = util.findSingleNodeValue(
         xpath, elem
     );
-    try {
-        return valueElem.textContent.trim();
-    } catch (_) {
-        return null;
-    }
+    try { return valueElem.textContent.trim(); }
+    catch (_)   { return null; }
 }
 
 function extractDetailFromDoc(order, doc) {
-
     const who = function(){
-        let x = getField('//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]', doc.documentElement); // US Digital
-        if ( !x ) {
-            x = getField('.//div[contains(@class,"recipient")]' +
-                '//span[@class="trigger-text"]', doc.documentElement);
-            if ( !x ) {
-                x = getField('.//div[contains(text(),"Recipient")]', doc.documentElement);
-                if ( !x ) {
-                    x = getField('//li[contains(@class,"displayAddressFullName")]/text()', doc.documentElement);
-                    if ( !x ) {
-                        x = 'n/a';
-                    }
+        let                       x = getField('//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',      doc.documentElement); // US Digital
+        if ( !x )               { x = getField('.//div[contains(@class,"recipient")]//span[@class="trigger-text"]', doc.documentElement);
+            if ( !x )           { x = getField('.//div[contains(text(),"Recipient")]',                              doc.documentElement);
+                if ( !x )       { x = getField('//li[contains(@class,"displayAddressFullName")]/text()',            doc.documentElement);
+                    if ( !x )   { x = 'n/a'; }
                 }
             }
         }
@@ -43,19 +33,20 @@ function extractDetailFromDoc(order, doc) {
     };
 
     const order_date = function(){
-        return date.normalizeDateString(
-            extraction.by_regex(
-                [
-                    '//*[contains(@class,"order-date-invoice-item")]/text()', //20191025
-                    '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()', //20191025
-                ],
-                /(?:Ordered on|Digital Order:) (.*)/i, //20191025
-                order.date,
-                doc.documentElement
-            )
-        );
+        let a = extraction.by_regex(
+            [
+                '//*[contains(@class,"order-date-invoice-item")]/text()',                                 //20191025
+                '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',   //20191025
+            ],
+            /(?:Ordered on|Digital Order:) (.*)/i,                                                        //20191025
+            order.date,
+            doc.documentElement
+        )
+        a = date.normalizeDateString(a);
+        return a
     };
-// wrap in try/catch for missing total
+
+// wrap function in try/catch for missing total
     const total = function(){
         return extraction.by_regex(
             [
@@ -93,7 +84,7 @@ function extractDetailFromDoc(order, doc) {
             null,
             order.total,
             doc.documentElement
-        ).replace(/.*: /, '').replace('-', '');
+        ).replace(   /.*: /,   '').replace('-', '');
     };
 // BUG: Need to exclude gift wrap
     const gift = function(){
@@ -112,14 +103,9 @@ function extractDetailFromDoc(order, doc) {
             doc.documentElement
         );
         if ( a ) {
-            const b = a.match(
-                /Gift (?:Certificate|Card) Amount: *([$£€0-9.]*)/);
-            if( b !== null ) {
-                return b[1];
-            }
-            if (/\d/.test(a)) {
-                return a.replace('-', '');
-            }
+            const b = a.match(   /Gift (?:Certificate|Card) Amount: *([$£€0-9.]*)/   );
+            if ( b )   { return b[1]; }
+            if (   /\d/.test(a)  )   { return a.replace('-', ''); }
         }
         return 'N/A';
     };
@@ -133,7 +119,7 @@ function extractDetailFromDoc(order, doc) {
                         'parent::div/following-sibling::div/span',
                         label
                     )
-                ).join('|') //20191025
+                ).join('|')                   //20191025
             ],
             null,
             'N/A',
@@ -141,9 +127,9 @@ function extractDetailFromDoc(order, doc) {
         );
     };
     const vat = function() {
-        if ( order.id == 'D01-9960417-3589456' ) {
-            console.log('TODO - remove');
-        }
+//        if ( order.id == 'D01-9960417-3589456' ) {
+//            console.log('TODO - remove');
+//        }
         const a = extraction.by_regex(
             [
                 ['VAT', 'tax', 'TVA', 'IVA'].map(
@@ -155,7 +141,7 @@ function extractDetailFromDoc(order, doc) {
                         'parent::div/following-sibling::div/span',
                         label
                     )
-                ).join('|'), //20191025
+                ).join('|'),                   //20191025
 
                 '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
 //                'span[contains(lower-case(text()),"vat")]/' +
@@ -173,9 +159,7 @@ function extractDetailFromDoc(order, doc) {
             const b = a.match(
                 /VAT: *([-$£€0-9.]*)/i
             );
-            if( b !== null ) {
-                return b[1];
-            }
+            if( b )   { return b[1]; }
         }
         return a;
     };
@@ -185,7 +169,9 @@ function extractDetailFromDoc(order, doc) {
             doc.documentElement
         );
         if ( !a ) {
-            a = getField('.//tr[contains(td,"Tax Collected:")]', doc.documentElement);
+            a = getField(
+                './/tr[contains(td,"Tax Collected:")]',
+                doc.documentElement);
             if (a) {
                 const moneyRegEx = '\\s+(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))'
                 // Result
@@ -196,9 +182,7 @@ function extractDetailFromDoc(order, doc) {
                 // 4:     "$"
                 // 5:     "0.00"
                 a = a.match(moneyRegEx)[1];
-            } else {
-                a = 'N/A';
-            }
+            } else   { a = 'N/A'; }
         }
         return a;
     };
@@ -225,9 +209,7 @@ function extractDetailFromDoc(order, doc) {
             null,
             doc.documentElement
         );
-        if (a) {
-            return a;
-        }
+        if (a)   { return a; }
         return 'N/A';
     };
     const cad_pst = function(){
@@ -252,14 +234,12 @@ function extractDetailFromDoc(order, doc) {
             null,
             doc.documentElement
         );
-        if (a) {
-            return a;
-        }
+        if (a)   { return a; }
         return 'N/A';
     };
     const refund = function () {
         let a = getField(
-            ['Refund'].map( //TODO other field names?
+            ['Refund'].map(                                   //TODO other field names?
                 label => sprintf.sprintf(
                     '//div[contains(@id,"od-subtotals")]//' +
                     'span[contains(text(),"%s")]/' +
@@ -269,9 +249,7 @@ function extractDetailFromDoc(order, doc) {
             ).join('|'),
             doc.documentElement
         );
-        if ( a ) {
-            return a;
-        }
+        if ( a )   { return a; }
         return 'N/A';
     };
     return {
@@ -307,9 +285,7 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
                 },
                 order.id
             );
-        } catch (ex) {
-            console.error('scheduler rejected ' + order.id + ' ' + query);
-        }
+        } catch (ex)   { console.error('scheduler rejected ' + order.id + ' ' + query); }
     }
 );
 
@@ -354,25 +330,24 @@ class Order {
             const items = {};
             itemResult.forEach(
                 function(item){
-                    const name = item.innerText.replace(/[\n\r]/g, " ")
-                                             .replace(/  */g, " ")
-                                             .trim();
+                    const name = item.innerText.replace(   /[\n\r]/g   , " ")
+                                               .replace(   /  */g   , " ")
+                                               .trim();
                     const link = item.getAttribute('href');
                     items[name] = link;
                 }
             );
             return items;
         };
-        const doc = elem.ownerDocument;
-        if(!doc) {
-            console.warn('TODO - get rid of these');
-        }
+//        const doc = elem.ownerDocument;
+//        if(!doc) {
+//            console.warn('TODO - get rid of these');
+//        }
         this.date = date.normalizeDateString(
             getField(
                 ['Commande effectuée', 'Order placed', 'Ordine effettuato', 'Pedido realizado'].map(
                     label => sprintf.sprintf(
-                        './/div[contains(span,"%s")]' +
-                        '/../div/span[contains(@class,"value")]',
+                        './/div[contains(span,"%s")]/../div/span[contains(@class,"value")]',
                         label
                     )
                 ).join('|'),
@@ -382,32 +357,34 @@ class Order {
         // This field is no longer always available, particularly for .com
         // We replace it (where we know the search pattern for the country)
         // with information from the order detail page.
-        this.total = getField('.//div[contains(span,"Total")]' +
-            '/../div/span[contains(@class,"value")]', elem);
-        this.who = getField('.//div[contains(@class,"recipient")]' +
-            '//span[@class="trigger-text"]', elem);
-        if (!this.who) {
-            this.who = 'N/A';
-        }
+        this.total = getField(
+            './/div[contains(span,"Total")]/../div/span[contains(@class,"value")]',
+            elem);
+        this.who = getField(
+            './/div[contains(@class,"recipient")]//span[@class="trigger-text"]',
+            elem);
+        if (!this.who)   { this.who = 'N/A'; }
+
         this.id = Array(...elem.getElementsByTagName('a'))
             .filter( el => el.hasAttribute('href') )
             .map( el => el.getAttribute('href') )
-            .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
+            .map( href => href.match(   /.*orderID=([A-Z0-9-]*).*/   ) )
             .filter( match => match )[0][1];
-        this.detail_url = util.getOrderDetailUrl(this.id);
-        this.invoice_url = util.getOrderPaymentUrl(this.id);
         if (!this.id) {
             this.id = util.findSingleNodeValue(
                 '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
                 elem
-            ).getAttribute('href').match(/.*orderID=([^?]*)/)[1];
+            ).getAttribute('href').match(   /.*orderID=([^?]*)/   )[1];
         }
+        this.detail_url = util.getOrderDetailUrl(this.id);
+        this.invoice_url = util.getOrderPaymentUrl(this.id);
+
         this.items = getItems(elem);
         this.detail_promise = extractDetailPromise(this, this.request_scheduler);
         this.payments_promise = new Promise(
             (resolve => {
                 if (this.id.startsWith("D")) {
-                    resolve(( !this.total ? [this.date] : [this.date + ": " + this.total]));
+                    resolve( [ this.date + ( !this.total   ?   ""   :   ": " + this.total) ]);
                 } else {
                     const event_converter = function(evt) {
                         const parser = new DOMParser();
@@ -421,9 +398,7 @@ class Order {
                     this.request_scheduler.schedule(
                         this.invoice_url,
                         event_converter,
-                        payments => {
-                            resolve(payments);
-                        },
+                        payments => { resolve(payments); },
                         this.id
                     );
                 }
@@ -512,26 +487,16 @@ function getOrdersForYearAndQueryTemplate(
         const p = new DOMParser();
         const d = p.parseFromString(evt.target.responseText, 'text/html');
         const countSpan = util.findSingleNodeValue(
-            './/span[@class="num-orders"]', d.documentElement);
-        if ( !countSpan ) {
-            console.warn(
-                'Error: cannot find order count elem in: ' + evt.target.responseText
-            );
-        }
+            './/span[@class="num-orders"]',
+            d.documentElement);
+        if ( !countSpan )   { console.warn( 'Error: cannot find order count elem in: ' + evt.target.responseText ); }
         expected_order_count = parseInt(
             countSpan.textContent.split(' ')[0], 10);
-        console.log(
-            'Found ' + expected_order_count + ' orders for ' + year
-        );
-        if(isNaN(expected_order_count)) {
-            console.warn(
-                'Error: cannot find order count in ' + countSpan.textContent
-            );
-        }
+        console.log( 'Found ' + expected_order_count + ' orders for ' + year );
+        if(isNaN(expected_order_count))   { console.warn( 'Error: cannot find order count in ' + countSpan.textContent ); }
         let ordersElem;
-        try {
-            ordersElem = d.getElementById('ordersContainer');
-        } catch(err) {
+        try { ordersElem = d.getElementById('ordersContainer'); }
+        catch(err)    {
             console.warn(
                 'Error: maybe you\'re not logged into ' +
                 'https://' + util.getSite() + '/gp/css/order-history ' +
@@ -540,10 +505,7 @@ function getOrdersForYearAndQueryTemplate(
             return;
         }
         const order_elems = util.findMultipleNodeValues(
-            './/*[contains(concat(" ", ' +
-                'normalize-space(@class), ' +
-                '" "), ' +
-                '" order ")]',
+            './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
             ordersElem
         );
         return {
@@ -556,9 +518,7 @@ function getOrdersForYearAndQueryTemplate(
         check_complete_callback();
         // TODO: restore efficiency - the first ten orders are visible in the page we got expected_order_count from.
         for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
-            console.log(
-                'sending request for order: ' + iorder + ' onwards'
-            );
+            console.log( 'queueing request for order: ' + iorder );
             request_scheduler.schedule(
                 generateQueryString(iorder),
                 convertOrdersPage,
@@ -593,10 +553,7 @@ function getOrdersForYearAndQueryTemplate(
             };
             order_found_callback = function(order_promise) {
                 order_promises.push(order_promise);
-                order_promise.then( order => {
-                    // TODO is "Fetching" the right message for this stage?
-                    console.log('azad_order Fetching ' + order.id);
-                });
+                order_promise.then(   order => { console.log('azad_order Fetching ' + order.id); });
                 console.log(
                     'YearFetcher(' + year + ') order_promises.length:' +
                      order_promises.length +

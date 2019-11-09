@@ -60,8 +60,8 @@ function connectToBackground() {
 }
 
 function registerActionButtons() {
-    $('#azad_clear_cache').on('click', () => background_port.postMessage({action: 'clear_cache'}));
-    $('#azad_stop').on('click', () => handleStopClick());
+    $('#azad_clear_cache').on('click', ()   => background_port.postMessage({action: 'clear_cache'}));
+    $('#azad_stop').on('click', ()          => handleStopClick());
     $('#azad_hide_controls').on('click', () => {
         console.log('closing popup');
         window.close();
@@ -90,9 +90,7 @@ function handleYearClick(evt) {
             action: 'scrape_years',
             years: years, 
         });
-    } else {
-        console.warn('background_port not set');
-    }
+    } else {   console.warn('background_port not set');   }
 }
 
 function handleStopClick() {

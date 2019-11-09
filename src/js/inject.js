@@ -15,12 +15,10 @@ let background_port = null;
 let years = null;
 let stats_timeout = null;
 
-const SITE = window.location.href.match( /\/\/([^/]*)/ )[1];
+const SITE = window.location.href.match(   /\/\/([^/]*)/   )[1];
 
 function getScheduler() {
-    if (!scheduler) {
-        resetScheduler();
-    }
+    if (!scheduler) {   resetScheduler();   }
     return scheduler;
 }
 
@@ -47,9 +45,7 @@ function setStatsTimeout() {
 }
 
 function resetScheduler() {
-    if (scheduler) {
-        scheduler.abort();
-    }
+    if (scheduler) {   scheduler.abort();   }
     scheduler = request_scheduler.create();
     setStatsTimeout();
 }
@@ -72,7 +68,7 @@ function getYears() {
                             .replace('en', '')  // amazon.fr
                             .replace('nel', '')  // amazon.it
                             .trim()
-            ).filter( element => (/^\d+$/).test(element) )
+            ).filter( element => (   /^\d+$/   ).test(element) )
              .filter( year => (year >= '2004') );
             return years;
         });
