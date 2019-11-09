@@ -323,10 +323,31 @@ class Order {
         this.detail_promise = null;
         this.items = null;
         this.request_scheduler = request_scheduler;
-        this.extractOrder(ordersPageElem);
+        this._extractOrder(ordersPageElem);
     }
 
-    extractOrder(elem) {
+    getValuePromise(key) {
+        const detail_keys = [
+            'date',
+            'gift',
+            'gst',
+            'postage',
+            'pst',
+            'refund',
+            'total',
+            'us_tax',
+            'vat',
+        ];
+        if (detail_keys.includes(key)) {
+            return this.detail_promise.then( detail => detail[key] );
+        }
+        if (key == 'payments') {
+            return this.payments_promise;
+        }
+        return Promise.resolve(this[key]);
+    }
+
+    _extractOrder(elem) {
         const getItems = function(elem) {
             /*
               <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
