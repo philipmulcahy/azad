@@ -183,7 +183,7 @@ class RequestScheduler {
         );
 
         const protected_callback = (response, query) => {
-            try {   
+            try {
                 return callback(response, query);
             } catch (ex) {
                 console.error('callback failed for ' + query + ' with ' + ex);
