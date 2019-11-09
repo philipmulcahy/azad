@@ -75,7 +75,7 @@ const cols = [
     },
     {
         field_name: 'to',
-        type: 'text',
+        type: 'promise',
         property_name: 'who',
         is_numeric: false
     },
@@ -179,6 +179,22 @@ function reallyDisplayOrders(orders, beautiful) {
                 switch(col_spec.type) {
                     // This seems to be only for when info is available already and no initial prep is needed.
                     // Seems like the item description could use this also.
+                    case 'promise':
+                        {
+                            elem = addCell(tr, 'pending');
+                            const elem_closure_copy = elem;
+                            order.getValuePromise(col_spec.property_name)
+                                 .then(
+                                     value => {
+                                         elem_closure_copy.innerHTML = value;
+                                         if(datatable) {
+                                             datatable.rows().invalidate();
+                                             datatable.draw();
+                                         }
+                                     }
+                                 );
+                        }
+                        break;
                     case 'plain':
                         elem = addCell(tr, order[col_spec.property_name]);
                         break;
