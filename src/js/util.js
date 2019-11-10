@@ -4,7 +4,35 @@
 /* jshint strict: true, esversion: 6 */
 /* global XPathResult */
 
-"use strict";
+'use strict';
+
+import xpath from 'xpath';
+
+function parseStringToDOM(html) {
+    if ( typeof(DOMParser) !== 'undefined' ) {
+        // We're in a browser:
+        const parser = new DOMParser();
+        return parser.parseFromString( html, 'text/html' );
+    } else {
+        // DOMParse not present in node.js, so we need to get our own: jsdom.
+        // We don't use jsdom all the time, because it in turn requires the
+        // fs module which isn't available in browsers. (This was difficult
+        // to debug!).
+        const jsdom = require('jsdom');  // eslint-disable-line no-undef
+        return new jsdom.JSDOM(html).window.document;
+    }
+}
+
+function isNumeric(n) {
+    return !isNaN(parseFloat(n)) && isFinite(n);
+}
+
+function getXPathResult() {
+    if (typeof(XPathResult) === 'undefined') {
+        return xpath.XPathResult;
+    }
+    return XPathResult;
+}
 
 function getSite() {
     const href = window.location.href;
@@ -12,26 +40,26 @@ function getSite() {
     return stem;
 }
 
-function getOrderDetailUrl(orderId) {
-    return 'https://' + getSite() + '/gp/your-account/order-details/' +
+function getOrderDetailUrl(orderId, site) {
+    return 'https://' + site + '/gp/your-account/order-details/' +
         'ref=oh_aui_or_o01_?ie=UTF8&orderID=' + orderId;
 }
 
-function getOrderPaymentUrl(orderId) {
+function getOrderPaymentUrl(orderId, site) {
     if ( !orderId ) {return 'N/A'; }
     return orderId.startsWith('D') ?
-        'https://' + getSite() + '/gp/digital/your-account/order-summary.html' +
+        'https://' + site + '/gp/digital/your-account/order-summary.html' +
             '?ie=UTF8&orderID=' + orderId + '&print=1&' :
-        'https://' + getSite() + '/gp/css/summary/print.html' +
+        'https://' + site + '/gp/css/summary/print.html' +
             '/ref=oh_aui_ajax_pi?ie=UTF8&orderID=' + orderId;
 }
 
 function addButton(name, cb, button_class) {
-    var existing = document.querySelector('[button_name="' + name + '"]');
+    const existing = document.querySelector('[button_name="' + name + '"]');
     if ( existing !== null ) {
         existing.parentNode.removeChild(existing);
     }
-    var a = document.createElement('button');
+    const a = document.createElement('button');
     if(typeof(button_class) === 'undefined') {
         button_class = 'azad_default_button';
     }
@@ -46,7 +74,7 @@ function addButton(name, cb, button_class) {
 }
 
 function removeButton(name) {
-    var elem = document.querySelector('[button_name="' + name + '"]');
+    const elem = document.querySelector('[button_name="' + name + '"]');
     if ( elem !== null ) {
         elem.parentNode.removeChild(elem);
     }
@@ -58,7 +86,7 @@ function findSingleNodeValue(xpath, elem) {
             xpath,
             elem,
             null,
-            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            getXPathResult().FIRST_ORDERED_NODE_TYPE,
             null
         ).singleNodeValue;
     } catch (ex) {
@@ -71,7 +99,7 @@ function findMultipleNodeValues(xpath, elem) {
         xpath,
         elem,
         null,
-        XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+        getXPathResult().ORDERED_NODE_SNAPSHOT_TYPE,
         null
     );
     const values = [];
@@ -103,5 +131,7 @@ export default {
     getOrderDetailUrl: getOrderDetailUrl,
     getOrderPaymentUrl: getOrderPaymentUrl,
     getSite: getSite,
+    isNumeric: isNumeric,
+    parseStringToDOM: parseStringToDOM,
     removeButton: removeButton
 };
