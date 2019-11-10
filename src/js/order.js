@@ -25,16 +25,24 @@ function getField(xpath, elem) {
 function extractDetailFromDoc(order, doc) {
 
     const who = function(){
-        let x = getField('//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]', doc.documentElement); // US Digital
+        if(order.who) {
+            return order.who;
+        }
+        const doc_elem = doc.documentElement;
+        let x = getField(
+            // TODO: this seems brittle, depending on the precise path of the element.
+            '//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
+            doc_elem
+        ); // US Digital
         if ( !x ) {
             x = getField('.//div[contains(@class,"recipient")]' +
-                '//span[@class="trigger-text"]', doc.documentElement);
+                '//span[@class="trigger-text"]', doc_elem);
             if ( !x ) {
-                x = getField('.//div[contains(text(),"Recipient")]', doc.documentElement);
+                x = getField('.//div[contains(text(),"Recipient")]', doc_elem);
                 if ( !x ) {
-                    x = getField('//li[contains(@class,"displayAddressFullName")]/text()', doc.documentElement);
+                    x = getField('//li[contains(@class,"displayAddressFullName")]/text()', doc_elem);
                     if ( !x ) {
-                        x = 'n/a';
+                        x = 'null';
                     }
                 }
             }
@@ -121,7 +129,7 @@ function extractDetailFromDoc(order, doc) {
                 return a.replace('-', '');
             }
         }
-        return 'N/A';
+        return null;
     };
     const postage = function() {
         return extraction.by_regex(
@@ -136,7 +144,7 @@ function extractDetailFromDoc(order, doc) {
                 ).join('|') //20191025
             ],
             null,
-            'N/A',
+            null,
             doc.documentElement
         );
     };
@@ -166,7 +174,7 @@ function extractDetailFromDoc(order, doc) {
                 '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "vat: ")]]',
             ],
             null,
-            'N/A',
+            null,
             doc.documentElement
         );
         if( a != null ) {
@@ -197,7 +205,7 @@ function extractDetailFromDoc(order, doc) {
                 // 5:     "0.00"
                 a = a.match(moneyRegEx)[1];
             } else {
-                a = 'N/A';
+                a = null;
             }
         }
         return a;
@@ -228,7 +236,7 @@ function extractDetailFromDoc(order, doc) {
         if (a) {
             return a;
         }
-        return 'N/A';
+        return null;
     };
     const cad_pst = function(){
         const a = extraction.by_regex(
@@ -255,7 +263,7 @@ function extractDetailFromDoc(order, doc) {
         if (a) {
             return a;
         }
-        return 'N/A';
+        return null;
     };
     const refund = function () {
         let a = getField(
@@ -272,7 +280,7 @@ function extractDetailFromDoc(order, doc) {
         if ( a ) {
             return a;
         }
-        return 'N/A';
+        return null;
     };
     return {
         date: order_date(),
@@ -290,12 +298,9 @@ function extractDetailFromDoc(order, doc) {
 
 const extractDetailPromise = (order, request_scheduler) => new Promise(
     resolve => {
-        const query = util.getOrderDetailUrl(order.id);
+        const query = order.detail_url;
         const event_converter = function(evt) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(
-                evt.target.responseText, 'text/html'
-            );
+            const doc = util.parseStringToDOM( evt.target.responseText );
             return extractDetailFromDoc(order, doc);
         };
         try {
@@ -316,6 +321,7 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
 class Order {
     constructor(ordersPageElem, request_scheduler, src_query) {
         this.id = null;
+        this.site = null;
         this.list_url = src_query;
         this.detail_url = null;
         this.invoice_url = null;
@@ -325,10 +331,32 @@ class Order {
         this.detail_promise = null;
         this.items = null;
         this.request_scheduler = request_scheduler;
-        this.extractOrder(ordersPageElem);
+        this._extractOrder(ordersPageElem);
     }
 
-    extractOrder(elem) {
+    getValuePromise(key) {
+        const detail_keys = [
+            'date',
+            'gift',
+            'gst',
+            'postage',
+            'pst',
+            'refund',
+            'total',
+            'us_tax',
+            'vat',
+            'who',
+        ];
+        if (detail_keys.includes(key)) {
+            return this.detail_promise.then( detail => detail[key] );
+        }
+        if (key == 'payments') {
+            return this.payments_promise;
+        }
+        return Promise.resolve(this[key]);
+    }
+
+    _extractOrder(elem) {
         const getItems = function(elem) {
             /*
               <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
@@ -354,7 +382,7 @@ class Order {
             const items = {};
             itemResult.forEach(
                 function(item){
-                    const name = item.innerText.replace(/[\n\r]/g, " ")
+                    const name = item.innerHTML.replace(/[\n\r]/g, " ")
                                              .replace(/  */g, " ")
                                              .trim();
                     const link = item.getAttribute('href');
@@ -386,16 +414,14 @@ class Order {
             '/../div/span[contains(@class,"value")]', elem);
         this.who = getField('.//div[contains(@class,"recipient")]' +
             '//span[@class="trigger-text"]', elem);
-        if (!this.who) {
-            this.who = 'N/A';
-        }
         this.id = Array(...elem.getElementsByTagName('a'))
             .filter( el => el.hasAttribute('href') )
             .map( el => el.getAttribute('href') )
             .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
             .filter( match => match )[0][1];
-        this.detail_url = util.getOrderDetailUrl(this.id);
-        this.invoice_url = util.getOrderPaymentUrl(this.id);
+        this.site = this.list_url.match(/.*\/\/([^/]*)/)[1];
+        this.detail_url = util.getOrderDetailUrl(this.id, this.site);
+        this.invoice_url = util.getOrderPaymentUrl(this.id, this.site);
         if (!this.id) {
             this.id = util.findSingleNodeValue(
                 '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
@@ -410,10 +436,7 @@ class Order {
                     resolve(( !this.total ? [this.date] : [this.date + ": " + this.total]));
                 } else {
                     const event_converter = function(evt) {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(
-                            evt.target.responseText, 'text/html'
-                        );
+                        const doc = util.parseStringToDOM( evt.target.responseText );
                         const payments = extraction.payments_from_invoice(doc);
                         // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
                         return payments;
@@ -509,8 +532,7 @@ function getOrdersForYearAndQueryTemplate(
         );
     };
     const convertOrdersPage = function(evt) {
-        const p = new DOMParser();
-        const d = p.parseFromString(evt.target.responseText, 'text/html');
+        const d = util.parseStringToDOM(evt.target.responseText);
         const countSpan = util.findSingleNodeValue(
             './/span[@class="num-orders"]', d.documentElement);
         if ( !countSpan ) {
