@@ -129,7 +129,7 @@ function extractDetailFromDoc(order, doc) {
                 return a.replace('-', '');
             }
         }
-        return 'N/A';
+        return null;
     };
     const postage = function() {
         return extraction.by_regex(
@@ -144,7 +144,7 @@ function extractDetailFromDoc(order, doc) {
                 ).join('|') //20191025
             ],
             null,
-            'N/A',
+            null,
             doc.documentElement
         );
     };
@@ -174,7 +174,7 @@ function extractDetailFromDoc(order, doc) {
                 '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "vat: ")]]',
             ],
             null,
-            'N/A',
+            null,
             doc.documentElement
         );
         if( a != null ) {
@@ -205,7 +205,7 @@ function extractDetailFromDoc(order, doc) {
                 // 5:     "0.00"
                 a = a.match(moneyRegEx)[1];
             } else {
-                a = 'N/A';
+                a = null;
             }
         }
         return a;
@@ -236,7 +236,7 @@ function extractDetailFromDoc(order, doc) {
         if (a) {
             return a;
         }
-        return 'N/A';
+        return null;
     };
     const cad_pst = function(){
         const a = extraction.by_regex(
@@ -263,7 +263,7 @@ function extractDetailFromDoc(order, doc) {
         if (a) {
             return a;
         }
-        return 'N/A';
+        return null;
     };
     const refund = function () {
         let a = getField(
@@ -280,7 +280,7 @@ function extractDetailFromDoc(order, doc) {
         if ( a ) {
             return a;
         }
-        return 'N/A';
+        return null;
     };
     return {
         date: order_date(),
