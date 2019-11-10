@@ -158,7 +158,7 @@ const cols = [
                     } else {
                         a.textContent = payment + '; '
                     }
-                    a.setAttribute('href', util.getOrderPaymentUrl(order.id));
+                    a.setAttribute('href', util.getOrderPaymentUrl(order.id, util.getSite()));
                 });
                 cell.textContent = '';
                 cell.appendChild(ul);
