@@ -59,12 +59,10 @@ const cols = [
     {
         field_name: 'order id',
         type: 'func',
-        func: function(order, row){
-            addLinkCell(
-                row, order.id,
-                order.detail_url
-            );
-        },
+        func: (order, row) => addLinkCell(
+            row, order.id,
+            order.detail_url
+        ),
         is_numeric: false
     },
     {
@@ -81,32 +79,32 @@ const cols = [
     },
     {
         field_name: 'date',
-        type: 'text',
+        type: 'promise',
         property_name: 'date',
         is_numeric: false,
     },
     {
         field_name: 'total',
-        type: 'detail',
+        type: 'promise',
         property_name: 'total',
         is_numeric: true
     },
     {
         field_name: 'postage',
-        type: 'detail',
+        type: 'promise',
         property_name: 'postage',
         is_numeric: true,
         help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.'
     },
     {
         field_name: 'gift',
-        type: 'detail',
+        type: 'promise',
         property_name: 'gift',
         is_numeric: true
     },
     {
         field_name: 'VAT',
-        type: 'detail',
+        type: 'promise',
         property_name: 'vat',
         is_numeric: true,
         help: TAX_HELP, 
@@ -114,7 +112,7 @@ const cols = [
     },
     {
         field_name: 'tax',
-        type: 'detail',
+        type: 'promise',
         property_name: 'us_tax',
         is_numeric: true,
         help: TAX_HELP,
@@ -122,7 +120,7 @@ const cols = [
     },
     {
         field_name: 'GST',
-        type: 'detail',
+        type: 'promise',
         property_name: 'gst',
         is_numeric: true,
         help: TAX_HELP,
@@ -130,7 +128,7 @@ const cols = [
     },
     {
         field_name: 'PST',
-        type: 'detail',
+        type: 'promise',
         property_name: 'pst',
         is_numeric: true,
         help: TAX_HELP,
@@ -138,14 +136,39 @@ const cols = [
     },
     {
         field_name: 'refund',
-        type: 'detail',
+        type: 'promise',
         property_name: 'refund',
         is_numeric: true
     },
     {
         field_name: 'payments',
-        type: 'payments',
-        property_name: 'payments',
+        type: 'func',
+        func: (order, tr) => {
+            const cell = addCell(tr, 'pending');
+            order.getValuePromise('payments').then( payments => {
+                const ul = document.createElement('ul');
+                payments.forEach( payment => {
+                    const li = document.createElement('li');
+                    ul.appendChild(li);
+                    const a = document.createElement('a');
+                    li.appendChild(a);
+                    // Replace unknown/none with "-" to make it look uninteresting.
+                    if (!payment) {
+                        a.textContent = '-'
+                    } else {
+                        a.textContent = payment + '; '
+                    }
+                    a.setAttribute('href', util.getOrderPaymentUrl(order.id));
+                });
+                cell.textContent = '';
+                cell.appendChild(ul);
+                if(datatable) {
+                    datatable.rows().invalidate();
+                    datatable.draw();
+                }
+            });
+            return cell;
+        },
         is_numeric: false
     }
 ].filter( col => ('sites' in col) ?
@@ -175,6 +198,21 @@ function reallyDisplayOrders(orders, beautiful) {
             const tr = document.createElement('tr');
             table.appendChild(tr);
             cols.forEach( col_spec => {
+                const null_converter = x => {
+                    if (x) {
+                        if (
+                            typeof(x) === 'string' && 
+                            parseFloat(x.replace(/^([£$]|CAD|EUR|GBP) */, '').replace(/,/, '.')) + 0 == 0) {
+                            return 0;
+                        } else {
+                            return x;
+                        }
+                    } else if (x == 0) {
+                        return 0;
+                    } else {
+                        return '';
+                    }
+                }
                 let elem = null;
                 switch(col_spec.type) {
                     // This seems to be only for when info is available already and no initial prep is needed.
@@ -184,6 +222,7 @@ function reallyDisplayOrders(orders, beautiful) {
                             elem = addCell(tr, 'pending');
                             const elem_closure_copy = elem;
                             order.getValuePromise(col_spec.property_name)
+                                 .then(null_converter)
                                  .then(
                                      value => {
                                          elem_closure_copy.innerHTML = value;
@@ -195,67 +234,8 @@ function reallyDisplayOrders(orders, beautiful) {
                                  );
                         }
                         break;
-                    case 'plain':
-                        elem = addCell(tr, order[col_spec.property_name]);
-                        break;
-                    case 'text':
-                        elem = addCell(tr, 'pending');
-                        order.detail_promise.then( detail => {
-                            elem.innerHTML = detail[col_spec.property_name];
-                            if(datatable) {
-                                datatable.rows().invalidate();
-                                datatable.draw();
-                            }
-                        });
-                        break;
-                    case 'detail':
-                        elem = addCell(tr, 'pending');
-                        order.detail_promise.then( detail => {
-                            let a = null;
-                            try {
-                                a = detail[col_spec.property_name];
-                            } catch (_) {
-                                a = 0;
-                            }
-                            // Replace unknown/none with '-' to make it look uninteresting.
-                            if (a === 'N/A') { a = '-' }
-                            // If 0 (without currency type or currency symbol), just show a plain zero to make it look uninteresting.
-                            if (parseFloat(a.replace(/^([£$]|CAD|EUR|GBP) */, '').replace(/,/, '.')) + 0 == 0) { a = 0 }
-                            elem.innerHTML = a;
-                            if(datatable) {
-                                datatable.rows().invalidate();
-                                datatable.draw();
-                            }
-                        });
-                        break;
-                    // Credit card info
-                    case 'payments':
-                        elem = addCell(tr, 'pending');
-                        order.payments_promise.then( payments => {
-                            const ul = document.createElement('ul');
-                            payments.forEach( payment => {
-                                const li = document.createElement('li');
-                                ul.appendChild(li);
-                                const a = document.createElement('a');
-                                li.appendChild(a);
-                                // Replace unknown/none with "-" to make it look uninteresting.
-                                if (payment === 'N/A') {
-                                    a.textContent = '-'
-                                } else {
-                                    a.textContent = payment + '; '
-                                }
-                                a.href = util.getOrderPaymentUrl(order.id);
-                            });
-                            elem.textContent = '';
-                            elem.appendChild(ul);
-                            if(datatable) {
-                                datatable.rows().invalidate();
-                                datatable.draw();
-                            }
-                        });
-                        break;
                     case 'func':
-                        col_spec.func(order, tr);
+                        elem = col_spec.func(order, tr);
                         break;
                 }
                 if ( elem ) {
@@ -330,14 +310,28 @@ function reallyDisplayOrders(orders, beautiful) {
                 'footerCallback': function() {
                     const api = this.api();
                     // Remove the formatting to get integer data for summation
-                    const floatVal = function(i) {
-                        if(typeof i === 'string') {
-                            return (i === 'N/A' || i === '-' || i === 'pending') ?
-                                0 : parseFloat(i.replace(/^([£$]|CAD|EUR|GBP) */, '')
-                                                .replace(/,/, '.'));
+                    const floatVal = v => {
+                        const parse = i => {
+                            try {
+                                if(typeof i === 'string') {
+                                    return (i === 'N/A' || i === '-' || i === 'pending') ?
+                                        0 :
+                                        parseFloat(
+                                            i.replace(/^([£$]|CAD|EUR|GBP) */, '')
+                                             .replace(/,/, '.')
+                                        );
+                                }
+                                if(typeof i === 'number') { return i; }
+                            } catch (ex) {
+                                console.warn(ex);
+                            }
+                            return 0;
+                        };
+                        const candidate = parse(v);
+                        if (isNaN(candidate)) {
+                            return 0;
                         }
-                        if(typeof i === 'number') { return i; }
-                        return 0;
+                        return candidate;
                     };
                     let col_index = 0;
                     cols.forEach( col_spec => {
