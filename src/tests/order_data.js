@@ -1,8 +1,9 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
-const fs = require('fs');
+'use strict';
 
+import util from '../js/util';
 
 const order_D01_9960417_3589456_html = function() {
     return `
@@ -7857,20 +7858,6 @@ attribution:"performanceMetrics"})}}})(ue_csm,window);
 `;
 };
 
-class FakeRequestScheduler {
-    // TODO
-}
-
-function orderFromTestData(
-    order_id,
-    collection_date,
-    site
-) {
-    // TODO
-}
-
-
 export default {
     order_D01_9960417_3589456_html: order_D01_9960417_3589456_html,
-    orderFromTestData: orderFromTestData,
 };

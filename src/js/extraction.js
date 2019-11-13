@@ -3,7 +3,6 @@
 /* jshint strict: true, esversion: 6 */
 
 import util from './util';
-import $ from 'jquery';
 import sprintf from 'sprintf-js';
 
 "use strict";
@@ -33,7 +32,7 @@ const by_regex = function(xpaths, regex, default_value, elem) {
             }
         }
     }
-    return $.isNumeric(default_value) ?
+    return util.isNumeric(default_value) ?
         default_value.toString() :
         default_value;
 };
@@ -90,12 +89,16 @@ const payments_from_invoice = function(doc) {
     let i = 0;
     for ( i = 0; i < strategies.length; i++ ) {
         const strategy = strategies[i];
-        const payments = strategy();
-        if (payments && payments.length) {
-            return payments;
+        try {
+            const payments = strategy();
+            if (payments && payments.length) {
+                return payments;
+            }
+        } catch (ex) {
+            console.warn('strategy ' + i+1 + ' blew up with ' + ex);
         }
     }
-    return [];
+    return ['UNKNOWN'];
 };
 
 export default {

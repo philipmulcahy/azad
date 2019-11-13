@@ -15,6 +15,8 @@ let background_port = null;
 let years = null;
 let stats_timeout = null;
 
+const SITE = window.location.href.match( /\/\/([^/]*)/ )[1];
+
 function getScheduler() {
     if (!scheduler) {
         resetScheduler();
@@ -53,20 +55,31 @@ function resetScheduler() {
 }
 
 function getYears() {
+    const getPromise = function() {
+        const url = 'https://' + SITE + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
+        return fetch(url).then( response => response.text() )
+                         .then( text => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(
+                text, 'text/html'
+            );
+            const snapshot = util.findMultipleNodeValues(
+                '//select[@name="orderFilter"]/option[@value]',
+                doc.documentElement
+            );
+            const years = snapshot.map(
+                elem => elem.textContent
+                            .replace('en', '')  // amazon.fr
+                            .replace('nel', '')  // amazon.it
+                            .trim()
+            ).filter( element => (/^\d+$/).test(element) )
+             .filter( year => (year >= '2004') );
+            return years;
+        });
+    }
     if(typeof(getYears.years) === 'undefined') {
         console.log('getYears() needs to do something');
-        const snapshot = util.findMultipleNodeValues(
-            '//select[@name="orderFilter"]/option[@value]',
-            document.documentElement
-        );
-        getYears.years = snapshot.map(
-            elem => elem.textContent
-                        .replace('en', '')  // amazon.fr
-                        .replace('nel', '')  // amazon.it
-                        .trim()
-        )
-        .filter( element => (/^\d+$/).test(element) )
-        .filter( year => (year >= '2004') );
+        getYears.years = getPromise();
     }
     console.log('getYears() returning ', getYears.years);
     return getYears.years;
@@ -74,10 +87,12 @@ function getYears() {
 
 function fetchAndShowOrders(years) {
     resetScheduler();
-    azad_order.getOrdersByYear(
-        years,
-        getScheduler(),
-        getYears()[0]
+    getYears().then(
+        all_years => azad_order.getOrdersByYear(
+            years,
+            getScheduler(),
+            all_years[0]
+        )
     ).then(
         orderPromises => {
             let beautiful = true;
@@ -92,11 +107,12 @@ function fetchAndShowOrders(years) {
 }
 
 function advertiseYears() {
-    const years = getYears();
-    console.log('advertising years', years);
-    getBackgroundPort().postMessage({
-        action: 'advertise_years',
-        years: years
+    getYears().then( years => {
+        console.log('advertising years', years);
+        getBackgroundPort().postMessage({
+            action: 'advertise_years',
+            years: years
+        });
     });
 }
 
@@ -113,6 +129,8 @@ function registerContentScript() {
                 break;
             case 'clear_cache':
                 getScheduler().clearCache();
+                alert('Amazon Order History Reporter Chrome Extension\n\n' +
+                      'Cache cleared');
                 break;
             case 'abort':
                 resetScheduler();
@@ -128,7 +146,7 @@ function addPopupButton() {
     util.addButton(
         'where have my order history buttons gone?',
         () => {
-            window.alert(
+            window.alert('Amazon Order History Reporter Chrome Extension\n\n' +
                 'You can get to the controls popup by clicking on the extension icon at the top right of the Chrome window:  Look for an orange upper case A. The button that you have just clicked will be removed in a future version of the order history extension.'
             );
         }

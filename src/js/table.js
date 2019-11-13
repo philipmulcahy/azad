@@ -12,7 +12,11 @@ import diagnostic_download from './diagnostic_download';
 
 'use strict';
 
-const tableStyle = 'border: 1px solid black;';
+const CELL_CLASS = 'azad_cellClass ';
+const ELEM_CLASS = 'azad_elemClass ';
+const LINK_CLASS = 'azad_linkClass ';
+const TH_CLASS = 'azad_thClass ';
+
 let datatable = null;
 const order_map = {};
 
@@ -21,7 +25,7 @@ const order_map = {};
  */
 const addCell = function(row, value) {
     const td = row.ownerDocument.createElement('td');
-    td.setAttribute('style', tableStyle);
+    td.setAttribute('class', CELL_CLASS);
     row.appendChild(td);
     td.textContent = value;
     return td;
@@ -32,32 +36,33 @@ const addCell = function(row, value) {
  */
 const addElemCell = function(row, elem) {
     const td = row.ownerDocument.createElement('td');
-    td.setAttribute('style', tableStyle);
+    td.setAttribute('class', ELEM_CLASS);
     row.appendChild(td);
     td.appendChild(elem);
     return td;
 };
 
 /**
- * Add a td to the row tr element, and return the td.
+ * Add an a to the row tr element, and return the a.
  */
 const addLinkCell = function(row, text, href) {
     const a = row.ownerDocument.createElement('a');
+    a.setAttribute('Class', LINK_CLASS);
     a.textContent = text;
     a.href = href;
     return addElemCell(row, a);
 };
 
+const TAX_HELP = 'Caution: tax is often not listed when stuff is not supplied by Amazon, is cancelled, or is pre-order.';
+
 const cols = [
     {
         field_name: 'order id',
         type: 'func',
-        func: function(order, row){
-            addLinkCell(
-                row, order.id,
-                util.getOrderDetailUrl(order.id)
-            );
-        },
+        func: (order, row) => addLinkCell(
+            row, order.id,
+            order.detail_url
+        ),
         is_numeric: false
     },
     {
@@ -68,75 +73,102 @@ const cols = [
     },
     {
         field_name: 'to',
-        type: 'plain',
+        type: 'promise',
         property_name: 'who',
         is_numeric: false
     },
     {
         field_name: 'date',
-        type: 'detail',
+        type: 'promise',
         property_name: 'date',
         is_numeric: false,
     },
     {
         field_name: 'total',
-        type: 'detail',
+        type: 'promise',
         property_name: 'total',
         is_numeric: true
     },
     {
         field_name: 'postage',
-        type: 'detail',
+        type: 'promise',
         property_name: 'postage',
         is_numeric: true,
         help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.'
     },
     {
         field_name: 'gift',
-        type: 'detail',
+        type: 'promise',
         property_name: 'gift',
         is_numeric: true
     },
     {
         field_name: 'VAT',
-        type: 'detail',
+        type: 'promise',
         property_name: 'vat',
         is_numeric: true,
-        help: 'Caution: when stuff is not supplied by Amazon, then tax is often not listed.',
+        help: TAX_HELP, 
         sites: new RegExp('amazon(?!.com)')
     },
     {
-        field_name: 'TAX',
-        type: 'detail',
+        field_name: 'tax',
+        type: 'promise',
         property_name: 'us_tax',
         is_numeric: true,
-        help: 'Caution: when stuff is not supplied by Amazon, then tax is often not listed.',
+        help: TAX_HELP,
         sites: new RegExp('\\.com$')
     },
     {
         field_name: 'GST',
-        type: 'detail',
+        type: 'promise',
         property_name: 'gst',
         is_numeric: true,
+        help: TAX_HELP,
         sites: new RegExp('\\.ca$')
     },
     {
         field_name: 'PST',
-        type: 'detail',
+        type: 'promise',
         property_name: 'pst',
         is_numeric: true,
+        help: TAX_HELP,
         sites: new RegExp('\\.ca$')
     },
     {
         field_name: 'refund',
-        type: 'detail',
+        type: 'promise',
         property_name: 'refund',
         is_numeric: true
     },
     {
         field_name: 'payments',
-        type: 'payments',
-        property_name: 'payments',
+        type: 'func',
+        func: (order, tr) => {
+            const cell = addCell(tr, 'pending');
+            order.getValuePromise('payments').then( payments => {
+                const ul = document.createElement('ul');
+                payments.forEach( payment => {
+                    const li = document.createElement('li');
+                    ul.appendChild(li);
+                    const a = document.createElement('a');
+                    li.appendChild(a);
+                    // Replace unknown/none with "-" to make it look uninteresting.
+                    if (!payment) {
+                        a.textContent = '-'
+                    } else {
+                        a.textContent = payment + '; '
+                    }
+                    a.setAttribute('href', util.getOrderPaymentUrl(order.id, util.getSite()));
+                });
+                cell.textContent = '';
+                cell.appendChild(ul);
+                if(datatable) {
+                    datatable.rows().invalidate();
+                    datatable.draw();
+                }
+            });
+            return cell;
+        },
         is_numeric: false
     }
 ].filter( col => ('sites' in col) ?
@@ -152,10 +184,11 @@ function reallyDisplayOrders(orders, beautiful) {
     const addOrderTable = function(orders) {
         const addHeader = function(row, value, help) {
             const th = row.ownerDocument.createElement('th');
-            th.setAttribute('style', tableStyle);
+            th.setAttribute('class', TH_CLASS);
             row.appendChild(th);
             th.textContent = value;
             if( help ) {
+                th.setAttribute('class', th.getAttribute('class') + 'azad_th_has_help ');
                 th.setAttribute('title', help);
             }
             return th;
@@ -163,55 +196,62 @@ function reallyDisplayOrders(orders, beautiful) {
 
         const appendOrderRow = function(table, order) {
             const tr = document.createElement('tr');
-            tr.setAttribute('style', tableStyle);
             table.appendChild(tr);
             cols.forEach( col_spec => {
+                const null_converter = x => {
+                    if (x) {
+                        if (
+                            typeof(x) === 'string' && 
+                            parseFloat(x.replace(/^([£$]|CAD|EUR|GBP) */, '').replace(/,/, '.')) + 0 == 0) {
+                            return 0;
+                        } else {
+                            return x;
+                        }
+                    } else if (x == 0) {
+                        return 0;
+                    } else {
+                        return '';
+                    }
+                }
                 let elem = null;
                 switch(col_spec.type) {
-                    case 'plain':
-                        elem = addCell(tr, order[col_spec.property_name]);
-                        break;
-                    case 'detail':
-                        elem = addCell(tr, 'pending');
-                        order.detail_promise.then( detail => {
-                            elem.innerHTML = detail[col_spec.property_name];
-                            if(datatable) {
-                                datatable.rows().invalidate();
-                                datatable.draw();
-                            }
-                        });
-                        break;
-                    case 'payments':
-                        elem = addCell(tr, 'pending');
-                        order.payments_promise.then( payments => {
-                            const ul = document.createElement('ul');
-                            payments.forEach( payment => {
-                                const li = document.createElement('li');
-                                ul.appendChild(li);
-                                const a = document.createElement('a');
-                                li.appendChild(a);
-                                a.textContent = payment + '; ';
-                                a.href = util.getOrderPaymentUrl(order.id);
-                            });
-                            elem.textContent = '';
-                            elem.appendChild(ul);
-                            if(datatable) {
-                                datatable.rows().invalidate();
-                                datatable.draw();
-                            }
-                        });
+                    // This seems to be only for when info is available already and no initial prep is needed.
+                    // Seems like the item description could use this also.
+                    case 'promise':
+                        {
+                            elem = addCell(tr, 'pending');
+                            const elem_closure_copy = elem;
+                            order.getValuePromise(col_spec.property_name)
+                                 .then(null_converter)
+                                 .then(
+                                     value => {
+                                         elem_closure_copy.innerHTML = value;
+                                         if(datatable) {
+                                             datatable.rows().invalidate();
+                                             datatable.draw();
+                                         }
+                                     }
+                                 );
+                        }
                         break;
                     case 'func':
-                        col_spec.func(order, tr);
+                        elem = col_spec.func(order, tr);
                         break;
                 }
-                if ('help' in col_spec) {
-                    elem.setAttribute('title', col_spec.help);
+                if ( elem ) {
+                    elem.setAttribute('class', elem.getAttribute('class') + 
+                            'azad_type_' + col_spec.type + ' ' +
+                            'azad_col_' + col_spec.property_name + ' ' + 
+                            'azad_numeric_' + (col_spec.is_numeric ? 'yes' : 'no' ) + ' ');
+                    if ('help' in col_spec) {
+                        elem.setAttribute('class', elem.getAttribute('class') + 'azad_elem_has_help ');
+                        elem.setAttribute('title', col_spec.help);
+                    }
                 }
             });
         };
         // remove any old table
-        let table = document.querySelector('[id="order_table"]');
+        let table = document.querySelector('[id="azad_order_table"]');
         if ( table !== null ) {
             console.log('removing old table');
             table.parentNode.removeChild(table);
@@ -221,20 +261,23 @@ function reallyDisplayOrders(orders, beautiful) {
         table = document.createElement('table');
         console.log('added table');
         document.body.appendChild(table);
-        table.setAttribute('id', 'order_table');
-        table.setAttribute('class', 'order_reporter_table stripe compact');
-        table.setAttribute('style', tableStyle);
+        table.setAttribute('id', 'azad_order_table');
+        table.setAttribute('class', 'azad_table stripe compact hover order-column ');
 
         const thead = document.createElement('thead');
+        thead.setAttribute('id', 'azad_order_table_head');
         table.appendChild(thead);
 
         const hr = document.createElement('tr');
+        hr.setAttribute('id', 'azad_order_table_hr');
         thead.appendChild(hr);
 
         const tfoot = document.createElement('tfoot');
+        tfoot.setAttribute('id', 'azad_order_table_foot');
         table.appendChild(tfoot);
 
         const fr = document.createElement('tr');
+        fr.setAttribute('id', 'azad_order_table_fr');
         tfoot.appendChild(fr);
 
         cols.forEach( col_spec => {
@@ -260,21 +303,35 @@ function reallyDisplayOrders(orders, beautiful) {
             if (datatable) {
                 datatable.destroy();
             }
-            datatable = $('#order_table').DataTable({
+            datatable = $('#azad_order_table').DataTable({
                 'bPaginate': true,
                 'lengthMenu': [ [10, 25, 50, 100, -1],
                     [10, 25, 50, 100, 'All'] ],
                 'footerCallback': function() {
                     const api = this.api();
                     // Remove the formatting to get integer data for summation
-                    const floatVal = function(i) {
-                        if(typeof i === 'string') {
-                            return (i === 'N/A' || i === '?') ?
-                                0 : parseFloat(i.replace(/^([£$]|CAD|EUR|GBP) */, '')
-                                                .replace(/,/, '.'));
+                    const floatVal = v => {
+                        const parse = i => {
+                            try {
+                                if(typeof i === 'string') {
+                                    return (i === 'N/A' || i === '-' || i === 'pending') ?
+                                        0 :
+                                        parseFloat(
+                                            i.replace(/^([£$]|CAD|EUR|GBP) */, '')
+                                             .replace(/,/, '.')
+                                        );
+                                }
+                                if(typeof i === 'number') { return i; }
+                            } catch (ex) {
+                                console.warn(ex);
+                            }
+                            return 0;
+                        };
+                        const candidate = parse(v);
+                        if (isNaN(candidate)) {
+                            return 0;
                         }
-                        if(typeof i === 'number') { return i; }
-                        return 0;
+                        return candidate;
                     };
                     let col_index = 0;
                     cols.forEach( col_spec => {
@@ -305,7 +362,6 @@ function reallyDisplayOrders(orders, beautiful) {
             util.addButton(
                 'plain table',
                 function() {
-                    console.log('amazon_order_history_table plain table button clicked');
                     displayOrders(orders, false);
                 },
                 'azad_table_button'
@@ -317,14 +373,13 @@ function reallyDisplayOrders(orders, beautiful) {
         util.addButton(
             'data table',
             function() {
-                console.log('amazon_order_history_table data table button clicked');
                 displayOrders(orders, true);
             },
             'azad_table_button'
         );
         addCsvButton(orders);
     }
-    console.log('amazon_order_history_table.reallyDisplayOrders returning');
+    console.log('azad.reallyDisplayOrders returning');
     return table;
 }
 
