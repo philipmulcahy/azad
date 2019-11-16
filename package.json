@@ -8,10 +8,9 @@
         "build": "node utils/build.js",
         "lint": "eslint src/js",
         "package": "utils/package.sh",
-        "test": "node build/order_tests.bundle.js",
+        "test": "node build-node/order_tests.bundle.js",
         "inspect": "node -inspect-brk build-node/order_tests.bundle.js",
-        "winpackage": "utils\\winpackage.cmd",
-        "order_tests": "node build/order_tests.bundle.js"
+        "winpackage": "utils\\winpackage.cmd"
     },
     "repository": {
         "type": "git",
