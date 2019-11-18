@@ -149,30 +149,24 @@ function extractDetailFromDoc(order, doc) {
         );
     };
     const vat = function() {
-        if ( order.id == 'D01-9960417-3589456' ) {
-            console.log('TODO - remove');
-        }
-        const a = extraction.by_regex(
+        const xpaths = ['VAT', 'tax', 'TVA', 'IVA'].map(
+            label =>
+                '//div[contains(@id,"od-subtotals")]//' +
+                'span[contains(text(), "' + label + '") ' +
+                'and not(contains(text(),"Before") or contains(text(), "esclusa") ' +
+                ')]/' +
+                'parent::div/following-sibling::div/span'
+        ).concat(
             [
-                ['VAT', 'tax', 'TVA', 'IVA'].map(
-                    label => sprintf.sprintf(
-                        '//div[contains(@id,"od-subtotals")]//' +
-                        'span[contains(text(),"%s") ' +
-                        'and not(contains(text(),"Before") or contains(text(), "esclusa") ' +
-                        ')]/' +
-                        'parent::div/following-sibling::div/span',
-                        label
-                    )
-                ).join('|'), //20191025
-
                 '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
-//                'span[contains(lower-case(text()),"vat")]/' +
-                'span[contains(text(),"vat")]/' +
+                'span[contains(text(),"VAT")]/' +
                 'parent::div/following-sibling::div/span',
 
-//                '//div[@id="digitalOrderSummaryContainer"]//*[lower-case(text())[contains(., "vat: ")]]',
-                '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "vat: ")]]',
-            ],
+                '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "VAT: ")]]'
+            ]
+        );
+        const a = extraction.by_regex(
+            xpaths,
             null,
             null,
             doc.documentElement
@@ -348,7 +342,9 @@ class Order {
             'who',
         ];
         if (detail_keys.includes(key)) {
-            return this.detail_promise.then( detail => detail[key] );
+            return this.detail_promise.then(
+                detail => detail[key]
+            );
         }
         if (key == 'payments') {
             return this.payments_promise;
