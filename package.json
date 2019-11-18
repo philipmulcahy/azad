@@ -9,7 +9,7 @@
         "lint": "eslint src/js",
         "package": "utils/package.sh",
         "test": "node build-node/order_tests.bundle.js",
-        "inspect": "node -inspect-brk build-node/order_tests.bundle.js",
+        "debug_tests": "node --inspect-brk build-node/order_tests.bundle.js",
         "winpackage": "utils\\winpackage.cmd"
     },
     "repository": {
