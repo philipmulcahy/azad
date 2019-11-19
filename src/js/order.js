@@ -65,7 +65,7 @@ function extractDetailFromDoc(order, doc) {
     };
 // wrap in try/catch for missing total
     const total = function(){
-        return extraction.by_regex(
+        const a = extraction.by_regex(
             [
                 '//span[@class="a-color-price a-text-bold"]/text()',    //Scott 112-7790528-5248242 en_US as of 20191024
 
@@ -101,7 +101,11 @@ function extractDetailFromDoc(order, doc) {
             null,
             order.total,
             doc.documentElement
-        ).replace(/.*: /, '').replace('-', '');
+        );
+        if (a) {
+            return a.replace(/.*: /, '').replace('-', '');
+        }
+        return a;
     };
 // BUG: Need to exclude gift wrap
     const gift = function(){
