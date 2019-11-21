@@ -114,7 +114,7 @@ function discoverTestData() {
             Object.keys(site_to_expecteds).sort().forEach( site => {
                 const expecteds = site_to_expecteds[site];
                 expecteds
-                    .filter( e => e.match(/1620771/) )
+//                    .filter( e => e.match(/1620771/) )
                     .sort()
                     .filter( e => e.match(/^[^.].*\.json$/) )
                     .forEach( expected => {
