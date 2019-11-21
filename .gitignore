@@ -4,4 +4,4 @@ node_modules
 build
 build-node
 azad.zip
-src/tests/data
+src/tests/azad_test_data
