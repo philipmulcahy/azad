@@ -9,7 +9,7 @@ const jsdom = require('jsdom');
 const xpath = require('xpath');
 import azad_order from '../js/order';
 
-const DATA_ROOT_PATH = './src/tests/data';
+const DATA_ROOT_PATH = './src/tests/azad_test_data/data';
 
 class FakeRequestScheduler {
     constructor(url_html_map) {
