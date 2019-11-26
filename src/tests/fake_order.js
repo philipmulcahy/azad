@@ -9,7 +9,7 @@ const jsdom = require('jsdom');
 const xpath = require('xpath');
 import azad_order from '../js/order';
 
-const DATA_ROOT_PATH = './src/tests/data';
+const DATA_ROOT_PATH = './src/tests/azad_test_data/data';
 
 class FakeRequestScheduler {
     constructor(url_html_map) {
@@ -98,13 +98,15 @@ function discoverTestData() {
     return sites_promise.then( sites => {
         const expected_promises = [];
         const site_to_expecteds = {}
-        sites.forEach( site => {
-            const expected_promise = fs.promises.readdir(DATA_ROOT_PATH + '/' + site + '/expected');
-            expected_promises.push(expected_promise);
-            expected_promise.then( expecteds => {
-                site_to_expecteds[site] = expecteds;
-            });
-        } );
+        sites
+            .filter( site => site[0] != '.' )
+            .forEach( site => {
+                const expected_promise = fs.promises.readdir(DATA_ROOT_PATH + '/' + site + '/expected');
+                expected_promises.push(expected_promise);
+                expected_promise.then( expecteds => {
+                    site_to_expecteds[site] = expecteds.filter( exp => exp.match(/^[^.].*\.json$/) );
+                });
+            } );
         return Promise.all(
             expected_promises
         ).then( () => {
@@ -112,9 +114,9 @@ function discoverTestData() {
             Object.keys(site_to_expecteds).sort().forEach( site => {
                 const expecteds = site_to_expecteds[site];
                 expecteds
-//                    .filter( e => e.match(/8755888/) )
+//                    .filter( e => e.match(/1620771/) )
                     .sort()
-                    .filter( e => e.match(/.*\.json$/) )
+                    .filter( e => e.match(/^[^.].*\.json$/) )
                     .forEach( expected => {
                         const target = {
                             site: site,

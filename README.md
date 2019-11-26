@@ -50,6 +50,10 @@ npm run winpackage
 * Click "Load unpacked".
 * Navigate to the build folder.
 
+### installing "secret" unit test data
+pushd src/tests
+git clone git@github.com:philipmulcahy/azad_test_data.git
+
 ### running 'unit' tests
 * build (see above)
 * open/refresh src/tests/tests.html in your browser
