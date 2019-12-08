@@ -1,11 +1,11 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 
-const webpack = require("webpack"),
-    path = require("path"),
-    env = require("./utils/env"),
-    CleanWebpackPlugin = require("clean-webpack-plugin"),
-    CopyWebpackPlugin = require("copy-webpack-plugin"),
-    WriteFilePlugin = require("write-file-webpack-plugin");
+const webpack = require("webpack");
+const path = require("path");
+const env = require("./utils/env");
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+const WriteFilePlugin = require("write-file-webpack-plugin");
 
 // load the secrets
 const alias = {};
@@ -48,7 +48,7 @@ const chrome_extension_options = {
     },
     plugins: [
         // clean the build folder
-        new CleanWebpackPlugin(["build"]),
+        new CleanWebpackPlugin(),
         // expose and write the allowed env vars on the compiled bundle
         new webpack.EnvironmentPlugin(["NODE_ENV"]),
         new CopyWebpackPlugin([{
@@ -126,7 +126,7 @@ const node_options = {
     },
     plugins: [
         // clean the build folder
-        new CleanWebpackPlugin(["build-node"]),
+        new CleanWebpackPlugin(),
         // expose and write the allowed env vars on the compiled bundle
         new webpack.EnvironmentPlugin(["NODE_ENV"]),
     ]
