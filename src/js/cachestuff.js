@@ -53,6 +53,9 @@ class LocalCacheImpl {
         try {
             const encoded = window.localStorage.getItem(real_key);
             const packed = JSON.parse(encoded);
+            if (!packed) {
+                throw "not found";
+            }
             ++this.hit_count;
             return JSON.parse(lzjs.decompress(packed.value));
         } catch(err) {
