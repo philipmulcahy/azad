@@ -462,7 +462,7 @@ class Order {
     itemsHtml(doc) {
         const ul = doc.createElement('ul');
         for(let title in this.items) {
-            if(this.items.hasOwnProperty(title)) {
+            if (Object.prototype.hasOwnProperty.call(this.items, title)) {
                 const li = doc.createElement('li');
                 ul.appendChild(li);
                 const a = doc.createElement('a');
@@ -605,7 +605,7 @@ function getOrdersForYearAndQueryTemplate(
         resolve => {
             {
                 let scheduled_check_id = null;
-                function checkComplete() {
+                const checkComplete = function() {
                     clearTimeout(scheduled_check_id);
                     console.log(
                         'checkComplete() actual:' + order_promises.length
