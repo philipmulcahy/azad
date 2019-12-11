@@ -175,6 +175,10 @@ class RequestScheduler {
         };
     }
 
+    isLive() {
+        return this.live;
+    }
+
     // Process a single de-queued request either by retrieving from the cache
     // or by sending it out.
     _execute(query, event_converter, callback, priority, nocache) {
@@ -208,7 +212,7 @@ class RequestScheduler {
         const cached_response = nocache ?
             undefined :
             this.cache.get(query);
-        if (cached_response !== undefined) {
+        if (typeof(cached_response) !== 'undefined') {
             this._pretendToSendOne(query, protected_callback, cached_response);
         } else {
             this._sendOne(query, protected_converter, protected_callback, nocache);

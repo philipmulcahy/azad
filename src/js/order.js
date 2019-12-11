@@ -462,7 +462,7 @@ class Order {
     itemsHtml(doc) {
         const ul = doc.createElement('ul');
         for(let title in this.items) {
-            if(this.items.hasOwnProperty(title)) {
+            if (Object.prototype.hasOwnProperty.call(this.items, title)) {
                 const li = doc.createElement('li');
                 ul.appendChild(li);
                 const a = doc.createElement('a');
@@ -510,7 +510,6 @@ function getOrdersForYearAndQueryTemplate(
 ) {
     let expected_order_count = null;
     let order_found_callback = null;
-    let check_complete_callback = null;
     const order_promises = [];
     const sendGetOrderCount = function() {
         request_scheduler.schedule(
@@ -575,7 +574,6 @@ function getOrdersForYearAndQueryTemplate(
     };
     const receiveOrdersCount = function(orders_page_data) {
         expected_order_count = orders_page_data.expected_order_count;
-        check_complete_callback();
         // TODO: restore efficiency - the first ten orders are visible in the page we got expected_order_count from.
         for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
             console.log(
@@ -605,14 +603,30 @@ function getOrdersForYearAndQueryTemplate(
     // Promise to array of Order Promise.
     return new Promise(
         resolve => {
-            check_complete_callback = function() {
-                console.log('check_complete_callback() actual:' + order_promises.length + ' expected:' + expected_order_count);
-                if(order_promises.length === expected_order_count) {
-                    console.log('resolving order_promises for ' + year);
-                    resolve(order_promises);
-                    console.log('resolved order_promises for ' + year);
-                }
-            };
+            {
+                let scheduled_check_id = null;
+                const checkComplete = function() {
+                    clearTimeout(scheduled_check_id);
+                    console.log(
+                        'checkComplete() actual:' + order_promises.length
+                        + ' expected:' + expected_order_count
+                    );
+                    if(order_promises.length == expected_order_count ||
+                        !request_scheduler.isLive()
+                    ) {
+                        console.log('resolving order_promises for ' + year);
+                        resolve(order_promises);
+                        console.log('resolved order_promises for ' + year);
+                    } else {
+                        scheduled_check_id = setTimeout(
+                            checkComplete,
+                            1000
+                        );
+                    }
+                };
+                // start checking loop
+                checkComplete();
+            }
             order_found_callback = function(order_promise) {
                 order_promises.push(order_promise);
                 order_promise.then( order => {
@@ -625,7 +639,6 @@ function getOrdersForYearAndQueryTemplate(
                      ' expected_order_count:' +
                      expected_order_count
                 );
-                check_complete_callback();
             };
             sendGetOrderCount();
         }
@@ -633,7 +646,7 @@ function getOrdersForYearAndQueryTemplate(
 }
 
 function fetchYear(year, request_scheduler, nocache_top_level) {
-    const templates = {
+    const templates_by_site = {
         'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
@@ -739,7 +752,9 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&orderFilter=year-%(year)s' +
             '&unifiedOrders=0' +
             '&startIndex=%(startOrderPos)s'],
-    }[util.getSite()];
+    }
+
+    const templates = templates_by_site[util.getSite()];
 
     const promises_to_promises = templates.map(
         template => getOrdersForYearAndQueryTemplate(
@@ -752,6 +767,8 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
 
     return Promise.all( promises_to_promises )
     .then( array2_of_promise => {
+        // We can now know how many orders there are, although we may only
+        // have a promise to each order not the order itself.
         const order_promises = [];
         array2_of_promise.forEach( promises => {
             promises.forEach( promise => {

@@ -2,7 +2,6 @@
 /* Copyright(c) 2016 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
-/* global XPathResult */
 
 'use strict';
 
