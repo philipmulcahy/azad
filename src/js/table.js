@@ -181,6 +181,11 @@ function reallyDisplayOrders(orders, beautiful) {
     for (let entry in order_map) {
         delete order_map[entry];
     }
+
+    // Record all the promises: we're going to need to wait on all of them to
+    // resolve before we can hand over the table to our callers.
+    const cell_value_promises = [];
+
     const addOrderTable = function(orders) {
         const addHeader = function(row, value, help) {
             const th = row.ownerDocument.createElement('th');
@@ -221,17 +226,19 @@ function reallyDisplayOrders(orders, beautiful) {
                         {
                             elem = addCell(tr, 'pending');
                             const elem_closure_copy = elem;
-                            order.getValuePromise(col_spec.property_name)
-                                 .then(null_converter)
-                                 .then(
-                                     value => {
-                                         elem_closure_copy.innerHTML = value;
-                                         if(datatable) {
-                                             datatable.rows().invalidate();
-                                             datatable.draw();
-                                         }
-                                     }
-                                 );
+                            const value_promise = order.getValuePromise(col_spec.property_name);
+                            cell_value_promises.push(value_promise);
+                            value_promise
+                                .then(null_converter)
+                                .then(
+                                    value => {
+                                        elem_closure_copy.innerHTML = value;
+                                        if(datatable) {
+                                            datatable.rows().invalidate();
+                                            datatable.draw();
+                                        }
+                                    }
+                                );
                         }
                         break;
                     case 'func':
@@ -380,7 +387,10 @@ function reallyDisplayOrders(orders, beautiful) {
         addCsvButton(orders);
     }
     console.log('azad.reallyDisplayOrders returning');
-    return table;
+
+    // Don't let our callers get their hands on the table
+    // until all of the cells have been populated.
+    return Promise.all(cell_value_promises).then( () => table );
 }
 
 function addCsvButton(orders) {
@@ -390,7 +400,7 @@ function addCsvButton(orders) {
         title,
         function() {
             displayOrders(orders, false).then(
-                (table) => { csv.download(table); }
+                table => csv.download(table)
             );
         },
         'azad_table_button'

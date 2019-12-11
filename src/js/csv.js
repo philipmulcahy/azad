@@ -9,10 +9,10 @@ function download(table) {
     const tableToArrayOfArrays = function(table) {
         const rows = table.rows;
         const result = [];
-        for(let i=0; i<rows.length; ++i) {
-            let cells = rows[i].cells;
-            let cell_array = [];
-            for(let j=0; j<cells.length; ++j) {
+        for (let i=0; i<rows.length; ++i) {
+            const cells = rows[i].cells;
+            const cell_array = [];
+            for (let j=0; j<cells.length; ++j) {
                 cell_array.push(cells[j].textContent);
             }
             result.push(cell_array);
@@ -21,7 +21,7 @@ function download(table) {
     };
     const processRow = function(row) {
         const processCell = function (cell) {
-            if ( !cell ) {
+            if (!cell) {
                 return '';
             }
             let processed = cell.replace(/"/g, '""');
@@ -32,7 +32,8 @@ function download(table) {
         };
         return row.map(processCell).join(',');
     };
-    const csvFile = '\ufeff' + tableToArrayOfArrays(table).map(processRow).join('\n');
+    const csvFile = '\ufeff' + tableToArrayOfArrays(table).map(processRow)
+                                                          .join('\n');
     save_file.save(csvFile, 'amazon_order_history.csv');
 }
 
