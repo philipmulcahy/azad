@@ -40,11 +40,22 @@ const chrome_extension_options = {
                 test: /\.html$/,
                 loader: "html-loader",
                 exclude: /node_modules/
-            }
+            },
+            {
+                test: /\.vue$/,
+                loader: 'vue-loader',
+                options: {
+                    loaders: {
+                    }
+                    // other vue-loader options go here
+                }
+            },
         ]
     },
     resolve: {
-        alias: alias
+        alias: {
+            'vue$': 'vue/dist/vue.js'
+        }
     },
     plugins: [
         // clean the build folder
@@ -71,7 +82,7 @@ const chrome_extension_options = {
             from: "src/img/icon128.png"
         }]),
         new CopyWebpackPlugin([{
-            from: "src/html/popup.html"
+            from: "build/popup.html"
         }]),
         new CopyWebpackPlugin([{
             from: "src/styles/popup.css"

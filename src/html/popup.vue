@@ -32,6 +32,17 @@
               </tr>
           </table>
       </div>
+      <div class="azad_separator"></div>
+      <div id="azad_settings">
+          <table>
+              <tr id="azad_settings_row">
+                  <td v-for="item in items">
+                      {{item.text}}
+                  </td>
+              </tr>
+          </table>
+      </div>
+      <div class="azad_separator"></div>
       <div id="footer">
           <a href='http://www.justgiving.com/azad-pah'
              title='JustGiving - Sponsor me now!'
