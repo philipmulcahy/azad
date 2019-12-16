@@ -3,7 +3,7 @@
 
 ---
 ---
-#HELP!!
+# HELP!!
 
 ## If the results are not what you expect, Amazon probably changed something, and the extension hasn't been updated yet.
 
