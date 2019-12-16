@@ -6,13 +6,25 @@ input.azad_action {
     color: white;
     background-color: royalblue; 
     font-size: 120%;
-    height: 23px;
-    width: 30%;
     margin: 0px;
     border: 0px;
     padding: 5px;
     padding-top: 5px;
-    padding-bottom: 20px;
+    padding-bottom: 5px;
+    padding-left: 5px;
+    padding-right: 5px;
+    text-align: center;
+}
+
+a.azad_help {
+    color: white;
+    background-color: red;
+    font-size: 120%;
+    margin: 0px;
+    border: 0px;
+    padding: 5px;
+    padding-top: 5px;
+    padding-bottom: 5px;
     padding-left: 5px;
     padding-right: 5px;
     text-align: center;
