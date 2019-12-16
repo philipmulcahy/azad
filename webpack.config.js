@@ -82,7 +82,7 @@ const chrome_extension_options = {
             from: "src/img/icon128.png"
         }]),
         new CopyWebpackPlugin([{
-            from: "build/popup.html"
+            from: "src/html/popup.html"
         }]),
         new CopyWebpackPlugin([{
             from: "src/styles/popup.css"
