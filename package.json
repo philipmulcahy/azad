@@ -38,6 +38,7 @@
         "serialize-javascript": "^2.1.2",
         "sprintf-js": "^1.1.2",
         "sprintf.js": "^0.1.4",
+        "vue": "^1.0.28-csp",
         "xpath": "0.0.27"
     }
 }

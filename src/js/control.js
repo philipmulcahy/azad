@@ -5,6 +5,7 @@
 'use strict';
 
 import $ from 'jquery';
+import settings from './settings';
 
 function activateIdle() {
     console.log('activateIdle');
@@ -100,6 +101,7 @@ function handleStopClick() {
 }
 
 function init() {
+    settings.initialiseUi();
     console.log('init');
     activateIdle();
     connectToBackground();

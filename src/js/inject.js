@@ -143,12 +143,28 @@ function registerContentScript() {
 }
 
 function addPopupButton() {
-    util.addButton(
-        'where have my order history buttons gone?',
-        () => {
-            window.alert('Amazon Order History Reporter Chrome Extension\n\n' +
-                'You can get to the controls popup by clicking on the extension icon at the top right of the Chrome window:  Look for an orange upper case A. The button that you have just clicked will be removed in a future version of the order history extension.'
-            );
+    const KEY = 'azad_settings';
+    chrome.storage.sync.get(
+        KEY,
+        function(entries) {
+            console.log('settings retrieved: ' + JSON.stringify(entries));
+            const settings =  JSON.parse(entries[KEY]);
+            if (settings.includes('show_where_are_my_buttons')) {
+                util.addButton(
+                    'where have my order history buttons gone?',
+                    () => {
+                        window.alert(
+                            'Amazon Order History Reporter Chrome Extension\n\n' +
+                            'You can get to the controls popup by clicking ' +
+                            'on the extension icon at the top right of the ' +
+                            'Chrome window:  Look for an orange upper case A.' +
+                            'The button that you have just clicked will be ' +
+                            'removed in a future version of the order' +
+                            'history extension.'
+                        );
+                    }
+                );
+            }
         }
     );
 }
