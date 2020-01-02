@@ -1,6 +1,6 @@
 {
     "name": "azad",
-    "version": "1.9.3",
+    "version": "1.9.4",
     "description": "This extension extracts order history from your Amazon account.",
     "license": "Apache-2.0",
     "main": "background.js",
@@ -39,6 +39,7 @@
         "serialize-javascript": "^2.1.2",
         "sprintf-js": "^1.1.2",
         "sprintf.js": "^0.1.4",
+        "vue": "^1.0.28-csp",
         "xpath": "0.0.27"
     }
 }

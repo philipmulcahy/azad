@@ -32,6 +32,7 @@ function registerConnectionListener() {
                             break;
                         default:
                             console.warn('unknown action: ' + msg.action);
+                            break;
                     }
                 } );
                 content_ports[port.sender.tab.id] = port;
@@ -58,6 +59,7 @@ function registerConnectionListener() {
                             break;
                         default:
                             console.warn('unknown action: ' + msg.action);
+                            break;
                     }
                 });
                 advertiseYears();
