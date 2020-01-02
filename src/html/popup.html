@@ -7,12 +7,20 @@
   </head>
   <body>
       <div id="azad_actions">
-          <input type="button" class="azad_action" id="azad_clear_cache"
-                 value="clear cache" title="empty the query cache"/>
-          <input type="button" class="azad_action" id="azad_stop"
-                 value="stop" title="stop scraping"/>
-          <input type="button" class="azad_action" id="azad_hide_controls"
-                 value="&#x2716" title="hide this popup"/>
+          <table width="100%">
+              <tr>
+                  <td>
+                      <input type="button" class="azad_action" id="azad_clear_cache"
+                             value="clear cache" title="empty the query cache"/>
+                      <input type="button" class="azad_action" id="azad_stop"
+                             value="stop" title="stop scraping"/>
+                  </td>
+                  <td align="right">
+                      <input type="button" class="azad_action" id="azad_hide_controls"
+                             value="&#x2716" title="hide this popup"/>
+                  </td>
+              <tr>
+          </table>
       </div>
       <div class="azad_separator"></div>
       <div id="azad_year_list">
@@ -32,6 +40,11 @@
               </tr>
           </table>
       </div>
+      <div class="azad_separator"></div>
+      <div class="azad_help" id="azad_help">
+          <a href="https://github.com/philipmulcahy/azad/blob/master/README.md" target="_blank" class="azad_help" id="azad_help">CLICK HERE if you get incorrect results!</a>
+      </div>
+      <div class="azad_separator"></div>
       <div id="footer">
           <a href='http://www.justgiving.com/azad-pah'
              title='JustGiving - Sponsor me now!'
