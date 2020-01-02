@@ -5,6 +5,7 @@
     "license": "Apache-2.0",
     "main": "background.js",
     "scripts": {
+        "init": "npm install --init",
         "build": "node utils/build.js",
         "lint": "eslint src/js",
         "package": "utils/package.sh",
