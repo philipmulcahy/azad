@@ -40,11 +40,22 @@ const chrome_extension_options = {
                 test: /\.html$/,
                 loader: "html-loader",
                 exclude: /node_modules/
-            }
+            },
+            {
+                test: /\.vue$/,
+                loader: 'vue-loader',
+                options: {
+                    loaders: {
+                    }
+                    // other vue-loader options go here
+                }
+            },
         ]
     },
     resolve: {
-        alias: alias
+        alias: {
+            'vue$': 'vue/dist/vue.js'
+        }
     },
     plugins: [
         // clean the build folder

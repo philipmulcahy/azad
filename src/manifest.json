@@ -17,7 +17,8 @@
         "https://smile.amazon.it/",
         "https://www.amazon.it/",
         "https://www.amazon.com.mx/",
-        "https://www.amazon.com.au/"
+        "https://www.amazon.com.au/",
+        "storage"
     ],
     "background": {
         "scripts": [
