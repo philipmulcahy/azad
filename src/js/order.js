@@ -208,8 +208,7 @@ function extractDetailFromDoc(order, doc) {
         }
         return a;
     };
-
-    const cad_gst = function() {
+    const cad_gst = function(){
         const a = extraction.by_regex(
             [
                 ['GST', 'HST'].map(
@@ -221,13 +220,14 @@ function extractDetailFromDoc(order, doc) {
                     )
                 ).join('|'),
 
-                '//*[text()[contains(.,"GST") and not(contains(.,"Before"))]]',
+                '//*[text()[contains(.,"GST")]]',
 
                 '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
                 'span[contains(text(),"GST")]/' +
                 'parent::div/following-sibling::div/span',
             ],
-            /(:?VAT:)? *([-$£€0-9.]*)/i,
+            //(VAT: *)([-$£€0-9.]*)/i,
+            null,
             null,
             doc.documentElement
         );
@@ -236,6 +236,7 @@ function extractDetailFromDoc(order, doc) {
         }
         return null;
     };
+
     const cad_pst = function(){
         const a = extraction.by_regex(
             [
@@ -664,7 +665,7 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&unifiedOrders=1' +
             '&returnTo=' +
             '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s'],				
+            '&startIndex=%(startOrderPos)s'],
         'smile.amazon.de': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
