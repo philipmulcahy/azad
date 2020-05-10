@@ -1,5 +1,4 @@
-/* Copyright(c) 2018 Philip Mulcahy. */
-/* Copyright(c) 2016 Philip Mulcahy. */
+/* Copyright(c) 2016-2020 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
 
@@ -647,7 +646,7 @@ function getOrdersForYearAndQueryTemplate(
 
 function fetchYear(year, request_scheduler, nocache_top_level) {
     const templates_by_site = {
-        'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
+/*        'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
             '&returnTo=' +
@@ -752,9 +751,16 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&orderFilter=year-%(year)s' +
             '&unifiedOrders=0' +
             '&startIndex=%(startOrderPos)s'],
+*/        'other': ['https://%(site)s/gp/css/order-history' +
+            '?opt=ab&digitalOrders=1' +
+            '&unifiedOrders=1' +
+            '&returnTo=' +
+            '&orderFilter=year-%(year)s' +
+            '&startIndex=%(startOrderPos)s'],
     }
 
-    const templates = templates_by_site[util.getSite()];
+//    const templates = templates_by_site[util.getSite()];
+    const templates = templates_by_site['other'];
 
     const promises_to_promises = templates.map(
         template => getOrdersForYearAndQueryTemplate(
