@@ -645,8 +645,8 @@ function getOrdersForYearAndQueryTemplate(
 }
 
 function fetchYear(year, request_scheduler, nocache_top_level) {
-    const templates_by_site = {
-/*        'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
+    let templates_by_site = {
+        'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
             '&returnTo=' +
@@ -751,16 +751,23 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&orderFilter=year-%(year)s' +
             '&unifiedOrders=0' +
             '&startIndex=%(startOrderPos)s'],
-*/        'other': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s'],
     }
-
-//    const templates = templates_by_site[util.getSite()];
-    const templates = templates_by_site['other'];
+    let templates = templates_by_site[util.getSite()];
+    if ( !templates ) {
+        let templates_by_site = {
+            'other': ['https://%(site)s/gp/css/order-history' +
+                '?opt=ab&digitalOrders=1' +
+                '&unifiedOrders=1' +
+                '&returnTo=' +
+                '&orderFilter=year-%(year)s' +
+                '&startIndex=%(startOrderPos)s'],
+        }
+        templates = templates_by_site['other'];
+        alert('Amazon Order History Reporter Chrome Extension\n\n' +
+              'Your site is not fully supported.\n' +
+              'For better support, click on the popup where it says\n' +
+               '"CLICK HERE if you get incorrect results!" and provide the diagnotic information');
+    }
 
     const promises_to_promises = templates.map(
         template => getOrdersForYearAndQueryTemplate(
