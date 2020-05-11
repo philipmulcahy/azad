@@ -6,6 +6,7 @@
     "main": "background.js",
     "scripts": {
         "init": "npm install --init",
+        "clean": "rm -rf build/*; rm -rf build-node/*",
         "build": "node utils/build.js",
         "lint": "eslint src/js",
         "package": "utils/package.sh",
@@ -26,10 +27,13 @@
         "html-loader": "^1.1.0",
         "html-webpack-plugin": "^4.3.0",
         "style-loader": "^1.2.1",
+        "ts-loader": "^7.0.2",
+        "typescript": "^3.8.3",
         "webpack": "^4.43.0",
         "write-file-webpack-plugin": "^4.5.1"
     },
     "dependencies": {
+        "@types/sprintf-js": "^1.1.2",
         "datatables": "^1.10.18",
         "jquery": "^3.5.0",
         "jsdom": "^16.2.2",

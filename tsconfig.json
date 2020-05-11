@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "module": "es6",
+    "noImplicitAny": true,
+    "outDir": "./build-node",
+    "sourceMap": true,
+    "target": "es5",
+  }
+}
