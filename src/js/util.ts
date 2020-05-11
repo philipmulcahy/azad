@@ -7,7 +7,7 @@
 
 import xpath from 'xpath';
 
-function parseStringToDOM(html) {
+export function parseStringToDOM(html) {
     if ( typeof(DOMParser) !== 'undefined' ) {
         // We're in a browser:
         const parser = new DOMParser();
@@ -22,7 +22,7 @@ function parseStringToDOM(html) {
     }
 }
 
-function isNumeric(n) {
+export function isNumeric(n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
@@ -33,18 +33,18 @@ function getXPathResult() {
     return XPathResult;
 }
 
-function getSite() {
+export function getSite() {
     const href = window.location.href;
     const stem = new RegExp('https:\\/\\/((www|smile)\\.amazon\\.[^\\/]+)').exec(href)[1];
     return stem;
 }
 
-function getOrderDetailUrl(orderId, site) {
+export function getOrderDetailUrl(orderId, site) {
     return 'https://' + site + '/gp/your-account/order-details/' +
         'ref=oh_aui_or_o01_?ie=UTF8&orderID=' + orderId;
 }
 
-function getOrderPaymentUrl(orderId, site) {
+export function getOrderPaymentUrl(orderId, site) {
     if ( !orderId ) {return 'N/A'; }
     return orderId.startsWith('D') ?
         'https://' + site + '/gp/digital/your-account/order-summary.html' +
@@ -79,7 +79,7 @@ function removeButton(name) {
     }
 }
 
-function findSingleNodeValue(xpath, elem) {
+export function findSingleNodeValue(xpath, elem) {
     try {
         return elem.ownerDocument.evaluate(
             xpath,
@@ -93,7 +93,7 @@ function findSingleNodeValue(xpath, elem) {
     }
 }
 
-function findMultipleNodeValues(xpath, elem) {
+export function findMultipleNodeValues(xpath, elem) {
     const snapshot = elem.ownerDocument.evaluate(
         xpath,
         elem,
@@ -121,16 +121,3 @@ function clearBody() {
         }
     );
 }
-
-export default {
-    addButton: addButton,
-    clearBody: clearBody,
-    findMultipleNodeValues: findMultipleNodeValues,
-    findSingleNodeValue: findSingleNodeValue,
-    getOrderDetailUrl: getOrderDetailUrl,
-    getOrderPaymentUrl: getOrderPaymentUrl,
-    getSite: getSite,
-    isNumeric: isNumeric,
-    parseStringToDOM: parseStringToDOM,
-    removeButton: removeButton
-};

@@ -5,11 +5,13 @@
 
 'use strict';
 
-import util from './util';
-import date from './date';
-import extraction from './extraction';
-import sprintf from 'sprintf-js';
-import dom2json from './dom2json';
+import * as util from './util';
+import * as date from './date';
+import * as extraction from './extraction';
+import * as sprintf from 'sprintf-js';
+import * as dom2json from './dom2json';
+
+/* namespace AzadOrder { */
 
 function getField(xpath, elem) {
     const valueElem = util.findSingleNodeValue(
@@ -316,7 +318,29 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
     }
 );
 
+interface RequestScheduler {
+    schedule(
+        invoice_url: string,
+        event_converter: any,
+        payments_handler: (payments: Array<any>) => void,
+        id: string
+    );
+};
+
 class Order {
+    id: string;
+    site: string;
+    list_url: string;
+    detail_url: string;
+    invoice_url: string;
+    date: string;
+    total: number;
+    who: string;
+    detail_promise: Promise<any>;
+    items: object;
+    payments_promise: Promise<any>;
+    request_scheduler: RequestScheduler;
+
     constructor(ordersPageElem, request_scheduler, src_query) {
         this.id = null;
         this.site = null;
@@ -332,7 +356,7 @@ class Order {
         this._extractOrder(ordersPageElem);
     }
 
-    getValuePromise(key) {
+    getValuePromise(key): Promise<any> {
         const detail_keys = [
             'date',
             'gift',
@@ -357,7 +381,7 @@ class Order {
     }
 
     _extractOrder(elem) {
-        const getItems = function(elem) {
+        const getItems = function(elem): object {
             /*
               <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
                   The Rise and Fall of D.O.D.O.
@@ -491,13 +515,13 @@ class Order {
         return Promise.all([
             fetch(this.list_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.list_html = text; } ),
+                .then( text => { diagnostics['list_html'] = text; } ),
             fetch(this.detail_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.detail_html = text; } ),
+                .then( text => { diagnostics['detail_html'] = text; } ),
             fetch(this.invoice_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.invoice_html = text; } )
+                .then( text => { diagnostics['invoice_html'] = text; } )
         ]).then( () => diagnostics );
     }
 }
@@ -756,7 +780,7 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
 
     const templates = templates_by_site[util.getSite()];
 
-    const promises_to_promises = templates.map(
+    const promises_to_promises: Array<Promise<any>> = templates.map(
         template => getOrdersForYearAndQueryTemplate(
             year,
             template,
@@ -769,7 +793,7 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
     .then( array2_of_promise => {
         // We can now know how many orders there are, although we may only
         // have a promise to each order not the order itself.
-        const order_promises = [];
+        const order_promises: Array<Promise<Order>> = [];
         array2_of_promise.forEach( promises => {
             promises.forEach( promise => {
                 order_promises.push(promise);
@@ -785,7 +809,7 @@ function getOrdersByYear(years, request_scheduler, latest_year) {
     // how many years in which orders have been queried for.
     return Promise.all(
         years.map(
-            function(year) {
+            function(year: number) {
                 const nocache_top_level = (year == latest_year);
                 return fetchYear(year, request_scheduler, nocache_top_level);
             }
@@ -802,16 +826,13 @@ function getOrdersByYear(years, request_scheduler, latest_year) {
     );
 }
 
-function create(ordersPageElem, request_scheduler, src_query) {
+export function create(ordersPageElem, request_scheduler, src_query) {
     return new Order(ordersPageElem, request_scheduler, src_query);
 }
 
-export default {
-    create: create,
+    /* // Return Array of Order Promise. */
+    /* getOrdersByYear: getOrdersByYear, */
 
-    // Return Array of Order Promise.
-    getOrdersByYear: getOrdersByYear,
-
-    // For unit testing.
-    extractDetailFromDoc: extractDetailFromDoc,
-};
+    /* // For unit testing. */
+    /* extractDetailFromDoc: extractDetailFromDoc, */
+/* } */

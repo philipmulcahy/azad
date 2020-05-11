@@ -10,7 +10,7 @@ const WriteFilePlugin = require("write-file-webpack-plugin");
 // load the secrets
 const alias = {};
 
-const fileExtensions = ["jpg", "jpeg", "png", "gif", "svg"];
+const imageFileExtensions = ["jpg", "jpeg", "png", "gif", "svg"];
 
 const chrome_extension_options = {
     target: 'web',
@@ -28,18 +28,23 @@ const chrome_extension_options = {
     module: {
         rules: [
             {
+                test: /\.tsx?$/,
+                use: 'ts-loader',
+                exclude: /node_modules/,
+            },
+            {
                 test: /\.css$/,
                 use: ['style-loader','css-loader']
             },
             {
-                test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
+                test: new RegExp('\.(' + imageFileExtensions.join('|') + ')$'),
                 loader: "file-loader?name=[name].[ext]",
-                exclude: /node_modules/
+                exclude: /node_modules/,
             },
             {
                 test: /\.html$/,
                 loader: "html-loader",
-                exclude: /node_modules/
+                exclude: /node_modules/,
             },
             {
                 test: /\.vue$/,
@@ -112,7 +117,7 @@ const node_options = {
     target: 'node',
     mode: process.env.NODE_ENV || "development",
     entry: {
-        order_tests: path.join(__dirname, "src", "tests", "order_tests.js"),
+        order_tests: path.join(__dirname, "src", "tests", "order_tests.ts"),
     },
     output: {
         path: path.join(__dirname, "build-node"),
@@ -121,9 +126,14 @@ const node_options = {
     module: {
         rules: [
             {
-                test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
+                test: new RegExp('\.(' + imageFileExtensions.join('|') + ')$'),
                 loader: "file-loader?name=[name].[ext]",
                 exclude: /node_modules/
+            },
+            {
+                test: /\.tsx?$/,
+                use: 'ts-loader',
+                exclude: /node_modules/,
             },
             {
                 test: /\.html$/,
@@ -133,7 +143,8 @@ const node_options = {
         ]
     },
     resolve: {
-        alias: alias
+        alias: alias,
+        extensions: ['.tsx', '.ts', '.ts', '.js'],
     },
     plugins: [
         // clean the build folder

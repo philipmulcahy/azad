@@ -47,7 +47,7 @@ function  getMom(ds) {
     return getMoms(ds).filter( m => m.isValid() )[0];
 }
 
-function normalizeDateString(ds) {
+export function normalizeDateString(ds) {
     if ( !ds ) { return "N/A"; }
     const mom = getMom(ds);
     if (!mom) {
@@ -56,7 +56,3 @@ function normalizeDateString(ds) {
     }
     return localDateFromMoment(mom);
 }
-
-export default {
-    normalizeDateString: normalizeDateString
-};

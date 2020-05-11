@@ -2,12 +2,12 @@
 
 /* jshint strict: true, esversion: 6 */
 
-import util from './util';
+import * as util from './util';
 import sprintf from 'sprintf-js';
 
 "use strict";
 
-const by_regex = function(xpaths, regex, default_value, elem) {
+export function by_regex(xpaths, regex, default_value, elem) {
     let i;
     for ( i=0; i!=xpaths.length; i++ ) {
         let a = null;
@@ -37,7 +37,7 @@ const by_regex = function(xpaths, regex, default_value, elem) {
         default_value;
 };
 
-const payments_from_invoice = function(doc) {
+export function payments_from_invoice(doc) {
     // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
     const strategy_1 = () => {
         const payments = util.findMultipleNodeValues(
@@ -99,9 +99,4 @@ const payments_from_invoice = function(doc) {
         }
     }
     return ['UNKNOWN'];
-};
-
-export default {
-    by_regex: by_regex,
-    payments_from_invoice: payments_from_invoice
 };

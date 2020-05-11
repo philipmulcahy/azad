@@ -4,19 +4,28 @@
 'use strict';
 
 const fs = require('fs');
-import util from '../js/util';
+import * as util from '../js/util';
 const jsdom = require('jsdom');
 const xpath = require('xpath');
-import azad_order from '../js/order';
+import * as azad_order from '../js/order';
 
 const DATA_ROOT_PATH = './src/tests/azad_test_data/data';
 
 class FakeRequestScheduler {
-    constructor(url_html_map) {
+
+    url_html_map: any;
+
+    constructor(url_html_map: any) {
         this.url_html_map = url_html_map;
     }
 
-    schedule(query, event_converter, callback, priority, nocache) {
+    schedule(
+        query: any,
+        event_converter: any,
+        callback: any,
+        priority: any,
+        nocache: any
+    ) {
         setTimeout( () => {
             const html = this.url_html_map[query];
             const fake_evt = {
@@ -30,13 +39,13 @@ class FakeRequestScheduler {
     }
 }
 
-function orderFromTestData(
-    order_id,
-    collection_date,
-    site
-) {
+export function orderFromTestData(
+    order_id: any,
+    collection_date: any,
+    site: any
+): any {
     const path = DATA_ROOT_PATH + '/' + site + '/input/' + order_id + '_' + collection_date + '.json';
-    const json_promise = new Promise( (resolve, reject) => {
+    const json_promise: Promise<string> = new Promise( (resolve, reject) => {
         fs.readFile(path, 'utf8', (err, json) => {
             if (err) {
                 reject(err);
@@ -75,13 +84,13 @@ function orderFromTestData(
     });
 }
 
-function expectedFromTestData(
-    order_id,
-    collection_date,
-    site
+export function expectedFromTestData(
+    order_id: any,
+    collection_date: any,
+    site: any
 ) {
     const path = DATA_ROOT_PATH + '/' + site + '/expected/' + order_id + '_' + collection_date + '.json';
-    const json_promise = new Promise( (resolve, reject) => {
+    const json_promise: Promise<string> = new Promise( (resolve, reject) => {
         fs.readFile(path, 'utf8', (err, json) => {
             if (err) {
                 reject(err);
@@ -93,7 +102,7 @@ function expectedFromTestData(
     return json_promise.then( json => JSON.parse(json) );
 }
 
-function discoverTestData() {
+export function discoverTestData(): any {
     const sites_promise = fs.promises.readdir(DATA_ROOT_PATH);
     return sites_promise.then( sites => {
         const expected_promises = [];
@@ -123,8 +132,8 @@ function discoverTestData() {
                             order_id: expected.match(/^([A-Z0-9-]*)_.*\.json/)[1], 
                             scrape_date: expected.match(/^.*_(\d\d\d\d-\d\d-\d\d).json$/)[1],
                         };
-                        target.input_path = DATA_ROOT_PATH + '/' + site + + '/input/' + expected;
-                        target.expected_path = DATA_ROOT_PATH + '/' + site + '/expected/' + expected;
+                        target['input_path'] = DATA_ROOT_PATH + '/' + site + + '/input/' + expected;
+                        target['expected_path'] = DATA_ROOT_PATH + '/' + site + '/expected/' + expected;
                         test_targets.push(target); 
                     });
             } );
@@ -132,9 +141,3 @@ function discoverTestData() {
         } );
     } );
 }
-
-export default {
-    discoverTestData: discoverTestData,
-    orderFromTestData: orderFromTestData,
-    expectedFromTestData: expectedFromTestData,
-};
