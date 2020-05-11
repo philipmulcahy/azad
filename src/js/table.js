@@ -394,7 +394,7 @@ function reallyDisplayOrders(orders, beautiful) {
 }
 
 function addCsvButtonP(orders) {
-    const title = 'download plain csv';
+    const title = "download plain spreadsheet ('.csv')";
     util.removeButton(title);
     util.addButton(
         title,
@@ -408,7 +408,7 @@ function addCsvButtonP(orders) {
 }
 
 function addCsvButtonF(orders) {
-    const title = 'download formatted csv';
+    const title = "download spreadsheet ('.csv') with totals";
     util.removeButton(title);
     util.addButton(
         title,
