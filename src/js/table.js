@@ -1,6 +1,4 @@
-/* Copyright(c) 2018 Philip Mulcahy. */
-/* Copyright(c) 2016 Philip Mulcahy. */
-
+/* Copyright(c) 2016-2020 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
 import $ from 'jquery';
@@ -373,7 +371,8 @@ function reallyDisplayOrders(orders, beautiful) {
                 },
                 'azad_table_button'
             );
-            addCsvButton(orders);
+            addCsvButtonF(orders);
+            addCsvButtonP(orders);
         });
     } else {
         util.removeButton('plain table');
@@ -384,7 +383,8 @@ function reallyDisplayOrders(orders, beautiful) {
             },
             'azad_table_button'
         );
-        addCsvButton(orders);
+        addCsvButtonF(orders);
+        addCsvButtonP(orders);
     }
     console.log('azad.reallyDisplayOrders returning');
 
@@ -393,14 +393,28 @@ function reallyDisplayOrders(orders, beautiful) {
     return Promise.all(cell_value_promises).then( () => table );
 }
 
-function addCsvButton(orders) {
-    const title = 'download csv';
+function addCsvButtonP(orders) {
+    const title = 'download plain csv';
     util.removeButton(title);
     util.addButton(
         title,
         function() {
             displayOrders(orders, false).then(
-                table => csv.download(table)
+                table => csv.download(table, false)
+            );
+        },
+        'azad_table_button'
+    );
+}
+
+function addCsvButtonF(orders) {
+    const title = 'download formatted csv';
+    util.removeButton(title);
+    util.addButton(
+        title,
+        function() {
+            displayOrders(orders, false).then(
+                table => csv.download(table, true)
             );
         },
         'azad_table_button'
@@ -435,6 +449,5 @@ function dumpOrderDiagnostics(order_id) {
 
 export default {
     displayOrders: displayOrders,
-
     dumpOrderDiagnostics: dumpOrderDiagnostics
 };
