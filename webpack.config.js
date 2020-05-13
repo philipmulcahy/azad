@@ -6,10 +6,6 @@ const env = require("./utils/env");
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const WriteFilePlugin = require("write-file-webpack-plugin");
-
-// load the secrets
-const alias = {};
-
 const imageFileExtensions = ["jpg", "jpeg", "png", "gif", "svg"];
 
 const chrome_extension_options = {
@@ -19,7 +15,7 @@ const chrome_extension_options = {
         inject: path.join(__dirname, "src", "js", "inject.js"),
         background: path.join(__dirname, "src", "js", "background.js"),
         control: path.join(__dirname, "src", "js", "control.js"),
-        alltests: path.join(__dirname, "src", "tests", "all.js"),
+        alltests: path.join(__dirname, "src", "tests", "all.ts"),
     },
     output: {
         path: path.join(__dirname, "build"),
@@ -29,8 +25,9 @@ const chrome_extension_options = {
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
                 exclude: /node_modules/,
+                loader: 'ts-loader',
+                options: {compilerOptions: {outDir: "./build"}},
             },
             {
                 test: /\.css$/,
@@ -58,9 +55,8 @@ const chrome_extension_options = {
         ]
     },
     resolve: {
-        alias: {
-            'vue$': 'vue/dist/vue.js'
-        }
+        alias: { 'vue$': 'vue/dist/vue.js' },
+        extensions: ['.tsx', '.ts', '.ts', '.js'],
     },
     plugins: [
         // clean the build folder
@@ -132,8 +128,9 @@ const node_options = {
             },
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
                 exclude: /node_modules/,
+                loader: 'ts-loader',
+                options: {compilerOptions: {outDir: "./build-node"}},
             },
             {
                 test: /\.html$/,
@@ -143,7 +140,7 @@ const node_options = {
         ]
     },
     resolve: {
-        alias: alias,
+        alias: {},
         extensions: ['.tsx', '.ts', '.ts', '.js'],
     },
     plugins: [
