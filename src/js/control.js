@@ -16,7 +16,7 @@ function activateIdle() {
 function activateScraping(years) {
     console.log('activateScraping');
     showOnly(['azad_stop', 'azad_hide_controls']);
-    $('#azad_state').text('scraping ' + years.join(','));
+    $('#azad_state').text('fetching ' + years.join(','));
 }
 
 function activateDone(years) {
