@@ -630,7 +630,6 @@ function getOrdersForYearAndQueryTemplate(
             order_found_callback = function(order_promise) {
                 order_promises.push(order_promise);
                 order_promise.then( order => {
-                    // TODO is "Fetching" the right message for this stage?
                     console.log('azad_order Fetching ' + order.id);
                 });
                 console.log(
