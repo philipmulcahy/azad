@@ -11,8 +11,8 @@ function download(table, type) {
         const rows = table.rows;
         const result = [];
         for(let i=0; i<rows.length + ( type  ?  -1  :  0 ); ++i) {
-            let cells = rows[i].cells;
-            let cell_array = [];
+            const cells = rows[i].cells;
+            const cell_array = [];
             for(let j=0; j<cells.length; ++j) {
                 let x = cells[j];
                 if (x.getAttribute("class").search("azad_numeric_no") == -1) {
@@ -26,8 +26,8 @@ function download(table, type) {
         }
 // If type==true, replace last row for use in a spreadsheet
         if ( type ) {
-            let cells = rows[2].cells;
-            let cell_array = [];
+            const cells = rows[2].cells; //pick an arbitrary row
+            const cell_array = [];
             let x = '';
             let y = true;
             for(let j=0; j<cells.length; ++j) {
