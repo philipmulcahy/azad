@@ -371,8 +371,8 @@ function reallyDisplayOrders(orders, beautiful) {
                 },
                 'azad_table_button'
             );
-            addCsvButtonF(orders);
-            addCsvButtonP(orders);
+            addCsvButton(orders, true);
+            addCsvButton(orders, false);
         });
     } else {
         util.removeButton('plain table');
@@ -383,8 +383,8 @@ function reallyDisplayOrders(orders, beautiful) {
             },
             'azad_table_button'
         );
-        addCsvButtonF(orders);
-        addCsvButtonP(orders);
+        addCsvButton(orders, true);
+        addCsvButton(orders, false);
     }
     console.log('azad.reallyDisplayOrders returning');
 
@@ -393,28 +393,14 @@ function reallyDisplayOrders(orders, beautiful) {
     return Promise.all(cell_value_promises).then( () => table );
 }
 
-function addCsvButtonP(orders) {
-    const title = "download plain spreadsheet ('.csv')";
+function addCsvButton(orders, type) {
+    const title = (type  ?  "download spreadsheet ('.csv') with totals"  :  "download plain spreadsheet ('.csv')" );
     util.removeButton(title);
     util.addButton(
         title,
         function() {
             displayOrders(orders, false).then(
-                table => csv.download(table, false)
-            );
-        },
-        'azad_table_button'
-    );
-}
-
-function addCsvButtonF(orders) {
-    const title = "download spreadsheet ('.csv') with totals";
-    util.removeButton(title);
-    util.addButton(
-        title,
-        function() {
-            displayOrders(orders, false).then(
-                table => csv.download(table, true)
+                table => csv.download(table, type)
             );
         },
         'azad_table_button'
