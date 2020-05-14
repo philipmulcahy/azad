@@ -72,13 +72,17 @@ function registerActionButtons() {
 function showYearButtons(years) {
     console.log('show year buttons', years);
     $('.azad_year_button').remove();
-    years.sort().reverse().forEach( year => {
-        $('#azad_year_list').append(
-            '<input type="button" class="azad_year_button" value="' + year + '" />'
-        );
-    });
-    $('.azad_year_button').on('click', handleYearClick);
-    
+    if (years.length == 0) {
+        $('#azad_year_list').text('If buttons do not appear in a few seconds, please go to your orders page and log on.');
+    } else {
+        $('#azad_year_list').text('');
+        years.sort().reverse().forEach( year => {
+            $('#azad_year_list').append(
+                '<input type="button" class="azad_year_button" value="' + year + '" />'
+                );
+            });
+        $('.azad_year_button').on('click', handleYearClick);
+    }
 }
 
 function handleYearClick(evt) {
