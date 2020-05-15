@@ -98,7 +98,10 @@ function fetchAndShowOrders(years) {
             let beautiful = true;
             if (orderPromises.length >= 500) {
                 beautiful = false;
-                alert('500 or more orders found. That\'s a lot! We\'ll start you off with a plain table to make display faster. You can click the blue "datatable" button to restore sorting, filtering etc.');
+                alert('Amazon Order History Reporter Chrome Extension\n\n' +
+                      '500 or more orders found. That\'s a lot!\n' +
+                      'We\'ll start you off with a plain table to make display faster.\n' +
+                      'You can click the blue "datatable" button to restore sorting, filtering etc.');
             }
             azad_table.displayOrders(orderPromises, beautiful);
             return document.querySelector('[id="azad_order_table"]');
