@@ -39,9 +39,8 @@ function download(table, type) {
                         y = false;
                     } else { x = ''; }
                 }
-                x = x.replace("{COL}",String.fromCharCode("A".charCodeAt(0) + j))
-                     .replace("{COL}",String.fromCharCode("A".charCodeAt(0) + j))
-                     .replace("{LAST}", rows.length -1);
+                x = x.replace(/{COL}/g, String.fromCharCode("A".charCodeAt(0) + j))
+                     .replace(/{LAST}/g, rows.length -1);
                 cell_array.push(x);
             }
             result.push(cell_array);
