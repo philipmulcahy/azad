@@ -765,8 +765,7 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_date' +
             '?ie=UTF8' +
             '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=es_US',
+            '&startIndex=%(startOrderPos)s',
 
             'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_yo_new_digital' +
             '?ie=UTF8' +
