@@ -1,5 +1,4 @@
-/* Copyright(c) 2018 Philip Mulcahy. */
-/* Copyright(c) 2016 Philip Mulcahy. */
+/* Copyright(c) 2016-2020 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
 
@@ -408,6 +407,8 @@ class Order {
                 function(item){
                     const name = item.innerHTML.replace(/[\n\r]/g, " ")
                                              .replace(/  */g, " ")
+                                             .replace(/&amp;/g, "&")
+                                             .replace(/&nbsp;/g, " ")
                                              .trim();
                     const link = item.getAttribute('href');
                     items[name] = link;
@@ -688,7 +689,7 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&unifiedOrders=1' +
             '&returnTo=' +
             '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s'],				
+            '&startIndex=%(startOrderPos)s'],
         'smile.amazon.de': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
@@ -748,37 +749,82 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&returnTo=' +
             '&orderFilter=year-%(year)s' +
             '&startIndex=%(startOrderPos)s'],
-        'smile.amazon.com': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s'],
-        'www.amazon.com': [
-            'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_date' +
-            '?ie=UTF8' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s',
-            'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_yo_new_digital' +
-            '?ie=UTF8' +
+        'smile.amazon.com': [
+            'https://%(site)s/gp/css/order-history' +
+            '?opt=ab' +
+            '&ie=UTF8' +
             '&digitalOrders=1' +
-            '&orderFilter=year-%(year)s' +
             '&unifiedOrders=0' +
-            '&startIndex=%(startOrderPos)s'],
+            '&orderFilter=year-%(year)s' +
+            '&startIndex=%(startOrderPos)s' +
+            '&language=en_US',
+
+            'https://%(site)s/gp/css/order-history' +
+            '?opt=ab' +
+            '&ie=UTF8' +
+            '&digitalOrders=1' +
+            '&unifiedOrders=1' +
+            '&orderFilter=year-%(year)s' +
+            '&startIndex=%(startOrderPos)s' +
+            '&language=en_US'],
+        'www.amazon.com': [
+            'https://%(site)s/gp/css/order-history' +
+            '?opt=ab' +
+            '&ie=UTF8' +
+            '&digitalOrders=1' +
+            '&unifiedOrders=0' +
+            '&orderFilter=year-%(year)s' +
+            '&startIndex=%(startOrderPos)s' +
+            '&language=en_US',
+
+            'https://%(site)s/gp/css/order-history' +
+            '?opt=ab' +
+            '&ie=UTF8' +
+            '&digitalOrders=1' +
+            '&unifiedOrders=1' +
+            '&orderFilter=year-%(year)s' +
+            '&startIndex=%(startOrderPos)s' +
+            '&language=en_US'],
         'www.amazon.com.mx': [
             'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_date' +
             '?ie=UTF8' +
             '&orderFilter=year-%(year)s' +
             '&startIndex=%(startOrderPos)s',
+
             'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_yo_new_digital' +
             '?ie=UTF8' +
             '&digitalOrders=1' +
             '&orderFilter=year-%(year)s' +
             '&unifiedOrders=0' +
             '&startIndex=%(startOrderPos)s'],
-    }
+        'other': [
+            'https://%(site)s/gp/css/order-history' +
+            '?opt=ab' +
+            '&ie=UTF8' +
+            '&digitalOrders=1' +
+            '&unifiedOrders=0' +
+            '&orderFilter=year-%(year)s' +
+            '&startIndex=%(startOrderPos)s' +
+            '&language=en_GB',
 
-    const templates = templates_by_site[util.getSite()];
+            'https://%(site)s/gp/css/order-history' +
+            '?opt=ab' +
+            '&ie=UTF8' +
+            '&digitalOrders=1' +
+            '&unifiedOrders=1' +
+            '&orderFilter=year-%(year)s' +
+            '&startIndex=%(startOrderPos)s' +
+            '&language=en_GB'],
+    }
+    let templates = templates_by_site[util.getSite()];
+    if ( !templates ) {
+        templates = templates_by_site['other'];
+        alert('Amazon Order History Reporter Chrome Extension\n\n' +
+              'Your site is not fully supported.\n' +
+              'For better support, click on the popup where it says\n' +
+              '"CLICK HERE if you get incorrect results!",\n' +
+              'and provide the diagnostic information');
+    }
 
     const promises_to_promises: Array<Promise<any>> = templates.map(
         template => getOrdersForYearAndQueryTemplate(
