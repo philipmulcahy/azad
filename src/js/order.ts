@@ -9,10 +9,9 @@ import * as date from './date';
 import * as extraction from './extraction';
 import * as sprintf from 'sprintf-js';
 import * as dom2json from './dom2json';
+import * as request_scheduler from './request_scheduler';
 
-/* namespace AzadOrder { */
-
-function getField(xpath, elem) {
+function getField(xpath: string, elem: HTMLElement) {
     const valueElem = util.findSingleNodeValue(
         xpath, elem
     );
@@ -23,7 +22,7 @@ function getField(xpath, elem) {
     }
 }
 
-function extractDetailFromDoc(order, doc) {
+function extractDetailFromDoc(order: Order, doc: any) {
 
     const who = function(){
         if(order.who) {
@@ -295,21 +294,27 @@ function extractDetailFromDoc(order, doc) {
     };
 }
 
-const extractDetailPromise = (order, request_scheduler) => new Promise(
+const extractDetailPromise = (
+    order: Order,
+    scheduler: request_scheduler.RequestScheduler
+) => new Promise(
     resolve => {
         const query = order.detail_url;
-        const event_converter = function(evt) {
+        const event_converter = function(
+            evt: { target: { responseText: any; }; }
+        ) {
             const doc = util.parseStringToDOM( evt.target.responseText );
             return extractDetailFromDoc(order, doc);
         };
         try {
-            request_scheduler.schedule(
+            scheduler.schedule(
                 query,
                 event_converter,
-                order_details => {
+                (order_details: any) => {
                     resolve(order_details);
                 },
-                order.id
+                order.id,
+                false
             );
         } catch (ex) {
             console.error('scheduler rejected ' + order.id + ' ' + query);
@@ -317,16 +322,7 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
     }
 );
 
-interface RequestScheduler {
-    schedule(
-        invoice_url: string,
-        event_converter: any,
-        payments_handler: (payments: Array<any>) => void,
-        id: string
-    );
-};
-
-class Order {
+export class Order {
     id: string;
     site: string;
     list_url: string;
@@ -338,9 +334,13 @@ class Order {
     detail_promise: Promise<any>;
     items: object;
     payments_promise: Promise<any>;
-    request_scheduler: RequestScheduler;
+    request_scheduler: request_scheduler.RequestScheduler;
 
-    constructor(ordersPageElem, request_scheduler, src_query) {
+    constructor(
+        ordersPageElem: HTMLElement,
+        request_scheduler: RequestScheduler,
+        src_query: string
+    ) {
         this.id = null;
         this.site = null;
         this.list_url = src_query;
@@ -849,8 +849,9 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
     });
 }
 
-/* Returns array of Order Promise */
-function getOrdersByYear(years, request_scheduler, latest_year) {
+export function getOrdersByYear(
+    years, request_scheduler, latest_year
+): Promise<Order>[] {
     // At return time we may not know how many orders there are, only
     // how many years in which orders have been queried for.
     return Promise.all(

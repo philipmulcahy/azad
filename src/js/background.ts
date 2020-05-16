@@ -3,9 +3,13 @@
 
 'use strict';
 
-const content_ports = {};
-let control_port = null;
-let advertised_years = [];
+const content_ports: Record<number, any> = {};
+
+let control_port: {
+    postMessage: (arg0: { action: string; years: number[]; }) => void;
+} = null;
+
+let advertised_years: number[] = [];
 
 function registerConnectionListener() {
     chrome.runtime.onConnect.addListener( port => {
@@ -23,7 +27,9 @@ function registerConnectionListener() {
                         case 'advertise_years':
                             console.log('forwarding advertise_years', msg.years);
                             advertised_years = [
-                                ...new Set(advertised_years.concat(msg.years))
+                                ...new Set<number>(
+                                    advertised_years.concat(msg.years)
+                                )
                             ].sort();
                             advertiseYears();
                             break;
