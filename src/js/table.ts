@@ -3,12 +3,13 @@
 
 /* jshint strict: true, esversion: 6 */
 
-import $ from 'jquery';
+import * as $ from 'jquery';
 import 'datatables';
-import util from './util';
-import csv from './csv';
-import sprintf from 'sprintf-js';
-import diagnostic_download from './diagnostic_download';
+import * as util from './util';
+import * as csv from './csv';
+import * as sprintf from 'sprintf-js';
+import * as diagnostic_download from './diagnostic_download';
+import * as azad_order from './order';
 
 'use strict';
 
@@ -17,13 +18,13 @@ const ELEM_CLASS = 'azad_elemClass ';
 const LINK_CLASS = 'azad_linkClass ';
 const TH_CLASS = 'azad_thClass ';
 
-let datatable = null;
-const order_map = {};
+let datatable: any = null;
+const order_map: Record<string, azad_order.Order> = {};
 
 /**
  * Add a td to the row tr element, and return the td.
  */
-const addCell = function(row, value) {
+const addCell = function(row: any, value: any) {
     const td = row.ownerDocument.createElement('td');
     td.setAttribute('class', CELL_CLASS);
     row.appendChild(td);
@@ -34,7 +35,7 @@ const addCell = function(row, value) {
 /**
  * Add a td to the row tr element, and return the td.
  */
-const addElemCell = function(row, elem) {
+const addElemCell = function(row: any, elem: any) {
     const td = row.ownerDocument.createElement('td');
     td.setAttribute('class', ELEM_CLASS);
     row.appendChild(td);
@@ -45,7 +46,7 @@ const addElemCell = function(row, elem) {
 /**
  * Add an a to the row tr element, and return the a.
  */
-const addLinkCell = function(row, text, href) {
+const addLinkCell = function(row: any, text: string, href: string) {
     const a = row.ownerDocument.createElement('a');
     a.setAttribute('Class', LINK_CLASS);
     a.textContent = text;
@@ -59,7 +60,7 @@ const cols = [
     {
         field_name: 'order id',
         type: 'func',
-        func: (order, row) => addLinkCell(
+        func: (order: azad_order.Order, row: any) => addLinkCell(
             row, order.id,
             order.detail_url
         ),
@@ -68,7 +69,7 @@ const cols = [
     {
         field_name: 'items',
         type: 'func',
-        func: (order, row) => addElemCell(row, order.itemsHtml(document)),
+        func: (order: azad_order.Order, row: any) => addElemCell(row, order.itemsHtml(document)),
         is_numeric: false
     },
     {
@@ -143,11 +144,11 @@ const cols = [
     {
         field_name: 'payments',
         type: 'func',
-        func: (order, tr) => {
+        func: (order: azad_order.Order, tr: HTMLElement) => {
             const cell = addCell(tr, 'pending');
             order.getValuePromise('payments').then( payments => {
                 const ul = document.createElement('ul');
-                payments.forEach( payment => {
+                payments.forEach( (payment: any) => {
                     const li = document.createElement('li');
                     ul.appendChild(li);
                     const a = document.createElement('a');
@@ -176,7 +177,7 @@ const cols = [
     true
 );
 
-function reallyDisplayOrders(orders, beautiful) {
+function reallyDisplayOrders(orders: azad_order.Order[], beautiful: boolean) {
     console.log('amazon_order_history_table.reallyDisplayOrders starting');
     for (let entry in order_map) {
         delete order_map[entry];
@@ -184,10 +185,10 @@ function reallyDisplayOrders(orders, beautiful) {
 
     // Record all the promises: we're going to need to wait on all of them to
     // resolve before we can hand over the table to our callers.
-    const cell_value_promises = [];
+    const cell_value_promises: Promise<string>[] = [];
 
-    const addOrderTable = function(orders) {
-        const addHeader = function(row, value, help) {
+    const addOrderTable = function(orders: azad_order.Order[]) {
+        const addHeader = function(row: HTMLElement, value: string, help: string) {
             const th = row.ownerDocument.createElement('th');
             th.setAttribute('class', TH_CLASS);
             row.appendChild(th);
@@ -199,11 +200,14 @@ function reallyDisplayOrders(orders, beautiful) {
             return th;
         };
 
-        const appendOrderRow = function(table, order) {
+        const appendOrderRow = function(
+            table: HTMLElement,
+            order: azad_order.Order
+        ) {
             const tr = document.createElement('tr');
             table.appendChild(tr);
             cols.forEach( col_spec => {
-                const null_converter = x => {
+                const null_converter = (x: any) => {
                     if (x) {
                         if (
                             typeof(x) === 'string' && 
@@ -409,7 +413,7 @@ function addCsvButton(orders) {
 
 // TODO: refactor so that order retrieval belongs to azad_table, but 
 // diagnostics building belongs to azad_order.
-function displayOrders(orderPromises, beautiful) {
+export function displayOrders(orderPromises, beautiful) {
     console.log('amazon_order_history_table.displayOrders starting');
     return Promise.all(orderPromises).then( orders => {
         console.log('amazon_order_history_table.displayOrders then func starting');
@@ -419,7 +423,7 @@ function displayOrders(orderPromises, beautiful) {
     });
 }
 
-function dumpOrderDiagnostics(order_id) {
+export function dumpOrderDiagnostics(order_id) {
     console.log('dumpOrderDiagnostics: ' + order_id);
     const order = order_map[order_id];
     if (order) {
@@ -432,9 +436,3 @@ function dumpOrderDiagnostics(order_id) {
         );
     }
 }
-
-export default {
-    displayOrders: displayOrders,
-
-    dumpOrderDiagnostics: dumpOrderDiagnostics
-};

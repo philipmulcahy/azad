@@ -5,15 +5,15 @@
 
 'use strict';
 
-import util from './util';
-import request_scheduler from './request_scheduler';
-import azad_order from './order';
-import azad_table from './table';
+import * as util from './util';
+import * as request_scheduler from './request_scheduler';
+import * as azad_order from './order';
+import * as azad_table from './table';
 
-let scheduler = null;
-let background_port = null;
-let years = null;
-let stats_timeout = null;
+let scheduler: request_scheduler.RequestScheduler = null;
+let background_port: chrome.runtime.Port = null;
+let years: number[] = null;
+let stats_timeout: NodeJS.Timeout = null;
 
 const SITE = window.location.href.match( /\/\/([^/]*)/ )[1];
 
@@ -54,7 +54,9 @@ function resetScheduler() {
     setStatsTimeout();
 }
 
-function getYears() {
+let cached_years: Promise<number[]> = null;
+
+function getYears(): Promise<number[]> {
     const getPromise = function() {
         const url = 'https://' + SITE + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
         return fetch(url).then( response => response.text() )
@@ -77,15 +79,15 @@ function getYears() {
             return years;
         });
     }
-    if(typeof(getYears.years) === 'undefined') {
+    if(typeof(cached_years) === 'undefined') {
         console.log('getYears() needs to do something');
-        getYears.years = getPromise();
+        cached_years = getPromise();
     }
-    console.log('getYears() returning ', getYears.years);
-    return getYears.years;
+    console.log('getYears() returning ', cached_years);
+    return cached_years;
 }
 
-function fetchAndShowOrders(years) {
+function fetchAndShowOrders(years: number[]) {
     resetScheduler();
     getYears().then(
         all_years => azad_order.getOrdersByYear(

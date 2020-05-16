@@ -128,7 +128,7 @@ class BinaryHeap {
     }
 }
 
-class RequestScheduler {
+export class RequestScheduler {
     constructor() {
         // chrome allows 6 requests per domain at the same time.
         this.CONCURRENCY = 6;  // Chrome allows 6 connections per server.
@@ -141,7 +141,13 @@ class RequestScheduler {
         this.live = true;
     }
 
-    schedule(query, event_converter, callback, priority, nocache) {
+    schedule(
+        query: string,
+        event_converter: (evt: any) => any,
+        callback: (results: any) => void,
+        priority: string,
+        nocache: boolean
+    ): void {
         if (!this.live) {
             throw 'scheduler has aborted or finished, and cannot accept more queries';
         }
@@ -325,8 +331,6 @@ class RequestScheduler {
     }
 }
 
-export default {
-    create: function() {
-        return new RequestScheduler();
-    }
+export function create()
+    return new RequestScheduler();
 };

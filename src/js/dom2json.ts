@@ -4,9 +4,9 @@
 
 'use strict';
 
-function toJSON(node) {
+function toJSON(node: any) {
   node = node || this;
-  const obj = {
+  const obj: Record<string, any> = {
     nodeType: node.nodeType
   };
   if (node.tagName) {
@@ -27,7 +27,7 @@ function toJSON(node) {
       arr[i] = [attr.nodeName, attr.nodeValue];
     }
   }
-  const childNodes = node.childNodes;
+  const childNodes: NodeListOf<ChildNode> = node.childNodes;
   if (childNodes) {
     const length = childNodes.length;
     const arr = obj.childNodes = new Array(length);
@@ -38,7 +38,7 @@ function toJSON(node) {
   return obj;
 }
 
-function toDOM(obj) {
+function toDOM(obj: Record<string, any>) {
   if (typeof obj == 'string') {
     obj = JSON.parse(obj);
   }
@@ -62,10 +62,14 @@ function toDOM(obj) {
       node = document.createComment(obj.nodeValue);
       break;
     case 9: //DOCUMENT_NODE
-      node = document.implementation.createDocument();
+      node = document.implementation.createDocument(null, null, null);
       break;
     case 10: //DOCUMENT_TYPE_NODE
-      node = document.implementation.createDocumentType(obj.nodeName);
+      node = document.implementation.createDocumentType(
+          obj.nodeName,
+          null,
+          null
+      );
       break;
     case 11: //DOCUMENT_FRAGMENT_NODE
       node = document.createDocumentFragment();

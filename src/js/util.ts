@@ -109,7 +109,7 @@ export function findMultipleNodeValues(xpath, elem) {
     return values;
 }
 
-function clearBody() {
+export function clearBody() {
     Array.from(document.body.children).forEach(
         function(elem) {
             if( !(
