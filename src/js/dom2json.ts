@@ -4,7 +4,7 @@
 
 'use strict';
 
-function toJSON(node: any) {
+export function toJSON(node: any) {
   node = node || this;
   const obj: Record<string, any> = {
     nodeType: node.nodeType
@@ -38,7 +38,7 @@ function toJSON(node: any) {
   return obj;
 }
 
-function toDOM(obj: Record<string, any>) {
+export function toDOM(obj: Record<string, any>) {
   if (typeof obj == 'string') {
     obj = JSON.parse(obj);
   }
