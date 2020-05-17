@@ -5,7 +5,7 @@
 
 import save_file from './save_file';
 
-function download(table: any) {
+export function download(table: any) {
     const tableToArrayOfArrays = function(table: { rows: any; }) {
         const rows = table.rows;
         const result = [];
