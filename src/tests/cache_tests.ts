@@ -1,10 +1,10 @@
-/* Copyright(c) 2018 Philip Mulcahy. */
+/* Copyright(c) 2018-2020 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
 'use strict';
 
-import tests from './tests';
-import cachestuff from '../js/cachestuff';
+import * as tests from './tests';
+import * as cachestuff from '../js/cachestuff';
 
 const endtoendTest = () => {
     const cache = cachestuff.createLocalCache('TESTENDTOEND');
@@ -48,5 +48,3 @@ const cache_tests = {
 };
 
 tests.register('cache_tests', cache_tests);
-
-export default {};

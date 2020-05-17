@@ -3,8 +3,8 @@
 
 'use strict';
 
-import tests from './tests';
-import date from '../js/date';
+import * as tests from './tests';
+import * as date from '../js/date';
 
 const de_test = () => {
      return (
@@ -64,5 +64,3 @@ const date_tests = {
 };
 
 tests.register('date_tests', date_tests);
-
-export default {};

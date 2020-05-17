@@ -3,11 +3,11 @@
 
 'use strict';
 
-import cache_tests from './cache_tests'
-import date_tests from './date_tests'
-import extraction_tests from './extraction_tests'
-import tests from './tests'
+import './cache_tests'
+import './date_tests'
+import './extraction_tests'
+import { runAll } from './tests'
 
-window.onload = () => tests.runAll(document);
+window.onload = () => runAll(document);
 
 export default {};

@@ -3,11 +3,16 @@
 /* jshint strict: true, esversion: 6 */
 
 import * as util from './util';
-import sprintf from 'sprintf-js';
+import { sprintf } from 'sprintf-js';
 
 "use strict";
 
-export function by_regex(xpaths, regex, default_value, elem) {
+export function by_regex(
+    xpaths: string[],
+    regex: RegExp,
+    default_value: any,
+    elem: HTMLElement
+) {
     let i;
     for ( i=0; i!=xpaths.length; i++ ) {
         let a = null;
@@ -35,9 +40,9 @@ export function by_regex(xpaths, regex, default_value, elem) {
     return util.isNumeric(default_value) ?
         default_value.toString() :
         default_value;
-};
+}
 
-export function payments_from_invoice(doc) {
+export function payments_from_invoice(doc: HTMLDocument) {
     // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
     const strategy_1 = () => {
         const payments = util.findMultipleNodeValues(
@@ -45,7 +50,7 @@ export function payments_from_invoice(doc) {
                 'Credit Card transactions',
                 'Transactions de carte de crédit'
             ].map(
-                label => sprintf.sprintf(
+                label => sprintf(
                     '//b[contains(text(),"%s")]/' +
                     '../../..//td[contains(text(),":")]/..',
                     label
@@ -99,4 +104,4 @@ export function payments_from_invoice(doc) {
         }
     }
     return ['UNKNOWN'];
-};
+}
