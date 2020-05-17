@@ -144,7 +144,7 @@ export class RequestScheduler {
     schedule(
         query: string,
         event_converter: (evt: any) => any,
-        callback: (results: any) => void,
+        callback: (results: any, query: string) => void,
         priority: string,
         nocache: boolean
     ): void {
