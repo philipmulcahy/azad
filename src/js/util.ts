@@ -53,7 +53,7 @@ export function getOrderPaymentUrl(orderId: string, site: string) {
             '/ref=oh_aui_ajax_pi?ie=UTF8&orderID=' + orderId;
 }
 
-function addButton(name: string, cb: any, button_class: string) {
+export function addButton(name: string, cb: any, button_class: string) {
     const existing = document.querySelector('[button_name="' + name + '"]');
     if ( existing !== null ) {
         existing.parentNode.removeChild(existing);
@@ -72,7 +72,7 @@ function addButton(name: string, cb: any, button_class: string) {
     );
 }
 
-function removeButton(name: string) {
+export function removeButton(name: string) {
     const elem = document.querySelector('[button_name="' + name + '"]');
     if ( elem !== null ) {
         elem.parentNode.removeChild(elem);

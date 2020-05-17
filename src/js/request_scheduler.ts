@@ -8,25 +8,29 @@
 
 'use strict';
 
-import cachestuff from './cachestuff';
+import * as cachestuff from './cachestuff';
 
 class BinaryHeap {
-    // TODO: This was class written/cribbed before I started using npm and webpack.
-    // It is extremely unlikely there isn't a viable npm module that would
-    // fit the bill and allow us to reduce the amount of code in this extension.
-    constructor(scoreFunction) {
+    content: any[]
+    scoreFunction: any;
+
+    // TODO: This was class written/cribbed before I (Philip) started using npm
+    // and webpack. It is extremely unlikely there isn't a viable npm module
+    // that would fit the bill and allow us to reduce the amount of code in
+    // this extension.
+    constructor(scoreFunction: any) {
         this.content = [];
         this.scoreFunction = scoreFunction;
     }
 
-    push(element) {
+    push(element: any): void {
         // Add the new element to the end of the array.
         this.content.push(element);
         // Allow it to bubble up.
         this.bubbleUp(this.content.length - 1);
     }
 
-    pop() {
+    pop(): any {
         // Store the first element so we can return it later.
         const result = this.content[0];
         // Get the element at the end of the array.
@@ -40,7 +44,7 @@ class BinaryHeap {
         return result;
     }
 
-    remove(node) {
+    remove(node: any) {
         const length = this.content.length;
         // To remove a value, we must search through the array to find
         // it.
@@ -65,7 +69,7 @@ class BinaryHeap {
         return this.content.length;
     }
 
-    bubbleUp(n) {
+    bubbleUp(n: number) {
         // Fetch the element that has to be moved.
         const element = this.content[n], score = this.scoreFunction(element);
         // When at 0, an element can not go up any further.
@@ -86,7 +90,7 @@ class BinaryHeap {
         }
     }
 
-    sinkDown(n) {
+    sinkDown(n: number) {
         // Look up the target element and its score.
         const length = this.content.length;
         const element = this.content[n];
@@ -129,16 +133,19 @@ class BinaryHeap {
 }
 
 export class RequestScheduler {
+
+    // chrome allows 6 requests per domain at the same time.
+    CONCURRENCY: number = 6
+
+    cache: cachestuff.Cache = cachestuff.createLocalCache('REQUESTSCHEDULER');
+    queue: BinaryHeap = new BinaryHeap( (item: any): number => item.priority );
+    running_count: number = 0;
+    completed_count: number = 0
+    error_count: number = 0;
+    signin_warned: boolean = false;
+    live = true;
+    
     constructor() {
-        // chrome allows 6 requests per domain at the same time.
-        this.CONCURRENCY = 6;  // Chrome allows 6 connections per server.
-        this.cache = cachestuff.createLocalCache('REQUESTSCHEDULER');
-        this.queue = new BinaryHeap( item => item.priority );
-        this.running_count = 0;
-        this.completed_count = 0;
-        this.error_count = 0;
-        this.signin_warned = false;
-        this.live = true;
     }
 
     schedule(
@@ -187,7 +194,13 @@ export class RequestScheduler {
 
     // Process a single de-queued request either by retrieving from the cache
     // or by sending it out.
-    _execute(query, event_converter, callback, priority, nocache) {
+    _execute(
+        query: string,
+        event_converter: (evt: any) => any,
+        callback: (converted_event: any, query: string) => void,
+        priority: number,
+        nocache: boolean
+) {
         if (!this.live) {
             return;
         }
@@ -197,7 +210,10 @@ export class RequestScheduler {
             ' and priority ' + priority
         );
 
-        const protected_callback = (response, query) => {
+        // Catch any exceptions that the client's callback throws
+        // so as to avoid killing the "thread" and thus prevent
+        // subsequent responses being handled.
+        const protected_callback = (response: any, query: string) => {
             try {
                 return callback(response, query);
             } catch (ex) {
@@ -206,7 +222,7 @@ export class RequestScheduler {
             }
         }
 
-        const protected_converter = evt => {
+        const protected_converter = (evt: any) => {
             try {
                 return event_converter(evt);
             } catch (ex) {
@@ -225,7 +241,11 @@ export class RequestScheduler {
         }
     }
 
-    _pretendToSendOne(query, callback, cached_response) {
+    _pretendToSendOne(
+        query: string,
+        callback: (converted_event: any, query: string) => void,
+        cached_response: any
+    ) {
         // "Return" results asynchronously...
         // ...make it happen as soon as possible after any current 
         // synchronous code has finished - e.g. pretend it's coming back
@@ -248,15 +268,20 @@ export class RequestScheduler {
         );
     }
 
-    _sendOne(query, event_converter, callback, nocache) {
+    _sendOne(
+        query: string,
+        event_converter: (evt: any) => any,
+        callback: (converted_event: any, query: string) => void,
+        nocache: boolean
+    ) {
         const req = new XMLHttpRequest();
         req.open('GET', query, true);
-        req.onerror = function() {
+        req.onerror = function(): void {
             this.running_count -= 1;
             this.error_count += 1;
             console.log( 'Unknown error fetching ' + query );
-        };
-        req.onload = function(evt) {
+        }.bind(this);
+        req.onload = function(evt: any) {
             if (!this.live) {
                 this.running_count -= 1;
                 return;
@@ -331,6 +356,6 @@ export class RequestScheduler {
     }
 }
 
-export function create()
+export function create(): RequestScheduler {
     return new RequestScheduler();
 };

@@ -110,7 +110,14 @@ class LocalCacheImpl {
     }
 }
 
-export function createLocalCache(cache_name: string): object {
+export interface Cache {
+    set: (key: string, value: any) => void;
+    get: (key: string) => any;
+    clear: () => void;
+    hitCount: () => number;
+}
+
+export function createLocalCache(cache_name: string): Cache {
     const cache = new LocalCacheImpl(cache_name);
     return {
         set: (key: string, value: any) => cache.set(key, value),

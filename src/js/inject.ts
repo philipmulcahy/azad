@@ -1,5 +1,4 @@
-/* Copyright(c) 2018 Philip Mulcahy. */
-/* Copyright(c) 2016 Philip Mulcahy. */
+/* Copyright(c) 2016-2020 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
 
@@ -57,7 +56,7 @@ function resetScheduler() {
 let cached_years: Promise<number[]> = null;
 
 function getYears(): Promise<number[]> {
-    const getPromise = function() {
+    const getPromise = function(): Promise<number[]> {
         const url = 'https://' + SITE + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
         return fetch(url).then( response => response.text() )
                          .then( text => {
@@ -75,7 +74,8 @@ function getYears(): Promise<number[]> {
                             .replace('nel', '')  // amazon.it
                             .trim()
             ).filter( element => (/^\d+$/).test(element) )
-             .filter( year => (year >= '2004') );
+             .map( (year_string: string) => Number(year_string) )
+             .filter( year => (year >= 2004) );
             return years;
         });
     }
@@ -167,7 +167,8 @@ function addPopupButton() {
                             'removed in a future version of the order' +
                             'history extension.'
                         );
-                    }
+                    },
+                    'azad_where_button'
                 );
             }
         }

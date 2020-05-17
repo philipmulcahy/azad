@@ -4,7 +4,7 @@
 /* jshint strict: true, esversion: 6 */
 
 import * as $ from 'jquery';
-import 'datatables';
+import 'datatables.net';
 import * as util from './util';
 import * as csv from './csv';
 import * as sprintf from 'sprintf-js';
@@ -56,7 +56,7 @@ const addLinkCell = function(row: any, text: string, href: string) {
 
 const TAX_HELP = 'Caution: tax is often not listed when stuff is not supplied by Amazon, is cancelled, or is pre-order.';
 
-const cols = [
+const cols: Record<string, any>[] = [
     {
         field_name: 'order id',
         type: 'func',
@@ -224,8 +224,6 @@ function reallyDisplayOrders(orders: azad_order.Order[], beautiful: boolean) {
                 }
                 let elem = null;
                 switch(col_spec.type) {
-                    // This seems to be only for when info is available already and no initial prep is needed.
-                    // Seems like the item description could use this also.
                     case 'promise':
                         {
                             elem = addCell(tr, 'pending');
@@ -314,15 +312,15 @@ function reallyDisplayOrders(orders: azad_order.Order[], beautiful: boolean) {
             if (datatable) {
                 datatable.destroy();
             }
-            datatable = $('#azad_order_table').DataTable({
+            datatable = (<any>$('#azad_order_table')).DataTable({
                 'bPaginate': true,
                 'lengthMenu': [ [10, 25, 50, 100, -1],
                     [10, 25, 50, 100, 'All'] ],
                 'footerCallback': function() {
                     const api = this.api();
                     // Remove the formatting to get integer data for summation
-                    const floatVal = v => {
-                        const parse = i => {
+                    const floatVal = (v: string | number): number => {
+                        const parse = (i: string | number) => {
                             try {
                                 if(typeof i === 'string') {
                                     return (i === 'N/A' || i === '-' || i === 'pending') ?
@@ -350,14 +348,14 @@ function reallyDisplayOrders(orders: azad_order.Order[], beautiful: boolean) {
                             col_spec.sum = floatVal(
                                 api.column(col_index)
                                    .data()
-                                   .map( v => floatVal(v) )
-                                   .reduce( (a, b) => a + b, 0 )
+                                   .map( (v: string | number) => floatVal(v) )
+                                   .reduce( (a: number, b: number) => a + b, 0 )
                             );
                             col_spec.pageSum = floatVal(
                                 api.column(col_index, { page: 'current' })
                                    .data()
-                                   .map( v => floatVal(v) )
-                                   .reduce( (a, b) => a + b, 0 )
+                                   .map( (v: string | number) => floatVal(v) )
+                                   .reduce( (a: number, b: number) => a + b, 0 )
                             );
                             $(api.column(col_index).footer()).html(
                                 sprintf.sprintf('page=%s; all=%s',
@@ -373,22 +371,40 @@ function reallyDisplayOrders(orders: azad_order.Order[], beautiful: boolean) {
             util.addButton(
                 'plain table',
                 function() {
-                    displayOrders(orders, false);
+                    displayOrders(
+                        orders.map(
+                            (order: azad_order.Order) => Promise.resolve(order)
+                        ),
+                        false
+                    );
                 },
                 'azad_table_button'
             );
-            addCsvButton(orders);
+            addCsvButton(
+                orders.map(
+                    (order: azad_order.Order) => Promise.resolve(order)
+                ),
+            );
         });
     } else {
         util.removeButton('plain table');
         util.addButton(
             'data table',
             function() {
-                displayOrders(orders, true);
+                displayOrders(
+                    orders.map(
+                        (order: azad_order.Order) => Promise.resolve(order)
+                    ),
+                    true
+                );
             },
             'azad_table_button'
         );
-        addCsvButton(orders);
+        addCsvButton(
+            orders.map(
+                (order: azad_order.Order) => Promise.resolve(order)
+            ),
+        );
     }
     console.log('azad.reallyDisplayOrders returning');
 
@@ -397,7 +413,7 @@ function reallyDisplayOrders(orders: azad_order.Order[], beautiful: boolean) {
     return Promise.all(cell_value_promises).then( () => table );
 }
 
-function addCsvButton(orders) {
+function addCsvButton(orders: Promise<azad_order.Order>[]) {
     const title = 'download csv';
     util.removeButton(title);
     util.addButton(
@@ -413,7 +429,10 @@ function addCsvButton(orders) {
 
 // TODO: refactor so that order retrieval belongs to azad_table, but 
 // diagnostics building belongs to azad_order.
-export function displayOrders(orderPromises, beautiful) {
+export function displayOrders(
+    orderPromises: Promise<azad_order.Order>[],
+    beautiful: boolean
+) {
     console.log('amazon_order_history_table.displayOrders starting');
     return Promise.all(orderPromises).then( orders => {
         console.log('amazon_order_history_table.displayOrders then func starting');
@@ -423,7 +442,7 @@ export function displayOrders(orderPromises, beautiful) {
     });
 }
 
-export function dumpOrderDiagnostics(order_id) {
+export function dumpOrderDiagnostics(order_id: string) {
     console.log('dumpOrderDiagnostics: ' + order_id);
     const order = order_map[order_id];
     if (order) {
