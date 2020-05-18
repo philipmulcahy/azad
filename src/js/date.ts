@@ -4,6 +4,9 @@
 
 "use strict";
 
+// 2020-05 moment's typing is not 'normal'.
+// See https://stackoverflow.com/questions/36648231/how-can-moment-js-be-imported-with-typescript
+// and also esModuleInterop = true in tsconfig.js 
 const moment = require('moment');
 
 import { sprintf } from 'sprintf-js';
