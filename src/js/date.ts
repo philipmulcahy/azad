@@ -5,9 +5,14 @@
 "use strict";
 
 const moment = require('moment');
+
 import { sprintf } from 'sprintf-js';
 
-function localDateFromMoment(m): string {
+interface Moment {
+    toDate: () => Date;
+}
+
+function localDateFromMoment(m: any): string {
     const d = m.toDate();
     return sprintf(
         '%d-%02d-%02d',
@@ -39,7 +44,9 @@ const ALT_FORMATS = [
 ];
 
 function getMoms(ds: string) {
-    return LOCALES.map( locale => moment(ds, 'LL', locale, true) ).concat(
+    return LOCALES.map(
+        locale => moment(ds, 'LL', locale, true)
+    ).concat(
         ALT_FORMATS.map(
             rule => moment(ds, rule.format, rule.locale, true)
         )

@@ -39,7 +39,7 @@ export function runAll(doc: HTMLDocument) {
                 row.appendChild(result_td);
                 suite_name_td.textContent = suite_name;
                 key_td.textContent = key;
-                result_td.textContent = passed;
+                result_td.textContent = passed ? 'PASS' : 'FAIL';
                 result_td.setAttribute('class', passed ? 'good' : 'bad');
             });
     });
