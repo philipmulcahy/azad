@@ -3,7 +3,7 @@
 
 "use strict";
 
-import save_file from './save_file';
+import * as save_file from './save_file';
 
 export function download(table: any) {
     const tableToArrayOfArrays = function(table: { rows: any; }) {

@@ -1,10 +1,9 @@
-/* Copyright(c) 2018 Philip Mulcahy. */
-/* Copyright(c) 2016 Philip Mulcahy. */
+/* Copyright(c) 2016-2020 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
 
 import * as $ from 'jquery';
-import 'datatables.net';
+import 'datatables';
 import * as util from './util';
 import * as csv from './csv';
 import * as sprintf from 'sprintf-js';

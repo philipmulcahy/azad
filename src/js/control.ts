@@ -4,8 +4,8 @@
 
 'use strict';
 
-import * as $ from 'jquery';
-import settings from './settings';
+const $ = require('jquery');
+import * as settings from './settings';
 
 function activateIdle() {
     console.log('activateIdle');
