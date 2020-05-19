@@ -12,8 +12,8 @@ const chrome_extension_options = {
     target: 'web',
     mode: process.env.NODE_ENV || "development",
     entry: {
-        inject: path.join(__dirname, "src", "js", "inject.js"),
-        background: path.join(__dirname, "src", "js", "background.js"),
+        inject: path.join(__dirname, "src", "js", "inject.ts"),
+        background: path.join(__dirname, "src", "js", "background.ts"),
         control: path.join(__dirname, "src", "js", "control.js"),
         alltests: path.join(__dirname, "src", "tests", "all.ts"),
     },

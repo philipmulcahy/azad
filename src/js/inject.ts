@@ -79,7 +79,7 @@ function getYears(): Promise<number[]> {
             return years;
         });
     }
-    if(typeof(cached_years) === 'undefined') {
+    if(cached_years == null) {
         console.log('getYears() needs to do something');
         cached_years = getPromise();
     }

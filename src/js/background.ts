@@ -25,10 +25,13 @@ function registerConnectionListener() {
                             control_port.postMessage(msg);
                             break;
                         case 'advertise_years':
-                            console.log('forwarding advertise_years', msg.years);
+                            console.log(
+                                'forwarding advertise_years',
+                                msg.years
+                            );
                             advertised_years = [
-                                ...new Set<number>(
-                                    advertised_years.concat(msg.years)
+                                ...Array.from(new Set<number>(
+                                    advertised_years.concat(msg.years))
                                 )
                             ].sort();
                             advertiseYears();
@@ -48,7 +51,10 @@ function registerConnectionListener() {
                 port.onMessage.addListener( msg => {
                     switch(msg.action) {
                         case 'scrape_years':
-                            console.log('forwarding scrape_years', + msg.years);
+                            console.log(
+                                'forwarding scrape_years',
+                                msg.years
+                            );
                             Object.values(content_ports).forEach( port =>
                                 port.postMessage(msg)
                             );
