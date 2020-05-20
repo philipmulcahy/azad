@@ -14,7 +14,7 @@ const chrome_extension_options = {
     entry: {
         inject: path.join(__dirname, "src", "js", "inject.ts"),
         background: path.join(__dirname, "src", "js", "background.ts"),
-        control: path.join(__dirname, "src", "js", "control.js"),
+        control: path.join(__dirname, "src", "js", "control.ts"),
         alltests: path.join(__dirname, "src", "tests", "all.ts"),
     },
     output: {

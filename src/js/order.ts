@@ -542,7 +542,7 @@ function getOrdersForYearAndQueryTemplate(
 ) {
     let expected_order_count: number = null;
     let order_found_callback: (order_promise: Promise<Order>) => void = null;
-    const order_promises: Promise<Order>[] = null;
+    const order_promises: Promise<Order>[] = [];
     const sendGetOrderCount = function() {
         scheduler.schedule(
             generateQueryString(0),
