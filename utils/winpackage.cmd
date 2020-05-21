@@ -14,7 +14,9 @@ set ZipFile=azad.zip
 cd "%~dp0.."
 
 ::  run lint
-node node_modules\eslint\bin\eslint.js src/js
+::::::: Lint isn't working in Windows.
+:: tsc c:/Users/kille/Documents/GitHub/azad/src/js/*
+:::::::::::::::::::: node node_modules\eslint\bin\eslint.js src/js
 if %errorlevel% gtr 0 goto :EOF
 
 :: run npm build command
@@ -23,9 +25,9 @@ if %errorlevel% gtr 0 echo Build errorcode %errorlevel%
 if %errorlevel% gtr 0 goto :EOF
 
 :: Delete old package
-del %ZipFile%
+if exist "%ZipFile%" del "%ZipFile%"
 :: Create new package. Windows does not have a commandline zip command, so this is the alternate. Must have Powershell installed.
-powershell -ExecutionPolicy ByPass -Command Compress-Archive %Source% %ZipFile%
+powershell -ExecutionPolicy ByPass -Command Compress-Archive "%Source%" "%ZipFile%"
 
 :: echo.123456789_123456789_123456789_123456789_123456789_123456789_123456789_12
 echo.########################################################################
