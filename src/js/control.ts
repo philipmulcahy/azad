@@ -4,8 +4,8 @@
 
 'use strict';
 
-import $ from 'jquery';
-import settings from './settings';
+const $ = require('jquery');
+import * as settings from './settings';
 
 function activateIdle() {
     console.log('activateIdle');
@@ -13,24 +13,24 @@ function activateIdle() {
     console.log('hello world');
 }
 
-function activateScraping(years) {
+function activateScraping(years: number[]) {
     console.log('activateScraping');
     showOnly(['azad_stop', 'azad_hide_controls']);
     $('#azad_state').text('scraping ' + years.join(','));
 }
 
-function activateDone(years) {
+function activateDone(years: number[]) {
     console.log('activateDone');
     showOnly(['azad_clear_cache', 'azad_hide_controls']);
     $('#azad_state').text(years.join(','));
 }
 
-function showOnly(button_ids) {
+function showOnly(button_ids: any[]) {
     $('.azad_action').addClass('hidden');
     button_ids.forEach( id => $('#' + id).removeClass('hidden') ); 
 }
 
-let background_port = null;
+let background_port: chrome.runtime.Port = null;
 function connectToBackground() {
     console.log('connectToBackground');
     background_port = chrome.runtime.connect(null, { name: 'azad_control' });
@@ -69,7 +69,7 @@ function registerActionButtons() {
     });
 }
 
-function showYearButtons(years) {
+function showYearButtons(years: number[]) {
     console.log('show year buttons', years);
     $('.azad_year_button').remove();
     years.sort().reverse().forEach( year => {
@@ -81,7 +81,7 @@ function showYearButtons(years) {
     
 }
 
-function handleYearClick(evt) {
+function handleYearClick(evt: { target: { value: any; }; }) {
     const year = evt.target.value;
     const years = [year];
     activateScraping(years);

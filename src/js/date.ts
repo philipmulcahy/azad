@@ -4,12 +4,23 @@
 
 "use strict";
 
-import moment from 'moment';
-import sprintf from 'sprintf-js';
+// 2020-05 moment's typing is not 'normal'.
+// See https://stackoverflow.com/questions/36648231/how-can-moment-js-be-imported-with-typescript
+// and also esModuleInterop = true in tsconfig.js 
+const moment = require('moment');
 
-function localDateFromMoment(m) {
+import { sprintf } from 'sprintf-js';
+
+interface Moment {
+    toDate: () => Date;
+}
+
+function localDateFromMoment(m: any): string {
     const d = m.toDate();
-    return sprintf.sprintf('%d-%02d-%02d', d.getYear()+1900, d.getMonth()+1, d.getDate());
+    return sprintf(
+        '%d-%02d-%02d',
+        d.getYear()+1900, d.getMonth()+1, d.getDate()
+    );
 }
 
 const LOCALES = ['de', 'en', 'en-gb', 'es', 'fr', 'it'];
@@ -35,19 +46,21 @@ const ALT_FORMATS = [
     {format: 'D. MMMM YYYY', locale: 'it'}
 ];
 
-function getMoms(ds) {
-    return LOCALES.map( locale => moment(ds, 'LL', locale, true) ).concat(
+function getMoms(ds: string) {
+    return LOCALES.map(
+        locale => moment(ds, 'LL', locale, true)
+    ).concat(
         ALT_FORMATS.map(
             rule => moment(ds, rule.format, rule.locale, true)
         )
     );
 }
 
-function  getMom(ds) {
+function  getMom(ds: string) {
     return getMoms(ds).filter( m => m.isValid() )[0];
 }
 
-function normalizeDateString(ds) {
+export function normalizeDateString(ds: string): string {
     if ( !ds ) { return "N/A"; }
     const mom = getMom(ds);
     if (!mom) {
@@ -56,7 +69,3 @@ function normalizeDateString(ds) {
     }
     return localDateFromMoment(mom);
 }
-
-export default {
-    normalizeDateString: normalizeDateString
-};

@@ -6,20 +6,16 @@ const env = require("./utils/env");
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const WriteFilePlugin = require("write-file-webpack-plugin");
-
-// load the secrets
-const alias = {};
-
-const fileExtensions = ["jpg", "jpeg", "png", "gif", "svg"];
+const imageFileExtensions = ["jpg", "jpeg", "png", "gif", "svg"];
 
 const chrome_extension_options = {
     target: 'web',
     mode: process.env.NODE_ENV || "development",
     entry: {
-        inject: path.join(__dirname, "src", "js", "inject.js"),
-        background: path.join(__dirname, "src", "js", "background.js"),
-        control: path.join(__dirname, "src", "js", "control.js"),
-        alltests: path.join(__dirname, "src", "tests", "all.js"),
+        inject: path.join(__dirname, "src", "js", "inject.ts"),
+        background: path.join(__dirname, "src", "js", "background.ts"),
+        control: path.join(__dirname, "src", "js", "control.ts"),
+        alltests: path.join(__dirname, "src", "tests", "all.ts"),
     },
     output: {
         path: path.join(__dirname, "build"),
@@ -28,18 +24,24 @@ const chrome_extension_options = {
     module: {
         rules: [
             {
+                test: /\.tsx?$/,
+                exclude: /node_modules/,
+                loader: 'ts-loader',
+                options: {compilerOptions: {outDir: "./build"}},
+            },
+            {
                 test: /\.css$/,
                 use: ['style-loader','css-loader']
             },
             {
-                test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
+                test: new RegExp('\.(' + imageFileExtensions.join('|') + ')$'),
                 loader: "file-loader?name=[name].[ext]",
-                exclude: /node_modules/
+                exclude: /node_modules/,
             },
             {
                 test: /\.html$/,
                 loader: "html-loader",
-                exclude: /node_modules/
+                exclude: /node_modules/,
             },
             {
                 test: /\.vue$/,
@@ -53,9 +55,8 @@ const chrome_extension_options = {
         ]
     },
     resolve: {
-        alias: {
-            'vue$': 'vue/dist/vue.js'
-        }
+        alias: { 'vue$': 'vue/dist/vue.js' },
+        extensions: ['.tsx', '.ts', '.ts', '.js'],
     },
     plugins: [
         // clean the build folder
@@ -112,7 +113,7 @@ const node_options = {
     target: 'node',
     mode: process.env.NODE_ENV || "development",
     entry: {
-        order_tests: path.join(__dirname, "src", "tests", "order_tests.js"),
+        order_tests: path.join(__dirname, "src", "tests", "order_tests.ts"),
     },
     output: {
         path: path.join(__dirname, "build-node"),
@@ -121,9 +122,15 @@ const node_options = {
     module: {
         rules: [
             {
-                test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
+                test: new RegExp('\.(' + imageFileExtensions.join('|') + ')$'),
                 loader: "file-loader?name=[name].[ext]",
                 exclude: /node_modules/
+            },
+            {
+                test: /\.tsx?$/,
+                exclude: /node_modules/,
+                loader: 'ts-loader',
+                options: {compilerOptions: {outDir: "./build-node"}},
             },
             {
                 test: /\.html$/,
@@ -133,7 +140,8 @@ const node_options = {
         ]
     },
     resolve: {
-        alias: alias
+        alias: {},
+        extensions: ['.tsx', '.ts', '.ts', '.js'],
     },
     plugins: [
         // clean the build folder

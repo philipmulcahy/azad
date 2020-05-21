@@ -1,16 +1,15 @@
 /* Copyright(c) 2016-2020 Philip Mulcahy. */
 
-/* jshint strict: true, esversion: 6 */
-
 'use strict';
 
-import util from './util';
-import date from './date';
-import extraction from './extraction';
-import sprintf from 'sprintf-js';
-import dom2json from './dom2json';
+import * as util from './util';
+import * as date from './date';
+import * as extraction from './extraction';
+import * as sprintf from 'sprintf-js';
+import * as dom2json from './dom2json';
+import * as request_scheduler from './request_scheduler';
 
-function getField(xpath, elem) {
+function getField(xpath: string, elem: HTMLElement) {
     const valueElem = util.findSingleNodeValue(
         xpath, elem
     );
@@ -21,7 +20,7 @@ function getField(xpath, elem) {
     }
 }
 
-function extractDetailFromDoc(order, doc) {
+function extractDetailFromDoc(order: Order, doc: any) {
 
     const who = function(){
         if(order.who) {
@@ -293,21 +292,27 @@ function extractDetailFromDoc(order, doc) {
     };
 }
 
-const extractDetailPromise = (order, request_scheduler) => new Promise(
+const extractDetailPromise = (
+    order: Order,
+    scheduler: request_scheduler.RequestScheduler
+) => new Promise(
     resolve => {
         const query = order.detail_url;
-        const event_converter = function(evt) {
+        const event_converter = function(
+            evt: { target: { responseText: any; }; }
+        ) {
             const doc = util.parseStringToDOM( evt.target.responseText );
             return extractDetailFromDoc(order, doc);
         };
         try {
-            request_scheduler.schedule(
+            scheduler.schedule(
                 query,
                 event_converter,
-                order_details => {
+                (order_details: any) => {
                     resolve(order_details);
                 },
-                order.id
+                order.id,
+                false
             );
         } catch (ex) {
             console.error('scheduler rejected ' + order.id + ' ' + query);
@@ -315,8 +320,29 @@ const extractDetailPromise = (order, request_scheduler) => new Promise(
     }
 );
 
-class Order {
-    constructor(ordersPageElem, request_scheduler, src_query) {
+function getProperty<T, K extends keyof T>(obj: T, key: K) {
+  return obj[key]; // Inferred type is T[K]
+}
+
+export class Order {
+    id: string;
+    site: string;
+    list_url: string;
+    detail_url: string;
+    invoice_url: string;
+    date: string;
+    total: string;
+    who: string;
+    detail_promise: Promise<any>;
+    items: Record<string, any>;
+    payments_promise: Promise<any>;
+    scheduler: request_scheduler.RequestScheduler;
+
+    constructor(
+        ordersPageElem: HTMLElement,
+        scheduler: request_scheduler.RequestScheduler,
+        src_query: string
+    ) {
         this.id = null;
         this.site = null;
         this.list_url = src_query;
@@ -327,11 +353,11 @@ class Order {
         this.who = null;
         this.detail_promise = null;
         this.items = null;
-        this.request_scheduler = request_scheduler;
+        this.scheduler = scheduler;
         this._extractOrder(ordersPageElem);
     }
 
-    getValuePromise(key) {
+    getValuePromise(key: keyof Order | string): Promise<any> {
         const detail_keys = [
             'date',
             'gift',
@@ -352,11 +378,11 @@ class Order {
         if (key == 'payments') {
             return this.payments_promise;
         }
-        return Promise.resolve(this[key]);
+        return Promise.resolve(this[<keyof Order>key]);
     }
 
-    _extractOrder(elem) {
-        const getItems = function(elem) {
+    _extractOrder(elem: HTMLElement) {
+        const getItems = function(elem: HTMLElement): Record<string, any> {
             /*
               <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
                   The Rise and Fall of D.O.D.O.
@@ -372,15 +398,15 @@ class Order {
                   link from href attribute
                   item: not sure what we use this for - will it still work?
             */
-            const itemResult = util.findMultipleNodeValues(
+            const itemResult: Node[] = util.findMultipleNodeValues(
 // Note, some items don't have title= links, and some don't have links which contain '/gp/product/'. See D01-9406277-3414619. Confirming "a-row" seems to be enough.
 //                './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
                 './/div[@class="a-row"]/a[@class="a-link-normal"]',
                 elem
             );
-            const items = {};
+            const items: Record<string, any> = {};
             itemResult.forEach(
-                function(item){
+                function(item: HTMLElement) {
                     const name = item.innerHTML.replace(/[\n\r]/g, " ")
                                              .replace(/  */g, " ")
                                              .replace(/&amp;/g, "&")
@@ -415,7 +441,8 @@ class Order {
             '/../div/span[contains(@class,"value")]', elem);
         this.who = getField('.//div[contains(@class,"recipient")]' +
             '//span[@class="trigger-text"]', elem);
-        this.id = Array(...elem.getElementsByTagName('a'))
+        this.id = [
+            ...Array.prototype.slice.call(elem.getElementsByTagName('a'))]
             .filter( el => el.hasAttribute('href') )
             .map( el => el.getAttribute('href') )
             .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
@@ -424,31 +451,35 @@ class Order {
         this.detail_url = util.getOrderDetailUrl(this.id, this.site);
         this.invoice_url = util.getOrderPaymentUrl(this.id, this.site);
         if (!this.id) {
-            this.id = util.findSingleNodeValue(
+            const id_node: Node = util.findSingleNodeValue(
                 '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
                 elem
-            ).getAttribute('href').match(/.*orderID=([^?]*)/)[1];
+            );
+            const id_elem: HTMLElement = <HTMLElement>id_node;
+            const more_than_id: string = id_elem.getAttribute('href');
+            this.id = more_than_id.match(/.*orderID=([^?]*)/)[1];
         }
         this.items = getItems(elem);
-        this.detail_promise = extractDetailPromise(this, this.request_scheduler);
+        this.detail_promise = extractDetailPromise(this, this.scheduler);
         this.payments_promise = new Promise(
-            (resolve => {
+            ((resolve: (arg0: string[]) => void) => {
                 if (this.id.startsWith("D")) {
                     resolve(( !this.total ? [this.date] : [this.date + ": " + this.total]));
                 } else {
-                    const event_converter = function(evt) {
+                    const event_converter = function(evt: any) {
                         const doc = util.parseStringToDOM( evt.target.responseText );
                         const payments = extraction.payments_from_invoice(doc);
                         // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
                         return payments;
                     }.bind(this);
-                    this.request_scheduler.schedule(
+                    this.scheduler.schedule(
                         this.invoice_url,
                         event_converter,
                         payments => {
                             resolve(payments);
                         },
-                        this.id
+                        this.id,  // priority
+                        false  // nocache
                     );
                 }
             }).bind(this)
@@ -460,7 +491,7 @@ class Order {
      * but doesn't actually embed it.
      * @param {document} doc. DOM document needed to create elements.
      */
-    itemsHtml(doc) {
+    itemsHtml(doc: HTMLDocument) {
         const ul = doc.createElement('ul');
         for(let title in this.items) {
             if (Object.prototype.hasOwnProperty.call(this.items, title)) {
@@ -476,7 +507,7 @@ class Order {
     }
 
     assembleDiagnostics() {
-        const diagnostics = {};
+        const diagnostics: Record<string, any> = {};
         [
             'id',
             'list_url',
@@ -487,33 +518,33 @@ class Order {
             'who',
             'items'
         ].forEach(
-            field_name => { diagnostics[field_name] = this[field_name]; }
+            function(field_name: keyof Order) { diagnostics[field_name] = this[field_name]; }
         );
         return Promise.all([
             fetch(this.list_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.list_html = text; } ),
+                .then( text => { diagnostics['list_html'] = text; } ),
             fetch(this.detail_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.detail_html = text; } ),
+                .then( text => { diagnostics['detail_html'] = text; } ),
             fetch(this.invoice_url)
                 .then( response => response.text() )
-                .then( text => { diagnostics.invoice_html = text; } )
+                .then( text => { diagnostics['invoice_html'] = text; } )
         ]).then( () => diagnostics );
     }
 }
 
 function getOrdersForYearAndQueryTemplate(
-    year,
-    query_template,
-    request_scheduler,
-    nocache_top_level
+    year: number,
+    query_template: string,
+    scheduler: request_scheduler.RequestScheduler,
+    nocache_top_level: boolean
 ) {
-    let expected_order_count = null;
-    let order_found_callback = null;
-    const order_promises = [];
+    let expected_order_count: number = null;
+    let order_found_callback: (order_promise: Promise<Order>) => void = null;
+    const order_promises: Promise<Order>[] = [];
     const sendGetOrderCount = function() {
-        request_scheduler.schedule(
+        scheduler.schedule(
             generateQueryString(0),
             convertOrdersPage,
             receiveOrdersCount,
@@ -521,7 +552,7 @@ function getOrdersForYearAndQueryTemplate(
             nocache_top_level
         );
     };
-    const generateQueryString = function(startOrderPos) {
+    const generateQueryString = function(startOrderPos: number) {
         return sprintf.sprintf(
             query_template,
             {
@@ -531,7 +562,7 @@ function getOrdersForYearAndQueryTemplate(
             }
         );
     };
-    const convertOrdersPage = function(evt) {
+    const convertOrdersPage = function(evt: any) {
         const d = util.parseStringToDOM(evt.target.responseText);
         const countSpan = util.findSingleNodeValue(
             './/span[@class="num-orders"]', d.documentElement);
@@ -573,31 +604,32 @@ function getOrdersForYearAndQueryTemplate(
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
         };
     };
-    const receiveOrdersCount = function(orders_page_data) {
+    const receiveOrdersCount = function(orders_page_data: { expected_order_count: number; }) {
         expected_order_count = orders_page_data.expected_order_count;
         // TODO: restore efficiency - the first ten orders are visible in the page we got expected_order_count from.
         for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
             console.log(
                 'sending request for order: ' + iorder + ' onwards'
             );
-            request_scheduler.schedule(
+            scheduler.schedule(
                 generateQueryString(iorder),
                 convertOrdersPage,
                 receiveOrdersPageData,
-                '2'
+                '2',
+                false
             );
         }
     };
-    const receiveOrdersPageData = function(orders_page_data, src_query) {
+    const receiveOrdersPageData = function(orders_page_data: any, src_query: string): void {
         const order_elems = orders_page_data.order_elems.map(
-            elem => dom2json.toDOM(elem)
+            (elem: any) => dom2json.toDOM(elem)
         );
-        function makeOrderPromise(elem) {
-            const order = create(elem, request_scheduler, src_query);
+        function makeOrderPromise(elem: HTMLElement) {
+            const order = create(elem, scheduler, src_query);
             return Promise.resolve(order);
         }
         order_elems.forEach(
-            elem => order_found_callback( makeOrderPromise(elem) )
+            (elem: HTMLElement) => order_found_callback( makeOrderPromise(elem) )
         );
     };
 
@@ -605,7 +637,7 @@ function getOrdersForYearAndQueryTemplate(
     return new Promise(
         resolve => {
             {
-                let scheduled_check_id = null;
+                let scheduled_check_id: NodeJS.Timeout = null;
                 const checkComplete = function() {
                     clearTimeout(scheduled_check_id);
                     console.log(
@@ -613,7 +645,7 @@ function getOrdersForYearAndQueryTemplate(
                         + ' expected:' + expected_order_count
                     );
                     if(order_promises.length == expected_order_count ||
-                        !request_scheduler.isLive()
+                        !scheduler.isLive()
                     ) {
                         console.log('resolving order_promises for ' + year);
                         resolve(order_promises);
@@ -628,7 +660,7 @@ function getOrdersForYearAndQueryTemplate(
                 // start checking loop
                 checkComplete();
             }
-            order_found_callback = function(order_promise) {
+            order_found_callback = function(order_promise: Promise<Order>): void {
                 order_promises.push(order_promise);
                 order_promise.then( order => {
                     // TODO is "Fetching" the right message for this stage?
@@ -646,8 +678,12 @@ function getOrdersForYearAndQueryTemplate(
     );
 }
 
-function fetchYear(year, request_scheduler, nocache_top_level) {
-    const templates_by_site = {
+function fetchYear(
+    year: number,
+    scheduler: request_scheduler.RequestScheduler,
+    nocache_top_level: boolean
+): Promise<Promise<Order>[]> {
+    const templates_by_site: Record<string, string[]> = {
         'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
@@ -802,11 +838,11 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
               'and provide the diagnostic information');
     }
 
-    const promises_to_promises = templates.map(
+    const promises_to_promises: Array<Promise<any>> = templates.map(
         template => getOrdersForYearAndQueryTemplate(
             year,
             template,
-            request_scheduler,
+            scheduler,
             nocache_top_level
         )
     );
@@ -815,9 +851,9 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
     .then( array2_of_promise => {
         // We can now know how many orders there are, although we may only
         // have a promise to each order not the order itself.
-        const order_promises = [];
+        const order_promises: Promise<Order>[] = [];
         array2_of_promise.forEach( promises => {
-            promises.forEach( promise => {
+            promises.forEach( (promise: Promise<Order>) => {
                 order_promises.push(promise);
             });
         });
@@ -825,39 +861,43 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
     });
 }
 
-/* Returns array of Order Promise */
-function getOrdersByYear(years, request_scheduler, latest_year) {
+export function getOrdersByYear(
+    years: number[],
+    scheduler: request_scheduler.RequestScheduler,
+    latest_year: number
+): Promise<Promise<Order>[]> {
     // At return time we may not know how many orders there are, only
     // how many years in which orders have been queried for.
     return Promise.all(
         years.map(
-            function(year) {
+            function(year: number): Promise<Promise<Order>[]> {
                 const nocache_top_level = (year == latest_year);
-                return fetchYear(year, request_scheduler, nocache_top_level);
+                return fetchYear(year, scheduler, nocache_top_level);
             }
         )
     ).then(
-        array2_of_order_promise => {
+        (array2_of_order_promise: Promise<Order>[][]) => {
             // Flatten the array of arrays of Promise<Order> into
             // an array of Promise<Order>.
-            return [].concat.apply(
-                [],
-                array2_of_order_promise
+            const order_promises: Promise<Order>[] = [];
+            array2_of_order_promise.forEach(
+                (year_order_promises: Promise<Order>[]) => {
+                    year_order_promises.forEach(
+                        (order_promise: Promise<Order>) => {
+                            order_promises.push(order_promise);
+                        }
+                    );
+                }
             );
+            return order_promises;
         }
     );
 }
 
-function create(ordersPageElem, request_scheduler, src_query) {
-    return new Order(ordersPageElem, request_scheduler, src_query);
+export function create(
+    ordersPageElem: HTMLElement,
+    scheduler: request_scheduler.RequestScheduler,
+    src_query: string
+) {
+    return new Order(ordersPageElem, scheduler, src_query);
 }
-
-export default {
-    create: create,
-
-    // Return Array of Order Promise.
-    getOrdersByYear: getOrdersByYear,
-
-    // For unit testing.
-    extractDetailFromDoc: extractDetailFromDoc,
-};

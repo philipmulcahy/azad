@@ -3,18 +3,18 @@
 
 'use strict';
 
-import $ from 'jquery'
+import * as $ from 'jquery'
 
-const test_suites = {};
+const test_suites: Record<string, any> = {};
 
-function register(name, test_suite) {
+export function register(name: string, test_suite: any) {
     if (name in test_suites) {
         throw 'name already registered: ' + name;
     }
     test_suites[name] = test_suite;
 }
 
-function runAll(doc) {
+export function runAll(doc: HTMLDocument) {
     const table = $(doc.body).find('#results_table')[0];
     Object.keys(test_suites).forEach( suite_name => {
         console.log('found test suite: ' + suite_name);
@@ -23,7 +23,12 @@ function runAll(doc) {
             .filter( key => key.endsWith('_test') )
             .forEach( key => {
                 const test = suite[key];
-                const passed = test();
+                let passed: boolean = false;
+                try {
+                    passed = test();
+                } catch(ex) {
+                    console.warn(ex);
+                }
                 const row = doc.createElement('tr');
                 table.appendChild(row);
                 const suite_name_td = doc.createElement('td');
@@ -34,13 +39,8 @@ function runAll(doc) {
                 row.appendChild(result_td);
                 suite_name_td.textContent = suite_name;
                 key_td.textContent = key;
-                result_td.textContent = passed;
+                result_td.textContent = passed ? 'PASS' : 'FAIL';
                 result_td.setAttribute('class', passed ? 'good' : 'bad');
             });
     });
-}
-
-export default {
-    register: register,
-    runAll: runAll
 }

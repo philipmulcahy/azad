@@ -3,9 +3,9 @@
 
 'use strict';
 
-import tests from './tests';
-import order_data from './order_data';
-import extraction from '../js/extraction';
+import * as tests from './tests';
+import * as order_data from './order_data';
+import * as extraction from '../js/extraction';
 
 const detailExtractionTest = () => {
     const order_detail_html = order_data.order_D01_9960417_3589456_html();
@@ -35,5 +35,3 @@ const extraction_tests = {
 };
 
 tests.register('extraction_tests', extraction_tests);
-
-export default {};
