@@ -1,8 +1,7 @@
 /* Copyright(c) 2016-2020 Philip Mulcahy. */
-
 /* jshint strict: true, esversion: 6 */
 
-import * as $ from 'jquery';
+const $ = require('jquery');
 import 'datatables';
 import * as util from './util';
 import * as csv from './csv';
@@ -107,7 +106,7 @@ const cols: Record<string, any>[] = [
         type: 'promise',
         property_name: 'vat',
         is_numeric: true,
-        help: TAX_HELP, 
+        help: TAX_HELP,
         sites: new RegExp('amazon(?!.com)')
     },
     {
@@ -209,7 +208,7 @@ function reallyDisplayOrders(orders: azad_order.Order[], beautiful: boolean) {
                 const null_converter = (x: any) => {
                     if (x) {
                         if (
-                            typeof(x) === 'string' && 
+                            typeof(x) === 'string' &&
                             parseFloat(x.replace(/^([£$]|CAD|EUR|GBP) */, '').replace(/,/, '.')) + 0 == 0) {
                             return 0;
                         } else {
@@ -247,9 +246,9 @@ function reallyDisplayOrders(orders: azad_order.Order[], beautiful: boolean) {
                         break;
                 }
                 if ( elem ) {
-                    elem.setAttribute('class', elem.getAttribute('class') + 
+                    elem.setAttribute('class', elem.getAttribute('class') +
                             'azad_type_' + col_spec.type + ' ' +
-                            'azad_col_' + col_spec.property_name + ' ' + 
+                            'azad_col_' + col_spec.property_name + ' ' +
                             'azad_numeric_' + (col_spec.is_numeric ? 'yes' : 'no' ) + ' ');
                     if ('help' in col_spec) {
                         elem.setAttribute('class', elem.getAttribute('class') + 'azad_elem_has_help ');
@@ -367,43 +366,29 @@ function reallyDisplayOrders(orders: azad_order.Order[], beautiful: boolean) {
                 }
             });
             util.removeButton('data table');
+            const order_promises = orders.map(
+                (order: azad_order.Order) => Promise.resolve(order)
+            );
             util.addButton(
                 'plain table',
-                function() {
-                    displayOrders(
-                        orders.map(
-                            (order: azad_order.Order) => Promise.resolve(order)
-                        ),
-                        false
-                    );
-                },
+                function() { displayOrders(order_promises, false); },
                 'azad_table_button'
             );
-            addCsvButton(
-                orders.map(
-                    (order: azad_order.Order) => Promise.resolve(order)
-                ),
-            );
+            addCsvButton(order_promises, true);
+            addCsvButton(order_promises, false);
         });
     } else {
         util.removeButton('plain table');
+        const order_promises = orders.map(
+            (order: azad_order.Order) => Promise.resolve(order)
+        );
         util.addButton(
             'data table',
-            function() {
-                displayOrders(
-                    orders.map(
-                        (order: azad_order.Order) => Promise.resolve(order)
-                    ),
-                    true
-                );
-            },
+            function() { displayOrders(order_promises, true); },
             'azad_table_button'
         );
-        addCsvButton(
-            orders.map(
-                (order: azad_order.Order) => Promise.resolve(order)
-            ),
-        );
+        addCsvButton(order_promises, true);
+        addCsvButton(order_promises, false);
     }
     console.log('azad.reallyDisplayOrders returning');
 
@@ -412,21 +397,23 @@ function reallyDisplayOrders(orders: azad_order.Order[], beautiful: boolean) {
     return Promise.all(cell_value_promises).then( () => table );
 }
 
-function addCsvButton(orders: Promise<azad_order.Order>[]) {
-    const title = 'download csv';
+function addCsvButton(orders: Promise<azad_order.Order>[], type: boolean) {
+    const title = type ?
+        "download spreadsheet ('.csv') with totals" :
+        "download plain spreadsheet ('.csv')";
     util.removeButton(title);
-    util.addButton(
-        title,
-        function() {
-            displayOrders(orders, false).then(
-                table => csv.download(table)
-            );
-        },
-        'azad_table_button'
+    util.addButton(	
+       title,
+       function() {	
+           displayOrders(orders, false).then(
+               table => csv.download(table, type)
+           );	
+       },
+       'azad_table_button'	
     );
 }
 
-// TODO: refactor so that order retrieval belongs to azad_table, but 
+// TODO: refactor so that order retrieval belongs to azad_table, but
 // diagnostics building belongs to azad_order.
 export function displayOrders(
     orderPromises: Promise<azad_order.Order>[],
