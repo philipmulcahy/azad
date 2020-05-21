@@ -1,19 +1,51 @@
-/* Copyright(c) 2017 Philip Mulcahy. */
+/* Copyright(c) 2017-2020 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
+/* jslint node:true */
 
 "use strict";
 
 import * as save_file from './save_file';
 
-export function download(table: any) {
-    const tableToArrayOfArrays = function(table: { rows: any; }) {
-        const rows = table.rows;
+export function download(table: any, type: boolean) {
+    const tableToArrayOfArrays = function(table: any) {
+        const rows: any[] = table.rows;
         const result = [];
-        for (let i=0; i<rows.length; ++i) {
-            const cells = rows[i].cells;
-            const cell_array = [];
-            for (let j=0; j<cells.length; ++j) {
-                cell_array.push(cells[j].textContent);
+        for(let i=0; i<rows.length + ( type  ?  -1  :  0 ); ++i) {
+            let cells = rows[i].cells;
+            let cell_array = [];
+            for(let j=0; j<cells.length; ++j) {
+                let x = cells[j];
+                if (x.getAttribute("class").search("azad_numeric_no") == -1) {
+                    x = x.textContent.replace(/^([£$]|CAD|EUR|GBP) */, '');
+                } else {
+                    x = x.textContent;
+                }
+                cell_array.push(x);
+            }
+            result.push(cell_array);
+        }
+        // If type==true, replace last row for use in a spreadsheet
+        if (type) {
+            let cells = rows[2].cells;
+            let cell_array = [];
+            let x = '';
+            let y = true;
+            for(let j=0; j<cells.length; ++j) {
+                if (cells[j].getAttribute("class")
+                            .search("azad_numeric_no") == -1) {
+                    x = '=SUBTOTAL(109,{COL}2:{COL}{LAST})';
+                } else {
+                    if (y) {
+                        x = '=SUBTOTAL(103, {COL}2:{COL}{LAST}) & " items"';
+                        y = false;
+                    } else { x = ''; }
+                }
+                x = x.replace(
+                    "{COL}",String.fromCharCode("A".charCodeAt(0) + j)
+                ).replace(
+                    "{COL}",String.fromCharCode("A".charCodeAt(0) + j)
+                ).replace("{LAST}", (rows.length-1).toString());
+                cell_array.push(x);
             }
             result.push(cell_array);
         }
