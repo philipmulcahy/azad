@@ -3,10 +3,10 @@
 
 "use strict";
 
-import save_file from './save_file';
+import * as save_file from './save_file';
 
-function download(table) {
-    const tableToArrayOfArrays = function(table) {
+export function download(table: any) {
+    const tableToArrayOfArrays = function(table: { rows: any; }) {
         const rows = table.rows;
         const result = [];
         for (let i=0; i<rows.length; ++i) {
@@ -19,8 +19,8 @@ function download(table) {
         }
         return result;
     };
-    const processRow = function(row) {
-        const processCell = function (cell) {
+    const processRow = function(row: any[]) {
+        const processCell = function (cell: string) {
             if (!cell) {
                 return '';
             }

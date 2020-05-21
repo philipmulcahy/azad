@@ -3,24 +3,29 @@
 
 "use strict";
 
-import lzjs from 'lzjs'
+const lzjs = require('lzjs');
 
 function millisNow() {
     return (new Date()).getTime();
 }
 
 class LocalCacheImpl {
-    constructor(cache_name) {
+
+    cache_name: string;
+    key_stem: string;
+    hit_count: number;
+
+    constructor(cache_name: string) {
         this.cache_name = cache_name;
         this.key_stem = 'AZAD_' + this.cache_name + '_';
         this.hit_count = 0;
     }
 
-    buildRealKey(key) {
+    buildRealKey(key: string) {
         return this.key_stem + key;
     }
 
-    reallySet(real_key, value) {
+    reallySet(real_key: string, value: any) {
         window.localStorage.setItem(
             real_key,
             JSON.stringify({
@@ -30,8 +35,8 @@ class LocalCacheImpl {
         );
     }
 
-    set(key, value) {
-        const real_key = this.buildRealKey(key);
+    set(key: string, value: any): void {
+        const real_key: string = this.buildRealKey(key);
         try {
             this.reallySet(real_key, value);
         } catch(error) {
@@ -48,8 +53,8 @@ class LocalCacheImpl {
         }
     }
 
-    get(key) {
-        const real_key = this.buildRealKey(key);
+    get(key: string): any {
+        const real_key: string = this.buildRealKey(key);
         try {
             const encoded = window.localStorage.getItem(real_key);
             const packed = JSON.parse(encoded);
@@ -63,20 +68,20 @@ class LocalCacheImpl {
         }
     }
 
-    hitCount() {
+    hitCount(): number {
         return this.hit_count;
     }
 
-    getRealKeys() {
+    getRealKeys(): string[] {
         return Object.keys(window.localStorage).filter(
             key => key.startsWith(this.key_stem)
         );
     }
 
-    trim() {
+    trim(): void {
         console.log('trimming cache');
-        const real_keys = this.getRealKeys();
-        const timestamps_by_key = {};
+        const real_keys: string[] = this.getRealKeys();
+        const timestamps_by_key: Record<string, number> = {};
         real_keys.forEach( key => {
             try {
                 timestamps_by_key[key] = JSON.parse(window.localStorage.getItem(key)).timestamp;
@@ -105,16 +110,19 @@ class LocalCacheImpl {
     }
 }
 
-function createLocalCache(cache_name) {
+export interface Cache {
+    set: (key: string, value: any) => void;
+    get: (key: string) => any;
+    clear: () => void;
+    hitCount: () => number;
+}
+
+export function createLocalCache(cache_name: string): Cache {
     const cache = new LocalCacheImpl(cache_name);
     return {
-        set: (key, value) => cache.set(key, value),
-        get: key => cache.get(key),
+        set: (key: string, value: any) => cache.set(key, value),
+        get: (key: string) => cache.get(key),
         clear: () => cache.clear(),
         hitCount: () => cache.hitCount(),
     };
 }
-
-export default {
-    createLocalCache: createLocalCache
-};

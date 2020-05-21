@@ -3,9 +3,9 @@
 
 "use strict";
 
-import Vue from 'vue';
+const Vue = require('vue');
 
-function initialiseUi() {
+export function initialiseUi() {
     const KEY = 'azad_settings';
     const vue_settings_app = new Vue({
         el: '#azad_settings',
@@ -13,9 +13,9 @@ function initialiseUi() {
             checked_settings: []
         },
         watch: {
-            checked_settings: function(new_settings) {
+            checked_settings: function(new_settings: any) {
                 const value = JSON.stringify(new_settings);
-                const entry = {};
+                const entry: Record<string, any> = {};
                 entry[KEY] = value;
                 chrome.storage.sync.set(
                     entry,
@@ -33,8 +33,4 @@ function initialiseUi() {
             vue_settings_app.checked_settings = JSON.parse(entries[KEY]);
         }
     );
-}
-
-export default {
-    initialiseUi: initialiseUi,
 }

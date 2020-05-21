@@ -1,12 +1,12 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
-import order_data from './fake_order'; 
+import * as order_data from './fake_order'; 
 const assert = require('assert');
 
 const test_targets = order_data.discoverTestData();
 
-function testOneTarget( target ) {
+function testOneTarget( target: any ): any {
     const result = {
         test_id: 'ORDER_SCRAPE_' + target.site + '_' + target.order_id + '_' + target.scrape_date,
         passed: false,

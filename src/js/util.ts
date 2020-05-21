@@ -5,9 +5,9 @@
 
 'use strict';
 
-import xpath from 'xpath';
+const xpath = require('xpath');
 
-function parseStringToDOM(html) {
+export function parseStringToDOM(html: string) {
     if ( typeof(DOMParser) !== 'undefined' ) {
         // We're in a browser:
         const parser = new DOMParser();
@@ -22,7 +22,7 @@ function parseStringToDOM(html) {
     }
 }
 
-function isNumeric(n) {
+export function isNumeric(n: any) {
     return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
@@ -33,18 +33,18 @@ function getXPathResult() {
     return XPathResult;
 }
 
-function getSite() {
+export function getSite() {
     const href = window.location.href;
     const stem = new RegExp('https:\\/\\/((www|smile)\\.amazon\\.[^\\/]+)').exec(href)[1];
     return stem;
 }
 
-function getOrderDetailUrl(orderId, site) {
+export function getOrderDetailUrl(orderId: string, site: string) {
     return 'https://' + site + '/gp/your-account/order-details/' +
         'ref=oh_aui_or_o01_?ie=UTF8&orderID=' + orderId;
 }
 
-function getOrderPaymentUrl(orderId, site) {
+export function getOrderPaymentUrl(orderId: string, site: string) {
     if ( !orderId ) {return 'N/A'; }
     return orderId.startsWith('D') ?
         'https://' + site + '/gp/digital/your-account/order-summary.html' +
@@ -53,7 +53,7 @@ function getOrderPaymentUrl(orderId, site) {
             '/ref=oh_aui_ajax_pi?ie=UTF8&orderID=' + orderId;
 }
 
-function addButton(name, cb, button_class) {
+export function addButton(name: string, cb: any, button_class: string) {
     const existing = document.querySelector('[button_name="' + name + '"]');
     if ( existing !== null ) {
         existing.parentNode.removeChild(existing);
@@ -72,14 +72,14 @@ function addButton(name, cb, button_class) {
     );
 }
 
-function removeButton(name) {
+export function removeButton(name: string) {
     const elem = document.querySelector('[button_name="' + name + '"]');
     if ( elem !== null ) {
         elem.parentNode.removeChild(elem);
     }
 }
 
-function findSingleNodeValue(xpath, elem) {
+export function findSingleNodeValue(xpath: string, elem: HTMLElement): Node {
     try {
         return elem.ownerDocument.evaluate(
             xpath,
@@ -93,7 +93,7 @@ function findSingleNodeValue(xpath, elem) {
     }
 }
 
-function findMultipleNodeValues(xpath, elem) {
+export function findMultipleNodeValues(xpath: string, elem: HTMLElement): Node[] {
     const snapshot = elem.ownerDocument.evaluate(
         xpath,
         elem,
@@ -109,7 +109,7 @@ function findMultipleNodeValues(xpath, elem) {
     return values;
 }
 
-function clearBody() {
+export function clearBody() {
     Array.from(document.body.children).forEach(
         function(elem) {
             if( !(
@@ -121,16 +121,3 @@ function clearBody() {
         }
     );
 }
-
-export default {
-    addButton: addButton,
-    clearBody: clearBody,
-    findMultipleNodeValues: findMultipleNodeValues,
-    findSingleNodeValue: findSingleNodeValue,
-    getOrderDetailUrl: getOrderDetailUrl,
-    getOrderPaymentUrl: getOrderPaymentUrl,
-    getSite: getSite,
-    isNumeric: isNumeric,
-    parseStringToDOM: parseStringToDOM,
-    removeButton: removeButton
-};
