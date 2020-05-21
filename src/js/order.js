@@ -651,22 +651,19 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&unifiedOrders=1' +
             '&returnTo=' +
             '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_GB'],
+            '&startIndex=%(startOrderPos)s'],
         'www.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
             '&returnTo=' +
             '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_GB'],
+            '&startIndex=%(startOrderPos)s'],
        'www.amazon.com.au': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
             '&returnTo=' +
             '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_GB'],
+            '&startIndex=%(startOrderPos)s'],
         'smile.amazon.de': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
@@ -707,29 +704,25 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&unifiedOrders=1' +
             '&returnTo=' +
             '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_CA'],
+            '&startIndex=%(startOrderPos)s'],
         'www.amazon.ca': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
             '&returnTo=' +
             '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_CA'],
+            '&startIndex=%(startOrderPos)s'],
         'smile.amazon.fr': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
             '&returnTo=' +
             '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=fr_FR'],
+            '&startIndex=%(startOrderPos)s'],
         'www.amazon.fr': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
             '&returnTo=' +
             '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=fr_FR'],
+            '&startIndex=%(startOrderPos)s'],
         'smile.amazon.com': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
@@ -763,16 +756,14 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_date' +
             '?ie=UTF8' +
             '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=es_US',
+            '&startIndex=%(startOrderPos)s',
 
             'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_yo_new_digital' +
             '?ie=UTF8' +
             '&digitalOrders=1' +
             '&orderFilter=year-%(year)s' +
             '&unifiedOrders=0' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=es_US'],
+            '&startIndex=%(startOrderPos)s'],
         'other': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
             '&unifiedOrders=1' +
@@ -781,9 +772,10 @@ function fetchYear(year, request_scheduler, nocache_top_level) {
             '&startIndex=%(startOrderPos)s' +
             '&language=en_GB'],
     }
-    let templates = templates_by_site[util.getSite()];
-    if ( !templates ) {
-        templates = templates_by_site['other'];
+
+    const site = util.getSite();
+    const templates = site in templates_by_site ? templates_by_site[site] : templates_by_site['other'];
+    if ( !(site in templates_by_site) ) {
         alert('Amazon Order History Reporter Chrome Extension\n\n' +
               'Your site is not fully supported.\n' +
               'For better support, click on the popup where it says\n' +
