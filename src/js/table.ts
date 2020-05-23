@@ -397,8 +397,8 @@ function reallyDisplayOrders(orders: azad_order.Order[], beautiful: boolean) {
     return Promise.all(cell_value_promises).then( () => table );
 }
 
-function addCsvButton(orders: Promise<azad_order.Order>[], type: boolean) {
-    const title = type ?
+function addCsvButton(orders: Promise<azad_order.Order>[], sum_for_spreadsheet: boolean) {
+    const title = sum_for_spreadsheet ?
         "download spreadsheet ('.csv') with totals" :
         "download plain spreadsheet ('.csv')";
     util.removeButton(title);
@@ -406,7 +406,7 @@ function addCsvButton(orders: Promise<azad_order.Order>[], type: boolean) {
        title,
        function() {	
            displayOrders(orders, false).then(
-               table => csv.download(table, type)
+               table => csv.download(table, sum_for_spreadsheet)
            );	
        },
        'azad_table_button'	

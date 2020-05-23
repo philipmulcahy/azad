@@ -6,11 +6,11 @@
 
 import * as save_file from './save_file';
 
-export function download(table: any, type: boolean) {
+export function download(table: any, sums_for_spreadsheet: boolean) {
     const tableToArrayOfArrays = function(table: any) {
         const rows: any[] = table.rows;
         const result = [];
-        for(let i=0; i<rows.length + ( type  ?  -1  :  0 ); ++i) {
+        for(let i=0; i<rows.length + ( sums_for_spreadsheet  ?  -1  :  0 ); ++i) {
             let cells = rows[i].cells;
             let cell_array = [];
             for(let j=0; j<cells.length; ++j) {
@@ -24,8 +24,8 @@ export function download(table: any, type: boolean) {
             }
             result.push(cell_array);
         }
-        // If type==true, replace last row for use in a spreadsheet
-        if (type) {
+        if (sums_for_spreadsheet) {
+            // replace last row for use in a spreadsheet
             let cells = rows[2].cells;
             let cell_array = [];
             let x = '';
