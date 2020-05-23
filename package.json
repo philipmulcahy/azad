@@ -8,7 +8,7 @@
         "init": "npm install --init",
         "clean": "rm -rf build/*; rm -rf build-node/*",
         "build": "node utils/build.js",
-        "lint": "tsc --noEmit src/js/*",
+        "lint": "tsc --noEmit src/js/inject.ts src/js/control.ts src/js/background.ts src/tests/all.ts",
         "package": "utils/package.sh",
         "test": "node build-node/order_tests.bundle.js",
         "debug_tests": "node --inspect-brk build-node/order_tests.bundle.js",
