@@ -6,6 +6,8 @@ const assert = require('assert');
 
 const test_targets = order_data.discoverTestData();
 
+test_targets.then( targets => console.log('test targets:', test_targets));
+
 interface ITestResult {
     test_id: string;
     passed: boolean;
@@ -23,6 +25,7 @@ function testOneTarget(
         passed: false,
         defects: [],
     };
+    console.log('testing:', target.site, target.order_id);
     const order_promise = order_data.orderFromTestData(
         target.order_id,
         target.scrape_date,
