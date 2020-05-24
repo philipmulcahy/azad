@@ -6,9 +6,20 @@ const assert = require('assert');
 
 const test_targets = order_data.discoverTestData();
 
-function testOneTarget( target: any ): any {
-    const result = {
-        test_id: 'ORDER_SCRAPE_' + target.site + '_' + target.order_id + '_' + target.scrape_date,
+interface ITestResult {
+    test_id: string;
+    passed: boolean;
+    defects: string[];
+}
+
+function testOneTarget(
+    target: order_data.ITestTarget
+): Promise<ITestResult> {
+    const result: ITestResult = {
+        test_id: 'ORDER_SCRAPE_' +
+                 target.site + '_' +
+                 target.order_id + '_' +
+                 target.scrape_date,
         passed: false,
         defects: [],
     };
@@ -28,7 +39,7 @@ function testOneTarget( target: any ): any {
         const key_validation_promises = keys.map(key => {
             const expected_value = expected[key];
             const actual_value_promise = order.getValuePromise(key);
-            return actual_value_promise.then( actual_value => {
+            return actual_value_promise.then( (actual_value: string) => {
                 if ( JSON.stringify(actual_value) != JSON.stringify(expected_value) ) {
                     const msg = key + ' should be ' + expected_value + ' but we got ' + actual_value;
                     result.defects.push(msg);
@@ -45,7 +56,9 @@ function testOneTarget( target: any ): any {
 }
 
 test_targets.then(
-    targets => Promise.all(targets.map( target => testOneTarget(target) ))
+    (targets: order_data.ITestTarget[]) => Promise.all(
+        targets.map( target => testOneTarget(target) )
+    )
 ).then(
-    results => console.log(results)
+    (results: ITestResult[]) => console.log(results)
 );

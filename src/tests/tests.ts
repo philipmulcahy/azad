@@ -3,11 +3,19 @@
 
 'use strict';
 
-import * as $ from 'jquery'
+const $ = require('jquery');
 
-const test_suites: Record<string, any> = {};
+interface ITest {
+    (): boolean;
+}
 
-export function register(name: string, test_suite: any) {
+interface ITestSuite {
+    [name: string]: ITest;
+}
+
+const test_suites: Record<string, ITestSuite> = {};
+
+export function register(name: string, test_suite: ITestSuite) {
     if (name in test_suites) {
         throw 'name already registered: ' + name;
     }

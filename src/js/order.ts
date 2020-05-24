@@ -294,7 +294,7 @@ function extractDetailFromDoc(order: Order, doc: any) {
 
 const extractDetailPromise = (
     order: Order,
-    scheduler: request_scheduler.RequestScheduler
+    scheduler: request_scheduler.IRequestScheduler
 ) => new Promise(
     resolve => {
         const query = order.detail_url;
@@ -336,11 +336,11 @@ export class Order {
     detail_promise: Promise<any>;
     items: Record<string, any>;
     payments_promise: Promise<any>;
-    scheduler: request_scheduler.RequestScheduler;
+    scheduler: request_scheduler.IRequestScheduler;
 
     constructor(
         ordersPageElem: HTMLElement,
-        scheduler: request_scheduler.RequestScheduler,
+        scheduler: request_scheduler.IRequestScheduler,
         src_query: string
     ) {
         this.id = null;
@@ -537,7 +537,7 @@ export class Order {
 function getOrdersForYearAndQueryTemplate(
     year: number,
     query_template: string,
-    scheduler: request_scheduler.RequestScheduler,
+    scheduler: request_scheduler.IRequestScheduler,
     nocache_top_level: boolean
 ) {
     let expected_order_count: number = null;
@@ -680,7 +680,7 @@ function getOrdersForYearAndQueryTemplate(
 
 function fetchYear(
     year: number,
-    scheduler: request_scheduler.RequestScheduler,
+    scheduler: request_scheduler.IRequestScheduler,
     nocache_top_level: boolean
 ): Promise<Promise<Order>[]> {
     const templates_by_site: Record<string, string[]> = {
@@ -863,7 +863,7 @@ function fetchYear(
 
 export function getOrdersByYear(
     years: number[],
-    scheduler: request_scheduler.RequestScheduler,
+    scheduler: request_scheduler.IRequestScheduler,
     latest_year: number
 ): Promise<Promise<Order>[]> {
     // At return time we may not know how many orders there are, only
@@ -896,7 +896,7 @@ export function getOrdersByYear(
 
 export function create(
     ordersPageElem: HTMLElement,
-    scheduler: request_scheduler.RequestScheduler,
+    scheduler: request_scheduler.IRequestScheduler,
     src_query: string
 ) {
     return new Order(ordersPageElem, scheduler, src_query);
