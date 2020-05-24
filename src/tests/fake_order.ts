@@ -116,17 +116,30 @@ export class ITestTarget {
 }
 
 export function discoverTestData(): Promise<ITestTarget[]> {
-    const sites_promise = fs.promises.readdir(DATA_ROOT_PATH);
-    return sites_promise.then( (sites: string[]) => {
-        const expected_promises: Promise<string[]>[] = [];
+    const sites_promise: Promise<string[]> = fs.promises.readdir(DATA_ROOT_PATH);
+    sites_promise.then(sites => console.log('expected sites:' , sites));
+    return sites_promise.then( sites => {
+
+        // We don't care what's inside these promises:
+        // we just want to know when they're  all resolved.
+        const expected_promises: Promise<any>[] = [];
+
+        // This is the data we want: site name to list of filenames.
+        // The filenames each encode an order id and a scrape datetime.
         const site_to_expecteds: Record<string,string[]> = {}
         sites
-            .filter( site => site[0] != '.' )
+            .filter( site => site[0] != '.' )  // ignore hidden files/folders
             .forEach( (site: string) => {
                 const expected_promise: Promise<string[]>
                     = fs.promises.readdir(
                         DATA_ROOT_PATH + '/' + site + '/expected'
                     );
+                expected_promises.push(expected_promise);
+                expected_promise.then( expecteds => 
+                    expecteds.forEach( expected => {
+                        console.log('expected order:', site, expected);
+                    })
+                );
                 expected_promises.push(expected_promise);
                 expected_promise.then( (expecteds: string[]) => {
                     site_to_expecteds[site] = expecteds.filter(
@@ -134,13 +147,12 @@ export function discoverTestData(): Promise<ITestTarget[]> {
                     );
                 });
             } );
-        return Promise.all(
+        return Promise.all(  // Wait for all of the promises to resolve.
             expected_promises
         ).then( () => {
             const test_targets: ITestTarget[] = [];
             Object.keys(site_to_expecteds).sort().forEach( site => {
                 const expecteds = site_to_expecteds[site];
-                const test_targets: ITestTarget[] = [];
                 expecteds
 //                    .filter( e => e.match(/1620771/) )
                     .sort()
