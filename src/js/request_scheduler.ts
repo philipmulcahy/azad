@@ -132,6 +132,21 @@ class BinaryHeap {
     }
 }
 
+export interface IRequestScheduler {
+    schedule(
+        query: string,
+        event_converter: (evt: any) => any,
+        callback: (results: any, query: string) => void,
+        priority: string,
+        nocache: boolean
+    ): void;
+
+    abort(): void;
+    clearCache(): void;
+    statistics(): Record<string, number>;
+    isLive(): boolean;
+}
+
 export class RequestScheduler {
 
     // chrome allows 6 requests per domain at the same time.

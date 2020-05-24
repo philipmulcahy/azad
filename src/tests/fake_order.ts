@@ -13,18 +13,18 @@ const DATA_ROOT_PATH = './src/tests/azad_test_data/data';
 
 class FakeRequestScheduler {
 
-    url_html_map: any;
+    url_html_map: Record<string, string>;
 
-    constructor(url_html_map: any) {
+    constructor(url_html_map: Record<string,string>) {
         this.url_html_map = url_html_map;
     }
 
     schedule(
-        query: any,
-        event_converter: any,
-        callback: any,
-        priority: any,
-        nocache: any
+        query: string,
+        event_converter: (evt: any) => any,
+        callback: (results: any, query: string) => void,
+        priority: string,
+        nocache: boolean
     ) {
         setTimeout( () => {
             const html = this.url_html_map[query];
@@ -34,19 +34,24 @@ class FakeRequestScheduler {
                 }
             };
             const converted = event_converter(fake_evt);
-            callback(converted);
+            callback(converted, query);
         } );
     }
+
+    abort(): void {}
+    clearCache(): void {}
+    statistics(): Record<string, number> { return null; }
+    isLive(): boolean { return null; }
 }
 
 export function orderFromTestData(
-    order_id: any,
-    collection_date: any,
-    site: any
-): any {
+    order_id: string,
+    collection_date: string,
+    site: string
+): Promise<azad_order.Order> {
     const path = DATA_ROOT_PATH + '/' + site + '/input/' + order_id + '_' + collection_date + '.json';
     const json_promise: Promise<string> = new Promise( (resolve, reject) => {
-        fs.readFile(path, 'utf8', (err, json) => {
+        fs.readFile(path, 'utf8', (err: string, json: string) => {
             if (err) {
                 reject(err);
             } else {
@@ -56,7 +61,7 @@ export function orderFromTestData(
     });
     const dump_promise = json_promise.then( json => JSON.parse(json) );
     return dump_promise.then( order_dump => {
-        const url_map = {};
+        const url_map: Record<string, string>  = {};
         url_map[order_dump.list_url] = order_dump.list_html;
         url_map[order_dump.detail_url] = order_dump.detail_html;
         url_map[order_dump.invoice_url] = order_dump.invoice_html;
@@ -69,13 +74,13 @@ export function orderFromTestData(
                 '" order ")]',
             list_doc.body
         );
-        const list_elem = order_elems.filter(
-            el => Array(...el.getElementsByTagName('a'))
+        const list_elem: HTMLElement = <HTMLElement>(order_elems.filter(
+            (el: HTMLElement) => Array(...el.getElementsByTagName('a'))
                 .filter( el => el.hasAttribute('href') )
                 .map( el => el.getAttribute('href') )
                 .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
                 .filter( match => match )[0][1] == order_dump.id
-        )[0];
+        )[0]);
         return azad_order.create(
             list_elem,
             scheduler,
@@ -91,7 +96,7 @@ export function expectedFromTestData(
 ) {
     const path = DATA_ROOT_PATH + '/' + site + '/expected/' + order_id + '_' + collection_date + '.json';
     const json_promise: Promise<string> = new Promise( (resolve, reject) => {
-        fs.readFile(path, 'utf8', (err, json) => {
+        fs.readFile(path, 'utf8', (err: string, json: string) => {
             if (err) {
                 reject(err);
             } else {
@@ -102,38 +107,52 @@ export function expectedFromTestData(
     return json_promise.then( json => JSON.parse(json) );
 }
 
-export function discoverTestData(): any {
+export class ITestTarget {
+    site: string;
+    order_id: string;
+    scrape_date: string;
+    input_path: string;
+    expected_path: string;
+}
+
+export function discoverTestData(): Promise<ITestTarget[]> {
     const sites_promise = fs.promises.readdir(DATA_ROOT_PATH);
-    return sites_promise.then( sites => {
-        const expected_promises = [];
-        const site_to_expecteds = {}
+    return sites_promise.then( (sites: string[]) => {
+        const expected_promises: Promise<string[]>[] = [];
+        const site_to_expecteds: Record<string,string[]> = {}
         sites
             .filter( site => site[0] != '.' )
-            .forEach( site => {
-                const expected_promise = fs.promises.readdir(DATA_ROOT_PATH + '/' + site + '/expected');
+            .forEach( (site: string) => {
+                const expected_promise: Promise<string[]>
+                    = fs.promises.readdir(
+                        DATA_ROOT_PATH + '/' + site + '/expected'
+                    );
                 expected_promises.push(expected_promise);
-                expected_promise.then( expecteds => {
-                    site_to_expecteds[site] = expecteds.filter( exp => exp.match(/^[^.].*\.json$/) );
+                expected_promise.then( (expecteds: string[]) => {
+                    site_to_expecteds[site] = expecteds.filter(
+                        exp => exp.match(/^[^.].*\.json$/)
+                    );
                 });
             } );
         return Promise.all(
             expected_promises
         ).then( () => {
-            const test_targets = [];
+            const test_targets: ITestTarget[] = [];
             Object.keys(site_to_expecteds).sort().forEach( site => {
                 const expecteds = site_to_expecteds[site];
+                const test_targets: ITestTarget[] = [];
                 expecteds
 //                    .filter( e => e.match(/1620771/) )
                     .sort()
                     .filter( e => e.match(/^[^.].*\.json$/) )
                     .forEach( expected => {
-                        const target = {
+                        const target: ITestTarget = {
                             site: site,
                             order_id: expected.match(/^([A-Z0-9-]*)_.*\.json/)[1], 
                             scrape_date: expected.match(/^.*_(\d\d\d\d-\d\d-\d\d).json$/)[1],
+                            input_path: DATA_ROOT_PATH + '/' + site + + '/input/' + expected,
+                            expected_path: DATA_ROOT_PATH + '/' + site + '/expected/' + expected,
                         };
-                        target['input_path'] = DATA_ROOT_PATH + '/' + site + + '/input/' + expected;
-                        target['expected_path'] = DATA_ROOT_PATH + '/' + site + '/expected/' + expected;
                         test_targets.push(target); 
                     });
             } );
