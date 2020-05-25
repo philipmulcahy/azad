@@ -90,9 +90,9 @@ export function orderFromTestData(
 }
 
 export function expectedFromTestData(
-    order_id: any,
-    collection_date: any,
-    site: any
+    order_id: string,
+    collection_date: string,
+    site: string
 ) {
     const path = DATA_ROOT_PATH + '/' + site + '/expected/' + order_id + '_' + collection_date + '.json';
     const json_promise: Promise<string> = new Promise( (resolve, reject) => {
