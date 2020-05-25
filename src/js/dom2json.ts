@@ -4,7 +4,11 @@
 
 'use strict';
 
-export function toJSON(node: any) {
+export interface IJsonObject {
+    [index: string]: any
+}
+
+export function toJSON(node: any): IJsonObject {
   node = node || this;
   const obj: Record<string, any> = {
     nodeType: node.nodeType
@@ -38,9 +42,9 @@ export function toJSON(node: any) {
   return obj;
 }
 
-export function toDOM(obj: Record<string, any>) {
+export function toDOM(obj: IJsonObject | string): Node {
   if (typeof obj == 'string') {
-    obj = JSON.parse(obj);
+    obj = <IJsonObject>(JSON.parse(obj));
   }
   var node;
   const nodeType = obj.nodeType;
@@ -85,8 +89,3 @@ export function toDOM(obj: Record<string, any>) {
   }
   return node;
 }
-
-export default {
-    toJSON: toJSON,
-    toDOM: toDOM
-};
