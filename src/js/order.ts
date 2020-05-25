@@ -20,7 +20,7 @@ function getField(xpath: string, elem: HTMLElement) {
     }
 }
 
-function extractDetailFromDoc(order: Order, doc: HTMLDocument) {
+function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
 
     const who = function(){
         if(order.who) {
@@ -308,7 +308,7 @@ interface IOrderDetails {
 }
 
 const extractDetailPromise = (
-    order: Order,
+    order: OrderImpl,
     scheduler: request_scheduler.IRequestScheduler
 ) => new Promise<IOrderDetails>(
     resolve => {
@@ -335,7 +335,59 @@ const extractDetailPromise = (
     }
 );
 
-export class Order {
+export interface IOrder {
+    id(): string;
+    detail_url(): string;
+
+    site(): Promise<string>;
+    date(): Promise<string>;
+    total(): Promise<string>;
+    who(): Promise<string>;
+    items(): Promise<Record<string, any>>;
+    payments(): Promise<any>;
+    date():  Promise<string>;
+    total(): Promise<string>;
+    postage(): Promise<string>;
+    gift(): Promise<string>;
+    us_tax(): Promise<string>;
+    vat(): Promise<string>;
+    gst(): Promise<string>;
+    pst(): Promise<string>;
+    refund(): Promise<string>;
+    who(): Promise<string>;
+
+    assembleDiagnostics(): Promise<Record<string,any>>;
+}
+
+class Order {
+    impl: OrderImpl;
+
+    constructor(impl: OrderImpl) {
+        this.impl = impl
+    }
+
+    id(): string { return this.impl.id; }
+    detail_url(): string { return this.impl.detail_url; }
+
+    site(): Promise<string> { return Promise.resolve(this.impl.site); }
+    date(): Promise<string> { return Promise.resolve(this.impl.date); }
+    total(): Promise<string> { return Promise.resolve(this.impl.total); }
+    who(): Promise<string> { return Promise.resolve(this.impl.who); }
+    items(): Promise<Record<string, any>> { return Promise.resolve(this.impl.items); }
+    payments(): Promise<any> { return this.impl.payments_promise; }
+
+    postage(): Promise<string> { return this.impl.detail_promise.then( detail => detail.postage ) }
+    gift(): Promise<string> { return this.impl.detail_promise.then( detail => detail.gift ) };
+    us_tax(): Promise<string> { return this.impl.detail_promise.then( detail => detail.us_tax ) }
+    vat(): Promise<string> { return this.impl.detail_promise.then( detail => detail.vat ) }
+    gst(): Promise<string> { return this.impl.detail_promise.then( detail => detail.gst ) }
+    pst(): Promise<string> { return this.impl.detail_promise.then( detail => detail.pst ) }
+    refund(): Promise<string> { return this.impl.detail_promise.then( detail => detail.refund ) }
+
+    assembleDiagnostics(): Promise<Record<string,any>> { return this.impl.assembleDiagnostics(); }
+}
+
+class OrderImpl {
     id: string;
     site: string;
     list_url: string;
@@ -366,30 +418,6 @@ export class Order {
         this.items = null;
         this.scheduler = scheduler;
         this._extractOrder(ordersPageElem);
-    }
-
-    getValuePromise(key: keyof Order | string): Promise<any> {
-        const detail_keys = [
-            'date',
-            'gift',
-            'gst',
-            'postage',
-            'pst',
-            'refund',
-            'total',
-            'us_tax',
-            'vat',
-            'who',
-        ];
-        if (detail_keys.includes(key)) {
-            return this.detail_promise.then(
-                detail => detail[key]
-            );
-        }
-        if (key == 'payments') {
-            return this.payments_promise;
-        }
-        return Promise.resolve(this[<keyof Order>key]);
     }
 
     _extractOrder(elem: HTMLElement) {
@@ -496,27 +524,7 @@ export class Order {
         );
     }
 
-    /**
-     * Creates an html element suitable for embedding into a table cell
-     * but doesn't actually embed it.
-     * @param {document} doc. DOM document needed to create elements.
-     */
-    itemsHtml(doc: HTMLDocument) {
-        const ul = doc.createElement('ul');
-        for(let title in this.items) {
-            if (Object.prototype.hasOwnProperty.call(this.items, title)) {
-                const li = doc.createElement('li');
-                ul.appendChild(li);
-                const a = doc.createElement('a');
-                li.appendChild(a);
-                a.textContent = title + '; ';
-                a.href = this.items[title];
-            }
-        }
-        return ul;
-    }
-
-    assembleDiagnostics() {
+    assembleDiagnostics(): Promise<Record<string,any>> {
         const diagnostics: Record<string, any> = {};
         [
             'id',
@@ -556,8 +564,8 @@ function getOrdersForYearAndQueryTemplate(
     nocache_top_level: boolean
 ) {
     let expected_order_count: number = null;
-    let order_found_callback: (order_promise: Promise<Order>) => void = null;
-    const order_promises: Promise<Order>[] = [];
+    let order_found_callback: (order_promise: Promise<IOrder>) => void = null;
+    const order_promises: Promise<IOrder>[] = [];
     const sendGetOrderCount = function() {
         scheduler.schedule(
             generateQueryString(0),
@@ -639,7 +647,7 @@ function getOrdersForYearAndQueryTemplate(
         const order_elems = orders_page_data.order_elems.map(
             (elem: any) => dom2json.toDOM(elem)
         );
-        function makeOrderPromise(elem: HTMLElement) {
+        function makeOrderPromise(elem: HTMLElement): Promise<IOrder> {
             const order = create(elem, scheduler, src_query);
             return Promise.resolve(order);
         }
@@ -675,7 +683,7 @@ function getOrdersForYearAndQueryTemplate(
                 // start checking loop
                 checkComplete();
             }
-            order_found_callback = function(order_promise: Promise<Order>): void {
+            order_found_callback = function(order_promise: Promise<IOrder>): void {
                 order_promises.push(order_promise);
                 order_promise.then( order => {
                     // TODO is "Fetching" the right message for this stage?
@@ -697,7 +705,7 @@ function fetchYear(
     year: number,
     scheduler: request_scheduler.IRequestScheduler,
     nocache_top_level: boolean
-): Promise<Promise<Order>[]> {
+): Promise<Promise<IOrder>[]> {
     const templates_by_site: Record<string, string[]> = {
         'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
@@ -866,9 +874,9 @@ function fetchYear(
     .then( array2_of_promise => {
         // We can now know how many orders there are, although we may only
         // have a promise to each order not the order itself.
-        const order_promises: Promise<Order>[] = [];
+        const order_promises: Promise<IOrder>[] = [];
         array2_of_promise.forEach( promises => {
-            promises.forEach( (promise: Promise<Order>) => {
+            promises.forEach( (promise: Promise<IOrder>) => {
                 order_promises.push(promise);
             });
         });
@@ -880,25 +888,25 @@ export function getOrdersByYear(
     years: number[],
     scheduler: request_scheduler.IRequestScheduler,
     latest_year: number
-): Promise<Promise<Order>[]> {
+): Promise<Promise<IOrder>[]> {
     // At return time we may not know how many orders there are, only
     // how many years in which orders have been queried for.
     return Promise.all(
         years.map(
-            function(year: number): Promise<Promise<Order>[]> {
+            function(year: number): Promise<Promise<IOrder>[]> {
                 const nocache_top_level = (year == latest_year);
                 return fetchYear(year, scheduler, nocache_top_level);
             }
         )
     ).then(
-        (array2_of_order_promise: Promise<Order>[][]) => {
+        (array2_of_order_promise: Promise<IOrder>[][]) => {
             // Flatten the array of arrays of Promise<Order> into
             // an array of Promise<Order>.
-            const order_promises: Promise<Order>[] = [];
+            const order_promises: Promise<IOrder>[] = [];
             array2_of_order_promise.forEach(
-                (year_order_promises: Promise<Order>[]) => {
+                (year_order_promises: Promise<IOrder>[]) => {
                     year_order_promises.forEach(
-                        (order_promise: Promise<Order>) => {
+                        (order_promise: Promise<IOrder>) => {
                             order_promises.push(order_promise);
                         }
                     );
@@ -913,6 +921,8 @@ export function create(
     ordersPageElem: HTMLElement,
     scheduler: request_scheduler.IRequestScheduler,
     src_query: string
-) {
-    return new Order(ordersPageElem, scheduler, src_query);
+): IOrder {
+    const impl = new OrderImpl(ordersPageElem, scheduler, src_query);
+    const wrapper = new Order(impl);
+    return wrapper;
 }
