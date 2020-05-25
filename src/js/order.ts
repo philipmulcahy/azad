@@ -20,7 +20,7 @@ function getField(xpath: string, elem: HTMLElement) {
     }
 }
 
-function extractDetailFromDoc(order: Order, doc: any) {
+function extractDetailFromDoc(order: Order, doc: HTMLDocument) {
 
     const who = function(){
         if(order.who) {
@@ -292,15 +292,30 @@ function extractDetailFromDoc(order: Order, doc: any) {
     };
 }
 
+interface IOrderDetails {
+    date: string;
+    total: string;
+    postage: string;
+    gift: string;
+    us_tax: string;
+    vat: string;
+    gst: string;
+    pst: string;
+    refund: string;
+    who: string;
+
+    [index: string]: string;
+}
+
 const extractDetailPromise = (
     order: Order,
     scheduler: request_scheduler.IRequestScheduler
-) => new Promise(
+) => new Promise<IOrderDetails>(
     resolve => {
         const query = order.detail_url;
         const event_converter = function(
-            evt: { target: { responseText: any; }; }
-        ) {
+            evt: { target: { responseText: string; }; }
+        ): IOrderDetails {
             const doc = util.parseStringToDOM( evt.target.responseText );
             return extractDetailFromDoc(order, doc);
         };
@@ -308,7 +323,7 @@ const extractDetailPromise = (
             scheduler.schedule(
                 query,
                 event_converter,
-                (order_details: any) => {
+                (order_details: IOrderDetails) => {
                     resolve(order_details);
                 },
                 order.id,
@@ -320,10 +335,6 @@ const extractDetailPromise = (
     }
 );
 
-function getProperty<T, K extends keyof T>(obj: T, key: K) {
-  return obj[key]; // Inferred type is T[K]
-}
-
 export class Order {
     id: string;
     site: string;
@@ -333,7 +344,7 @@ export class Order {
     date: string;
     total: string;
     who: string;
-    detail_promise: Promise<any>;
+    detail_promise: Promise<IOrderDetails>;
     items: Record<string, any>;
     payments_promise: Promise<any>;
     scheduler: request_scheduler.IRequestScheduler;
@@ -407,11 +418,12 @@ export class Order {
             const items: Record<string, any> = {};
             itemResult.forEach(
                 function(item: HTMLElement) {
-                    const name = item.innerHTML.replace(/[\n\r]/g, " ")
-                                             .replace(/  */g, " ")
-                                             .replace(/&amp;/g, "&")
-                                             .replace(/&nbsp;/g, " ")
-                                             .trim();
+                    const name = item.innerHTML
+                                     .replace(/[\n\r]/g, " ")
+                                     .replace(/  */g, " ")
+                                     .replace(/&amp;/g, "&")
+                                     .replace(/&nbsp;/g, " ")
+                                     .trim();
                     const link = item.getAttribute('href');
                     items[name] = link;
                 }
@@ -462,7 +474,7 @@ export class Order {
         this.items = getItems(elem);
         this.detail_promise = extractDetailPromise(this, this.scheduler);
         this.payments_promise = new Promise(
-            ((resolve: (arg0: string[]) => void) => {
+            ((resolve: (payments: string[]) => void) => {
                 if (this.id.startsWith("D")) {
                     resolve(( !this.total ? [this.date] : [this.date + ": " + this.total]));
                 } else {
@@ -475,9 +487,7 @@ export class Order {
                     this.scheduler.schedule(
                         this.invoice_url,
                         event_converter,
-                        payments => {
-                            resolve(payments);
-                        },
+                        payments => { resolve(payments); },
                         this.id,  // priority
                         false  // nocache
                     );
@@ -534,6 +544,11 @@ export class Order {
     }
 }
 
+interface IOrdersPageData {
+    expected_order_count: number;
+    order_elems: dom2json.IJsonObject;
+}
+
 function getOrdersForYearAndQueryTemplate(
     year: number,
     query_template: string,
@@ -562,7 +577,7 @@ function getOrdersForYearAndQueryTemplate(
             }
         );
     };
-    const convertOrdersPage = function(evt: any) {
+    const convertOrdersPage = function(evt: any): IOrdersPageData {
         const d = util.parseStringToDOM(evt.target.responseText);
         const countSpan = util.findSingleNodeValue(
             './/span[@class="num-orders"]', d.documentElement);

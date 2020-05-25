@@ -6,8 +6,6 @@ const assert = require('assert');
 
 const test_targets = order_data.discoverTestData();
 
-test_targets.then( targets => console.log('test targets:', test_targets));
-
 interface ITestResult {
     test_id: string;
     passed: boolean;
@@ -43,8 +41,10 @@ function testOneTarget(
             const expected_value = expected[key];
             const actual_value_promise = order.getValuePromise(key);
             return actual_value_promise.then( (actual_value: string) => {
-                if ( JSON.stringify(actual_value) != JSON.stringify(expected_value) ) {
-                    const msg = key + ' should be ' + expected_value + ' but we got ' + actual_value;
+                const actual_string = JSON.stringify(actual_value);
+                const expected_string = JSON.stringify(expected_value);
+                if ( actual_string != expected_string ) {
+                    const msg = key + ' should be ' + expected_string + ' but we got ' + actual_string;
                     result.defects.push(msg);
                 }
             })

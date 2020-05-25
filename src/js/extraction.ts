@@ -42,7 +42,7 @@ export function by_regex(
         default_value;
 }
 
-export function payments_from_invoice(doc: HTMLDocument) {
+export function payments_from_invoice(doc: HTMLDocument): string[] {
     // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
     const strategy_1 = () => {
         const payments = util.findMultipleNodeValues(
