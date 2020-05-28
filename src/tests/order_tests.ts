@@ -37,14 +37,16 @@ function testOneTarget(
     return Promise.all([order_promise, expectations_promise]).then( params => {
         const [order, expected] = params;
         const keys = Object.keys(expected);
-        const key_validation_promises = keys.map(key => {
+        const key_validation_promises = keys.map( key => {
             const expected_value = expected[key];
-            const actual_value_promise = order.getValuePromise(key);
+            const actual_value_promise = order[key]();
             return actual_value_promise.then( (actual_value: string) => {
+                console.log('key:', key, expected_value, actual_value);
                 const actual_string = JSON.stringify(actual_value);
                 const expected_string = JSON.stringify(expected_value);
                 if ( actual_string != expected_string ) {
-                    const msg = key + ' should be ' + expected_string + ' but we got ' + actual_string;
+                    const msg = key + ' should be ' + expected_string +
+                          ' but we got ' + actual_string;
                     result.defects.push(msg);
                 }
             })
