@@ -41,140 +41,105 @@ const addElemCell = function(row: HTMLElement, elem: HTMLElement): HTMLElement {
     return td;
 };
 
-/**
- * Add an a to the row tr element, and return the a.
- */
-const addLinkCell = function(row: HTMLElement, text: string, href: string): HTMLElement {
-    const a = row.ownerDocument.createElement('a');
-    a.setAttribute('Class', LINK_CLASS);
-    a.textContent = text;
-    a.href = href;
-    return addElemCell(row, a);
-};
-
 const TAX_HELP = 'Caution: tax is often not listed when stuff is not supplied by Amazon, is cancelled, or is pre-order.';
-
-// Creates an html element suitable for embedding into a table cell
-// but doesn't actually embed it.
-// @param {document} doc. DOM document needed to create elements.
-function htmlFromItems(
-    items: Record<string,string>,
-    doc: HTMLDocument
-) {
-    const ul = doc.createElement('ul');
-    for(let title in items) {
-        if (Object.prototype.hasOwnProperty.call(items, title)) {
-            const li = doc.createElement('li');
-            ul.appendChild(li);
-            const a = doc.createElement('a');
-            li.appendChild(a);
-            a.textContent = title + '; ';
-            a.href = items[title];
-        }
-    }
-    return ul;
-}
 
 const cols: Record<string, any>[] = [
     {
         field_name: 'order id',
-        type: 'func',
-        func: (order: azad_order.IOrder, row: HTMLElement) => addLinkCell(
-            row, order.id(),
-            order.detail_url()
-        ),
+        render_func:
+            (order: azad_order.IOrder, td: HTMLElement) => order.id().then(
+                id => order.detail_url().then(
+                    url => {
+                        td.innerHTML = '<a href="' + url + '">' + id + '</a>';
+                    }
+                )
+            ),
         is_numeric: false
     },
     {
         field_name: 'items',
-        type: 'func',
-        promise_func: (order: azad_order.IOrder, row: HTMLElement) => 
-            order.items().then( items => addElemCell(
-                row,
-                htmlFromItems(
-                    items,
-                    document
-                )
-            )
-        ),
+        render_func: (order: azad_order.IOrder, td: HTMLElement) => 
+            order.items().then( items => {
+                const ul = td.ownerDocument.createElement('ul');
+                for(let title in items) {
+                    if (Object.prototype.hasOwnProperty.call(items, title)) {
+                        const li = td.ownerDocument.createElement('li');
+                        ul.appendChild(li);
+                        const a = td.ownerDocument.createElement('a');
+                        li.appendChild(a);
+                        a.textContent = title + '; ';
+                        a.href = items[title];
+                    }
+                }
+                td.textContent = '';
+                td.appendChild(ul);
+            }),
         is_numeric: false
     },
     {
         field_name: 'to',
-        type: 'promise',
-        promise_func: 'who',
+        value_promise_func: 'who',
         is_numeric: false
     },
     {
         field_name: 'date',
-        type: 'promise',
-        promise_func: 'date',
+        value_promise_func: 'date',
         is_numeric: false,
     },
     {
         field_name: 'total',
-        type: 'promise',
-        promise_func: 'total',
+        value_promise_func: 'total',
         is_numeric: true
     },
     {
         field_name: 'postage',
-        type: 'promise',
-        promise_func: 'postage',
+        value_promise_func: 'postage',
         is_numeric: true,
         help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.'
     },
     {
         field_name: 'gift',
-        type: 'promise',
-        promise_func: 'gift',
+        value_promise_func: 'gift',
         is_numeric: true
     },
     {
         field_name: 'VAT',
-        type: 'promise',
-        promise_func: 'vat',
+        value_promise_func: 'vat',
         is_numeric: true,
         help: TAX_HELP,
         sites: new RegExp('amazon(?!.com)')
     },
     {
         field_name: 'tax',
-        type: 'promise',
-        promise_func: 'us_tax',
+        value_promise_func: 'us_tax',
         is_numeric: true,
         help: TAX_HELP,
         sites: new RegExp('\\.com$')
     },
     {
         field_name: 'GST',
-        type: 'promise',
-        promise_func: 'gst',
+        value_promise_func: 'gst',
         is_numeric: true,
         help: TAX_HELP,
         sites: new RegExp('\\.ca$')
     },
     {
         field_name: 'PST',
-        type: 'promise',
-        promise_func: 'pst',
+        value_promise_func: 'pst',
         is_numeric: true,
         help: TAX_HELP,
         sites: new RegExp('\\.ca$')
     },
     {
         field_name: 'refund',
-        type: 'promise',
-        promise_func: 'refund',
+        value_promise_func: 'refund',
         is_numeric: true
     },
     {
         field_name: 'payments',
-        type: 'func',
-        func: (order: azad_order.IOrder, tr: HTMLElement) => {
-            const cell = addCell(tr, 'pending');
+        render_func: (order: azad_order.IOrder, td: HTMLElement) => {
             order.payments().then( payments => {
-                const ul = document.createElement('ul');
+                const ul = td.ownerDocument.createElement('ul');
                 payments.forEach( (payment: any) => {
                     const li = document.createElement('li');
                     ul.appendChild(li);
@@ -186,16 +151,21 @@ const cols: Record<string, any>[] = [
                     } else {
                         a.textContent = payment + '; '
                     }
-                    a.setAttribute('href', util.getOrderPaymentUrl(order.id(), util.getSite()));
+                    order.id().then(
+                        id => a.setAttribute(
+                            'href',
+                            util.getOrderPaymentUrl(id, util.getSite())
+                        )
+                    );
                 });
-                cell.textContent = '';
-                cell.appendChild(ul);
+                td.textContent = '';
+                td.appendChild(ul);
                 if(datatable) {
                     datatable.rows().invalidate();
                     datatable.draw();
                 }
+                td.appendChild(ul);
             });
-            return cell;
         },
         is_numeric: false
     }
@@ -234,6 +204,9 @@ function reallyDisplayOrders(orders: azad_order.IOrder[], beautiful: boolean) {
             const tr = document.createElement('tr');
             table.appendChild(tr);
             cols.forEach( col_spec => {
+                const td = document.createElement('td')
+                td.textContent = 'pending';
+                tr.appendChild(td)
                 const null_converter = (x: any) => {
                     if (x) {
                         if (
@@ -249,44 +222,34 @@ function reallyDisplayOrders(orders: azad_order.IOrder[], beautiful: boolean) {
                         return '';
                     }
                 }
-                let elem = null;
-                switch(col_spec.type) {
-                    case 'promise':
-                        {
-                            elem = addCell(tr, 'pending');
-                            const elem_closure_copy = elem;
-                            const value_promise: Promise<any> = <Promise<any>>(
-                                order[<keyof azad_order.IOrder>(
-                                    col_spec.promise_func
-                                )]()
-                            );
-                            cell_value_promises.push(value_promise);
-                            value_promise
-                                .then(null_converter)
-                                .then(
-                                    (value: string) => {
-                                        elem_closure_copy.innerHTML = value;
-                                        if(datatable) {
-                                            datatable.rows().invalidate();
-                                            datatable.draw();
-                                        }
-                                    }
-                                );
-                        }
-                        break;
-                    case 'func':
-                        elem = col_spec.func(order, tr);
-                        break;
+                if (col_spec.hasOwnProperty('render_func')) {
+                    col_spec.render_func(order, td);
+                } else {
+                    const value_promise: Promise<any> = <Promise<any>>(
+                        order[<keyof azad_order.IOrder>(
+                            col_spec.value_promise_func
+                        )]()
+                    );
+                    cell_value_promises.push(value_promise);
+                    value_promise
+                        .then(null_converter)
+                        .then(
+                            (value: string) => {
+                                td.innerHTML = value;
+                                if(datatable) {
+                                    datatable.rows().invalidate();
+                                    datatable.draw();
+                                }
+                            }
+                        );
                 }
-                if ( elem ) {
-                    elem.setAttribute('class', elem.getAttribute('class') +
-                            'azad_type_' + col_spec.type + ' ' +
-                            'azad_col_' + col_spec.field_name + ' ' +
-                            'azad_numeric_' + (col_spec.is_numeric ? 'yes' : 'no' ) + ' ');
-                    if ('help' in col_spec) {
-                        elem.setAttribute('class', elem.getAttribute('class') + 'azad_elem_has_help ');
-                        elem.setAttribute('title', col_spec.help);
-                    }
+                td.setAttribute('class', td.getAttribute('class') +
+                        'azad_type_' + col_spec.type + ' ' +
+                        'azad_col_' + col_spec.field_name + ' ' +
+                        'azad_numeric_' + (col_spec.is_numeric ? 'yes' : 'no' ) + ' ');
+                if ('help' in col_spec) {
+                    td.setAttribute('class', td.getAttribute('class') + 'azad_elem_has_help ');
+                    td.setAttribute('title', col_spec.help);
                 }
             });
         };
@@ -329,9 +292,11 @@ function reallyDisplayOrders(orders: azad_order.IOrder[], beautiful: boolean) {
         table.appendChild(tbody);
 
         orders.forEach( order => {
-            order_map[order.id()] = order;
-            appendOrderRow(tbody, order);
-            console.log('Added row for ' + order.id);
+            order.id().then( id => {
+                order_map[id] = order;
+                appendOrderRow(tbody, order);
+                console.log('Added row for ' + order.id);
+            });
         });
 
         return table;

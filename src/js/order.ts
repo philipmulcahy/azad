@@ -336,8 +336,8 @@ const extractDetailPromise = (
 );
 
 export interface IOrder {
-    id(): string;
-    detail_url(): string;
+    id(): Promise<string>;
+    detail_url(): Promise<string>;
 
     site(): Promise<string>;
     date(): Promise<string>;
@@ -366,8 +366,8 @@ class Order {
         this.impl = impl
     }
 
-    id(): string { return this.impl.id; }
-    detail_url(): string { return this.impl.detail_url; }
+    id(): Promise<string> { return Promise.resolve(this.impl.id); }
+    detail_url(): Promise<string> { return Promise.resolve(this.impl.detail_url); }
 
     site(): Promise<string> { return Promise.resolve(this.impl.site); }
     date(): Promise<string> { return Promise.resolve(this.impl.date); }
@@ -419,7 +419,6 @@ class OrderImpl {
         this.scheduler = scheduler;
         this._extractOrder(ordersPageElem);
     }
-
     _extractOrder(elem: HTMLElement) {
         const getItems = function(elem: HTMLElement): Record<string, any> {
             /*
@@ -479,6 +478,7 @@ class OrderImpl {
         // with information from the order detail page.
         this.total = getField('.//div[contains(span,"Total")]' +
             '/../div/span[contains(@class,"value")]', elem);
+        console.log('total direct:', this.total);
         this.who = getField('.//div[contains(@class,"recipient")]' +
             '//span[@class="trigger-text"]', elem);
         this.id = [
@@ -615,13 +615,11 @@ function getOrdersForYearAndQueryTemplate(
             );
             return;
         }
-        const order_elems = util.findMultipleNodeValues(
-            './/*[contains(concat(" ", ' +
-                'normalize-space(@class), ' +
-                '" "), ' +
-                '" order ")]',
+        const order_elems: HTMLElement[] = util.findMultipleNodeValues(
+            './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
             ordersElem
-        );
+        ).map( node => <HTMLElement>node );
+        console.log('order_elems:', order_elems.map(oe => oe.innerHTML));
         return {
             expected_order_count: expected_order_count,
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
@@ -685,10 +683,11 @@ function getOrdersForYearAndQueryTemplate(
             }
             order_found_callback = function(order_promise: Promise<IOrder>): void {
                 order_promises.push(order_promise);
-                order_promise.then( order => {
-                    // TODO is "Fetching" the right message for this stage?
-                    console.log('azad_order Fetching ' + order.id);
-                });
+                order_promise.then(
+                    order => order.id().then(
+                        id => console.log('azad_order Fetching ' + id)
+                    )
+                )
                 console.log(
                     'YearFetcher(' + year + ') order_promises.length:' +
                      order_promises.length +
