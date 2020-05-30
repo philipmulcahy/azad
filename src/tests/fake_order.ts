@@ -1,5 +1,4 @@
-/* Copyright(c) 2019 Philip Mulcahy. */
-/* jshint strict: true, esversion: 9 */
+/* Copyright(c) 2019-2020 Philip Mulcahy. */
 
 'use strict';
 
@@ -49,7 +48,8 @@ export function orderFromTestData(
     collection_date: string,
     site: string
 ): Promise<azad_order.IOrder> {
-    const path = DATA_ROOT_PATH + '/' + site + '/input/' + order_id + '_' + collection_date + '.json';
+    const path = DATA_ROOT_PATH + '/' + site + '/input/' + order_id + '_' +
+                 collection_date + '.json';
     const json_promise: Promise<string> = new Promise( (resolve, reject) => {
         fs.readFile(path, 'utf8', (err: string, json: string) => {
             if (err) {
@@ -68,10 +68,7 @@ export function orderFromTestData(
         const scheduler = new FakeRequestScheduler( url_map );
         const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;
         const order_elems = util.findMultipleNodeValues(
-            './/*[contains(concat(" ", ' +
-                'normalize-space(@class), ' +
-                '" "), ' +
-                '" order ")]',
+            './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
             list_doc.body
         );
         const list_elem: HTMLElement = <HTMLElement>(order_elems.filter(

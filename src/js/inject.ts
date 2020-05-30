@@ -126,7 +126,7 @@ function registerContentScript() {
     getBackgroundPort().onMessage.addListener( msg => {
         switch(msg.action) {
             case 'dump_order_detail':
-                azad_table.dumpOrderDiagnostics(msg.order_detail_url)
+                azad_table.dumpOrderDiagnostics(msg.order_id)
                 break;
             case 'scrape_years':
                 years = msg.years;

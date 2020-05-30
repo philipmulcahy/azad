@@ -1,4 +1,4 @@
-/* Copyright(c) 2016-2020 Philip Mulcahy. */
+/* Copyright(c) 2017-2020 Philip Mulcahy. */
 
 'use strict';
 
@@ -61,7 +61,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
             )
         );
     };
-// wrap in try/catch for missing total
+
     const total = function(){
         const a = extraction.by_regex(
             [
@@ -536,7 +536,10 @@ class OrderImpl {
             'who',
             'items'
         ].forEach(
-            function(field_name: keyof Order) { diagnostics[field_name] = this[field_name]; }
+            (function(field_name: keyof Order) {
+                const value: any = this[field_name];
+                diagnostics[<string>(field_name)] = value;
+            }).bind(this)
         );
         return Promise.all([
             fetch(this.list_url)

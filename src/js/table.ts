@@ -1,5 +1,4 @@
 /* Copyright(c) 2016-2020 Philip Mulcahy. */
-/* jshint strict: true, esversion: 6 */
 
 const $ = require('jquery');
 import 'datatables';
