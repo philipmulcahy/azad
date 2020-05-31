@@ -9,14 +9,14 @@ import * as request_scheduler from './request_scheduler';
 import * as azad_order from './order';
 import * as azad_table from './table';
 
-let scheduler: request_scheduler.RequestScheduler = null;
+let scheduler: request_scheduler.IRequestScheduler = null;
 let background_port: chrome.runtime.Port = null;
 let years: number[] = null;
 let stats_timeout: NodeJS.Timeout = null;
 
 const SITE = window.location.href.match( /\/\/([^/]*)/ )[1];
 
-function getScheduler() {
+function getScheduler(): request_scheduler.IRequestScheduler {
     if (!scheduler) {
         resetScheduler();
     }
@@ -45,7 +45,7 @@ function setStatsTimeout() {
     ); 
 }
 
-function resetScheduler() {
+function resetScheduler(): void {
     if (scheduler) {
         scheduler.abort();
     }
