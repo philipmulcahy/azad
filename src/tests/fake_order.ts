@@ -151,7 +151,7 @@ export function discoverTestData(): Promise<ITestTarget[]> {
             Object.keys(site_to_expecteds).sort().forEach( site => {
                 const expecteds = site_to_expecteds[site];
                 expecteds
-                    .filter( e => e.match(/9651082/) )
+                    /* .filter( e => e.match(/9651082/) ) */
                     .sort()
                     .filter( e => e.match(/^[^.].*\.json$/) )
                     .forEach( expected => {

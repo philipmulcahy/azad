@@ -335,6 +335,8 @@ const extractDetailPromise = (
     }
 );
 
+export type Items = Record<string, string>;
+
 export interface IOrder {
     id(): Promise<string>;
     detail_url(): Promise<string>;
@@ -343,7 +345,7 @@ export interface IOrder {
     date(): Promise<string>;
     total(): Promise<string>;
     who(): Promise<string>;
-    items(): Promise<Record<string, any>>;
+    items(): Promise<Items>;
     payments(): Promise<any>;
     date():  Promise<string>;
     total(): Promise<string>;
@@ -373,7 +375,7 @@ class Order {
     date(): Promise<string> { return Promise.resolve(this.impl.date); }
     total(): Promise<string> { return Promise.resolve(this.impl.total); }
     who(): Promise<string> { return Promise.resolve(this.impl.who); }
-    items(): Promise<Record<string, any>> { return Promise.resolve(this.impl.items); }
+    items(): Promise<Items> { return Promise.resolve(this.impl.items); }
     payments(): Promise<any> { return this.impl.payments_promise; }
 
     postage(): Promise<string> { return this.impl.detail_promise.then( detail => detail.postage ) }
@@ -397,7 +399,7 @@ class OrderImpl {
     total: string;
     who: string;
     detail_promise: Promise<IOrderDetails>;
-    items: Record<string, any>;
+    items: Items;
     payments_promise: Promise<any>;
     scheduler: request_scheduler.IRequestScheduler;
 
@@ -420,7 +422,7 @@ class OrderImpl {
         this._extractOrder(ordersPageElem);
     }
     _extractOrder(elem: HTMLElement) {
-        const getItems = function(elem: HTMLElement): Record<string, any> {
+        const getItems = function(elem: HTMLElement): Items {
             /*
               <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
                   The Rise and Fall of D.O.D.O.
@@ -442,7 +444,7 @@ class OrderImpl {
                 './/div[@class="a-row"]/a[@class="a-link-normal"]',
                 elem
             );
-            const items: Record<string, any> = {};
+            const items: Items = {};
             itemResult.forEach(
                 function(item: HTMLElement) {
                     const name = item.innerHTML
