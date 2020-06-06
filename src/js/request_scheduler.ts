@@ -147,7 +147,7 @@ export interface IRequestScheduler {
     isLive(): boolean;
 }
 
-export class RequestScheduler {
+class RequestScheduler {
 
     // chrome allows 6 requests per domain at the same time.
     CONCURRENCY: number = 6
@@ -215,7 +215,7 @@ export class RequestScheduler {
         callback: (converted_event: any, query: string) => void,
         priority: number,
         nocache: boolean
-) {
+    ) {
         if (!this.live) {
             return;
         }
@@ -371,6 +371,6 @@ export class RequestScheduler {
     }
 }
 
-export function create(): RequestScheduler {
+export function create(): IRequestScheduler {
     return new RequestScheduler();
 };

@@ -1,4 +1,4 @@
-/* Copyright(c) 2016-2020 Philip Mulcahy. */
+/* Copyright(c) 2017-2020 Philip Mulcahy. */
 
 'use strict';
 
@@ -20,7 +20,7 @@ function getField(xpath: string, elem: HTMLElement) {
     }
 }
 
-function extractDetailFromDoc(order: Order, doc: any) {
+function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
 
     const who = function(){
         if(order.who) {
@@ -61,7 +61,7 @@ function extractDetailFromDoc(order: Order, doc: any) {
             )
         );
     };
-// wrap in try/catch for missing total
+
     const total = function(){
         const a = extraction.by_regex(
             [
@@ -292,15 +292,30 @@ function extractDetailFromDoc(order: Order, doc: any) {
     };
 }
 
+interface IOrderDetails {
+    date: string;
+    total: string;
+    postage: string;
+    gift: string;
+    us_tax: string;
+    vat: string;
+    gst: string;
+    pst: string;
+    refund: string;
+    who: string;
+
+    [index: string]: string;
+}
+
 const extractDetailPromise = (
-    order: Order,
+    order: OrderImpl,
     scheduler: request_scheduler.IRequestScheduler
-) => new Promise(
+) => new Promise<IOrderDetails>(
     resolve => {
         const query = order.detail_url;
         const event_converter = function(
-            evt: { target: { responseText: any; }; }
-        ) {
+            evt: { target: { responseText: string; }; }
+        ): IOrderDetails {
             const doc = util.parseStringToDOM( evt.target.responseText );
             return extractDetailFromDoc(order, doc);
         };
@@ -308,7 +323,7 @@ const extractDetailPromise = (
             scheduler.schedule(
                 query,
                 event_converter,
-                (order_details: any) => {
+                (order_details: IOrderDetails) => {
                     resolve(order_details);
                 },
                 order.id,
@@ -320,11 +335,61 @@ const extractDetailPromise = (
     }
 );
 
-function getProperty<T, K extends keyof T>(obj: T, key: K) {
-  return obj[key]; // Inferred type is T[K]
+export type Items = Record<string, string>;
+
+export interface IOrder {
+    id(): Promise<string>;
+    detail_url(): Promise<string>;
+
+    site(): Promise<string>;
+    date(): Promise<string>;
+    total(): Promise<string>;
+    who(): Promise<string>;
+    items(): Promise<Items>;
+    payments(): Promise<any>;
+    date():  Promise<string>;
+    total(): Promise<string>;
+    postage(): Promise<string>;
+    gift(): Promise<string>;
+    us_tax(): Promise<string>;
+    vat(): Promise<string>;
+    gst(): Promise<string>;
+    pst(): Promise<string>;
+    refund(): Promise<string>;
+    who(): Promise<string>;
+
+    assembleDiagnostics(): Promise<Record<string,any>>;
 }
 
-export class Order {
+class Order {
+    impl: OrderImpl;
+
+    constructor(impl: OrderImpl) {
+        this.impl = impl
+    }
+
+    id(): Promise<string> { return Promise.resolve(this.impl.id); }
+    detail_url(): Promise<string> { return Promise.resolve(this.impl.detail_url); }
+
+    site(): Promise<string> { return Promise.resolve(this.impl.site); }
+    date(): Promise<string> { return Promise.resolve(this.impl.date); }
+    total(): Promise<string> { return Promise.resolve(this.impl.total); }
+    who(): Promise<string> { return Promise.resolve(this.impl.who); }
+    items(): Promise<Items> { return Promise.resolve(this.impl.items); }
+    payments(): Promise<any> { return this.impl.payments_promise; }
+
+    postage(): Promise<string> { return this.impl.detail_promise.then( detail => detail.postage ) }
+    gift(): Promise<string> { return this.impl.detail_promise.then( detail => detail.gift ) };
+    us_tax(): Promise<string> { return this.impl.detail_promise.then( detail => detail.us_tax ) }
+    vat(): Promise<string> { return this.impl.detail_promise.then( detail => detail.vat ) }
+    gst(): Promise<string> { return this.impl.detail_promise.then( detail => detail.gst ) }
+    pst(): Promise<string> { return this.impl.detail_promise.then( detail => detail.pst ) }
+    refund(): Promise<string> { return this.impl.detail_promise.then( detail => detail.refund ) }
+
+    assembleDiagnostics(): Promise<Record<string,any>> { return this.impl.assembleDiagnostics(); }
+}
+
+class OrderImpl {
     id: string;
     site: string;
     list_url: string;
@@ -333,8 +398,8 @@ export class Order {
     date: string;
     total: string;
     who: string;
-    detail_promise: Promise<any>;
-    items: Record<string, any>;
+    detail_promise: Promise<IOrderDetails>;
+    items: Items;
     payments_promise: Promise<any>;
     scheduler: request_scheduler.IRequestScheduler;
 
@@ -356,33 +421,8 @@ export class Order {
         this.scheduler = scheduler;
         this._extractOrder(ordersPageElem);
     }
-
-    getValuePromise(key: keyof Order | string): Promise<any> {
-        const detail_keys = [
-            'date',
-            'gift',
-            'gst',
-            'postage',
-            'pst',
-            'refund',
-            'total',
-            'us_tax',
-            'vat',
-            'who',
-        ];
-        if (detail_keys.includes(key)) {
-            return this.detail_promise.then(
-                detail => detail[key]
-            );
-        }
-        if (key == 'payments') {
-            return this.payments_promise;
-        }
-        return Promise.resolve(this[<keyof Order>key]);
-    }
-
     _extractOrder(elem: HTMLElement) {
-        const getItems = function(elem: HTMLElement): Record<string, any> {
+        const getItems = function(elem: HTMLElement): Items {
             /*
               <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
                   The Rise and Fall of D.O.D.O.
@@ -404,14 +444,15 @@ export class Order {
                 './/div[@class="a-row"]/a[@class="a-link-normal"]',
                 elem
             );
-            const items: Record<string, any> = {};
+            const items: Items = {};
             itemResult.forEach(
                 function(item: HTMLElement) {
-                    const name = item.innerHTML.replace(/[\n\r]/g, " ")
-                                             .replace(/  */g, " ")
-                                             .replace(/&amp;/g, "&")
-                                             .replace(/&nbsp;/g, " ")
-                                             .trim();
+                    const name = item.innerHTML
+                                     .replace(/[\n\r]/g, " ")
+                                     .replace(/  */g, " ")
+                                     .replace(/&amp;/g, "&")
+                                     .replace(/&nbsp;/g, " ")
+                                     .trim();
                     const link = item.getAttribute('href');
                     items[name] = link;
                 }
@@ -439,6 +480,7 @@ export class Order {
         // with information from the order detail page.
         this.total = getField('.//div[contains(span,"Total")]' +
             '/../div/span[contains(@class,"value")]', elem);
+        console.log('total direct:', this.total);
         this.who = getField('.//div[contains(@class,"recipient")]' +
             '//span[@class="trigger-text"]', elem);
         this.id = [
@@ -462,7 +504,7 @@ export class Order {
         this.items = getItems(elem);
         this.detail_promise = extractDetailPromise(this, this.scheduler);
         this.payments_promise = new Promise(
-            ((resolve: (arg0: string[]) => void) => {
+            ((resolve: (payments: string[]) => void) => {
                 if (this.id.startsWith("D")) {
                     resolve(( !this.total ? [this.date] : [this.date + ": " + this.total]));
                 } else {
@@ -475,9 +517,7 @@ export class Order {
                     this.scheduler.schedule(
                         this.invoice_url,
                         event_converter,
-                        payments => {
-                            resolve(payments);
-                        },
+                        payments => { resolve(payments); },
                         this.id,  // priority
                         false  // nocache
                     );
@@ -486,27 +526,7 @@ export class Order {
         );
     }
 
-    /**
-     * Creates an html element suitable for embedding into a table cell
-     * but doesn't actually embed it.
-     * @param {document} doc. DOM document needed to create elements.
-     */
-    itemsHtml(doc: HTMLDocument) {
-        const ul = doc.createElement('ul');
-        for(let title in this.items) {
-            if (Object.prototype.hasOwnProperty.call(this.items, title)) {
-                const li = doc.createElement('li');
-                ul.appendChild(li);
-                const a = doc.createElement('a');
-                li.appendChild(a);
-                a.textContent = title + '; ';
-                a.href = this.items[title];
-            }
-        }
-        return ul;
-    }
-
-    assembleDiagnostics() {
+    assembleDiagnostics(): Promise<Record<string,any>> {
         const diagnostics: Record<string, any> = {};
         [
             'id',
@@ -518,7 +538,10 @@ export class Order {
             'who',
             'items'
         ].forEach(
-            function(field_name: keyof Order) { diagnostics[field_name] = this[field_name]; }
+            (function(field_name: keyof Order) {
+                const value: any = this[field_name];
+                diagnostics[<string>(field_name)] = value;
+            }).bind(this)
         );
         return Promise.all([
             fetch(this.list_url)
@@ -534,6 +557,11 @@ export class Order {
     }
 }
 
+interface IOrdersPageData {
+    expected_order_count: number;
+    order_elems: dom2json.IJsonObject;
+}
+
 function getOrdersForYearAndQueryTemplate(
     year: number,
     query_template: string,
@@ -541,8 +569,8 @@ function getOrdersForYearAndQueryTemplate(
     nocache_top_level: boolean
 ) {
     let expected_order_count: number = null;
-    let order_found_callback: (order_promise: Promise<Order>) => void = null;
-    const order_promises: Promise<Order>[] = [];
+    let order_found_callback: (order_promise: Promise<IOrder>) => void = null;
+    const order_promises: Promise<IOrder>[] = [];
     const sendGetOrderCount = function() {
         scheduler.schedule(
             generateQueryString(0),
@@ -562,7 +590,7 @@ function getOrdersForYearAndQueryTemplate(
             }
         );
     };
-    const convertOrdersPage = function(evt: any) {
+    const convertOrdersPage = function(evt: any): IOrdersPageData {
         const d = util.parseStringToDOM(evt.target.responseText);
         const countSpan = util.findSingleNodeValue(
             './/span[@class="num-orders"]', d.documentElement);
@@ -592,13 +620,11 @@ function getOrdersForYearAndQueryTemplate(
             );
             return;
         }
-        const order_elems = util.findMultipleNodeValues(
-            './/*[contains(concat(" ", ' +
-                'normalize-space(@class), ' +
-                '" "), ' +
-                '" order ")]',
+        const order_elems: HTMLElement[] = util.findMultipleNodeValues(
+            './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
             ordersElem
-        );
+        ).map( node => <HTMLElement>node );
+        console.log('order_elems:', order_elems.map(oe => oe.innerHTML));
         return {
             expected_order_count: expected_order_count,
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
@@ -624,7 +650,7 @@ function getOrdersForYearAndQueryTemplate(
         const order_elems = orders_page_data.order_elems.map(
             (elem: any) => dom2json.toDOM(elem)
         );
-        function makeOrderPromise(elem: HTMLElement) {
+        function makeOrderPromise(elem: HTMLElement): Promise<IOrder> {
             const order = create(elem, scheduler, src_query);
             return Promise.resolve(order);
         }
@@ -660,12 +686,13 @@ function getOrdersForYearAndQueryTemplate(
                 // start checking loop
                 checkComplete();
             }
-            order_found_callback = function(order_promise: Promise<Order>): void {
+            order_found_callback = function(order_promise: Promise<IOrder>): void {
                 order_promises.push(order_promise);
-                order_promise.then( order => {
-                    // TODO is "Fetching" the right message for this stage?
-                    console.log('azad_order Fetching ' + order.id);
-                });
+                order_promise.then(
+                    order => order.id().then(
+                        id => console.log('azad_order Fetching ' + id)
+                    )
+                )
                 console.log(
                     'YearFetcher(' + year + ') order_promises.length:' +
                      order_promises.length +
@@ -682,7 +709,7 @@ function fetchYear(
     year: number,
     scheduler: request_scheduler.IRequestScheduler,
     nocache_top_level: boolean
-): Promise<Promise<Order>[]> {
+): Promise<Promise<IOrder>[]> {
     const templates_by_site: Record<string, string[]> = {
         'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
             '?opt=ab&digitalOrders=1' +
@@ -851,9 +878,9 @@ function fetchYear(
     .then( array2_of_promise => {
         // We can now know how many orders there are, although we may only
         // have a promise to each order not the order itself.
-        const order_promises: Promise<Order>[] = [];
+        const order_promises: Promise<IOrder>[] = [];
         array2_of_promise.forEach( promises => {
-            promises.forEach( (promise: Promise<Order>) => {
+            promises.forEach( (promise: Promise<IOrder>) => {
                 order_promises.push(promise);
             });
         });
@@ -865,25 +892,25 @@ export function getOrdersByYear(
     years: number[],
     scheduler: request_scheduler.IRequestScheduler,
     latest_year: number
-): Promise<Promise<Order>[]> {
+): Promise<Promise<IOrder>[]> {
     // At return time we may not know how many orders there are, only
     // how many years in which orders have been queried for.
     return Promise.all(
         years.map(
-            function(year: number): Promise<Promise<Order>[]> {
+            function(year: number): Promise<Promise<IOrder>[]> {
                 const nocache_top_level = (year == latest_year);
                 return fetchYear(year, scheduler, nocache_top_level);
             }
         )
     ).then(
-        (array2_of_order_promise: Promise<Order>[][]) => {
+        (array2_of_order_promise: Promise<IOrder>[][]) => {
             // Flatten the array of arrays of Promise<Order> into
             // an array of Promise<Order>.
-            const order_promises: Promise<Order>[] = [];
+            const order_promises: Promise<IOrder>[] = [];
             array2_of_order_promise.forEach(
-                (year_order_promises: Promise<Order>[]) => {
+                (year_order_promises: Promise<IOrder>[]) => {
                     year_order_promises.forEach(
-                        (order_promise: Promise<Order>) => {
+                        (order_promise: Promise<IOrder>) => {
                             order_promises.push(order_promise);
                         }
                     );
@@ -898,6 +925,8 @@ export function create(
     ordersPageElem: HTMLElement,
     scheduler: request_scheduler.IRequestScheduler,
     src_query: string
-) {
-    return new Order(ordersPageElem, scheduler, src_query);
+): IOrder {
+    const impl = new OrderImpl(ordersPageElem, scheduler, src_query);
+    const wrapper = new Order(impl);
+    return wrapper;
 }
