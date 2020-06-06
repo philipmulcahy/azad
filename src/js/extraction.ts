@@ -10,9 +10,9 @@ import { sprintf } from 'sprintf-js';
 export function by_regex(
     xpaths: string[],
     regex: RegExp,
-    default_value: any,
+    default_value: string|number,
     elem: HTMLElement
-) {
+): string {
     let i;
     for ( i=0; i!=xpaths.length; i++ ) {
         let a = null;
@@ -22,7 +22,7 @@ export function by_regex(
                 xpath,
                 elem
             );
-        } catch (ex) {
+        } catch ( ex ) {
             console.warn('got ' + ex + ' when evaluating ' + xpath);
         }
         if ( a ) {
@@ -31,18 +31,18 @@ export function by_regex(
                 if (match !== null) {
                     return match[1];
                 }
-                return a.textContent.trim();
-            } else {
-                return a.textContent.trim();
             }
+            return a.textContent.trim();
         }
     }
-    return util.isNumeric(default_value) ?
-        default_value.toString() :
-        default_value;
+    try {
+        return default_value.toString();
+    } catch {
+        return null;
+    }
 }
 
-export function payments_from_invoice(doc: HTMLDocument) {
+export function payments_from_invoice(doc: HTMLDocument): string[] {
     // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
     const strategy_1 = () => {
         const payments = util.findMultipleNodeValues(

@@ -9,14 +9,14 @@ import * as request_scheduler from './request_scheduler';
 import * as azad_order from './order';
 import * as azad_table from './table';
 
-let scheduler: request_scheduler.RequestScheduler = null;
+let scheduler: request_scheduler.IRequestScheduler = null;
 let background_port: chrome.runtime.Port = null;
 let years: number[] = null;
 let stats_timeout: NodeJS.Timeout = null;
 
 const SITE = window.location.href.match( /\/\/([^/]*)/ )[1];
 
-function getScheduler() {
+function getScheduler(): request_scheduler.IRequestScheduler {
     if (!scheduler) {
         resetScheduler();
     }
@@ -45,7 +45,7 @@ function setStatsTimeout() {
     ); 
 }
 
-function resetScheduler() {
+function resetScheduler(): void {
     if (scheduler) {
         scheduler.abort();
     }
@@ -105,7 +105,7 @@ function fetchAndShowOrders(years: number[]) {
                       'We\'ll start you off with a plain table to make display faster.\n' +
                       'You can click the blue "datatable" button to restore sorting, filtering etc.');
             }
-            azad_table.displayOrders(orderPromises, beautiful);
+            azad_table.displayOrders(orderPromises, beautiful, false);
             return document.querySelector('[id="azad_order_table"]');
         }
     );
@@ -126,7 +126,7 @@ function registerContentScript() {
     getBackgroundPort().onMessage.addListener( msg => {
         switch(msg.action) {
             case 'dump_order_detail':
-                azad_table.dumpOrderDiagnostics(msg.order_detail_url)
+                azad_table.dumpOrderDiagnostics(msg.order_id)
                 break;
             case 'scrape_years':
                 years = msg.years;
@@ -147,35 +147,6 @@ function registerContentScript() {
     console.log('script registered');
 }
 
-function addPopupButton() {
-    const KEY = 'azad_settings';
-    chrome.storage.sync.get(
-        KEY,
-        function(entries) {
-            console.log('settings retrieved: ' + JSON.stringify(entries));
-            const settings =  JSON.parse(entries[KEY]);
-            if (settings.includes('show_where_are_my_buttons')) {
-                util.addButton(
-                    'where have my order history buttons gone?',
-                    () => {
-                        window.alert(
-                            'Amazon Order History Reporter Chrome Extension\n\n' +
-                            'You can get to the controls popup by clicking ' +
-                            'on the extension icon at the top right of the ' +
-                            'Chrome window:  Look for an orange upper case A.' +
-                            'The button that you have just clicked will be ' +
-                            'removed in a future version of the order' +
-                            'history extension.'
-                        );
-                    },
-                    'azad_where_button'
-                );
-            }
-        }
-    );
-}
-
 console.log('Amazon Order History Reporter starting');
 registerContentScript();
 advertiseYears();
-addPopupButton();

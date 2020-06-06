@@ -98,7 +98,7 @@ function registerRightClickActions() {
                     Object.values(content_ports).forEach( port => {
                         port.postMessage({
                             action: 'dump_order_detail',
-                            order_detail_url: order_id
+                            order_id: order_id
                         });
                     });
                 }
