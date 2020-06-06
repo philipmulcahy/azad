@@ -105,7 +105,7 @@ function fetchAndShowOrders(years: number[]) {
                       'We\'ll start you off with a plain table to make display faster.\n' +
                       'You can click the blue "datatable" button to restore sorting, filtering etc.');
             }
-            azad_table.displayOrders(orderPromises, beautiful);
+            azad_table.displayOrders(orderPromises, beautiful, false);
             return document.querySelector('[id="azad_order_table"]');
         }
     );

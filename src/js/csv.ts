@@ -6,15 +6,15 @@
 
 import * as save_file from './save_file';
 
-export function download(table: any, sums_for_spreadsheet: boolean) {
-    const tableToArrayOfArrays = function(table: any) {
-        const rows: any[] = table.rows;
+export function download(table: HTMLTableElement, sums_for_spreadsheet: boolean) {
+    const tableToArrayOfArrays = function(table: HTMLTableElement): (string[])[] {
+        const rows: HTMLTableRowElement[] = Array.prototype.slice.call(table.rows);
         const result = [];
         for(let i=0; i<rows.length + ( sums_for_spreadsheet  ?  -1  :  0 ); ++i) {
             let cells = rows[i].cells;
             let cell_array = [];
             for(let j=0; j<cells.length; ++j) {
-                let x = cells[j];
+                let x: HTMLTableDataCellElement | HTMLTableHeaderCellElement | string = cells[j];
                 if (x.getAttribute("class").search("azad_numeric_no") == -1) {
                     x = x.textContent.replace(/^([£$]|CAD|EUR|GBP) */, '');
                 } else {
@@ -51,8 +51,8 @@ export function download(table: any, sums_for_spreadsheet: boolean) {
         }
         return result;
     };
-    const processRow = function(row: any[]) {
-        const processCell = function (cell: string) {
+    const processRow = function(row: string[]): string {
+        const processCell = function (cell: string): string {
             if (!cell) {
                 return '';
             }
@@ -64,11 +64,8 @@ export function download(table: any, sums_for_spreadsheet: boolean) {
         };
         return row.map(processCell).join(',');
     };
-    const csvFile = '\ufeff' + tableToArrayOfArrays(table).map(processRow)
-                                                          .join('\n');
+    const cell_strings: string[][] = tableToArrayOfArrays(table);
+    const row_strings = cell_strings.map(processRow);
+    const csvFile = '\ufeff' + row_strings.join('\n');
     save_file.save(csvFile, 'amazon_order_history.csv');
 }
-
-export default {
-    download: download
-};
