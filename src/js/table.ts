@@ -42,6 +42,8 @@ const addElemCell = function(row: HTMLElement, elem: HTMLElement): HTMLElement {
 
 const TAX_HELP = 'Caution: tax is often not listed when stuff is not supplied by Amazon, is cancelled, or is pre-order.';
 
+type RenderFunc = (order: azad_order.IOrder, td: HTMLElement) => Promise<void>;
+
 const cols: Record<string, any>[] = [
     {
         field_name: 'order id',
@@ -50,6 +52,7 @@ const cols: Record<string, any>[] = [
                 id => order.detail_url().then(
                     url => {
                         td.innerHTML = '<a href="' + url + '">' + id + '</a>';
+                        return null;
                     }
                 )
             ),
@@ -72,6 +75,7 @@ const cols: Record<string, any>[] = [
                 }
                 td.textContent = '';
                 td.appendChild(ul);
+                return null;
             }),
         is_numeric: false
     },
@@ -137,7 +141,7 @@ const cols: Record<string, any>[] = [
     {
         field_name: 'payments',
         render_func: (order: azad_order.IOrder, td: HTMLElement) => {
-            order.payments().then( payments => {
+            return order.payments().then( payments => {
                 const ul = td.ownerDocument.createElement('ul');
                 payments.forEach( (payment: any) => {
                     const li = document.createElement('li');
@@ -164,6 +168,7 @@ const cols: Record<string, any>[] = [
                     datatable.draw();
                 }
                 td.appendChild(ul);
+                return null;
             });
         },
         is_numeric: false
@@ -173,225 +178,255 @@ const cols: Record<string, any>[] = [
     true
 );
 
-function reallyDisplayOrders(orders: azad_order.IOrder[], beautiful: boolean) {
+function appendCell(
+    tr: HTMLTableRowElement,
+    order: azad_order.IOrder,
+    col_spec: Record<string, any>,
+): Promise<void> {
+    const td = document.createElement('td')
+    td.textContent = 'pending';
+    tr.appendChild(td);
+    let value_written_promise: Promise<void> = null;
+    const null_converter = function(x: any): any {
+        if (x) {
+            if (
+                typeof(x) === 'string' &&
+                parseFloat(x.replace(/^([£$]|CAD|EUR|GBP) */, '')
+                            .replace(/,/, '.')
+                          ) + 0 == 0
+            ) {
+                return 0;
+            } else {
+                return x;
+            }
+        } else if (x == 0) {
+            return 0;
+        } else {
+            return '';
+        }
+    }
+    if (col_spec.hasOwnProperty('render_func')) {
+        value_written_promise = col_spec.render_func(order, td);
+    } else {
+        const value_promise: Promise<any> = <Promise<any>>(
+            order[<keyof azad_order.IOrder>(
+                col_spec.value_promise_func
+            )]()
+        );
+        value_written_promise = value_promise
+            .then(null_converter)
+            .then(
+                (value: string) => {
+                    td.innerText = value;
+                    if(datatable) {
+                        datatable.rows().invalidate();
+                        datatable.draw();
+                    }
+                    return null;
+                }
+            );
+    }
+    td.setAttribute('class', td.getAttribute('class') + ' ' +
+            'azad_col_' + col_spec.field_name + ' ' +
+            'azad_numeric_' + (col_spec.is_numeric ? 'yes' : 'no' ) + ' ');
+    if ('help' in col_spec) {
+        td.setAttribute('class', td.getAttribute('class') + 'azad_elem_has_help ');
+        td.setAttribute('title', col_spec.help);
+    }
+    order.id().then( id => {
+        if (id == '203-4990948-9075513' && col_spec.field_name == 'postage') {
+            value_written_promise.then(() => console.log('written promise resolved'));
+        }
+    })
+    return value_written_promise;
+}
+
+function appendOrderRow(
+    table: HTMLElement,
+    order: azad_order.IOrder
+): Promise<void>[] {
+    const tr = document.createElement('tr');
+    table.appendChild(tr);
+    return cols.map( col_spec => appendCell(tr, order, col_spec) );
+}
+
+function addOrderTable(
+    doc: HTMLDocument,
+    orders: azad_order.IOrder[],
+    wait_for_all_values_before_resolving: boolean
+): Promise<HTMLTableElement> {
+    const addHeader = function(row: HTMLElement, value: string, help: string) {
+        const th = row.ownerDocument.createElement('th');
+        th.setAttribute('class', TH_CLASS);
+        row.appendChild(th);
+        th.textContent = value;
+        if( help ) {
+            th.setAttribute('class', th.getAttribute('class') + 'azad_th_has_help ');
+            th.setAttribute('title', help);
+        }
+        return th;
+    };
+
+    // remove any old table
+    let table: HTMLTableElement = <HTMLTableElement>doc.querySelector(
+        '[id="azad_order_table"]'
+    );
+    if ( table !== null ) {
+        console.log('removing old table');
+        table.parentNode.removeChild(table);
+        console.log('removed old table');
+    }
+    console.log('adding table');
+    table = <HTMLTableElement>doc.createElement('table');
+    console.log('added table');
+    document.body.appendChild(table);
+    table.setAttribute('id', 'azad_order_table');
+    table.setAttribute('class', 'azad_table stripe compact hover order-column ');
+
+    const thead = doc.createElement('thead');
+    thead.setAttribute('id', 'azad_order_table_head');
+    table.appendChild(thead);
+
+    const hr = doc.createElement('tr');
+    hr.setAttribute('id', 'azad_order_table_hr');
+    thead.appendChild(hr);
+
+    const tfoot = doc.createElement('tfoot');
+    tfoot.setAttribute('id', 'azad_order_table_foot');
+    table.appendChild(tfoot);
+
+    const fr = doc.createElement('tr');
+    fr.setAttribute('id', 'azad_order_table_fr');
+    tfoot.appendChild(fr);
+
+    cols.forEach( col_spec => {
+        addHeader(hr, col_spec.field_name, col_spec.help);
+        addHeader(fr, col_spec.field_name, col_spec.help);
+    });
+
+    const tbody = doc.createElement('tbody');
+    table.appendChild(tbody);
+
+    // Record all the promises: we're going to need to wait on all of them to
+    // resolve before we can hand over the table to our callers.
+    const row_done_promises: Promise<Promise<void>[]>[] = orders.map(
+        order => order.id().then(
+            id => appendOrderRow(tbody, order)
+        )
+    );
+
+    const table_promise = Promise.resolve(table);
+    if (wait_for_all_values_before_resolving) {
+        return Promise.all(row_done_promises).then( row_promises => {
+            const value_done_promises: Promise<void>[] = [];
+            row_promises.forEach(
+                cell_done_promises => value_done_promises.push(...cell_done_promises)
+            )
+            return Promise.all(value_done_promises).then( _ => table_promise );
+        });
+
+    } else {
+        return table_promise;
+    }
+}
+
+function reallyDisplayOrders(
+    orders: azad_order.IOrder[], beautiful: boolean,
+    wait_for_all_values_before_resolving: boolean
+): Promise<HTMLTableElement> {
     console.log('amazon_order_history_table.reallyDisplayOrders starting');
     for (let entry in order_map) {
         delete order_map[entry];
     }
-
-    // Record all the promises: we're going to need to wait on all of them to
-    // resolve before we can hand over the table to our callers.
-    const cell_value_promises: Promise<any>[] = [];
-
-    const addOrderTable = function(orders: azad_order.IOrder[]) {
-        const addHeader = function(row: HTMLElement, value: string, help: string) {
-            const th = row.ownerDocument.createElement('th');
-            th.setAttribute('class', TH_CLASS);
-            row.appendChild(th);
-            th.textContent = value;
-            if( help ) {
-                th.setAttribute('class', th.getAttribute('class') + 'azad_th_has_help ');
-                th.setAttribute('title', help);
-            }
-            return th;
-        };
-
-        const appendOrderRow = function(
-            table: HTMLElement,
-            order: azad_order.IOrder
-        ) {
-            const tr = document.createElement('tr');
-            table.appendChild(tr);
-            cols.forEach( col_spec => {
-                const td = document.createElement('td')
-                td.textContent = 'pending';
-                tr.appendChild(td)
-                const null_converter = (x: any) => {
-                    if (x) {
-                        if (
-                            typeof(x) === 'string' &&
-                            parseFloat(x.replace(/^([£$]|CAD|EUR|GBP) */, '').replace(/,/, '.')) + 0 == 0) {
-                            return 0;
-                        } else {
-                            return x;
-                        }
-                    } else if (x == 0) {
-                        return 0;
-                    } else {
-                        return '';
-                    }
-                }
-                if (col_spec.hasOwnProperty('render_func')) {
-                    col_spec.render_func(order, td);
-                } else {
-                    const value_promise: Promise<any> = <Promise<any>>(
-                        order[<keyof azad_order.IOrder>(
-                            col_spec.value_promise_func
-                        )]()
-                    );
-                    cell_value_promises.push(value_promise);
-                    value_promise
-                        .then(null_converter)
-                        .then(
-                            (value: string) => {
-                                td.innerHTML = value;
-                                if(datatable) {
-                                    datatable.rows().invalidate();
-                                    datatable.draw();
-                                }
-                            }
-                        );
-                }
-                td.setAttribute('class', td.getAttribute('class') +
-                        'azad_type_' + col_spec.type + ' ' +
-                        'azad_col_' + col_spec.field_name + ' ' +
-                        'azad_numeric_' + (col_spec.is_numeric ? 'yes' : 'no' ) + ' ');
-                if ('help' in col_spec) {
-                    td.setAttribute('class', td.getAttribute('class') + 'azad_elem_has_help ');
-                    td.setAttribute('title', col_spec.help);
-                }
-            });
-        };
-        // remove any old table
-        let table = document.querySelector('[id="azad_order_table"]');
-        if ( table !== null ) {
-            console.log('removing old table');
-            table.parentNode.removeChild(table);
-            console.log('removed old table');
-        }
-        console.log('adding table');
-        table = document.createElement('table');
-        console.log('added table');
-        document.body.appendChild(table);
-        table.setAttribute('id', 'azad_order_table');
-        table.setAttribute('class', 'azad_table stripe compact hover order-column ');
-
-        const thead = document.createElement('thead');
-        thead.setAttribute('id', 'azad_order_table_head');
-        table.appendChild(thead);
-
-        const hr = document.createElement('tr');
-        hr.setAttribute('id', 'azad_order_table_hr');
-        thead.appendChild(hr);
-
-        const tfoot = document.createElement('tfoot');
-        tfoot.setAttribute('id', 'azad_order_table_foot');
-        table.appendChild(tfoot);
-
-        const fr = document.createElement('tr');
-        fr.setAttribute('id', 'azad_order_table_fr');
-        tfoot.appendChild(fr);
-
-        cols.forEach( col_spec => {
-            addHeader(hr, col_spec.field_name, col_spec.help);
-            addHeader(fr, col_spec.field_name, col_spec.help);
-        });
-
-        const tbody = document.createElement('tbody');
-        table.appendChild(tbody);
-
-        orders.forEach( order => {
-            order.id().then( id => {
-                order_map[id] = order;
-                appendOrderRow(tbody, order);
-                console.log('Added row for ' + order.id);
-            });
-        });
-
-        return table;
-    };
     util.clearBody();
-    const table = addOrderTable(orders);
-    if(beautiful) {
-        $(document).ready( () => {
-            if (datatable) {
-                datatable.destroy();
-            }
-            datatable = (<any>$('#azad_order_table')).DataTable({
-                'bPaginate': true,
-                'lengthMenu': [ [10, 25, 50, 100, -1],
-                    [10, 25, 50, 100, 'All'] ],
-                'footerCallback': function() {
-                    const api = this.api();
-                    // Remove the formatting to get integer data for summation
-                    const floatVal = (v: string | number): number => {
-                        const parse = (i: string | number) => {
-                            try {
-                                if(typeof i === 'string') {
-                                    return (i === 'N/A' || i === '-' || i === 'pending') ?
-                                        0 :
-                                        parseFloat(
-                                            i.replace(/^([£$]|CAD|EUR|GBP) */, '')
-                                             .replace(/,/, '.')
-                                        );
-                                }
-                                if(typeof i === 'number') { return i; }
-                            } catch (ex) {
-                                console.warn(ex);
-                            }
-                            return 0;
-                        };
-                        const candidate = parse(v);
-                        if (isNaN(candidate)) {
-                            return 0;
-                        }
-                        return candidate;
-                    };
-                    let col_index = 0;
-                    cols.forEach( col_spec => {
-                        if(col_spec.is_numeric) {
-                            col_spec.sum = floatVal(
-                                api.column(col_index)
-                                   .data()
-                                   .map( (v: string | number) => floatVal(v) )
-                                   .reduce( (a: number, b: number) => a + b, 0 )
-                            );
-                            col_spec.pageSum = floatVal(
-                                api.column(col_index, { page: 'current' })
-                                   .data()
-                                   .map( (v: string | number) => floatVal(v) )
-                                   .reduce( (a: number, b: number) => a + b, 0 )
-                            );
-                            $(api.column(col_index).footer()).html(
-                                sprintf.sprintf('page=%s; all=%s',
-                                    col_spec.pageSum.toFixed(2),
-                                    col_spec.sum.toFixed(2))
-                            );
-                        }
-                        col_index += 1;
-                    });
+    const order_promises = orders.map(
+        (order: azad_order.IOrder) => Promise.resolve(order)
+    );
+    const table_promise = addOrderTable(document, orders, wait_for_all_values_before_resolving);
+    table_promise.then( _ => {
+        if (beautiful) {
+            $(document).ready( () => {
+                if (datatable) {
+                    datatable.destroy();
                 }
+                datatable = (<any>$('#azad_order_table')).DataTable({
+                    'bPaginate': true,
+                    'lengthMenu': [ [10, 25, 50, 100, -1],
+                        [10, 25, 50, 100, 'All'] ],
+                    'footerCallback': function() {
+                        const api = this.api();
+                        // Remove the formatting to get integer data for summation
+                        const floatVal = (v: string | number): number => {
+                            const parse = (i: string | number) => {
+                                try {
+                                    if(typeof i === 'string') {
+                                        return (i === 'N/A' || i === '-' || i === 'pending') ?
+                                            0 :
+                                            parseFloat(
+                                                i.replace(/^([£$]|CAD|EUR|GBP) */, '')
+                                                 .replace(/,/, '.')
+                                            );
+                                    }
+                                    if(typeof i === 'number') { return i; }
+                                } catch (ex) {
+                                    console.warn(ex);
+                                }
+                                return 0;
+                            };
+                            const candidate = parse(v);
+                            if (isNaN(candidate)) {
+                                return 0;
+                            }
+                            return candidate;
+                        };
+                        let col_index = 0;
+                        cols.forEach( col_spec => {
+                            if(col_spec.is_numeric) {
+                                col_spec.sum = floatVal(
+                                    api.column(col_index)
+                                       .data()
+                                       .map( (v: string | number) => floatVal(v) )
+                                       .reduce( (a: number, b: number) => a + b, 0 )
+                                );
+                                col_spec.pageSum = floatVal(
+                                    api.column(col_index, { page: 'current' })
+                                       .data()
+                                       .map( (v: string | number) => floatVal(v) )
+                                       .reduce( (a: number, b: number) => a + b, 0 )
+                                );
+                                $(api.column(col_index).footer()).html(
+                                    sprintf.sprintf('page=%s; all=%s',
+                                        col_spec.pageSum.toFixed(2),
+                                        col_spec.sum.toFixed(2))
+                                );
+                            }
+                            col_index += 1;
+                        });
+                    }
+                });
+                util.removeButton('data table');
+                util.addButton(
+                    'plain table',
+                    function() { displayOrders(order_promises, false, false); },
+                    'azad_table_button'
+                );
+                addCsvButton(order_promises, true);
+                addCsvButton(order_promises, false);
             });
-            util.removeButton('data table');
-            const order_promises = orders.map(
-                (order: azad_order.IOrder) => Promise.resolve(order)
-            );
+        } else {
+            util.removeButton('plain table');
             util.addButton(
-                'plain table',
-                function() { displayOrders(order_promises, false); },
+                'data table',
+                function() { displayOrders(order_promises, true, false); },
                 'azad_table_button'
             );
             addCsvButton(order_promises, true);
             addCsvButton(order_promises, false);
-        });
-    } else {
-        util.removeButton('plain table');
-        const order_promises = orders.map(
-            (order: azad_order.IOrder) => Promise.resolve(order)
-        );
-        util.addButton(
-            'data table',
-            function() { displayOrders(order_promises, true); },
-            'azad_table_button'
-        );
-        addCsvButton(order_promises, true);
-        addCsvButton(order_promises, false);
-    }
-    console.log('azad.reallyDisplayOrders returning');
+        }
+    });
 
-    // Don't let our callers get their hands on the table
-    // until all of the cells have been populated.
-    return Promise.all(cell_value_promises).then( () => table );
+    console.log('azad.reallyDisplayOrders returning');
+    return table_promise;
 }
 
 function addCsvButton(orders: Promise<azad_order.IOrder>[], sum_for_spreadsheet: boolean) {
@@ -402,9 +437,9 @@ function addCsvButton(orders: Promise<azad_order.IOrder>[], sum_for_spreadsheet:
     util.addButton(	
        title,
        function() {	
-           displayOrders(orders, false).then(
+           displayOrders(orders, false, true).then(
                table => csv.download(table, sum_for_spreadsheet)
-           );	
+           );
        },
        'azad_table_button'	
     );
@@ -414,14 +449,17 @@ function addCsvButton(orders: Promise<azad_order.IOrder>[], sum_for_spreadsheet:
 // diagnostics building belongs to azad_order.
 export function displayOrders(
     orderPromises: Promise<azad_order.IOrder>[],
-    beautiful: boolean
-) {
+    beautiful: boolean,
+    wait_for_all_values_before_resolving: boolean
+): Promise<HTMLTableElement> {
     console.log('amazon_order_history_table.displayOrders starting');
     return Promise.all(orderPromises).then( orders => {
         console.log('amazon_order_history_table.displayOrders then func starting');
-        const return_val = reallyDisplayOrders(orders, beautiful);
+        const table_promise: Promise<HTMLTableElement> = reallyDisplayOrders(
+            orders, beautiful, wait_for_all_values_before_resolving
+        );
         console.log('amazon_order_history_table.displayOrders then func returning');
-        return return_val;
+        return table_promise;
     });
 }
 
