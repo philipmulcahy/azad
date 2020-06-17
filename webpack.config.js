@@ -1,4 +1,4 @@
-/* Copyright(c) 2018 Philip Mulcahy. */
+/* Copyright(c) 2018-2020 Philip Mulcahy. */
 
 const webpack = require("webpack");
 const path = require("path");
@@ -43,20 +43,7 @@ const chrome_extension_options = {
                 loader: "html-loader",
                 exclude: /node_modules/,
             },
-            {
-                test: /\.vue$/,
-                loader: 'vue-loader',
-                options: {
-                    loaders: {
-                    }
-                    // other vue-loader options go here
-                }
-            },
         ]
-    },
-    resolve: {
-        alias: { 'vue$': 'vue/dist/vue.js' },
-        extensions: ['.tsx', '.ts', '.ts', '.js'],
     },
     plugins: [
         // clean the build folder
