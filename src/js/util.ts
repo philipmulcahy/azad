@@ -1,7 +1,4 @@
-/* Copyright(c) 2018 Philip Mulcahy. */
-/* Copyright(c) 2016 Philip Mulcahy. */
-
-/* jshint strict: true, esversion: 6 */
+/* Copyright(c) 2016-2020 Philip Mulcahy. */
 
 'use strict';
 
