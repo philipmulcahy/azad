@@ -42,8 +42,11 @@ const chrome_extension_options = {
                 test: /\.html$/,
                 loader: "html-loader",
                 exclude: /node_modules/,
-            },
+            }
         ]
+    },
+    resolve: {
+        extensions: ['.tsx', '.ts', '.ts', '.js'],
     },
     plugins: [
         // clean the build folder
