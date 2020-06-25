@@ -90,7 +90,10 @@ export function findSingleNodeValue(xpath: string, elem: HTMLElement): Node {
     }
 }
 
-export function findMultipleNodeValues(xpath: string, elem: HTMLElement): Node[] {
+export function findMultipleNodeValues(
+    xpath: string,
+    elem: HTMLElement
+): Node[] {
     const snapshot = elem.ownerDocument.evaluate(
         xpath,
         elem,
