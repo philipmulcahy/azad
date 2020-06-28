@@ -3,9 +3,48 @@
 
 ---
 ---
-# HELP!!
+# HELP!
 
-## If the results are not what you expect, Amazon probably changed something, and the extension hasn't been updated yet.
+## Common problems, with some fixes
+
+### Out of date cache data
+
+#### How could this have happened to me?
+
+Maybe a new version of the extension has broken how the cache data is interpreted, or more likely, Amazon has changed their website breaking compatibility between the cached data and the
+
+
+#### What's the workaround?
+
+If the extension is working, stop it by pressing the stop button.
+Then click the "Clear Cache" button and resume normal use.
+
+
+### Log-in message
+
+Parts of Amazon's websites appear to have defences against denial of service or site scraping attacks.
+If the extension needs to make a lot of requests (because you've got lots of orders or you choose many years, then it can log you out. This often happens only for types of orders or types of order related pages (payments, details) etc, leaving the other types of pages functional. The extension detects this and opens up a new sign-in page so you can log back in.
+Once you've done this, you can restart the year fetch - it should avoid re-fetching stuff it's already put in the cache.
+
+
+### Stuck progress in popup status/statistics
+
+Symptoms: pending task count sticks at a non-zero number for many seconds.
+I don't understand why this happens, but the workaround that has always worked for me is to remove all amazon cookies (this will log you out) and then everything works again.
+If you look in the extension logs (see below), a clue that this is appropriate is entries in the log that complain about too many redirections.
+
+
+### Amazon changed their site
+
+The extension needs to be updated by developers to learn the new layout.
+Please check to see that no-one else has filed a ticket for the same problem. If they have, join in the fun on that ticket rather than making your own "me-too" ticket.
+
+
+### You've got a country+order_type combination we've not got test data for
+
+See Amazon changed their site above.
+
+## Generic work-arounds
 
 Your first step should be to go to chrome://extensions and click Update.
 After you do this, close and reopen the Amazon page and rerun the report to see if that helped.
@@ -28,12 +67,16 @@ If you have log files, debug info, or screenshts to send but don't want them to 
 * Screenshots can be edited with a image editor to overwrite anything you don't want public, such as name, address, product description, or last 4 of the card.
 * Debug info contains LOTS of info you'd probably want kept private, so don't post it on GitHub.
 
+
 #### How to save a log file
+
 * On the screen showing the report, press Ctrl+Shift+I.
 * The log will appear at the bottom of the screen. RIGHT-click and select "Save as..."
 * Save the file as desired.
 
+
 #### How to save a debug file:
+
 * You can only do this when you see the results showing.
 * RIGHT-click on the order ID (in the order id column) for the row with the issue.
 * Select "save order debug info".
@@ -42,6 +85,7 @@ If you have log files, debug info, or screenshts to send but don't want them to 
 ---
 
 ### official installation page
+
 https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi
 
 ### supported development package(s)
