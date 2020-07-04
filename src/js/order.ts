@@ -52,10 +52,10 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         return date.normalizeDateString(
             extraction.by_regex(
                 [
-                    '//*[contains(@class,"order-date-invoice-item")]/text()', //20191025
-                    '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()', //20191025
+                    '//*[contains(@class,"order-date-invoice-item")]/text()',
+                    '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',
                 ],
-                /(?:Ordered on|Digital Order:) (.*)/i, //20191025
+                /(?:Ordered on|Commandé le|Digital Order:) (.*)/i,
                 order.date,
                 doc.documentElement
             )
