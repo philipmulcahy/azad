@@ -37,8 +37,12 @@ export function getSite() {
 }
 
 export function getOrderDetailUrl(orderId: string, site: string) {
+    if (orderId.startsWith('D')) {
+       return  'https://' + site + '/gp/your-account/order-history/' +
+               'ref=ppx_yo_dt_b_search?opt=ab&search=' + orderId;
+    }
     return 'https://' + site + '/gp/your-account/order-details/' +
-        'ref=oh_aui_or_o01_?ie=UTF8&orderID=' + orderId;
+           'ref=oh_aui_or_o01_?ie=UTF8&orderID=' + orderId;
 }
 
 export function getOrderPaymentUrl(orderId: string, site: string) {
