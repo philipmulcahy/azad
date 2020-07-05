@@ -49,6 +49,9 @@ See Amazon changed their site above.
 Your first step should be to go to chrome://extensions and click Update.
 After you do this, close and reopen the Amazon page and rerun the report to see if that helped.
 
+Next, open chrome://settings/siteData and type amazon in the search box, then delete them all. This will log you out.
+This is particularly useful for fixing problems where it looks like the extension got stuck/bored - sometimes Amazon starts giving the extension the run-around with infinite redirect links. Deleting cookies and logging back in seems to work. You don't need to delete non-amazon cookies.
+
 Please go to https://github.com/philipmulcahy/azad/issues to see issues which have already been reported.
 
 If you believe that you have the same issue, please add a comment.
@@ -65,7 +68,7 @@ If you have log files, debug info, or screenshts to send but don't want them to 
 
 * Log files are usually free of personal info.
 * Screenshots can be edited with a image editor to overwrite anything you don't want public, such as name, address, product description, or last 4 of the card.
-* Debug info contains LOTS of info you'd probably want kept private, so don't post it on GitHub.
+* Debug info contains info you'd probably want kept private (though we've not seen any credit card info), so don't post it on GitHub.
 
 
 #### How to save a log file
