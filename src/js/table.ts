@@ -173,7 +173,12 @@ const cols: Record<string, any>[] = [
             });
         },
         is_numeric: false
-    }
+    },
+    /* { */
+    /*     field_name: 'invoice', */
+    /*     value_promise_func: 'invoice_url', */
+    /*     is_numeric: false, */
+    /* } */
 ].filter( col => ('sites' in col) ?
     col.sites.test(util.getSite()):
     true

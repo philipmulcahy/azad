@@ -278,6 +278,12 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return null;
     };
+    const invoice_url = function () {
+        return this.site + (<HTMLElement>util.findSingleNodeValue(
+            '//a[contains(@href, "gp/invoice")]',
+            doc.documentElement
+        )).getAttribute('href')
+    };
     return {
         date: order_date(),
         total: total(),
@@ -289,6 +295,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         pst: cad_pst(),
         refund: refund(),
         who: who(),
+        invoice_url: invoice_url(),
     };
 }
 
@@ -303,6 +310,7 @@ interface IOrderDetails {
     pst: string;
     refund: string;
     who: string;
+    invoice_url: string;
 
     [index: string]: string;
 }
@@ -340,6 +348,7 @@ export type Items = Record<string, string>;
 export interface IOrder {
     id(): Promise<string>;
     detail_url(): Promise<string>;
+    invoice_url(): Promise<string>;
 
     site(): Promise<string>;
     date(): Promise<string>;
@@ -347,8 +356,6 @@ export interface IOrder {
     who(): Promise<string>;
     items(): Promise<Items>;
     payments(): Promise<any>;
-    date():  Promise<string>;
-    total(): Promise<string>;
     postage(): Promise<string>;
     gift(): Promise<string>;
     us_tax(): Promise<string>;
@@ -385,6 +392,7 @@ class Order {
     gst(): Promise<string> { return this.impl.detail_promise.then( detail => detail.gst ) }
     pst(): Promise<string> { return this.impl.detail_promise.then( detail => detail.pst ) }
     refund(): Promise<string> { return this.impl.detail_promise.then( detail => detail.refund ) }
+    invoice_url(): Promise<string> { return this.impl.detail_promise.then( detail => detail.invoice_url ) }
 
     assembleDiagnostics(): Promise<Record<string,any>> { return this.impl.assembleDiagnostics(); }
 }
@@ -394,6 +402,7 @@ class OrderImpl {
     site: string;
     list_url: string;
     detail_url: string;
+    payments_url: string;
     invoice_url: string;
     date: string;
     total: string;
@@ -412,6 +421,7 @@ class OrderImpl {
         this.site = null;
         this.list_url = src_query;
         this.detail_url = null;
+        this.payments_url = null;
         this.invoice_url = null;
         this.date = null;
         this.total = null;
@@ -491,7 +501,7 @@ class OrderImpl {
             .filter( match => match )[0][1];
         this.site = this.list_url.match(/.*\/\/([^/]*)/)[1];
         this.detail_url = util.getOrderDetailUrl(this.id, this.site);
-        this.invoice_url = util.getOrderPaymentUrl(this.id, this.site);
+        this.payments_url = util.getOrderPaymentUrl(this.id, this.site);
         if (!this.id) {
             const id_node: Node = util.findSingleNodeValue(
                 '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
@@ -515,7 +525,7 @@ class OrderImpl {
                         return payments;
                     }.bind(this);
                     this.scheduler.schedule(
-                        this.invoice_url,
+                        this.payments_url,
                         event_converter,
                         payments => { resolve(payments); },
                         this.id,  // priority
@@ -532,7 +542,7 @@ class OrderImpl {
             'id',
             'list_url',
             'detail_url',
-            'invoice_url',
+            'payments_url',
             'date',
             'total',
             'who',
@@ -550,7 +560,7 @@ class OrderImpl {
             fetch(this.detail_url)
                 .then( response => response.text() )
                 .then( text => { diagnostics['detail_html'] = text; } ),
-            fetch(this.invoice_url)
+            fetch(this.payments_url)
                 .then( response => response.text() )
                 .then( text => { diagnostics['invoice_html'] = text; } )
         ]).then( () => diagnostics );
@@ -624,7 +634,6 @@ function getOrdersForYearAndQueryTemplate(
             './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
             ordersElem
         ).map( node => <HTMLElement>node );
-        console.log('order_elems:', order_elems.map(oe => oe.innerHTML));
         return {
             expected_order_count: expected_order_count,
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
