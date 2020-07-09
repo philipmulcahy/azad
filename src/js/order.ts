@@ -20,8 +20,38 @@ function getField(xpath: string, elem: HTMLElement) {
     }
 }
 
-function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
+function getAttribute(
+    xpath: string,
+    attribute_name: string,
+    elem: HTMLElement
+) {
+    const targetElem = util.findSingleNodeValue(xpath, elem);
+    try {
+        return (<HTMLElement>targetElem).getAttribute(attribute_name);
+    } catch (_) {
+        return null;
+    }
+}
 
+interface IOrderDetails {
+    date: string;
+    total: string;
+    postage: string;
+    gift: string;
+    us_tax: string;
+    vat: string;
+    gst: string;
+    pst: string;
+    refund: string;
+    who: string;
+    invoice_url: string;
+
+    [index: string]: string;
+}
+
+function extractDetailFromDoc(
+    order: OrderImpl, doc: HTMLDocument
+): IOrderDetails {
     const who = function(){
         if(order.who) {
             return order.who;
@@ -105,7 +135,8 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return a;
     };
-// BUG: Need to exclude gift wrap
+
+    // TODO Need to exclude gift wrap
     const gift = function(){
         const a = extraction.by_regex(
             [
@@ -133,6 +164,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return null;
     };
+
     const postage = function() {
         return extraction.by_regex(
             [
@@ -150,6 +182,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
             doc.documentElement
         );
     };
+
     const vat = function() {
         const xpaths = ['VAT', 'tax', 'TVA', 'IVA'].map(
             label =>
@@ -183,6 +216,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return a;
     };
+
     const us_tax = function(){
         let a = getField(
             '//span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span/text()',
@@ -234,6 +268,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return null;
     };
+
     const cad_pst = function(){
         const a = extraction.by_regex(
             [
@@ -261,6 +296,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return null;
     };
+
     const refund = function () {
         let a = getField(
             ['Refund'].map( //TODO other field names?
@@ -278,13 +314,16 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return null;
     };
+
     const invoice_url = function () {
-        return this.site + (<HTMLElement>util.findSingleNodeValue(
+        return getAttribute(
             '//a[contains(@href, "gp/invoice")]',
+            'href',
             doc.documentElement
-        )).getAttribute('href')
+        )
     };
-    return {
+
+    const details: IOrderDetails = {
         date: order_date(),
         total: total(),
         postage: postage(),
@@ -297,22 +336,8 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         who: who(),
         invoice_url: invoice_url(),
     };
-}
 
-interface IOrderDetails {
-    date: string;
-    total: string;
-    postage: string;
-    gift: string;
-    us_tax: string;
-    vat: string;
-    gst: string;
-    pst: string;
-    refund: string;
-    who: string;
-    invoice_url: string;
-
-    [index: string]: string;
+    return details;
 }
 
 const extractDetailPromise = (
