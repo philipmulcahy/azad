@@ -31,6 +31,9 @@ function getXPathResult() {
 }
 
 export function getSite() {
+    if ( typeof( window ) === 'undefined' ) {
+        return 'www.azadexample.com'
+    }
     const href = window.location.href;
     const stem = new RegExp('https:\\/\\/((www|smile)\\.amazon\\.[^\\/]+)').exec(href)[1];
     return stem;
