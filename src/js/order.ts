@@ -316,7 +316,7 @@ function extractDetailFromDoc(
     };
 
     const invoice_url = function () {
-        return getAttribute(
+        return 'https://' + util.getSite() + getAttribute(
             '//a[contains(@href, "gp/invoice")]',
             'href',
             doc.documentElement
