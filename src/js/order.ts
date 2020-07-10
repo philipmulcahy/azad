@@ -316,11 +316,15 @@ function extractDetailFromDoc(
     };
 
     const invoice_url = function () {
-        return 'https://' + util.getSite() + getAttribute(
+        const suffix: string = getAttribute(
             '//a[contains(@href, "gp/invoice")]',
             'href',
             doc.documentElement
-        )
+        );
+        if( suffix ) {
+            return 'https://' + util.getSite() + suffix;
+        }
+        return null;
     };
 
     const details: IOrderDetails = {

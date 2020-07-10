@@ -162,8 +162,6 @@ const cols: Record<string, any>[] = [
                         )
                     );
                 });
-                td.textContent = '';
-                td.appendChild(ul);
                 if(datatable) {
                     datatable.rows().invalidate();
                     datatable.draw();
@@ -176,7 +174,20 @@ const cols: Record<string, any>[] = [
     },
     {
         field_name: 'invoice',
-        value_promise_func: 'invoice_url',
+        render_func: (order: azad_order.IOrder, td: HTMLElement) => {
+            return order.invoice_url().then( url => {
+                if ( url ) {
+                    const link = td.ownerDocument.createElement('a');
+                    link.textContent = url;
+                    link.setAttribute('href', url);
+                    td.textContent = '';
+                    td.appendChild(link);
+                } else {
+                    td.textContent = '';
+                }
+                return null;
+            });
+        },
         is_numeric: false,
     }
 ].filter( col => ('sites' in col) ?
