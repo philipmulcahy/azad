@@ -45,7 +45,7 @@ const TAX_HELP = 'Caution: tax is often not listed when stuff is not supplied by
 
 type RenderFunc = (order: azad_order.IOrder, td: HTMLElement) => Promise<void>;
 
-const cols: Record<string, any>[] = [
+const COLS: Record<string, any>[] = [
     {
         field_name: 'order id',
         render_func:
@@ -162,8 +162,6 @@ const cols: Record<string, any>[] = [
                         )
                     );
                 });
-                td.textContent = '';
-                td.appendChild(ul);
                 if(datatable) {
                     datatable.rows().invalidate();
                     datatable.draw();
@@ -173,11 +171,48 @@ const cols: Record<string, any>[] = [
             });
         },
         is_numeric: false
+    },
+    {
+        field_name: 'invoice',
+        render_func: (order: azad_order.IOrder, td: HTMLElement) => {
+            return order.invoice_url().then( url => {
+                if ( url ) {
+                    const link = td.ownerDocument.createElement('a');
+                    link.textContent = url;
+                    link.setAttribute('href', url);
+                    td.textContent = '';
+                    td.appendChild(link);
+                } else {
+                    td.textContent = '';
+                }
+                return null;
+            });
+        },
+        is_numeric: false,
+        visibility: () => settings.getBoolean('show_invoice_links')
     }
-].filter( col => ('sites' in col) ?
-    col.sites.test(util.getSite()):
-    true
-);
+]
+
+function getCols(): Promise< Record<string, any>[] > {
+    const waits: Promise<any>[] = [];
+    const results: Record<string, any>[] = [];  
+    COLS.forEach( col => {
+        if ( ('sites' in col) ? col.sites.test(util.getSite()) : true ) {
+            if ( 'visibility' in col ) {
+                const visible_promise: Promise<boolean> = col.visibility();
+                waits.push(visible_promise);
+                visible_promise.then( visible => {
+                    if ( visible ) {
+                        results.push( col );
+                    }
+                });
+            } else {
+                results.push( col );
+            }
+        }
+    });
+    return Promise.all(waits).then( _ => results );
+}
 
 function appendCell(
     tr: HTMLTableRowElement,
@@ -245,10 +280,12 @@ function appendCell(
 function appendOrderRow(
     table: HTMLElement,
     order: azad_order.IOrder
-): Promise<void>[] {
+): Promise<Promise<void>[]> {
     const tr = document.createElement('tr');
     table.appendChild(tr);
-    return cols.map( col_spec => appendCell(tr, order, col_spec) );
+    return getCols().then( cols =>
+        cols.map( col_spec => appendCell(tr, order, col_spec) )
+    );
 }
 
 function addOrderTable(
@@ -300,35 +337,34 @@ function addOrderTable(
     fr.setAttribute('id', 'azad_order_table_fr');
     tfoot.appendChild(fr);
 
-    cols.forEach( col_spec => {
-        addHeader(hr, col_spec.field_name, col_spec.help);
-        addHeader(fr, col_spec.field_name, col_spec.help);
-    });
-
-    const tbody = doc.createElement('tbody');
-    table.appendChild(tbody);
-
-    // Record all the promises: we're going to need to wait on all of them to
-    // resolve before we can hand over the table to our callers.
-    const row_done_promises: Promise<Promise<void>[]>[] = orders.map(
-        order => order.id().then(
-            id => appendOrderRow(tbody, order)
-        )
-    );
-
-    const table_promise = Promise.resolve(table);
-    if (wait_for_all_values_before_resolving) {
-        return Promise.all(row_done_promises).then( row_promises => {
-            const value_done_promises: Promise<void>[] = [];
-            row_promises.forEach(
-                cell_done_promises => value_done_promises.push(...cell_done_promises)
-            )
-            return Promise.all(value_done_promises).then( _ => table_promise );
+    return getCols().then( cols => {
+        cols.forEach( col_spec => {
+            addHeader(hr, col_spec.field_name, col_spec.help);
+            addHeader(fr, col_spec.field_name, col_spec.help);
         });
 
-    } else {
-        return table_promise;
-    }
+        const tbody = doc.createElement('tbody');
+        table.appendChild(tbody);
+
+        // Record all the promises: we're going to need to wait on all of them to
+        // resolve before we can hand over the table to our callers.
+        const row_done_promises = orders.map(
+            order => appendOrderRow(tbody, order)
+        );
+
+        if (wait_for_all_values_before_resolving) {
+            return Promise.all(row_done_promises).then( row_promises => {
+                const value_done_promises: Promise<void>[] = [];
+                row_promises.forEach(
+                    cell_done_promises => value_done_promises.push(...cell_done_promises)
+                )
+                return Promise.all(value_done_promises).then( _ => table );
+            });
+
+        } else {
+            return table;
+        }
+    });
 }
 
 function reallyDisplayOrders(
@@ -381,7 +417,7 @@ function reallyDisplayOrders(
                             return candidate;
                         };
                         let col_index = 0;
-                        cols.forEach( col_spec => {
+                        getCols().then( cols => cols.forEach( col_spec => {
                             if(col_spec.is_numeric) {
                                 col_spec.sum = floatVal(
                                     api.column(col_index)
@@ -402,7 +438,7 @@ function reallyDisplayOrders(
                                 );
                             }
                             col_index += 1;
-                        });
+                        }));
                     }
                 });
                 util.removeButton('data table');
