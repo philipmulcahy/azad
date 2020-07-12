@@ -20,8 +20,38 @@ function getField(xpath: string, elem: HTMLElement) {
     }
 }
 
-function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
+function getAttribute(
+    xpath: string,
+    attribute_name: string,
+    elem: HTMLElement
+) {
+    const targetElem = util.findSingleNodeValue(xpath, elem);
+    try {
+        return (<HTMLElement>targetElem).getAttribute(attribute_name);
+    } catch (_) {
+        return null;
+    }
+}
 
+interface IOrderDetails {
+    date: string;
+    total: string;
+    postage: string;
+    gift: string;
+    us_tax: string;
+    vat: string;
+    gst: string;
+    pst: string;
+    refund: string;
+    who: string;
+    invoice_url: string;
+
+    [index: string]: string;
+}
+
+function extractDetailFromDoc(
+    order: OrderImpl, doc: HTMLDocument
+): IOrderDetails {
     const who = function(){
         if(order.who) {
             return order.who;
@@ -105,7 +135,8 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return a;
     };
-// BUG: Need to exclude gift wrap
+
+    // TODO Need to exclude gift wrap
     const gift = function(){
         const a = extraction.by_regex(
             [
@@ -133,6 +164,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return null;
     };
+
     const postage = function() {
         return extraction.by_regex(
             [
@@ -150,6 +182,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
             doc.documentElement
         );
     };
+
     const vat = function() {
         const xpaths = ['VAT', 'tax', 'TVA', 'IVA'].map(
             label =>
@@ -183,6 +216,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return a;
     };
+
     const us_tax = function(){
         let a = getField(
             '//span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span/text()',
@@ -234,6 +268,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return null;
     };
+
     const cad_pst = function(){
         const a = extraction.by_regex(
             [
@@ -261,6 +296,7 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return null;
     };
+
     const refund = function () {
         let a = getField(
             ['Refund'].map( //TODO other field names?
@@ -278,7 +314,20 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         }
         return null;
     };
-    return {
+
+    const invoice_url = function () {
+        const suffix: string = getAttribute(
+            '//a[contains(@href, "gp/invoice")]',
+            'href',
+            doc.documentElement
+        );
+        if( suffix ) {
+            return 'https://' + util.getSite() + suffix;
+        }
+        return null;
+    };
+
+    const details: IOrderDetails = {
         date: order_date(),
         total: total(),
         postage: postage(),
@@ -289,22 +338,10 @@ function extractDetailFromDoc(order: OrderImpl, doc: HTMLDocument) {
         pst: cad_pst(),
         refund: refund(),
         who: who(),
+        invoice_url: invoice_url(),
     };
-}
 
-interface IOrderDetails {
-    date: string;
-    total: string;
-    postage: string;
-    gift: string;
-    us_tax: string;
-    vat: string;
-    gst: string;
-    pst: string;
-    refund: string;
-    who: string;
-
-    [index: string]: string;
+    return details;
 }
 
 const extractDetailPromise = (
@@ -340,6 +377,7 @@ export type Items = Record<string, string>;
 export interface IOrder {
     id(): Promise<string>;
     detail_url(): Promise<string>;
+    invoice_url(): Promise<string>;
 
     site(): Promise<string>;
     date(): Promise<string>;
@@ -347,8 +385,6 @@ export interface IOrder {
     who(): Promise<string>;
     items(): Promise<Items>;
     payments(): Promise<any>;
-    date():  Promise<string>;
-    total(): Promise<string>;
     postage(): Promise<string>;
     gift(): Promise<string>;
     us_tax(): Promise<string>;
@@ -385,6 +421,7 @@ class Order {
     gst(): Promise<string> { return this.impl.detail_promise.then( detail => detail.gst ) }
     pst(): Promise<string> { return this.impl.detail_promise.then( detail => detail.pst ) }
     refund(): Promise<string> { return this.impl.detail_promise.then( detail => detail.refund ) }
+    invoice_url(): Promise<string> { return this.impl.detail_promise.then( detail => detail.invoice_url ) }
 
     assembleDiagnostics(): Promise<Record<string,any>> { return this.impl.assembleDiagnostics(); }
 }
@@ -394,6 +431,7 @@ class OrderImpl {
     site: string;
     list_url: string;
     detail_url: string;
+    payments_url: string;
     invoice_url: string;
     date: string;
     total: string;
@@ -412,6 +450,7 @@ class OrderImpl {
         this.site = null;
         this.list_url = src_query;
         this.detail_url = null;
+        this.payments_url = null;
         this.invoice_url = null;
         this.date = null;
         this.total = null;
@@ -491,7 +530,7 @@ class OrderImpl {
             .filter( match => match )[0][1];
         this.site = this.list_url.match(/.*\/\/([^/]*)/)[1];
         this.detail_url = util.getOrderDetailUrl(this.id, this.site);
-        this.invoice_url = util.getOrderPaymentUrl(this.id, this.site);
+        this.payments_url = util.getOrderPaymentUrl(this.id, this.site);
         if (!this.id) {
             const id_node: Node = util.findSingleNodeValue(
                 '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
@@ -515,7 +554,7 @@ class OrderImpl {
                         return payments;
                     }.bind(this);
                     this.scheduler.schedule(
-                        this.invoice_url,
+                        this.payments_url,
                         event_converter,
                         payments => { resolve(payments); },
                         this.id,  // priority
@@ -532,7 +571,7 @@ class OrderImpl {
             'id',
             'list_url',
             'detail_url',
-            'invoice_url',
+            'payments_url',
             'date',
             'total',
             'who',
@@ -550,7 +589,7 @@ class OrderImpl {
             fetch(this.detail_url)
                 .then( response => response.text() )
                 .then( text => { diagnostics['detail_html'] = text; } ),
-            fetch(this.invoice_url)
+            fetch(this.payments_url)
                 .then( response => response.text() )
                 .then( text => { diagnostics['invoice_html'] = text; } )
         ]).then( () => diagnostics );
@@ -624,7 +663,6 @@ function getOrdersForYearAndQueryTemplate(
             './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
             ordersElem
         ).map( node => <HTMLElement>node );
-        console.log('order_elems:', order_elems.map(oe => oe.innerHTML));
         return {
             expected_order_count: expected_order_count,
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
