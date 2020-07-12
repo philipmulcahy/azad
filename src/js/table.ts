@@ -457,9 +457,13 @@ export function displayOrders(
         const table_promise: Promise<HTMLTableElement> = reallyDisplayOrders(
             orders, beautiful, wait_for_all_values_before_resolving
         );
-        console.log('amazon_order_history_table.displayOrders then func returning');
+        console.log(
+            'amazon_order_history_table.displayOrders then func returning ' +
+            'table promise.'
+        );
         return table_promise;
     });
+    console.log('amazon_order_history_table.displayOrders returning');
 }
 
 export function dumpOrderDiagnostics(order_id: string) {
