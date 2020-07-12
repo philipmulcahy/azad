@@ -57,12 +57,30 @@ class LocalCacheImpl {
         const real_key: string = this.buildRealKey(key);
         try {
             const encoded = window.localStorage.getItem(real_key);
-            const packed = JSON.parse(encoded);
+            let packed: any = null;
+            try {
+                packed = JSON.parse(encoded);
+            } catch (ex) {
+                console.error(
+                    'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
+                    encoded
+                );  
+            }
             if (!packed) {
                 throw "not found";
             }
             ++this.hit_count;
-            return JSON.parse(lzjs.decompress(packed.value));
+            const decompressed = lzjs.decompress(packed.value);
+            let result: string = null;
+            try { 
+                result = JSON.parse(decompressed);
+            } catch(ex) {
+                console.error(
+                    'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
+                    decompressed
+                );  
+            }
+            return result;
         } catch(err) {
             return undefined;
         }
@@ -84,7 +102,17 @@ class LocalCacheImpl {
         const timestamps_by_key: Record<string, number> = {};
         real_keys.forEach( key => {
             try {
-                timestamps_by_key[key] = JSON.parse(window.localStorage.getItem(key)).timestamp;
+                const encoded = window.localStorage.getItem(key);
+                let decoded: any = null;
+                try {
+                    JSON.parse(encoded);
+                } catch(ex) {
+                    console.error(
+                        'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
+                        encoded
+                    );  
+                }
+                timestamps_by_key[key] = decoded.timestamp;
             } catch(error) {
                 console.debug('couldn\'t get timestamp for key: ' + key);
             }

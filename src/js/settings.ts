@@ -12,7 +12,16 @@ export function initialiseUi(): Promise<void> {
         chrome.storage.sync.get(
             KEY,
             function(entries) {
-                const settings = JSON.parse(entries[KEY]);
+                const encoded_settings = entries[KEY];
+                let settings: any = null;
+                try{
+                    settings = JSON.parse(encoded_settings);
+                } catch (ex) {
+                    console.error(
+                        'JSON.parse blew up with:' + ex +  ' while parsing: ' +
+                        encoded_settings
+                    );
+                }
                 const key_to_elem: Record<string, HTMLElement> = {};
                 util.findMultipleNodeValues(
                     '//div[@id="azad_settings"]/input',
@@ -62,7 +71,16 @@ export function getBoolean(key: string): Promise<boolean> {
         chrome.storage.sync.get(
             KEY,
             function(entries) {
-                const settings = JSON.parse(entries[KEY]);
+                const encoded_settings: string = entries[KEY];
+                let settings: any = null;
+                try {
+                    settings = JSON.parse(encoded_settings);
+                } catch(ex) {
+                    console.error(
+                        'JSON.parse blew up with: ' + ex + ' while parsing:' +
+                        encoded_settings
+                    );
+                }
                 const key_to_elem: Record<string, HTMLElement> = {};
                 const value: boolean = <boolean>settings[key];
                 resolve(value);
