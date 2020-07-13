@@ -80,6 +80,8 @@ export function getBoolean(key: string): Promise<boolean> {
                         'JSON.parse blew up with: ' + ex + ' while parsing:' +
                         encoded_settings
                     );
+                    resolve(false);
+                    return;
                 }
                 const key_to_elem: Record<string, HTMLElement> = {};
                 const value: boolean = <boolean>settings[key];
