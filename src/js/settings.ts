@@ -21,17 +21,22 @@ export function initialiseUi(): Promise<void> {
                         'JSON.parse blew up with:' + ex +  ' while parsing: ' +
                         encoded_settings
                     );
+                    settings = {};
                 }
                 const key_to_elem: Record<string, HTMLElement> = {};
-                util.findMultipleNodeValues(
-                    '//div[@id="azad_settings"]/input',
+                const checkboxes = util.findMultipleNodeValues(
+                    '//table[@id="azad_settings"]//input',
                     document.documentElement
-                ).map( node => <HTMLElement>node ).forEach( elem => {
+                ).map( node => <HTMLElement>node );
+                console.log('checkboxes: ', checkboxes);
+                checkboxes.forEach( elem => {
                     const key = elem.getAttribute('id');
                     key_to_elem[key] = elem;
                 });
                 for ( let key in key_to_elem ) {
-                    let value: boolean = <boolean>settings[key];
+                    let value: boolean = (settings && key in settings)  ?
+                                         <boolean>settings[key] :
+                                         false;
                     const elem = key_to_elem[key];
                     if (value) {
                         elem.setAttribute('checked', 'true');
