@@ -144,6 +144,7 @@ const COLS: Record<string, any>[] = [
         render_func: (order: azad_order.IOrder, td: HTMLElement) => {
             return order.payments().then( payments => {
                 const ul = td.ownerDocument.createElement('ul');
+                td.textContent = '';
                 payments.forEach( (payment: any) => {
                     const li = document.createElement('li');
                     ul.appendChild(li);
