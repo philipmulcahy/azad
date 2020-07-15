@@ -11,7 +11,7 @@
 
 #### How could this have happened to me?
 
-Maybe a new version of the extension has broken how the cache data is interpreted, or more likely, Amazon has changed their website breaking compatibility between the cached data and the
+Maybe a new version of the extension has broken how the cache data is interpreted, or Amazon has changed their website breaking compatibility between the cached data and the live site (the cached data contains amazon generated urls).
 
 
 #### What's the workaround?
