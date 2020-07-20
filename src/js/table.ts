@@ -349,9 +349,10 @@ function addOrderTable(
 
         // Record all the promises: we're going to need to wait on all of them to
         // resolve before we can hand over the table to our callers.
-        const row_done_promises = orders.map(
-            order => appendOrderRow(tbody, order)
-        );
+        const row_done_promises = orders.map( order => {
+            order.id().then( id => { order_map[id] = order; } );
+            appendOrderRow(tbody, order);
+        });
 
         if (wait_for_all_values_before_resolving) {
             return Promise.all(row_done_promises).then( row_promises => {
