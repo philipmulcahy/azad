@@ -351,7 +351,7 @@ function addOrderTable(
         // resolve before we can hand over the table to our callers.
         const row_done_promises = orders.map( order => {
             order.id().then( id => { order_map[id] = order; } );
-            appendOrderRow(tbody, order);
+            return appendOrderRow(tbody, order);
         });
 
         if (wait_for_all_values_before_resolving) {
