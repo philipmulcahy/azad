@@ -7,6 +7,13 @@
 
 ## Common problems, with some fixes
 
+*If you've not read through this document (and indicated that you've done so in the help request, your ticket may be closed without further comment).*
+
+### No orders shown even though you know there should be some
+
+Clear amazon cookies: open chrome://settings/siteData and type amazon in the search box, then delete them all. This will log you out.
+Then log back in and try again.
+
 ### Out of date cache data
 
 #### How could this have happened to me?
