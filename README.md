@@ -7,7 +7,7 @@
 
 ## Common problems, with some fixes
 
-*If you've not read through this document (and indicated that you've done so in the help request, your ticket may be closed without further comment).*
+*If you've not read through this document (and indicated that you've done so in the help request), your help ticket may be closed without further comment.*
 
 ### No orders shown even though you know there should be some
 
