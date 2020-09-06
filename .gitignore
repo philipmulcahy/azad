@@ -1,9 +1,10 @@
 *.swp
 .DS_Store
-node_modules
-build
-build-node
 azad.zip
 azad_*.zip
+build
+build-node
+doc
+node_modules
 src/tests/azad_test_data
 tmp

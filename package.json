@@ -6,8 +6,9 @@
     "main": "background.js",
     "scripts": {
         "init": "npm install --init",
-        "clean": "rm -rf build/*; rm -rf build-node/*; rm azad*.zip",
+        "clean": "rm -rf azad*.zip build/* build-node/* doc",
         "build": "node utils/build.js",
+        "doc": " typedoc --out ./doc/ ./src/js/",
         "lint": "tsc --noEmit src/js/inject.ts src/js/control.ts src/js/background.ts src/tests/all.ts",
         "package": "utils/package.sh",
         "private_package": "npm run package; cp azad.zip azad_$(git log -1 | grep commit | sed 's/^commit //' | cut -c 1-8).zip",
@@ -28,6 +29,7 @@
         "html-webpack-plugin": "^4.3.0",
         "style-loader": "^1.2.1",
         "ts-loader": "^7.0.5",
+        "typedoc": "^0.19.1",
         "typescript": "^3.9.7",
         "webpack": "^4.44.1",
         "write-file-webpack-plugin": "^4.5.1"
