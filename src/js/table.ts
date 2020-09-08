@@ -347,8 +347,8 @@ function addOrderTable(
         const tbody = doc.createElement('tbody');
         table.appendChild(tbody);
 
-        // Record all the promises: we're going to need to wait on all of them to
-        // resolve before we can hand over the table to our callers.
+        // Record all the promises: we're going to need to wait on all of them
+        // to resolve before we can hand over the table to our callers.
         const row_done_promises = orders.map( order => {
             order.id().then( id => { order_map[id] = order; } );
             return appendOrderRow(tbody, order);
@@ -358,8 +358,14 @@ function addOrderTable(
             return Promise.all(row_done_promises).then( row_promises => {
                 const value_done_promises: Promise<void>[] = [];
                 row_promises.forEach(
-                    cell_done_promises => value_done_promises.push(...cell_done_promises)
+                    cell_done_promises => value_done_promises.push(
+                        ...cell_done_promises
+                    )
                 )
+                console.log(
+                    'value_done_promises.length',
+                    value_done_promises.length
+                );
                 return Promise.all(value_done_promises).then( _ => table );
             });
 
