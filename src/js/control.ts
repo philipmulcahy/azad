@@ -110,7 +110,7 @@ function handleYearClick(evt: { target: { value: any; }; }) {
             hitType: 'event',
             eventCategory: 'control',
             eventAction: 'scrape_year_click',
-            eventLabel: 'scrape_year_click:' + year 
+            eventLabel: 'scrape_year_click:' + year
         }
     );
 }
