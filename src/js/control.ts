@@ -64,7 +64,18 @@ function connectToBackground() {
 function registerActionButtons() {
     $('#azad_clear_cache').on(
         'click',
-        () => background_port.postMessage({action: 'clear_cache'})
+        () => {
+            background_port.postMessage({action: 'clear_cache'});
+            window.ga(
+                'send',
+                {
+                    hitType: 'event',
+                    eventCategory: 'control',
+                    eventAction: 'clear_cache_click',
+                    eventLabel: ''
+                }
+            );
+        }
     );
     $('#azad_stop').on('click', () => handleStopClick());
     $('#azad_hide_controls').on('click', () => {
