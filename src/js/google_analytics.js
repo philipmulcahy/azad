@@ -23,10 +23,10 @@
 
 ga('create', 'UA-118834348-1', 'auto');
 
-// Modifications: 
+// Modifications:
 
 // Disable file protocol checking.
 ga('set', 'checkProtocolTask', null);
 
-// Set page, avoiding rejection due to chrome-extension protocol 
+// Set page, avoiding rejection due to chrome-extension protocol
 ga('send', 'pageview', '/popup');
