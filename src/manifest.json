@@ -1,6 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Amazon Order History Reporter",
+    "content_security_policy": "script-src 'self' https://www.google-analytics.com/analytics.js; object-src 'self'",
     "permissions": [
         "contextMenus",
         "https://smile.amazon.ca/",
@@ -44,7 +45,11 @@
                 "https://www.amazon.com.au/*",
                 "https://www.amazon.com.mx/*"
             ],
-            "css": ["jquery.dataTables.min.css", "datatables_override.css", "inject.css"],
+            "css": [
+                "jquery.dataTables.min.css",
+                "datatables_override.css",
+                "inject.css"
+            ],
             "js": [
                 "inject.bundle.js"
             ]
