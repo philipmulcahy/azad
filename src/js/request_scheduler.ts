@@ -136,7 +136,8 @@ export interface IRequestScheduler {
     schedule(
         query: string,
         event_converter: (evt: any) => any,
-        callback: (results: any, query: string) => void,
+        success_callback: (results: any, query: string) => void,
+        failure_callback: (query: string) => void,
         priority: string,
         nocache: boolean
     ): void;
@@ -166,7 +167,8 @@ class RequestScheduler {
     schedule(
         query: string,
         event_converter: (evt: any) => any,
-        callback: (results: any, query: string) => void,
+        success_callback: (results: any, query: string) => void,
+        failure_callback: (query: string) => void,
         priority: string,
         nocache: boolean
     ): void {
@@ -177,7 +179,8 @@ class RequestScheduler {
         this.queue.push({
             'query': query,
             'event_converter': event_converter,
-            'callback': callback,
+            'success_callback': success_callback,
+            'failure_callback': failure_callback,
             'priority': priority,
             'nocache': nocache,
         });
@@ -212,7 +215,8 @@ class RequestScheduler {
     _execute(
         query: string,
         event_converter: (evt: any) => any,
-        callback: (converted_event: any, query: string) => void,
+        success_callback: (converted_event: any, query: string) => void,
+        failure_callback: (query: string) => void,
         priority: number,
         nocache: boolean
     ) {
@@ -230,7 +234,7 @@ class RequestScheduler {
         // subsequent responses being handled.
         const protected_callback = (response: any, query: string) => {
             try {
-                return callback(response, query);
+                return success_callback(response, query);
             } catch (ex) {
                 console.error('callback failed for ' + query + ' with ' + ex);
                 return null;
@@ -252,13 +256,19 @@ class RequestScheduler {
         if (typeof(cached_response) !== 'undefined') {
             this._pretendToSendOne(query, protected_callback, cached_response);
         } else {
-            this._sendOne(query, protected_converter, protected_callback, nocache);
+            this._sendOne(
+                query,
+                protected_converter,
+                protected_callback,
+                failure_callback,
+                nocache
+            );
         }
     }
 
     _pretendToSendOne(
         query: string,
-        callback: (converted_event: any, query: string) => void,
+        success_callback: (converted_event: any, query: string) => void,
         cached_response: any
     ) {
         // "Return" results asynchronously...
@@ -275,7 +285,7 @@ class RequestScheduler {
         setTimeout(
             () => {
                 this._executeSomeIfPossible();
-                callback(cached_response, query);
+                success_callback(cached_response, query);
                 this.running_count -= 1;
                 this.completed_count += 1;
                 this._checkDone();
@@ -286,7 +296,8 @@ class RequestScheduler {
     _sendOne(
         query: string,
         event_converter: (evt: any) => any,
-        callback: (converted_event: any, query: string) => void,
+        success_callback: (converted_event: any, query: string) => void,
+        failure_callback: (query: string) => void,
         nocache: boolean
     ) {
         const req = new XMLHttpRequest();
@@ -295,6 +306,7 @@ class RequestScheduler {
             this.running_count -= 1;
             this.error_count += 1;
             console.log( 'Unknown error fetching ' + query );
+            this._checkDone();
         }.bind(this);
         req.onload = function(evt: any) {
             if (!this.live) {
@@ -336,9 +348,20 @@ class RequestScheduler {
             if (!nocache) {
                 this.cache.set(query, converted);
             }
-            callback(converted, query);
+            success_callback(converted, query);
             this.running_count -= 1;
             this.completed_count += 1;
+            this._checkDone();
+        }.bind(this);
+        req.timeout = 20000;  // 20 seconds
+        req.ontimeout = function(evt: any) {
+            if (!this.live) {
+                this.running_count -= 1;
+                return;
+            }
+            console.log('Timed out while fetching: ' + query);
+            this.error_count += 1;
+            this.running_count -= 1;
             this._checkDone();
         }.bind(this);
         this.running_count += 1;
@@ -353,7 +376,8 @@ class RequestScheduler {
             this._execute(
                 task.query,
                 task.event_converter,
-                task.callback,
+                task.success_callback,
+                task.failure_callback,
                 task.priority,
                 task.nocache,
             );
