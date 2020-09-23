@@ -348,7 +348,7 @@ const extractDetailPromise = (
     order: OrderImpl,
     scheduler: request_scheduler.IRequestScheduler
 ) => new Promise<IOrderDetails>(
-    resolve => {
+    (resolve, reject) => {
         const query = order.detail_url;
         const event_converter = function(
             evt: { target: { responseText: string; }; }
@@ -363,11 +363,14 @@ const extractDetailPromise = (
                 (order_details: IOrderDetails) => {
                     resolve(order_details);
                 },
+                url => reject('timeout or other problem when fetching ' + url),
                 order.id,
                 false
             );
         } catch (ex) {
-            console.error('scheduler rejected ' + order.id + ' ' + query);
+            const msg = 'scheduler rejected ' + order.id + ' ' + query;
+            console.error(msg);
+            reject(msg);
         }
     }
 );
@@ -543,25 +546,31 @@ class OrderImpl {
         this.items = getItems(elem);
         this.detail_promise = extractDetailPromise(this, this.scheduler);
         this.payments_promise = new Promise(
-            ((resolve: (payments: string[]) => void) => {
-                if (this.id.startsWith("D")) {
-                    resolve(( !this.total ? [this.date] : [this.date + ": " + this.total]));
-                } else {
-                    const event_converter = function(evt: any) {
-                        const doc = util.parseStringToDOM( evt.target.responseText );
-                        const payments = extraction.payments_from_invoice(doc);
-                        // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
-                        return payments;
-                    }.bind(this);
-                    this.scheduler.schedule(
-                        this.payments_url,
-                        event_converter,
-                        payments => { resolve(payments); },
-                        this.id,  // priority
-                        false  // nocache
-                    );
+            (
+                (
+                    resolve: (payments: string[]) => void,
+                    reject: (msg: string) => void
+                ) => {
+                    if (this.id.startsWith("D")) {
+                        resolve(( !this.total ? [this.date] : [this.date + ": " + this.total]));
+                    } else {
+                        const event_converter = function(evt: any) {
+                            const doc = util.parseStringToDOM( evt.target.responseText );
+                            const payments = extraction.payments_from_invoice(doc);
+                            // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
+                            return payments;
+                        }.bind(this);
+                        this.scheduler.schedule(
+                            this.payments_url,
+                            event_converter,
+                            payments => { resolve(payments); },
+                            url => reject( 'timeout or other error while fetching ' + url ),
+                            this.id,  // priority
+                            false  // nocache
+                        );
+                    }
                 }
-            }).bind(this)
+            ).bind(this)
         );
     }
 
@@ -615,6 +624,7 @@ function getOrdersForYearAndQueryTemplate(
             generateQueryString(0),
             convertOrdersPage,
             receiveOrdersCount,
+            receiveOrdersCountError,
             '00000',
             nocache_top_level
         );
@@ -668,6 +678,9 @@ function getOrdersForYearAndQueryTemplate(
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
         };
     };
+    const receiveOrdersPageError = function(msg: string) {
+        console.error('got timeout or other error while fetching ' + msg);
+    }
     const receiveOrdersCount = function(orders_page_data: { expected_order_count: number; }) {
         expected_order_count = orders_page_data.expected_order_count;
         // TODO: restore efficiency - the first ten orders are visible in the page we got expected_order_count from.
@@ -679,11 +692,15 @@ function getOrdersForYearAndQueryTemplate(
                 generateQueryString(iorder),
                 convertOrdersPage,
                 receiveOrdersPageData,
+                receiveOrdersPageError,
                 '2',
                 false
             );
         }
     };
+    const receiveOrdersCountError = function(msg: string) {
+        console.error('got timeout or other error while fetching ' + msg);
+    }
     const receiveOrdersPageData = function(orders_page_data: any, src_query: string): void {
         const order_elems = orders_page_data.order_elems.map(
             (elem: any) => dom2json.toDOM(elem)
