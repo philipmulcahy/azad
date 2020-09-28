@@ -357,15 +357,14 @@ const extractDetailPromise = (
             return extractDetailFromDoc(order, doc);
         };
         try {
-            scheduler.schedule(
+            scheduler.scheduleToPromise<IOrderDetails>(
                 query,
                 event_converter,
-                (order_details: IOrderDetails) => {
-                    resolve(order_details);
-                },
-                url => reject('timeout or other problem when fetching ' + url),
                 order.id,
                 false
+            ).then(
+                (response: request_scheduler.IResponse<IOrderDetails>) => resolve(response.result),
+                url => reject('timeout or other problem when fetching ' + url),
             );
         } catch (ex) {
             const msg = 'scheduler rejected ' + order.id + ' ' + query;
@@ -560,13 +559,14 @@ class OrderImpl {
                             // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
                             return payments;
                         }.bind(this);
-                        this.scheduler.schedule(
+                        this.scheduler.scheduleToPromise<string[]>(
                             this.payments_url,
                             event_converter,
-                            payments => { resolve(payments); },
-                            url => reject( 'timeout or other error while fetching ' + url ),
                             this.id,  // priority
                             false  // nocache
+                        ).then(
+                            (response: {result: string[]}) => resolve(response.result),
+                            url => reject( 'timeout or other error while fetching ' + url )
                         );
                     }
                 }
@@ -615,20 +615,7 @@ function getOrdersForYearAndQueryTemplate(
     query_template: string,
     scheduler: request_scheduler.IRequestScheduler,
     nocache_top_level: boolean
-) {
-    let expected_order_count: number = null;
-    let order_found_callback: (order_promise: Promise<IOrder>) => void = null;
-    const order_promises: Promise<IOrder>[] = [];
-    const sendGetOrderCount = function() {
-        scheduler.schedule(
-            generateQueryString(0),
-            convertOrdersPage,
-            receiveOrdersCount,
-            receiveOrdersCountError,
-            '00000',
-            nocache_top_level
-        );
-    };
+): Promise<Promise<IOrder>[]> {
     const generateQueryString = function(startOrderPos: number) {
         return sprintf.sprintf(
             query_template,
@@ -648,7 +635,7 @@ function getOrdersForYearAndQueryTemplate(
                 'Error: cannot find order count elem in: ' + evt.target.responseText
             );
         }
-        expected_order_count = parseInt(
+        const expected_order_count: number = parseInt(
             countSpan.textContent.split(' ')[0], 10);
         console.log(
             'Found ' + expected_order_count + ' orders for ' + year
@@ -678,86 +665,112 @@ function getOrdersForYearAndQueryTemplate(
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
         };
     };
-    const receiveOrdersPageError = function(msg: string) {
-        console.error('got timeout or other error while fetching ' + msg);
-    }
-    const receiveOrdersCount = function(orders_page_data: { expected_order_count: number; }) {
-        expected_order_count = orders_page_data.expected_order_count;
-        // TODO: restore efficiency - the first ten orders are visible in the page we got expected_order_count from.
-        for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
-            console.log(
-                'sending request for order: ' + iorder + ' onwards'
-            );
-            scheduler.schedule(
-                generateQueryString(iorder),
-                convertOrdersPage,
-                receiveOrdersPageData,
-                receiveOrdersPageError,
-                '2',
-                false
-            );
-        }
-    };
-    const receiveOrdersCountError = function(msg: string) {
-        console.error('got timeout or other error while fetching ' + msg);
-    }
-    const receiveOrdersPageData = function(orders_page_data: any, src_query: string): void {
+    const expected_order_count_promise: Promise<number> = scheduler.scheduleToPromise<IOrdersPageData>(
+        generateQueryString(0),
+        convertOrdersPage,
+        '00000',
+        nocache_top_level
+    ).then(
+        response => response.result.expected_order_count
+    );
+    const translateOrdersPageData = function(
+        response: request_scheduler.IResponse<IOrdersPageData>
+    ): Promise<IOrder>[] {
+        const orders_page_data = response.result;
         const order_elems = orders_page_data.order_elems.map(
             (elem: any) => dom2json.toDOM(elem)
         );
         function makeOrderPromise(elem: HTMLElement): Promise<IOrder> {
-            const order = create(elem, scheduler, src_query);
+            const order = create(elem, scheduler, response.query);
             return Promise.resolve(order);
         }
-        order_elems.forEach(
-            (elem: HTMLElement) => order_found_callback( makeOrderPromise(elem) )
-        );
+        return order_elems.map(makeOrderPromise);
     };
 
-    // Promise to array of Order Promise.
-    return new Promise(
-        resolve => {
-            {
-                let scheduled_check_id: NodeJS.Timeout = null;
-                const checkComplete = function() {
-                    clearTimeout(scheduled_check_id);
-                    console.log(
-                        'checkComplete() actual:' + order_promises.length
-                        + ' expected:' + expected_order_count
-                    );
-                    if(order_promises.length == expected_order_count ||
-                        !scheduler.isLive()
-                    ) {
-                        console.log('resolving order_promises for ' + year);
-                        resolve(order_promises);
-                        console.log('resolved order_promises for ' + year);
-                    } else {
-                        scheduled_check_id = setTimeout(
-                            checkComplete,
-                            1000
-                        );
-                    }
-                };
-                // start checking loop
-                checkComplete();
-            }
-            order_found_callback = function(order_promise: Promise<IOrder>): void {
-                order_promises.push(order_promise);
-                order_promise.then(
-                    order => order.id().then(
-                        id => console.log('azad_order Fetching ' + id)
-                    )
-                )
-                console.log(
-                    'YearFetcher(' + year + ') order_promises.length:' +
-                     order_promises.length +
-                     ' expected_order_count:' +
-                     expected_order_count
-                );
-            };
-            sendGetOrderCount();
+    const getOrderPromises = function(expected_order_count: number): Promise<Promise<IOrder>[]> {
+        const page_done_promises: Promise<void>[] = [];
+        const order_promises: Promise<IOrder>[] = [];
+        for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
+            console.log(
+                'sending request for order: ' + iorder + ' onwards'
+            );
+            page_done_promises.push(
+                scheduler.scheduleToPromise<IOrdersPageData>(
+                    generateQueryString(iorder),
+                    convertOrdersPage,
+                    '2',
+                    false
+                ).then( 
+                    page_data => 
+                        order_promises.push(...translateOrdersPageData(page_data))
+                ).then( () => null )
+            );
         }
-    );
+        console.log('finished sending order list page requests');
+        return Promise.all(page_done_promises).then(
+            () => {
+                console.log('returning all order promises');
+                return order_promises;
+            }
+       );
+    }
+
+    return expected_order_count_promise.then( getOrderPromises );
+   
+    /* // Promise to array of Order Promise. */
+    /* return expected_order_count_promise.then( */
+    /*     expected_count => new Promise<Promise<IOrder>[]>( resolve => { */
+    /*         { */
+    /*             let scheduled_check_id: NodeJS.Timeout = null; */
+    /*             const checkComplete = function() { */
+    /*                 clearTimeout(scheduled_check_id); */
+    /*                 console.log( */
+    /*                     'checkComplete() actual:' + order_promises.length */
+    /*                     + ' expected:' + expected_count */
+    /*                 ); */
+    /*                 if(order_promises.length == expected_count || */
+    /*                     !scheduler.isLive() */
+    /*                 ) { */
+    /*                     console.log('resolving order_promises for ' + year); */
+    /*                     resolve(order_promises); */
+    /*                     console.log('resolved order_promises for ' + year); */
+    /*                 } else { */
+    /*                     scheduled_check_id = setTimeout( */
+    /*                         checkComplete, */
+    /*                         1000 */
+    /*                     ); */
+    /*                 } */
+    /*             }; */
+    /*             // start checking loop */
+    /*             checkComplete(); */
+    /*         } */
+    /*         order_found_callback = function( */
+    /*             order_promise: Promise<IOrder> */
+    /*         ): void { */
+    /*             order_promises.push(order_promise); */
+    /*             order_promise.then( */
+    /*                 order => order.id().then( */
+    /*                     id => console.log('azad_order Fetching ' + id) */
+    /*                 ) */
+    /*             ) */
+    /*             console.log( */
+    /*                 'YearFetcher(' + year + ') order_promises.length:' + */
+    /*                  order_promises.length + */
+    /*                  ' expected_order_count:' + */
+    /*                  expected_count */
+    /*             ); */
+    /*         }; */
+    /*         scheduler.scheduleToPromise( */
+    /*             generateQueryString(0), */
+    /*             convertOrdersPage, */
+    /*             '00000', */
+    /*             nocache_top_level */
+    /*         ).then( */
+    /*             receiveOrdersCount, */
+    /*             receiveOrdersCountError */
+    /*         ); */
+    /*     }) */
+    /* ); */
 }
 
 function fetchYear(
