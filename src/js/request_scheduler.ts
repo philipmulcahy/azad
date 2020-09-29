@@ -1,16 +1,9 @@
-/* Copyright(c) 2019 Philip Mulcahy. */
-/* Copyright(c) 2018 Philip Mulcahy. */
-/* Copyright(c) 2016 Philip Mulcahy. */
-
-/* jshint strict: true, esversion: 6 */
-
-// Uses code from http://eloquentjavascript.net/1st_edition/appendix2.html
+/* Copyright(c) 2016-2020 Philip Mulcahy. */
 
 'use strict';
 
 import * as binary_heap from './binary_heap';
 import * as cachestuff from './cachestuff';
-
 
 export interface IResponse<T> {
     result: T,
@@ -43,7 +36,7 @@ class RequestScheduler {
     error_count: number = 0;
     signin_warned: boolean = false;
     live = true;
-    
+
     constructor() {
         console.log('constructing new RequestScheduler');
     }
@@ -71,12 +64,12 @@ class RequestScheduler {
         this._executeSomeIfPossible();
     }
 
-    scheduleToPromise(
+    scheduleToPromise<T>(
         query: string,
         event_converter: (evt: any) => any,
         priority: string,
         nocache: boolean
-    ): Promise<any> {
+    ): Promise<IResponse<T>> {
         return new Promise<any>(
             (resolve, reject) => {
                 try {
@@ -93,7 +86,7 @@ class RequestScheduler {
                 }
             }
         );
-        
+
     }
 
     abort() {
@@ -182,7 +175,7 @@ class RequestScheduler {
         cached_response: any
     ) {
         // "Return" results asynchronously...
-        // ...make it happen as soon as possible after any current 
+        // ...make it happen as soon as possible after any current
         // synchronous code has finished - e.g. pretend it's coming back
         // from the internet.
         // Why? Because otherwise the scheduler will get confused about
@@ -203,7 +196,7 @@ class RequestScheduler {
     _recordSingleSuccess() {
         // Defer checking if we're done, because success_callback
         // (triggered above) probably involves a promise chain, and might
-        // enqueue more work that might be abandonned if we shut this 
+        // enqueue more work that might be abandonned if we shut this
         // scheduler down prematurely.
         setTimeout(
             () => {

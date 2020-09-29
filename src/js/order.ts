@@ -626,6 +626,7 @@ function getOrdersForYearAndQueryTemplate(
             }
         );
     };
+
     const convertOrdersPage = function(evt: any): IOrdersPageData {
         const d = util.parseStringToDOM(evt.target.responseText);
         const countSpan = util.findSingleNodeValue(
@@ -665,6 +666,7 @@ function getOrdersForYearAndQueryTemplate(
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
         };
     };
+
     const expected_order_count_promise: Promise<number> = scheduler.scheduleToPromise<IOrdersPageData>(
         generateQueryString(0),
         convertOrdersPage,
@@ -673,6 +675,7 @@ function getOrdersForYearAndQueryTemplate(
     ).then(
         response => response.result.expected_order_count
     );
+
     const translateOrdersPageData = function(
         response: request_scheduler.IResponse<IOrdersPageData>
     ): Promise<IOrder>[] {
@@ -700,8 +703,8 @@ function getOrdersForYearAndQueryTemplate(
                     convertOrdersPage,
                     '2',
                     false
-                ).then( 
-                    page_data => 
+                ).then(
+                    page_data =>
                         order_promises.push(...translateOrdersPageData(page_data))
                 ).then( () => null )
             );
@@ -716,61 +719,6 @@ function getOrdersForYearAndQueryTemplate(
     }
 
     return expected_order_count_promise.then( getOrderPromises );
-   
-    /* // Promise to array of Order Promise. */
-    /* return expected_order_count_promise.then( */
-    /*     expected_count => new Promise<Promise<IOrder>[]>( resolve => { */
-    /*         { */
-    /*             let scheduled_check_id: NodeJS.Timeout = null; */
-    /*             const checkComplete = function() { */
-    /*                 clearTimeout(scheduled_check_id); */
-    /*                 console.log( */
-    /*                     'checkComplete() actual:' + order_promises.length */
-    /*                     + ' expected:' + expected_count */
-    /*                 ); */
-    /*                 if(order_promises.length == expected_count || */
-    /*                     !scheduler.isLive() */
-    /*                 ) { */
-    /*                     console.log('resolving order_promises for ' + year); */
-    /*                     resolve(order_promises); */
-    /*                     console.log('resolved order_promises for ' + year); */
-    /*                 } else { */
-    /*                     scheduled_check_id = setTimeout( */
-    /*                         checkComplete, */
-    /*                         1000 */
-    /*                     ); */
-    /*                 } */
-    /*             }; */
-    /*             // start checking loop */
-    /*             checkComplete(); */
-    /*         } */
-    /*         order_found_callback = function( */
-    /*             order_promise: Promise<IOrder> */
-    /*         ): void { */
-    /*             order_promises.push(order_promise); */
-    /*             order_promise.then( */
-    /*                 order => order.id().then( */
-    /*                     id => console.log('azad_order Fetching ' + id) */
-    /*                 ) */
-    /*             ) */
-    /*             console.log( */
-    /*                 'YearFetcher(' + year + ') order_promises.length:' + */
-    /*                  order_promises.length + */
-    /*                  ' expected_order_count:' + */
-    /*                  expected_count */
-    /*             ); */
-    /*         }; */
-    /*         scheduler.scheduleToPromise( */
-    /*             generateQueryString(0), */
-    /*             convertOrdersPage, */
-    /*             '00000', */
-    /*             nocache_top_level */
-    /*         ).then( */
-    /*             receiveOrdersCount, */
-    /*             receiveOrdersCountError */
-    /*         ); */
-    /*     }) */
-    /* ); */
 }
 
 function fetchYear(

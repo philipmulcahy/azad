@@ -7,6 +7,7 @@ import * as util from '../js/util';
 const jsdom = require('jsdom');
 const xpath = require('xpath');
 import * as azad_order from '../js/order';
+import * as request_scheduler from '../js/request_scheduler';
 
 const DATA_ROOT_PATH = './src/tests/azad_test_data/data';
 
@@ -18,23 +19,24 @@ class FakeRequestScheduler {
         this.url_html_map = url_html_map;
     }
 
-    schedule(
+    scheduleToPromise<T>(
         query: string,
         event_converter: (evt: any) => any,
-        callback: (results: any, query: string) => void,
         priority: string,
         nocache: boolean
-    ) {
-        setTimeout( () => {
-            const html = this.url_html_map[query];
-            const fake_evt = {
-                target: {
-                    responseText: html
-                }
-            };
-            const converted = event_converter(fake_evt);
-            callback(converted, query);
-        } );
+    ): Promise<request_scheduler.IResponse<T>> {
+        return new Promise<any> ( resolve => {
+            setTimeout( () => {
+                const html = this.url_html_map[query];
+                const fake_evt = {
+                    target: {
+                        responseText: html
+                    }
+                };
+                const converted = event_converter(fake_evt);
+                resolve({result:converted, query:query});
+            });
+        });
     }
 
     abort(): void {}
@@ -132,7 +134,7 @@ export function discoverTestData(): Promise<ITestTarget[]> {
                         DATA_ROOT_PATH + '/' + site + '/expected'
                     );
                 expected_promises.push(expected_promise);
-                expected_promise.then( expecteds => 
+                expected_promise.then( expecteds =>
                     expecteds.forEach( expected => {
                         console.log('expected order:', site, expected);
                     })
@@ -159,7 +161,7 @@ export function discoverTestData(): Promise<ITestTarget[]> {
                             site: site,
                             order_id: expected.match(
                                 /^([A-Z0-9-]*)_.*\.json/
-                            )[1], 
+                            )[1],
                             scrape_date: expected.match(
                                 /^.*_(\d\d\d\d-\d\d-\d\d).json$/
                             )[1],
@@ -168,7 +170,7 @@ export function discoverTestData(): Promise<ITestTarget[]> {
                             expected_path: DATA_ROOT_PATH + '/' + site +
                                            '/expected/' + expected,
                         };
-                        test_targets.push(target); 
+                        test_targets.push(target);
                     });
             } );
             return test_targets;
