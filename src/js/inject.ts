@@ -87,7 +87,14 @@ function getYears(): Promise<number[]> {
     return cached_years;
 }
 
-function fetchAndShowOrders(years: number[]) {
+function fetchAndShowOrders(years: number[]): void {
+    if ( document.visibilityState != 'visible' ) {
+        console.log(
+            'fetchAndShowOrders() returning without doing anything: ' +
+            'tab is not visible'
+        );
+        return;
+    }
     resetScheduler();
     getYears().then(
         all_years => azad_order.getOrdersByYear(
