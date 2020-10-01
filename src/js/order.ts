@@ -661,10 +661,20 @@ function getOrdersForYearAndQueryTemplate(
             './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
             ordersElem
         ).map( node => <HTMLElement>node );
-        return {
+        const serialized_order_elems = order_elems.map(
+            elem => dom2json.toJSON(elem)
+        );
+        if ( !serialized_order_elems.length ) {
+            console.error(
+                'no order elements in converted order list page: ' +
+                evt.target.responseURL
+            );
+        }
+        const converted = {
             expected_order_count: expected_order_count,
             order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
-        };
+        }
+        return converted;
     };
 
     const expected_order_count_promise: Promise<number> = scheduler.scheduleToPromise<IOrdersPageData>(
@@ -687,7 +697,8 @@ function getOrdersForYearAndQueryTemplate(
             const order = create(elem, scheduler, response.query);
             return Promise.resolve(order);
         }
-        return order_elems.map(makeOrderPromise);
+        const promises = order_elems.map(makeOrderPromise);
+        return promises;
     };
 
     const getOrderPromises = function(expected_order_count: number): Promise<Promise<IOrder>[]> {
@@ -704,8 +715,10 @@ function getOrdersForYearAndQueryTemplate(
                     '2',
                     false
                 ).then(
-                    page_data =>
-                        order_promises.push(...translateOrdersPageData(page_data))
+                    page_data => {
+                        const promises = translateOrdersPageData(page_data);
+                        order_promises.push(...promises);
+                    }
                 ).then( () => null )
             );
         }
