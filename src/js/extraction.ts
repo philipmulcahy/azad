@@ -7,12 +7,22 @@ import { sprintf } from 'sprintf-js';
 
 "use strict";
 
+function defaulted<T>(
+    value: T | null | undefined,
+    def_value: T
+): T {
+    if (value != null && typeof(value) !== 'undefined') {
+        return value;
+    }
+    return def_value;
+}
+
 export function by_regex(
     xpaths: string[],
     regex: RegExp,
     default_value: string|number,
     elem: HTMLElement
-): string {
+): string | null {
     let i;
     for ( i=0; i!=xpaths.length; i++ ) {
         let a = null;
@@ -27,12 +37,13 @@ export function by_regex(
         }
         if ( a ) {
             if ( regex ) {
-                const match = a.textContent.trim().match(regex);
-                if (match !== null) {
+                const match: RegExpMatchArray | null | undefined
+                    = a.textContent?.trim().match(regex);
+                if (match !== null && typeof(match) !== 'undefined') {
                     return match[1];
                 }
             }
-            return a.textContent.trim();
+            return defaulted(a.textContent?.trim(), null);
         }
     }
     try {
@@ -45,7 +56,7 @@ export function by_regex(
 export function payments_from_invoice(doc: HTMLDocument): string[] {
     // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
     const strategy_1 = () => {
-        const payments = util.findMultipleNodeValues(
+        const payments: string[] = util.findMultipleNodeValues(
             [
                 'Credit Card transactions',
                 'Transactions de carte de crédit'
@@ -58,10 +69,13 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
             ).join('|'),
             doc.documentElement
         ).map(function(row){
-            return row.textContent
-                      .replace(/[\n\r]/g, ' ')
-                      .replace(/  */g, '\xa0')  //&nbsp;
-                      .trim();
+            return defaulted(
+                row.textContent
+                  ?.replace(/[\n\r]/g, ' ')
+                   .replace(/  */g, '\xa0')  //&nbsp;
+                   .trim(),
+                ''
+            );
         });
         return payments;
     };
@@ -70,17 +84,30 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
             '//*[contains(text(), "Payment Method")]/../self::*',
             doc.documentElement
         ).map(
-            e => e.textContent.replace(/\s+/g, ' ').trim()
+            e => e.textContent?.replace(/\s+/g, ' ').trim()
         );
         // "Item(s) Subtotal: GBP 9.63 Shipping & Handling: GBP 4.24 ----- Total before tax: GBP 13.87 Estimated tax to be collected: GBP 1.22 ----- Grand Total: GBP 15.09 Payment Method: American Express | Last digits: 1416 Billing address Mr Philip Mulcahy Somewhere in the UK"
-        const card_names = new_style_payments.map(
-            s => /Payment Method: ([A-Za-z0-9 /]*) \|/.exec(s)[1].trim()
+
+        const map_payment_field = function(pattern: string) {
+            return new_style_payments.map(
+                function(s) {
+                    const x = RegExp(pattern);
+                    const y = x.exec(defaulted(s, ''));
+                    if (y == null) {
+                        return '';
+                    }
+                    return y[1].trim();
+                }
+            );
+        }
+        const card_names: string[] = map_payment_field(
+            'Payment Method: ([A-Za-z0-9 /]*) \|'
         );
-        const card_number_suffixes = new_style_payments.map(
-            s => /Last digits: (\d+)/.exec(s)[1]
+        const card_number_suffixes = map_payment_field(
+            'Last digits: (\d+)'
         );
-        const payment_amounts = new_style_payments.map(
-            s => /Grand Total: (.*) Payment Method/.exec(s)[1].trim()
+        const payment_amounts = map_payment_field(
+            'Grand Total: (.*) Payment Method'
         );
         const count = Math.min( ...[card_names, card_number_suffixes, payment_amounts].map( l => l.length ) );
         const payments = [];

@@ -9,7 +9,9 @@ export interface IJsonObject {
 }
 
 export function toJSON(node: any): IJsonObject {
+  // @ts-ignore: this has weird/missing type.
   node = node || this;
+
   const obj: Record<string, any> = {
     nodeType: node.nodeType
   };
@@ -46,7 +48,7 @@ export function toDOM(obj: IJsonObject | string): Node {
   if (typeof obj == 'string') {
     obj = <IJsonObject>(JSON.parse(obj));
   }
-  var node;
+  let node: any = null;
   const nodeType = obj.nodeType;
   switch (nodeType) {
     case 1: //ELEMENT_NODE
@@ -71,7 +73,9 @@ export function toDOM(obj: IJsonObject | string): Node {
     case 10: //DOCUMENT_TYPE_NODE
       node = document.implementation.createDocumentType(
           obj.nodeName,
+          // @ts-ignore: arg is supposed to be a string
           null,
+          // @ts-ignore: arg is supposed to be a string
           null
       );
       break;

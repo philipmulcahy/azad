@@ -6,33 +6,50 @@
 
 import * as save_file from './save_file';
 
+function string_or_null(s: string | null | undefined) {
+    if (s) {
+        return s;
+    }
+    return '';
+}
+
 export function download(table: HTMLTableElement, sums_for_spreadsheet: boolean) {
-    const tableToArrayOfArrays = function(table: HTMLTableElement): (string[])[] {
-        const rows: HTMLTableRowElement[] = Array.prototype.slice.call(table.rows);
-        const result = [];
-        for(let i=0; i<rows.length + ( sums_for_spreadsheet  ?  -1  :  0 ); ++i) {
+    const tableToArrayOfArrays
+            = function(table: HTMLTableElement): (string[])[] {
+        const rows: HTMLTableRowElement[]
+            = Array.prototype.slice.call(table.rows);
+        const result: string[][] = [];
+        for(
+            let i=0;
+            i<rows.length + ( sums_for_spreadsheet  ?  -1  :  0 );
+            ++i
+        ) {
             let cells = rows[i].cells;
-            let cell_array = [];
+            let cell_array: string[] = [];
             for(let j=0; j<cells.length; ++j) {
-                let x: HTMLTableDataCellElement | HTMLTableHeaderCellElement | string = cells[j];
-                if (x.getAttribute("class").search("azad_numeric_no") == -1) {
-                    x = x.textContent.replace(/^([£$]|CAD|EUR|GBP) */, '');
+                let x: HTMLTableDataCellElement |
+                       HTMLTableHeaderCellElement |
+                       undefined |
+                       null |
+                       string = cells[j];
+                if (x?.getAttribute("class")?.search("azad_numeric_no") == -1) {
+                    x = x?.textContent?.replace(/^([£$]|CAD|EUR|GBP) */, '');
                 } else {
                     x = x.textContent;
                 }
-                cell_array.push(x);
+                cell_array.push(string_or_null(x));
             }
             result.push(cell_array);
         }
         if (sums_for_spreadsheet) {
             // replace last row for use in a spreadsheet
             let cells = rows[2].cells;
-            let cell_array = [];
-            let x = '';
+            let cell_array: string[] = [];
+            let x: string = '';
             let y = true;
             for(let j=0; j<cells.length; ++j) {
-                if (cells[j].getAttribute("class")
-                            .search("azad_numeric_no") == -1) {
+                if (cells[j]?.getAttribute("class")
+                            ?.search("azad_numeric_no") == -1) {
                     x = '=SUBTOTAL(109,{COL}2:{COL}{LAST})';
                 } else {
                     if (y) {

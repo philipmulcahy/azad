@@ -56,7 +56,7 @@ class LocalCacheImpl {
     get(key: string): any {
         const real_key: string = this.buildRealKey(key);
         try {
-            const encoded = window.localStorage.getItem(real_key);
+            const encoded: string = window.localStorage.getItem(real_key)!;
             let packed: any = null;
             try {
                 packed = JSON.parse(encoded);
@@ -71,16 +71,16 @@ class LocalCacheImpl {
             }
             ++this.hit_count;
             const decompressed = lzjs.decompress(packed.value);
-            let result: string = null;
             try { 
-                result = JSON.parse(decompressed);
+                const result: string = JSON.parse(decompressed);
+                return result;
             } catch(ex) {
                 console.error(
                     'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
                     decompressed
                 );  
             }
-            return result;
+            return null;
         } catch(err) {
             return undefined;
         }
@@ -103,16 +103,15 @@ class LocalCacheImpl {
         real_keys.forEach( key => {
             try {
                 const encoded = window.localStorage.getItem(key);
-                let decoded: any = null;
                 try {
-                    JSON.parse(encoded);
+                    const decoded = JSON.parse(encoded!);
+                    timestamps_by_key[key] = decoded.timestamp;
                 } catch(ex) {
                     console.error(
                         'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
                         encoded
                     );  
                 }
-                timestamps_by_key[key] = decoded.timestamp;
             } catch(error) {
                 console.debug('couldn\'t get timestamp for key: ' + key);
             }
