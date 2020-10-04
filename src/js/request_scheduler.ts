@@ -217,13 +217,13 @@ class RequestScheduler {
     ) {
         const req = new XMLHttpRequest();
         req.open('GET', query, true);
-        req.onerror = function(): void {
+        req.onerror = (): void =>  {
             this.running_count -= 1;
             this.error_count += 1;
             console.log( 'Unknown error fetching ' + query );
             this._checkDone();
-        }.bind(this);
-        req.onload = function(evt: any) {
+        };
+        req.onload = (evt: any): void => {
             if (!this.live) {
                 this.running_count -= 1;
                 return;
@@ -264,9 +264,9 @@ class RequestScheduler {
             }
             success_callback(converted, query);
             this._recordSingleSuccess();
-        }.bind(this);
+        };
         req.timeout = 20000;  // 20 seconds
-        req.ontimeout = function(evt: any) {
+        req.ontimeout = (evt: any): void => {
             if (!this.live) {
                 this.running_count -= 1;
                 return;
@@ -275,7 +275,7 @@ class RequestScheduler {
             this.error_count += 1;
             this.running_count -= 1;
             this._checkDone();
-        }.bind(this);
+        }
         this.running_count += 1;
         req.send();
     }

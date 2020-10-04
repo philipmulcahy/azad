@@ -9,18 +9,29 @@ import * as request_scheduler from './request_scheduler';
 import * as azad_order from './order';
 import * as azad_table from './table';
 
-let scheduler: request_scheduler.IRequestScheduler = null;
-let background_port: chrome.runtime.Port = null;
-let years: number[] = null;
-let stats_timeout: NodeJS.Timeout = null;
+let scheduler: request_scheduler.IRequestScheduler | null = null;
+let background_port: chrome.runtime.Port | null = null;
+let years: number[] | null = null;
+let stats_timeout: NodeJS.Timeout | null = null;
 
-const SITE = window.location.href.match( /\/\/([^/]*)/ )[1];
+function getSite(): string {
+    const matches: RegExpMatchArray|null = window.location
+                                                 .href
+                                                 .match( /\/\/([^/]*)/ );
+    if (!matches) {
+        console.error('cannot extract site from ' + window.location.href);
+        return '';
+    }
+    return matches[1];
+}
+
+const SITE: string = getSite();
 
 function getScheduler(): request_scheduler.IRequestScheduler {
     if (!scheduler) {
         resetScheduler();
     }
-    return scheduler;
+    return scheduler!;
 }
 
 function getBackgroundPort() {
@@ -29,13 +40,18 @@ function getBackgroundPort() {
 
 function setStatsTimeout() {
     const sendStatsMsg = () => {
-        getBackgroundPort().postMessage({
-            action: 'statistics_update',
-            statistics: getScheduler().statistics(),
-            years: years,
-        });
+        const bg_port = getBackgroundPort();
+        if (bg_port) {
+            bg_port.postMessage({
+                action: 'statistics_update',
+                statistics: getScheduler().statistics(),
+                years: years,
+            });
+        }
     }
-    clearTimeout(stats_timeout);
+    if (stats_timeout) {
+        clearTimeout(stats_timeout);
+    }
     stats_timeout = setTimeout(
         () => {
             setStatsTimeout();
@@ -53,7 +69,7 @@ function resetScheduler(): void {
     setStatsTimeout();
 }
 
-let cached_years: Promise<number[]> = null;
+let cached_years: Promise<number[]> | null = null;
 
 function getYears(): Promise<number[]> {
     const getPromise = function(): Promise<number[]> {
@@ -68,18 +84,21 @@ function getYears(): Promise<number[]> {
                 '//select[@name="orderFilter"]/option[@value]',
                 doc.documentElement
             );
-            const years = snapshot.map(
-                elem => elem.textContent
-                            .replace('en', '')  // amazon.fr
-                            .replace('nel', '')  // amazon.it
-                            .trim()
+            const years = snapshot
+             .filter( elem => elem )
+             .filter( elem => elem.textContent )
+             .map(
+                elem => elem!.textContent!
+                             .replace('en', '')  // amazon.fr
+                             .replace('nel', '')  // amazon.it
+                             .trim()
             ).filter( element => (/^\d+$/).test(element) )
              .map( (year_string: string) => Number(year_string) )
              .filter( year => (year >= 2004) );
             return years;
         });
     }
-    if(cached_years == null) {
+    if(!cached_years) {
         console.log('getYears() needs to do something');
         cached_years = getPromise();
     }
@@ -121,36 +140,46 @@ function fetchAndShowOrders(years: number[]): void {
 function advertiseYears() {
     getYears().then( years => {
         console.log('advertising years', years);
-        getBackgroundPort().postMessage({
-            action: 'advertise_years',
-            years: years
-        });
+        const bg_port = getBackgroundPort();
+        if (bg_port) {
+            bg_port.postMessage({
+                action: 'advertise_years',
+                years: years
+            });
+        }
     });
 }
 
 function registerContentScript() {
+    // @ts-ignore null IS allowed as first arg to connect. 
     background_port = chrome.runtime.connect(null, {name: 'azad_inject'});
-    getBackgroundPort().onMessage.addListener( msg => {
-        switch(msg.action) {
-            case 'dump_order_detail':
-                azad_table.dumpOrderDiagnostics(msg.order_id)
-                break;
-            case 'scrape_years':
-                years = msg.years;
-                fetchAndShowOrders(years);
-                break;
-            case 'clear_cache':
-                getScheduler().clearCache();
-                alert('Amazon Order History Reporter Chrome Extension\n\n' +
-                      'Cache cleared');
-                break;
-            case 'abort':
-                resetScheduler();
-                break;
-            default:
-                console.warn('unknown action: ' + msg.action);
-        }
-    } );
+
+    const bg_port = getBackgroundPort();
+    if (bg_port) {
+        bg_port.onMessage.addListener( msg => {
+            switch(msg.action) {
+                case 'dump_order_detail':
+                    azad_table.dumpOrderDiagnostics(msg.order_id)
+                    break;
+                case 'scrape_years':
+                    years = msg.years;
+                    if (years) {
+                        fetchAndShowOrders(years);
+                    }
+                    break;
+                case 'clear_cache':
+                    getScheduler().clearCache();
+                    alert('Amazon Order History Reporter Chrome Extension\n\n' +
+                          'Cache cleared');
+                    break;
+                case 'abort':
+                    resetScheduler();
+                    break;
+                default:
+                    console.warn('unknown action: ' + msg.action);
+            }
+        } );
+    }
     console.log('script registered');
 }
 
