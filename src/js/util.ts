@@ -4,6 +4,16 @@
 
 const xpath = require('xpath');
 
+export function defaulted<T>(
+    value: T | null | undefined,
+    def_value: T
+): T {
+    if (value != null && typeof(value) !== 'undefined') {
+        return value;
+    }
+    return def_value;
+}
+
 export function parseStringToDOM(html: string) {
     if ( typeof(DOMParser) !== 'undefined' ) {
         // We're in a browser:
@@ -30,12 +40,20 @@ function getXPathResult() {
     return XPathResult;
 }
 
-export function getSite() {
+export function getSite(): string {
     if ( typeof( window ) === 'undefined' ) {
         return 'www.azadexample.com'
     }
     const href = window.location.href;
-    const stem = new RegExp('https:\\/\\/((www|smile)\\.amazon\\.[^\\/]+)').exec(href)[1];
+    const regex = new RegExp(
+        'https:\\/\\/((www|smile)\\.amazon\\.[^\\/]+)'
+    );
+    const executed = regex.exec(href);
+    if (!executed || executed.length < 1) {
+        console.error('didn\'t get a match for site from: ' + href);
+        return 'www.azadexample.com';
+    }
+    const stem = executed[1];
     return stem;
 }
 
@@ -60,7 +78,7 @@ export function getOrderPaymentUrl(orderId: string, site: string) {
 export function addButton(name: string, cb: any, button_class: string) {
     const existing = document.querySelector('[button_name="' + name + '"]');
     if ( existing !== null ) {
-        existing.parentNode.removeChild(existing);
+        existing.parentNode!.removeChild(existing);
     }
     const a = document.createElement('button');
     if(typeof(button_class) === 'undefined') {
@@ -79,21 +97,27 @@ export function addButton(name: string, cb: any, button_class: string) {
 export function removeButton(name: string) {
     const elem = document.querySelector('[button_name="' + name + '"]');
     if ( elem !== null ) {
-        elem.parentNode.removeChild(elem);
+        elem.parentNode!.removeChild(elem);
     }
 }
 
 export function findSingleNodeValue(xpath: string, elem: HTMLElement): Node {
     try {
-        return elem.ownerDocument.evaluate(
+        const node = elem.ownerDocument!.evaluate(
             xpath,
             elem,
             null,
             getXPathResult().FIRST_ORDERED_NODE_TYPE,
             null
         ).singleNodeValue;
+        if (!node) {
+            throw 'No node found';
+        }
+        return node;
     } catch (ex) {
-        console.log('findSingleNodeValue didn\'t match: ', xpath);
+        const msg = ex + ': findSingleNodeValue didn\'t match: ' + xpath;
+        console.error(msg);
+        throw msg;
     }
 }
 
@@ -101,29 +125,35 @@ export function findMultipleNodeValues(
     xpath: string,
     elem: HTMLElement
 ): Node[] {
-    const snapshot = elem.ownerDocument.evaluate(
+    const snapshot = elem.ownerDocument!.evaluate(
         xpath,
         elem,
         null,
         getXPathResult().ORDERED_NODE_SNAPSHOT_TYPE,
         null
     );
-    const values = [];
+    const values: Node[] = [];
     let i;
     for(i = 0; i !== snapshot.snapshotLength; i += 1) {
-        values.push(snapshot.snapshotItem(i));
+        const node: Node|null = snapshot.snapshotItem(i);
+        if (node) {
+            values.push(node);
+        }
     }
     return values;
 }
 
 export function clearBody() {
     Array.from(document.body.children).forEach(
-        function(elem) {
-            if( !(
-                elem.hasAttribute('class') &&
-                elem.getAttribute('class').includes('order_reporter_')
-            )) {
-                document.body.removeChild(elem);
+        function(elem: Element) {
+            if (elem.hasAttribute('class')) {
+                if (elem.getAttribute('class')) {
+                    if (
+                        elem.getAttribute('class')!.includes('order_reporter_')
+                    ) {
+                        document.body.removeChild(elem);
+                    }
+                }
             }
         }
     );

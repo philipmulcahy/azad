@@ -7,20 +7,10 @@ import { sprintf } from 'sprintf-js';
 
 "use strict";
 
-function defaulted<T>(
-    value: T | null | undefined,
-    def_value: T
-): T {
-    if (value != null && typeof(value) !== 'undefined') {
-        return value;
-    }
-    return def_value;
-}
-
 export function by_regex(
     xpaths: string[],
-    regex: RegExp,
-    default_value: string|number,
+    regex: RegExp | null,
+    default_value: string|number|null,
     elem: HTMLElement
 ): string | null {
     let i;
@@ -43,11 +33,11 @@ export function by_regex(
                     return match[1];
                 }
             }
-            return defaulted(a.textContent?.trim(), null);
+            return util.defaulted(a.textContent?.trim(), null);
         }
     }
     try {
-        return default_value.toString();
+        return default_value!.toString();
     } catch {
         return null;
     }
@@ -69,7 +59,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
             ).join('|'),
             doc.documentElement
         ).map(function(row){
-            return defaulted(
+            return util.defaulted(
                 row.textContent
                   ?.replace(/[\n\r]/g, ' ')
                    .replace(/  */g, '\xa0')  //&nbsp;
@@ -92,7 +82,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
             return new_style_payments.map(
                 function(s) {
                     const x = RegExp(pattern);
-                    const y = x.exec(defaulted(s, ''));
+                    const y = x.exec(util.defaulted(s, ''));
                     if (y == null) {
                         return '';
                     }

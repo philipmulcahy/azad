@@ -5,8 +5,11 @@
 'use strict';
 
 const $ = require('jquery');
+
 import * as analytics from './google_analytics';
 import * as settings from './settings';
+
+analytics.init();
 
 function activateIdle() {
     console.log('activateIdle');
@@ -31,10 +34,13 @@ function showOnly(button_ids: any[]) {
     button_ids.forEach( id => $('#' + id).removeClass('hidden') ); 
 }
 
-let background_port: chrome.runtime.Port = null;
+let background_port: chrome.runtime.Port|null = null;
 function connectToBackground() {
     console.log('connectToBackground');
+
+    // @ts-ignore: tsc objects to null first parameter for connect();  
     background_port = chrome.runtime.connect(null, { name: 'azad_control' });
+
     background_port.onMessage.addListener( msg => {
         switch(msg.action) {
             case 'scrape_complete':
@@ -65,16 +71,18 @@ function registerActionButtons() {
     $('#azad_clear_cache').on(
         'click',
         () => {
-            background_port.postMessage({action: 'clear_cache'});
-            window.ga(
-                'send',
-                {
-                    hitType: 'event',
-                    eventCategory: 'control',
-                    eventAction: 'clear_cache_click',
-                    eventLabel: ''
-                }
-            );
+            if (background_port) {
+                background_port.postMessage({action: 'clear_cache'});
+                window.ga(
+                    'send',
+                    {
+                        hitType: 'event',
+                        eventCategory: 'control',
+                        eventAction: 'clear_cache_click',
+                        eventLabel: ''
+                    }
+                );
+            }
         }
     );
     $('#azad_stop').on('click', () => handleStopClick());
@@ -127,7 +135,9 @@ function handleYearClick(evt: { target: { value: any; }; }) {
 }
 
 function handleStopClick() {
-    background_port.postMessage({action: 'abort'});
+    if (background_port) {
+        background_port.postMessage({action: 'abort'});
+    }
 }
 
 function init() {
