@@ -2,6 +2,8 @@
 /* jshint strict: true, esversion: 6 */
 
 import * as order_data from './fake_order'; 
+import * as util from './../js/util';
+
 const assert = require('assert');
 
 const test_targets = order_data.discoverTestData();
@@ -38,7 +40,7 @@ function testOneTarget(
         const [order, expected] = params;
         const keys = Object.keys(expected);
         const key_validation_promises = keys.map( key => {
-            const expected_value = expected[key];
+            const expected_value = util.defaulted(expected[key], '');
             const actual_value_promise = order[key]();
             return actual_value_promise.then( (actual_value: string) => {
                 console.log('key:', key, expected_value, actual_value);
@@ -46,7 +48,7 @@ function testOneTarget(
                 const expected_string = JSON.stringify(expected_value);
                 if ( actual_string != expected_string ) {
                     const msg = key + ' should be ' + expected_string +
-                          ' but we got ' + actual_string;
+                        ' but we got ' + actual_string;
                     result.defects.push(msg);
                 }
             })

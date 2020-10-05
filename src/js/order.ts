@@ -16,7 +16,7 @@ function getField(xpath: string, elem: HTMLElement): string|null {
         );
         return valueElem!.textContent!.trim();
     } catch (_) {
-        return '';
+        return null;
     }
 }
 
