@@ -2,6 +2,9 @@
 
 "use strict";
 
+export var gaNewElem : any = {};
+export var gaElems : any = {};
+
 export function init(): void {
     console.log('initialising google analytics support');
 

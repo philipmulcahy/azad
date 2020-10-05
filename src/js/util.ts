@@ -116,7 +116,7 @@ export function findSingleNodeValue(xpath: string, elem: HTMLElement): Node {
         return node;
     } catch (ex) {
         const msg = ex + ': findSingleNodeValue didn\'t match: ' + xpath;
-        console.error(msg);
+        console.warn(msg);
         throw msg;
     }
 }
@@ -149,7 +149,7 @@ export function clearBody() {
             if (elem.hasAttribute('class')) {
                 if (elem.getAttribute('class')) {
                     if (
-                        elem.getAttribute('class')!.includes('order_reporter_')
+                        elem.getAttribute('class')?.includes('order_reporter_')
                     ) {
                         document.body.removeChild(elem);
                     }
