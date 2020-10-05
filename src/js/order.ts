@@ -10,13 +10,13 @@ import * as dom2json from './dom2json';
 import * as request_scheduler from './request_scheduler';
 
 function getField(xpath: string, elem: HTMLElement): string|null {
-    const valueElem = util.findSingleNodeValue(
-        xpath, elem
-    );
     try {
+        const valueElem = util.findSingleNodeValue(
+            xpath, elem
+        );
         return valueElem!.textContent!.trim();
     } catch (_) {
-        return null;
+        return '';
     }
 }
 
@@ -25,8 +25,8 @@ function getAttribute(
     attribute_name: string,
     elem: HTMLElement
 ): string|null {
-    const targetElem = util.findSingleNodeValue(xpath, elem);
     try {
+        const targetElem = util.findSingleNodeValue(xpath, elem);
         return (<HTMLElement>targetElem)!.getAttribute(attribute_name);
     } catch (_) {
         return null;
@@ -452,7 +452,7 @@ class Order {
         detail_lambda: (d: IOrderDetails) => string
     ): Promise<string> {
         if (this.impl.detail_promise) {
-            return this._detail_dependent_promise( detail_lambda );
+            return this.impl.detail_promise.then( detail_lambda );
         }
         return Promise.resolve('');
     }
