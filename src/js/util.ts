@@ -146,14 +146,11 @@ export function findMultipleNodeValues(
 export function clearBody() {
     Array.from(document.body.children).forEach(
         function(elem: Element) {
-            if (elem.hasAttribute('class')) {
-                if (elem.getAttribute('class')) {
-                    if (
-                        elem.getAttribute('class')?.includes('order_reporter_')
-                    ) {
-                        document.body.removeChild(elem);
-                    }
-                }
+            if( !(
+                elem.hasAttribute('class') &&
+                elem.getAttribute('class')!.includes('order_reporter_')
+            )) {
+                document.body.removeChild(elem);
             }
         }
     );
