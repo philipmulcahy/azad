@@ -33,6 +33,10 @@ function getAttribute(
     }
 }
 
+function getCachedAttributeNames() {
+    return new Set<string>(['class', 'href', 'id', 'style']);
+}
+
 interface IOrderDetails {
     date: string;
     total: string;
@@ -767,7 +771,7 @@ function getOrdersForYearAndQueryTemplate(
             ordersElem
         ).map( node => <HTMLElement>node );
         const serialized_order_elems = order_elems.map(
-            elem => dom2json.toJSON(elem)
+            elem => dom2json.toJSON(elem, getCachedAttributeNames())
         );
         if ( !serialized_order_elems.length ) {
             console.error(
