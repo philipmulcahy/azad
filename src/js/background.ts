@@ -7,7 +7,7 @@ const content_ports: Record<number, any> = {};
 
 let control_port: {
     postMessage: (arg0: { action: string; years: number[]; }) => void;
-} = null;
+} | null = null;
 
 let advertised_years: number[] = [];
 
@@ -17,12 +17,12 @@ function registerConnectionListener() {
         switch(port.name) {
             case 'azad_inject':
                 port.onDisconnect.addListener( () => {
-                    delete content_ports[port.sender.tab.id];
+                    delete content_ports[port?.sender?.tab?.id!];
                 } );
                 port.onMessage.addListener( msg => {
                     switch(msg.action) {
                         case 'scrape_complete':
-                            control_port.postMessage(msg);
+                            control_port!.postMessage(msg);
                             break;
                         case 'advertise_years':
                             console.log(
@@ -37,14 +37,14 @@ function registerConnectionListener() {
                             advertiseYears();
                             break;
                         case 'statistics_update':
-                            control_port.postMessage(msg);
+                            control_port!.postMessage(msg);
                             break;
                         default:
                             console.warn('unknown action: ' + msg.action);
                             break;
                     }
                 } );
-                content_ports[port.sender.tab.id] = port;
+                content_ports[port?.sender?.tab?.id!] = port;
                 break;
             case 'azad_control':
                 control_port = port;
@@ -91,9 +91,9 @@ function registerRightClickActions() {
     chrome.contextMenus.onClicked.addListener( info => {
         console.log('context menu item: ' + info.menuItemId + ' clicked;');
         if (info.menuItemId == 'save_order_debug_info') {
-            if ( /orderID=/.test(info.linkUrl) ) {
-                const match =info.linkUrl.match(/.*orderID=([0-9A-Z-]*)$/);
-                const order_id = match[1];
+            if ( /orderID=/.test(info.linkUrl!) ) {
+                const match =info?.linkUrl?.match(/.*orderID=([0-9A-Z-]*)$/);
+                const order_id = match![1];
                 if (match) {
                     Object.values(content_ports).forEach( port => {
                         port.postMessage({

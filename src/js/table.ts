@@ -33,8 +33,11 @@ const addCell = function(row: any, value: any) {
 /**
  * Add a td to the row tr element, and return the td.
  */
-const addElemCell = function(row: HTMLElement, elem: HTMLElement): HTMLElement {
-    const td = row.ownerDocument.createElement('td');
+const addElemCell = function(
+        row: HTMLElement,
+        elem: HTMLElement
+): HTMLElement {
+    const td: HTMLTableDataCellElement = row.ownerDocument!.createElement('td');
     td.setAttribute('class', ELEM_CLASS);
     row.appendChild(td);
     td.appendChild(elem);
@@ -63,12 +66,12 @@ const COLS: Record<string, any>[] = [
         field_name: 'items',
         render_func: (order: azad_order.IOrder, td: HTMLElement) => 
             order.items().then( items => {
-                const ul = td.ownerDocument.createElement('ul');
+                const ul = td.ownerDocument!.createElement('ul');
                 for(let title in items) {
                     if (Object.prototype.hasOwnProperty.call(items, title)) {
-                        const li = td.ownerDocument.createElement('li');
+                        const li = td.ownerDocument!.createElement('li');
                         ul.appendChild(li);
-                        const a = td.ownerDocument.createElement('a');
+                        const a = td.ownerDocument!.createElement('a');
                         li.appendChild(a);
                         a.textContent = title + '; ';
                         a.href = items[title];
@@ -143,7 +146,7 @@ const COLS: Record<string, any>[] = [
         field_name: 'payments',
         render_func: (order: azad_order.IOrder, td: HTMLElement) => {
             return order.payments().then( payments => {
-                const ul = td.ownerDocument.createElement('ul');
+                const ul = td.ownerDocument!.createElement('ul');
                 td.textContent = '';
                 payments.forEach( (payment: any) => {
                     const li = document.createElement('li');
@@ -178,7 +181,7 @@ const COLS: Record<string, any>[] = [
         render_func: (order: azad_order.IOrder, td: HTMLElement) => {
             return order.invoice_url().then( url => {
                 if ( url ) {
-                    const link = td.ownerDocument.createElement('a');
+                    const link = td.ownerDocument!.createElement('a');
                     link.textContent = url;
                     link.setAttribute('href', url);
                     td.textContent = '';
@@ -223,7 +226,6 @@ function appendCell(
     const td = document.createElement('td')
     td.textContent = 'pending';
     tr.appendChild(td);
-    let value_written_promise: Promise<void> = null;
     const null_converter = function(x: any): any {
         if (x) {
             if (
@@ -242,27 +244,28 @@ function appendCell(
             return '';
         }
     }
-    if (col_spec.hasOwnProperty('render_func')) {
-        value_written_promise = col_spec.render_func(order, td);
-    } else {
-        const value_promise: Promise<any> = <Promise<any>>(
-            order[<keyof azad_order.IOrder>(
-                col_spec.value_promise_func
-            )]()
-        );
-        value_written_promise = value_promise
-            .then(null_converter)
-            .then(
-                (value: string) => {
-                    td.innerText = value;
-                    if(datatable) {
-                        datatable.rows().invalidate();
-                        datatable.draw();
-                    }
-                    return null;
-                }
-            );
-    }
+    const value_written_promise: Promise<void> =
+        col_spec.hasOwnProperty('render_func') ?
+            col_spec.render_func(order, td) :
+            (() => {
+                const value_promise: Promise<any> = <Promise<any>>(
+                    order[<keyof azad_order.IOrder>(
+                        col_spec.value_promise_func
+                    )]()
+                );
+                return value_promise
+                    .then(null_converter)
+                    .then(
+                        (value: string) => {
+                            td.innerText = value;
+                            if(datatable) {
+                                datatable.rows().invalidate();
+                                datatable.draw();
+                            }
+                            return null;
+                        }
+                    ); 
+            })();
     td.setAttribute('class', td.getAttribute('class') + ' ' +
             'azad_col_' + col_spec.field_name + ' ' +
             'azad_numeric_' + (col_spec.is_numeric ? 'yes' : 'no' ) + ' ');
@@ -295,7 +298,7 @@ function addOrderTable(
     wait_for_all_values_before_resolving: boolean
 ): Promise<HTMLTableElement> {
     const addHeader = function(row: HTMLElement, value: string, help: string) {
-        const th = row.ownerDocument.createElement('th');
+        const th = row.ownerDocument!.createElement('th');
         th.setAttribute('class', TH_CLASS);
         row.appendChild(th);
         th.textContent = value;
@@ -312,7 +315,7 @@ function addOrderTable(
     );
     if ( table !== null ) {
         console.log('removing old table');
-        table.parentNode.removeChild(table);
+        table.parentNode!.removeChild(table);
         console.log('removed old table');
     }
     console.log('adding table');

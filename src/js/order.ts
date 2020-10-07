@@ -9,12 +9,12 @@ import * as sprintf from 'sprintf-js';
 import * as dom2json from './dom2json';
 import * as request_scheduler from './request_scheduler';
 
-function getField(xpath: string, elem: HTMLElement) {
-    const valueElem = util.findSingleNodeValue(
-        xpath, elem
-    );
+function getField(xpath: string, elem: HTMLElement): string|null {
     try {
-        return valueElem.textContent.trim();
+        const valueElem = util.findSingleNodeValue(
+            xpath, elem
+        );
+        return valueElem!.textContent!.trim();
     } catch (_) {
         return null;
     }
@@ -24,13 +24,17 @@ function getAttribute(
     xpath: string,
     attribute_name: string,
     elem: HTMLElement
-) {
-    const targetElem = util.findSingleNodeValue(xpath, elem);
+): string|null {
     try {
-        return (<HTMLElement>targetElem).getAttribute(attribute_name);
+        const targetElem = util.findSingleNodeValue(xpath, elem);
+        return (<HTMLElement>targetElem)!.getAttribute(attribute_name);
     } catch (_) {
         return null;
     }
+}
+
+function getCachedAttributeNames() {
+    return new Set<string>(['class', 'href', 'id', 'style']);
 }
 
 interface IOrderDetails {
@@ -78,21 +82,23 @@ function extractDetailFromDoc(
         return x;
     };
 
-    const order_date = function(){
-        return date.normalizeDateString(
-            extraction.by_regex(
-                [
-                    '//*[contains(@class,"order-date-invoice-item")]/text()',
-                    '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',
-                ],
-                /(?:Ordered on|Commandé le|Digital Order:) (.*)/i,
-                order.date,
-                doc.documentElement
-            )
+    const order_date = function(): string {
+        const d = extraction.by_regex(
+            [
+                '//*[contains(@class,"order-date-invoice-item")]/text()',
+                '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',
+            ],
+            /(?:Ordered on|Commandé le|Digital Order:) (.*)/i,
+            order.date,
+            doc.documentElement
         );
+        if (d) {
+            return date.normalizeDateString(d);
+        }
+        return util.defaulted(order.date, '');
     };
 
-    const total = function(){
+    const total = function(): string {
         const a = extraction.by_regex(
             [
                 '//span[@class="a-color-price a-text-bold"]/text()',    //Scott 112-7790528-5248242 en_US as of 20191024
@@ -133,11 +139,11 @@ function extractDetailFromDoc(
         if (a) {
             return a.replace(/.*: /, '').replace('-', '');
         }
-        return a;
+        return util.defaulted(a, '');
     };
 
     // TODO Need to exclude gift wrap
-    const gift = function(){
+    const gift = function(): string {
         const a = extraction.by_regex(
             [
                 '//div[contains(@id,"od-subtotals")]//' +
@@ -162,28 +168,31 @@ function extractDetailFromDoc(
                 return a.replace('-', '');
             }
         }
-        return null;
+        return '';
     };
 
-    const postage = function() {
-        return extraction.by_regex(
-            [
-                ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
-                    label => sprintf.sprintf(
-                        '//div[contains(@id,"od-subtotals")]//' +
-                        'span[contains(text(),"%s")]/' +
-                        'parent::div/following-sibling::div/span',
-                        label
-                    )
-                ).join('|') //20191025
-            ],
-            null,
-            null,
-            doc.documentElement
+    const postage = function(): string {
+        return util.defaulted(
+            extraction.by_regex(
+                [
+                    ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
+                        label => sprintf.sprintf(
+                            '//div[contains(@id,"od-subtotals")]//' +
+                            'span[contains(text(),"%s")]/' +
+                            'parent::div/following-sibling::div/span',
+                            label
+                        )
+                    ).join('|') //20191025
+                ],
+                null,
+                null,
+                doc.documentElement
+            ),
+            ''
         );
     };
 
-    const vat = function() {
+    const vat = function(): string {
         const xpaths = ['VAT', 'tax', 'TVA', 'IVA'].map(
             label =>
                 '//div[contains(@id,"od-subtotals")]//' +
@@ -214,10 +223,10 @@ function extractDetailFromDoc(
                 return b[1];
             }
         }
-        return a;
+        return util.defaulted(a, '');
     };
 
-    const us_tax = function(){
+    const us_tax = function(): string {
         let a = getField(
             '//span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span/text()',
             doc.documentElement
@@ -233,15 +242,20 @@ function extractDetailFromDoc(
                 // 3:   "$0.00"
                 // 4:     "$"
                 // 5:     "0.00"
-                a = a.match(moneyRegEx)[1];
+                try {
+                    // @ts-ignore stop complaining: you're in a try block!
+                    a = a.match(moneyRegEx)[1];
+                } catch {
+                    a = null;
+                }
             } else {
                 a = null;
             }
         }
-        return a;
+        return util.defaulted(a, '');
     };
 
-    const cad_gst = function() {
+    const cad_gst = function(): string {
         const a = extraction.by_regex(
             [
                 ['GST', 'HST'].map(
@@ -263,13 +277,10 @@ function extractDetailFromDoc(
             null,
             doc.documentElement
         );
-        if (a) {
-            return a;
-        }
-        return null;
+        return util.defaulted(a, '');
     };
 
-    const cad_pst = function(){
+    const cad_pst = function(): string {
         const a = extraction.by_regex(
             [
                 ['PST', 'RST', 'QST'].map(
@@ -291,13 +302,10 @@ function extractDetailFromDoc(
             null,
             doc.documentElement
         );
-        if (a) {
-            return a;
-        }
-        return null;
+        return util.defaulted(a, '');
     };
 
-    const refund = function () {
+    const refund = function (): string {
         let a = getField(
             ['Refund'].map( //TODO other field names?
                 label => sprintf.sprintf(
@@ -309,14 +317,11 @@ function extractDetailFromDoc(
             ).join('|'),
             doc.documentElement
         );
-        if ( a ) {
-            return a;
-        }
-        return null;
+        return util.defaulted(a, '');
     };
 
-    const invoice_url = function () {
-        const suffix: string = getAttribute(
+    const invoice_url = function (): string {
+        const suffix: string|null = getAttribute(
             '//a[contains(@href, "gp/invoice")]',
             'href',
             doc.documentElement
@@ -324,7 +329,7 @@ function extractDetailFromDoc(
         if( suffix ) {
             return 'https://' + util.getSite() + suffix;
         }
-        return null;
+        return '';
     };
 
     const details: IOrderDetails = {
@@ -350,26 +355,32 @@ const extractDetailPromise = (
 ) => new Promise<IOrderDetails>(
     (resolve, reject) => {
         const query = order.detail_url;
-        const event_converter = function(
-            evt: { target: { responseText: string; }; }
-        ): IOrderDetails {
-            const doc = util.parseStringToDOM( evt.target.responseText );
-            return extractDetailFromDoc(order, doc);
-        };
-        try {
-            scheduler.scheduleToPromise<IOrderDetails>(
-                query,
-                event_converter,
-                order.id,
-                false
-            ).then(
-                (response: request_scheduler.IResponse<IOrderDetails>) => resolve(response.result),
-                url => reject('timeout or other problem when fetching ' + url),
-            );
-        } catch (ex) {
-            const msg = 'scheduler rejected ' + order.id + ' ' + query;
+        if(!query) {
+            const msg = 'null order detail query: cannot schedule';
             console.error(msg);
             reject(msg);
+        } else {
+            const event_converter = function(
+                evt: { target: { responseText: string; }; }
+            ): IOrderDetails {
+                const doc = util.parseStringToDOM( evt.target.responseText );
+                return extractDetailFromDoc(order, doc);
+            };
+            try {
+                scheduler.scheduleToPromise<IOrderDetails>(
+                    query,
+                    event_converter,
+                    util.defaulted(order.id, '9999'),
+                    false
+                ).then(
+                    (response: request_scheduler.IResponse<IOrderDetails>) => resolve(response.result),
+                    url => reject('timeout or other problem when fetching ' + url),
+                );
+            } catch (ex) {
+                const msg = 'scheduler rejected ' + order.id + ' ' + query;
+                console.error(msg);
+                reject(msg);
+            }
         }
     }
 );
@@ -399,6 +410,7 @@ export interface IOrder {
     assembleDiagnostics(): Promise<Record<string,any>>;
 }
 
+
 class Order {
     impl: OrderImpl;
 
@@ -406,41 +418,92 @@ class Order {
         this.impl = impl
     }
 
-    id(): Promise<string> { return Promise.resolve(this.impl.id); }
-    detail_url(): Promise<string> { return Promise.resolve(this.impl.detail_url); }
+    id(): Promise<string> {
+        return Promise.resolve(util.defaulted(this.impl.id, ''));
+    }
+    list_url(): Promise<string> {
+        return Promise.resolve(util.defaulted(this.impl.list_url, ''));
+    }
+    detail_url(): Promise<string> {
+        return Promise.resolve(util.defaulted(this.impl.detail_url, ''));
+    }
+    payments_url(): Promise<string> {
+        return Promise.resolve(util.defaulted(this.impl.payments_url, ''));
+    }
+    site(): Promise<string> {
+        return Promise.resolve(util.defaulted(this.impl.site, ''));
+    }
+    date(): Promise<string> {
+        return Promise.resolve(util.defaulted(this.impl.date, ''));
+    }
+    total(): Promise<string> {
+        return Promise.resolve(util.defaulted(this.impl.total, ''));
+    }
+    who(): Promise<string> {
+        return Promise.resolve(util.defaulted(this.impl.who, ''));
+    }
+    items(): Promise<Items> {
+        return Promise.resolve(util.defaulted(this.impl.items, {}));
+    }
+    payments(): Promise<string[]> {
+        return util.defaulted(
+            this.impl.payments_promise,
+            Promise.resolve([])
+        );
+    }
 
-    site(): Promise<string> { return Promise.resolve(this.impl.site); }
-    date(): Promise<string> { return Promise.resolve(this.impl.date); }
-    total(): Promise<string> { return Promise.resolve(this.impl.total); }
-    who(): Promise<string> { return Promise.resolve(this.impl.who); }
-    items(): Promise<Items> { return Promise.resolve(this.impl.items); }
-    payments(): Promise<any> { return this.impl.payments_promise; }
+    _detail_dependent_promise(
+        detail_lambda: (d: IOrderDetails) => string
+    ): Promise<string> {
+        if (this.impl.detail_promise) {
+            return this.impl.detail_promise.then( detail_lambda );
+        }
+        return Promise.resolve('');
+    }
 
-    postage(): Promise<string> { return this.impl.detail_promise.then( detail => detail.postage ) }
-    gift(): Promise<string> { return this.impl.detail_promise.then( detail => detail.gift ) };
-    us_tax(): Promise<string> { return this.impl.detail_promise.then( detail => detail.us_tax ) }
-    vat(): Promise<string> { return this.impl.detail_promise.then( detail => detail.vat ) }
-    gst(): Promise<string> { return this.impl.detail_promise.then( detail => detail.gst ) }
-    pst(): Promise<string> { return this.impl.detail_promise.then( detail => detail.pst ) }
-    refund(): Promise<string> { return this.impl.detail_promise.then( detail => detail.refund ) }
-    invoice_url(): Promise<string> { return this.impl.detail_promise.then( detail => detail.invoice_url ) }
+    postage(): Promise<string> {
+        return this._detail_dependent_promise( detail => detail.postage );
+    }
+    gift(): Promise<string> {
+        return this._detail_dependent_promise( detail => detail.gift );
+    };
+    us_tax(): Promise<string> {
+        return this._detail_dependent_promise( detail => detail.us_tax )
+    }
+    vat(): Promise<string> {
+        return this._detail_dependent_promise( detail => detail.vat )
+    }
+    gst(): Promise<string> {
+        return this._detail_dependent_promise( detail => detail.gst )
+    }
+    pst(): Promise<string> {
+        return this._detail_dependent_promise( detail => detail.pst )
+    }
+    refund(): Promise<string> {
+        return this._detail_dependent_promise( detail => detail.refund )
+    }
+    invoice_url(): Promise<string> {
+        return this._detail_dependent_promise( detail => detail.invoice_url )
+    }
 
-    assembleDiagnostics(): Promise<Record<string,any>> { return this.impl.assembleDiagnostics(); }
+    assembleDiagnostics(): Promise<Record<string,any>> {
+        return this.impl.assembleDiagnostics();
+    }
 }
 
 class OrderImpl {
-    id: string;
-    site: string;
-    list_url: string;
-    detail_url: string;
-    payments_url: string;
-    invoice_url: string;
-    date: string;
-    total: string;
-    who: string;
-    detail_promise: Promise<IOrderDetails>;
-    items: Items;
-    payments_promise: Promise<any>;
+    id: string|null;
+    site: string|null;
+    list_url: string|null;
+    detail_url: string|null;
+    payments_url: string|null;
+    invoice_url: string|null;
+    date: string|null;
+    total: string|null;
+    who: string|null;
+    detail_promise: Promise<IOrderDetails>|null;
+    items: Items|null;
+    payments_promise: Promise<string[]>|null;
     scheduler: request_scheduler.IRequestScheduler;
 
     constructor(
@@ -459,6 +522,7 @@ class OrderImpl {
         this.who = null;
         this.detail_promise = null;
         this.items = null;
+        this.payments_promise = null;
         this.scheduler = scheduler;
         this._extractOrder(ordersPageElem);
     }
@@ -487,14 +551,15 @@ class OrderImpl {
             );
             const items: Items = {};
             itemResult.forEach(
-                function(item: HTMLElement) {
+                (node: Node) => {
+                    const item: HTMLElement = <HTMLElement>node;
                     const name = item.innerHTML
                                      .replace(/[\n\r]/g, " ")
                                      .replace(/  */g, " ")
                                      .replace(/&amp;/g, "&")
                                      .replace(/&nbsp;/g, " ")
                                      .trim();
-                    const link = item.getAttribute('href');
+                    const link = util.defaulted(item.getAttribute('href'), '');
                     items[name] = link;
                 }
             );
@@ -505,15 +570,23 @@ class OrderImpl {
             console.warn('TODO - get rid of these');
         }
         this.date = date.normalizeDateString(
-            getField(
-                ['Commande effectuée', 'Order placed', 'Ordine effettuato', 'Pedido realizado'].map(
-                    label => sprintf.sprintf(
-                        './/div[contains(span,"%s")]' +
-                        '/../div/span[contains(@class,"value")]',
-                        label
-                    )
-                ).join('|'),
-                elem
+            util.defaulted(
+                getField(
+                    [
+                        'Commande effectuée',
+                        'Order placed',
+                        'Ordine effettuato',
+                         'Pedido realizado'
+                    ].map(
+                        label => sprintf.sprintf(
+                            './/div[contains(span,"%s")]' +
+                            '/../div/span[contains(@class,"value")]',
+                            label
+                        )
+                    ).join('|'),
+                    elem
+                ),
+                ''
             )
         );
         // This field is no longer always available, particularly for .com
@@ -530,28 +603,53 @@ class OrderImpl {
             .map( el => el.getAttribute('href') )
             .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
             .filter( match => match )[0][1];
-        this.site = this.list_url.match(/.*\/\/([^/]*)/)[1];
-        this.detail_url = util.getOrderDetailUrl(this.id, this.site);
-        this.payments_url = util.getOrderPaymentUrl(this.id, this.site);
+
+        this.site = function(o: OrderImpl) {
+            if (o.list_url) {
+                const list_url_match = o.list_url.match(
+                    RegExp('.*\/\/([^/]*)'));
+                if (list_url_match) {
+                    return util.defaulted(list_url_match[1], '');
+                }
+            }
+            return '';
+        }(this);
+
         if (!this.id) {
             const id_node: Node = util.findSingleNodeValue(
                 '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
                 elem
             );
             const id_elem: HTMLElement = <HTMLElement>id_node;
-            const more_than_id: string = id_elem.getAttribute('href');
-            this.id = more_than_id.match(/.*orderID=([^?]*)/)[1];
+            const more_than_id: string|null = id_elem.getAttribute('href');
+            if (more_than_id) {
+                const match = more_than_id.match(/.*orderID=([^?]*)/);
+                if (match && match.length > 1) {
+                    this.id = match[1];
+                }
+            }
         }
+
+        if (this.id && this.site) {
+            this.detail_url = util.getOrderDetailUrl(this.id, this.site);
+            this.payments_url = util.getOrderPaymentUrl(this.id, this.site);
+        }
+
         this.items = getItems(elem);
         this.detail_promise = extractDetailPromise(this, this.scheduler);
-        this.payments_promise = new Promise(
+        this.payments_promise = new Promise<string[]>(
             (
                 (
                     resolve: (payments: string[]) => void,
                     reject: (msg: string) => void
                 ) => {
-                    if (this.id.startsWith("D")) {
-                        resolve(( !this.total ? [this.date] : [this.date + ": " + this.total]));
+                    if (this.id?.startsWith('D')) {
+                        resolve([
+                            this.total ?
+                                util.defaulted(this.date, '') + 
+                                ': ' + util.defaulted(this.total, '') :
+                                util.defaulted(this.date, '')
+                        ]);
                     } else {
                         const event_converter = function(evt: any) {
                             const doc = util.parseStringToDOM( evt.target.responseText );
@@ -559,15 +657,19 @@ class OrderImpl {
                             // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
                             return payments;
                         }.bind(this);
-                        this.scheduler.scheduleToPromise<string[]>(
-                            this.payments_url,
-                            event_converter,
-                            this.id,  // priority
-                            false  // nocache
-                        ).then(
-                            (response: {result: string[]}) => resolve(response.result),
-                            url => reject( 'timeout or other error while fetching ' + url )
-                        );
+                        if (this.payments_url) {
+                            this.scheduler.scheduleToPromise<string[]>(
+                                this.payments_url,
+                                event_converter,
+                                util.defaulted(this.id, '9999'), // priority
+                                false  // nocache
+                            ).then(
+                                (response: {result: string[]}) => resolve(response.result),
+                                (url: string) => reject( 'timeout or other error while fetching ' + url )
+                            );
+                        } else {
+                            reject('cannot fetch payments without payments_url');
+                        }
                     }
                 }
             ).bind(this)
@@ -576,7 +678,7 @@ class OrderImpl {
 
     assembleDiagnostics(): Promise<Record<string,any>> {
         const diagnostics: Record<string, any> = {};
-        [
+        const field_names: (keyof OrderImpl)[] = [
             'id',
             'list_url',
             'detail_url',
@@ -585,20 +687,22 @@ class OrderImpl {
             'total',
             'who',
             'items'
-        ].forEach(
-            (function(field_name: keyof Order) {
+        ];
+        field_names.forEach(
+            ((field_name: keyof OrderImpl) => {
                 const value: any = this[field_name];
                 diagnostics[<string>(field_name)] = value;
-            }).bind(this)
+            })
         );
+
         return Promise.all([
-            fetch(this.list_url)
+            fetch(util.defaulted(this.list_url, ''))
                 .then( response => response.text() )
                 .then( text => { diagnostics['list_html'] = text; } ),
-            fetch(this.detail_url)
+            fetch(util.defaulted(this.detail_url, ''))
                 .then( response => response.text() )
                 .then( text => { diagnostics['detail_html'] = text; } ),
-            fetch(this.payments_url)
+            fetch(util.defaulted(this.payments_url, ''))
                 .then( response => response.text() )
                 .then( text => { diagnostics['invoice_html'] = text; } )
         ]).then( () => diagnostics );
@@ -632,12 +736,18 @@ function getOrdersForYearAndQueryTemplate(
         const countSpan = util.findSingleNodeValue(
             './/span[@class="num-orders"]', d.documentElement);
         if ( !countSpan ) {
-            console.warn(
-                'Error: cannot find order count elem in: ' + evt.target.responseText
-            );
+            const msg = 'Error: cannot find order count elem in: ' + evt.target.responseText
+            console.error(msg);
+            throw(msg);
         }
-        const expected_order_count: number = parseInt(
-            countSpan.textContent.split(' ')[0], 10);
+        const textContent = countSpan.textContent;
+        const splits = textContent!.split(' ');
+        if (splits.length == 0) {
+            const msg = 'Error: not enough parts';
+            console.error(msg);
+            throw(msg);
+        }
+        const expected_order_count: number = parseInt( splits[0], 10 );
         console.log(
             'Found ' + expected_order_count + ' orders for ' + year
         );
@@ -650,19 +760,18 @@ function getOrdersForYearAndQueryTemplate(
         try {
             ordersElem = d.getElementById('ordersContainer');
         } catch(err) {
-            console.warn(
-                'Error: maybe you\'re not logged into ' +
-                'https://' + util.getSite() + '/gp/css/order-history ' +
-                err
-            );
-            return;
+            const msg = 'Error: maybe you\'re not logged into ' +
+                        'https://' + util.getSite() + '/gp/css/order-history ' +
+                        err;
+            console.warn(msg)
+            throw msg;
         }
         const order_elems: HTMLElement[] = util.findMultipleNodeValues(
             './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
             ordersElem
         ).map( node => <HTMLElement>node );
         const serialized_order_elems = order_elems.map(
-            elem => dom2json.toJSON(elem)
+            elem => dom2json.toJSON(elem, getCachedAttributeNames())
         );
         if ( !serialized_order_elems.length ) {
             console.error(
@@ -702,7 +811,7 @@ function getOrdersForYearAndQueryTemplate(
     };
 
     const getOrderPromises = function(expected_order_count: number): Promise<Promise<IOrder>[]> {
-        const page_done_promises: Promise<void>[] = [];
+        const page_done_promises: Promise<null>[] = [];
         const order_promises: Promise<IOrder>[] = [];
         for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
             console.log(
@@ -719,7 +828,10 @@ function getOrdersForYearAndQueryTemplate(
                         const promises = translateOrdersPageData(page_data);
                         order_promises.push(...promises);
                     }
-                ).then( () => null )
+                ).then(
+                    () => null,
+                    (msg) => { console.error(msg); throw(msg); }
+                )
             );
         }
         console.log('finished sending order list page requests');

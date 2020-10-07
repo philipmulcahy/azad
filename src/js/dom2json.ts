@@ -8,8 +8,10 @@ export interface IJsonObject {
     [index: string]: any
 }
 
-export function toJSON(node: any): IJsonObject {
+export function toJSON(node: any, include_attribs?: Set<string>): IJsonObject {
+  // @ts-ignore: this has weird/missing type.
   node = node || this;
+
   const obj: Record<string, any> = {
     nodeType: node.nodeType
   };
@@ -24,11 +26,15 @@ export function toJSON(node: any): IJsonObject {
   }
   const attrs = node.attributes;
   if (attrs) {
-    const length = attrs.length;
-    const arr = obj.attributes = new Array(length);
-    for (var i = 0; i < length; i++) {
+    const arr = [];
+    for (var i = 0; i < attrs.length; i++) {
       const attr = attrs[i];
-      arr[i] = [attr.nodeName, attr.nodeValue];
+      arr.push([attr.nodeName, attr.nodeValue]);
+    }
+    if ( include_attribs == undefined ) {
+        obj.attributes = arr;
+    } else {
+        obj.attributes = arr.filter( a => include_attribs.has(a[0]) );
     }
   }
   const childNodes: NodeListOf<ChildNode> = node.childNodes;
@@ -36,7 +42,7 @@ export function toJSON(node: any): IJsonObject {
     const length = childNodes.length;
     const arr = obj.childNodes = new Array(length);
     for (i = 0; i < length; i++) {
-      arr[i] = toJSON(childNodes[i]);
+      arr[i] = toJSON(childNodes[i], include_attribs);
     }
   }
   return obj;
@@ -46,7 +52,7 @@ export function toDOM(obj: IJsonObject | string): Node {
   if (typeof obj == 'string') {
     obj = <IJsonObject>(JSON.parse(obj));
   }
-  var node;
+  let node: any = null;
   const nodeType = obj.nodeType;
   switch (nodeType) {
     case 1: //ELEMENT_NODE
@@ -71,7 +77,9 @@ export function toDOM(obj: IJsonObject | string): Node {
     case 10: //DOCUMENT_TYPE_NODE
       node = document.implementation.createDocumentType(
           obj.nodeName,
+          // @ts-ignore: arg is supposed to be a string
           null,
+          // @ts-ignore: arg is supposed to be a string
           null
       );
       break;

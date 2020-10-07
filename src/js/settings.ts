@@ -31,7 +31,11 @@ export function initialiseUi(): Promise<void> {
                 console.log('checkboxes: ', checkboxes);
                 checkboxes.forEach( elem => {
                     const key = elem.getAttribute('id');
-                    key_to_elem[key] = elem;
+                    if (key) {
+                        key_to_elem[key] = elem;
+                    } else {
+                        console.warn('no id attribute found');
+                    }
                 });
                 for ( let key in key_to_elem ) {
                     let value: boolean = (settings && key in settings)  ?
