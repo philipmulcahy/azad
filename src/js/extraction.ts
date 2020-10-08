@@ -23,7 +23,7 @@ export function by_regex(
                 elem
             );
         } catch ( ex ) {
-            console.warn('got ' + ex + ' when evaluating ' + xpath);
+            console.log('got ' + ex + ' when evaluating ' + xpath);
         }
         if ( a ) {
             if ( regex ) {
