@@ -115,9 +115,7 @@ export function findSingleNodeValue(xpath: string, elem: HTMLElement): Node {
         }
         return node;
     } catch (ex) {
-        const msg = ex + ': findSingleNodeValue didn\'t match: ' + xpath;
-        console.log(msg);
-        throw msg;
+        throw ex + ': findSingleNodeValue didn\'t match: ' + xpath;
     }
 }
 

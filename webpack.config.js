@@ -95,9 +95,6 @@ const chrome_extension_options = {
         }]),
         new CopyWebpackPlugin([{
             from: "src/styles/datatables_override.css"
-        }]),
-        new CopyWebpackPlugin([{
-            from: "src/js/google_analytics.js"
         }])
     ]
 };
