@@ -1,11 +1,31 @@
+.azad_default_button,
+.azad_table_button,
+.azad_progress_bar,
+.azad_progress_worm {
+    float: Left;
+    height: 29px;
+    border-style: Solid;
+    border-color: Orange;
+    border-width: 2px;
+}
+
 .azad_default_button {
-    background-color: orange;
+    background-color: CornflowerBlue; 
     color: white;
 }
 
 .azad_table_button {
-    background-color: cornflowerblue; 
-    color: white;
+    background-color: CornflowerBlue; 
+    color: White;
 }
 
+.azad_progress_bar {
+    background-color: LightBlue;
+}
+
+.azad_progress_worm {
+    background-color: Orange;
+    height: 25px;
+    border-width: 0px;
+}
 

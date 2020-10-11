@@ -4,6 +4,7 @@
 
 import * as binary_heap from './binary_heap';
 import * as cachestuff from './cachestuff';
+import * as stats from './statistics';
 
 export interface IResponse<T> {
     result: T,
@@ -20,7 +21,6 @@ export interface IRequestScheduler {
 
     abort(): void;
     clearCache(): void;
-    statistics(): Record<string, number>;
     isLive(): boolean;
 }
 
@@ -39,6 +39,7 @@ class RequestScheduler {
 
     constructor() {
         console.log('constructing new RequestScheduler');
+        this._update_statistics();
     }
 
     _schedule(
@@ -76,7 +77,8 @@ class RequestScheduler {
                     this._schedule(
                         query,
                         event_converter,
-                        (result, query) => resolve({result: result, query: query}),
+                        (result, query) => resolve(
+                            {result: result, query: query}),
                         (query: string) => reject(query),
                         priority,
                         nocache
@@ -99,14 +101,12 @@ class RequestScheduler {
         this.cache.clear();
     }
 
-    statistics() {
-        return {
-            'queued' : this.queue.size(),
-            'running' : this.running_count,
-            'completed' : this.completed_count,
-            'errors' : this.error_count,
-            'cache_hits' : this.cache.hitCount(),
-        };
+    _update_statistics() {
+        stats.set('queued', this.queue.size());
+        stats.set('running', this.running_count);
+        stats.set('completed', this.completed_count);
+        stats.set('errors', this.error_count);
+        stats.set('cache_hits', this.cache.hitCount());
     }
 
     isLive() {
@@ -148,7 +148,8 @@ class RequestScheduler {
             try {
                 return event_converter(evt);
             } catch (ex) {
-                console.error('event conversion failed for ' + query + ' with ' + ex);
+                console.error(
+                    'event conversion failed for ' + query + ' with ' + ex);
                 return null;
             }
         }
@@ -185,6 +186,7 @@ class RequestScheduler {
         // has a chance to tell us about the rest of the work, then the
         // scheduler will shut down by setting this.live to false.
         this.running_count += 1;
+        this._update_statistics();
         setTimeout(
             () => {
                 success_callback(cached_response, query);
@@ -203,6 +205,7 @@ class RequestScheduler {
                 this.running_count -= 1;
                 this.completed_count += 1;
                 this._executeSomeIfPossible();
+                this._update_statistics();
                 this._checkDone();
             }
         );
@@ -221,11 +224,13 @@ class RequestScheduler {
             this.running_count -= 1;
             this.error_count += 1;
             console.log( 'Unknown error fetching ' + query );
+            this._update_statistics();
             this._checkDone();
         };
         req.onload = (evt: any): void => {
             if (!this.live) {
                 this.running_count -= 1;
+                this._update_statistics();
                 return;
             }
             if ( req.status != 200 ) {
@@ -233,10 +238,12 @@ class RequestScheduler {
                 console.log(
                     'Got HTTP' + req.status + ' fetching ' + query);
                 this.running_count -= 1;
+                this._update_statistics();
                 return;
             }
             if ( req.responseURL.includes('/ap/signin?') ) {
                 this.error_count += 1;
+                this._update_statistics();
                 console.log('Got sign-in redirect from: ' + query);
                 if ( !this.signin_warned ) {
                     alert('Amazon Order History Reporter Chrome Extension\n\n' +
@@ -253,6 +260,7 @@ class RequestScheduler {
                     );
                 }
                 this.running_count -= 1;
+                this._update_statistics();
                 return;
             }
             console.log(
@@ -269,14 +277,17 @@ class RequestScheduler {
         req.ontimeout = (evt: any): void => {
             if (!this.live) {
                 this.running_count -= 1;
+                this._update_statistics();
                 return;
             }
             console.log('Timed out while fetching: ' + query);
             this.error_count += 1;
             this.running_count -= 1;
+            this._update_statistics();
             this._checkDone();
         }
         this.running_count += 1;
+        this._update_statistics();
         req.send();
     }
 

@@ -1,17 +1,16 @@
 /* Copyright(c) 2016-2020 Philip Mulcahy. */
 
-/* jshint strict: true, esversion: 6 */
-
 'use strict';
 
-import * as util from './util';
-import * as request_scheduler from './request_scheduler';
 import * as azad_order from './order';
 import * as azad_table from './table';
+import * as request_scheduler from './request_scheduler';
+import * as stats from './statistics';
+import * as util from './util';
 
 let scheduler: request_scheduler.IRequestScheduler | null = null;
 let background_port: chrome.runtime.Port | null = null;
-let years: number[] | null = null;
+let years: number[] = [];
 let stats_timeout: NodeJS.Timeout | null = null;
 
 function getSite(): string {
@@ -42,11 +41,8 @@ function setStatsTimeout() {
     const sendStatsMsg = () => {
         const bg_port = getBackgroundPort();
         if (bg_port) {
-            bg_port.postMessage({
-                action: 'statistics_update',
-                statistics: getScheduler().statistics(),
-                years: years,
-            });
+            stats.publish(bg_port, years); 
+            azad_table.updateProgressBar();
         }
     }
     if (stats_timeout) {
