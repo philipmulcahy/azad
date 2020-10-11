@@ -76,10 +76,7 @@ export function getOrderPaymentUrl(orderId: string, site: string) {
 }
 
 export function addButton(name: string, cb: any, button_class: string) {
-    const existing = document.querySelector('[button_name="' + name + '"]');
-    if ( existing !== null ) {
-        existing.parentNode!.removeChild(existing);
-    }
+    removeButton(name);
     const a = document.createElement('button');
     if(typeof(button_class) === 'undefined') {
         button_class = 'azad_default_button';

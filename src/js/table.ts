@@ -2,12 +2,14 @@
 
 const $ = require('jquery');
 import 'datatables';
-import * as util from './util';
-import * as csv from './csv';
-import * as sprintf from 'sprintf-js';
-import * as diagnostic_download from './diagnostic_download';
 import * as azad_order from './order';
+import * as csv from './csv';
+import * as diagnostic_download from './diagnostic_download';
+import * as progress_bar from './progress_bar';
 import * as settings from './settings';
+import * as sprintf from 'sprintf-js';
+import * as stats from './statistics';
+import * as util from './util';
 
 'use strict';
 
@@ -18,6 +20,7 @@ const TH_CLASS = 'azad_thClass ';
 
 let datatable: any = null;
 const order_map: Record<string, azad_order.IOrder> = {};
+let progress_indicator: progress_bar.IProgressIndicator|null = null;
 
 /**
  * Add a td to the row tr element, and return the td.
@@ -452,6 +455,7 @@ function reallyDisplayOrders(
                         }));
                     }
                 });
+                addProgressBar();
                 util.removeButton('data table');
                 util.addButton(
                     'plain table',
@@ -461,6 +465,7 @@ function reallyDisplayOrders(
                 addCsvButton(order_promises)
             });
         } else {
+            addProgressBar();
             util.removeButton('plain table');
             util.addButton(
                 'data table',
@@ -475,9 +480,12 @@ function reallyDisplayOrders(
     return table_promise;
 }
 
-function addCsvButton(orders: Promise<azad_order.IOrder>[]) {
+function addProgressBar(): void {
+    progress_indicator = progress_bar.addProgressBar(document.body)
+}
+
+function addCsvButton(orders: Promise<azad_order.IOrder>[]): void {
     const title = "download spreadsheet ('.csv')";
-    util.removeButton(title);
     util.addButton(	
        title,
        function() {	
@@ -524,5 +532,17 @@ export function dumpOrderDiagnostics(order_id: string) {
                 order_id + '_' + utc_today + '.json'
             )
         );
+    }
+}
+
+export function updateProgressBar(): void {
+    if (progress_indicator) {
+        const completed = stats.get('completed');
+        const queued = stats.get('queued');
+        const running = stats.get('running');
+        if (completed!=null && queued!=null && running!=null) {
+           const ratio: number = completed / (completed + queued + running);
+           progress_indicator.update_progress(ratio);
+        }
     }
 }
