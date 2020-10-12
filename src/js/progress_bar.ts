@@ -25,7 +25,7 @@ export function addProgressBar(
 
     const a = parent_element.ownerDocument.createElement('div');
     a.setAttribute('class', 'azad_progress_bar');
-    a.setAttribute('label', 'how far through the scraping process we are');
+    a.setAttribute('title', 'how far through the scraping process we are');
     a.setAttribute('style', 'width:' + outer_width + 'px');
     parent_element.insertBefore(
         a,
@@ -42,7 +42,9 @@ export function addProgressBar(
 
     const set_fraction_done = function(fraction: number) {
         const width = Math.trunc(inner_width * fraction);
+        const percent_string = '' + Math.trunc(fraction * 100 + 0.005) + '%';
         b.setAttribute('style', 'width:' + width + 'px');
+        b.setAttribute('title', percent_string);
     }
 
     return {
