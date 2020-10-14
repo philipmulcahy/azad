@@ -1007,6 +1007,8 @@ function fetchYear(
     }
 
     const promises_to_promises: Array<Promise<any>> = templates.map(
+        template => template + '&disableCsd=no-js'
+    ).map(
         template => getOrdersForYearAndQueryTemplate(
             year,
             template,

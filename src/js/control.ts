@@ -1,7 +1,5 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
 
-/* jshint strict: true, esversion: 6 */
-
 'use strict';
 
 const $ = require('jquery');
