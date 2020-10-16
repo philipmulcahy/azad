@@ -597,12 +597,21 @@ class OrderImpl {
         console.log('total direct:', this.total);
         this.who = getField('.//div[contains(@class,"recipient")]' +
             '//span[@class="trigger-text"]', elem);
-        this.id = [
-            ...Array.prototype.slice.call(elem.getElementsByTagName('a'))]
-            .filter( el => el.hasAttribute('href') )
-            .map( el => el.getAttribute('href') )
-            .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
-            .filter( match => match )[0][1];
+        
+        try {
+            this.id = [
+                ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
+            ].filter( el => el.hasAttribute('href') )
+             .map( el => el.getAttribute('href') )
+             .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
+             .filter( match => match )[0][1];
+        } catch (error) {
+            console.warn(
+                'could not parse order id from order list page ' + this.list_url
+            );
+            this.id = 'UNKNOWN_ORDER_ID';
+            throw error;
+        }
 
         this.site = function(o: OrderImpl) {
             if (o.list_url) {
@@ -830,7 +839,10 @@ function getOrdersForYearAndQueryTemplate(
                     }
                 ).then(
                     () => null,
-                    (msg) => { console.error(msg); throw(msg); }
+                    (msg) => {
+                        console.error(msg);
+                        return null;
+                    }
                 )
             );
         }
