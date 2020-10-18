@@ -108,7 +108,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
         return payments;
     };
     const strategies = [strategy_1, strategy_2];
-    let i = 0;
+    let i: number = 0;
     for ( i = 0; i < strategies.length; i++ ) {
         const strategy = strategies[i];
         try {
@@ -117,7 +117,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
                 return payments;
             }
         } catch (ex) {
-            console.warn('strategy ' + i+1 + ' blew up with ' + ex);
+            console.warn('strategy ' + i + ' blew up with ' + ex);
         }
     }
     return ['UNKNOWN'];

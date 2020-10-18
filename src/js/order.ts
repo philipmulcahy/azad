@@ -206,7 +206,8 @@ function extractDetailFromDoc(
                 'span[contains(text(),"VAT")]/' +
                 'parent::div/following-sibling::div/span',
 
-                '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "VAT: ")]]'
+                '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "VAT: ")]]',
+                '//div[contains(@class, "orderSummary")]//*[text()[contains(., "VAT: ")]]'
             ]
         );
         const a = extraction.by_regex(
@@ -706,15 +707,39 @@ class OrderImpl {
 
         return Promise.all([
             fetch(util.defaulted(this.list_url, ''))
-                .then( response => response.text() )
+                .then(
+                    response => response.text(),
+                    err => {
+                        const msg = 'got error while fetching debug data for: ' + this.list_url + ' ' + err;
+                        console.warn(msg);
+                        throw err;
+                    }
+                )
                 .then( text => { diagnostics['list_html'] = text; } ),
             fetch(util.defaulted(this.detail_url, ''))
-                .then( response => response.text() )
+                .then(
+                    response => response.text(),
+                    err => {
+                        const msg = 'got error while fetching debug data for: ' + this.detail_url + ' ' + err;
+                        console.warn(msg);
+                        throw err;
+                    }
+                )
                 .then( text => { diagnostics['detail_html'] = text; } ),
             fetch(util.defaulted(this.payments_url, ''))
-                .then( response => response.text() )
+                .then(
+                    response => response.text(),
+                    err => {
+                        const msg = 'got error while fetching debug data for: ' + this.payments_url + ' ' + err;
+                        console.warn(msg);
+                        throw msg;
+                    }
+                )
                 .then( text => { diagnostics['invoice_html'] = text; } )
-        ]).then( () => diagnostics );
+        ]).then(
+            () => diagnostics,
+            error_msg => {window.alert(error_msg); return diagnostics;}
+        );
     }
 }
 

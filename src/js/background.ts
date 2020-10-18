@@ -105,6 +105,18 @@ function registerRightClickActions() {
                     });
                 }
             }
+            else if ( /search=/.test(info.linkUrl!) ) {
+                const match =info?.linkUrl?.match(/.*search=([0-9A-Z-]*)$/);
+                const order_id = match![1];
+                if (match) {
+                    Object.values(content_ports).forEach( port => {
+                        port.postMessage({
+                            action: 'dump_order_detail',
+                            order_id: order_id
+                        });
+                    });
+                }
+            }
         }
     } );
 }
