@@ -246,11 +246,13 @@ class RequestScheduler {
                 this._update_statistics();
                 console.log('Got sign-in redirect from: ' + query);
                 if ( !this.signin_warned ) {
-                    alert('Amazon Order History Reporter Chrome Extension\n\n' +
-                          'It looks like you might have been logged out of Amazon.\n' +
-                          'Sometimes this can be "partial" - some types of order info stay logged in and some do not.\n' +
-                          'I will now attempt to open a new tab with a login prompt. Please use it to login,\n' +
-                          'and then retry your chosen orange button.');
+                    window.alert(
+                        'Amazon Order History Reporter Chrome Extension\n\n' +
+                        'It looks like you might have been logged out of Amazon.\n' +
+                        'Sometimes this can be "partial" - some types of order info stay logged in and some do not.\n' +
+                        'I will now attempt to open a new tab with a login prompt. Please use it to login,\n' +
+                        'and then retry your chosen orange button.'
+                    );
                     this.signin_warned = true;
                     chrome.runtime.sendMessage(
                         {

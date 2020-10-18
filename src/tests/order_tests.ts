@@ -1,5 +1,4 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
-/* jshint strict: true, esversion: 6 */
 
 import * as order_data from './fake_order'; 
 import * as util from './../js/util';
@@ -26,6 +25,10 @@ function testOneTarget(
         defects: [],
     };
     console.log('testing:', target.site, target.order_id);
+    // TODO: remove before commit
+    if (target.order_id != 'D01-8755888-0539825') {
+        return Promise.resolve(result);
+    }
     const order_promise = order_data.orderFromTestData(
         target.order_id,
         target.scrape_date,

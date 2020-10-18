@@ -28,6 +28,13 @@ class FakeRequestScheduler {
         return new Promise<any> ( resolve => {
             setTimeout( () => {
                 const html = this.url_html_map[query];
+                if (!html) {
+                    const msg = 'could not find ' + query +
+                                ' in url_html_map whose keys are: ' +
+                                Object.keys(this.url_html_map);
+                    console.error(msg);
+                    throw msg;
+                }
                 const fake_evt = {
                     target: {
                         responseText: html

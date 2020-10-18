@@ -5,6 +5,7 @@
 import * as azad_order from './order';
 import * as azad_table from './table';
 import * as request_scheduler from './request_scheduler';
+import * as signin from './signin';
 import * as stats from './statistics';
 import * as util from './util';
 
@@ -70,8 +71,14 @@ let cached_years: Promise<number[]> | null = null;
 function getYears(): Promise<number[]> {
     const getPromise = function(): Promise<number[]> {
         const url = 'https://' + SITE + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
-        return fetch(url).then( response => response.text() )
-                         .then( text => {
+        return fetch(url)
+        .then(
+            response => {
+                signin.checkSigninRedirect(response, url);
+                return response.text();
+            }
+        )
+        .then( text => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(
                 text, 'text/html'
