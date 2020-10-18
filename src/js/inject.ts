@@ -71,13 +71,8 @@ let cached_years: Promise<number[]> | null = null;
 function getYears(): Promise<number[]> {
     const getPromise = function(): Promise<number[]> {
         const url = 'https://' + SITE + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
-        return fetch(url)
-        .then(
-            response => {
-                signin.checkSigninRedirect(response, url);
-                return response.text();
-            }
-        )
+        return signin.checkedFetch(url)
+        .then( response => response.text() )
         .then( text => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(
