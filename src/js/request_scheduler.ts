@@ -212,18 +212,18 @@ class RequestScheduler {
     }
 
     _sendOne(
-        query: string,
+        url: string,
         event_converter: (evt: any) => any,
         success_callback: (converted_event: any, query: string) => void,
         failure_callback: (query: string) => void,
         nocache: boolean
     ) {
         const req = new XMLHttpRequest();
-        req.open('GET', query, true);
+        req.open('GET', url, true);
         req.onerror = (): void =>  {
             this.running_count -= 1;
             this.error_count += 1;
-            console.log( 'Unknown error fetching ' + query );
+            console.log( 'Unknown error fetching ' + url );
             this._update_statistics();
             this._checkDone();
         };
@@ -235,16 +235,16 @@ class RequestScheduler {
             }
             if ( req.status != 200 ) {
                 this.error_count += 1;
-                console.log(
-                    'Got HTTP' + req.status + ' fetching ' + query);
+                console.warn(
+                    'Got HTTP' + req.status + ' fetching ' + url);
                 this.running_count -= 1;
                 this._update_statistics();
                 return;
             }
-            if ( req.responseURL.includes('/ap/signin?') ) {
+            if ( req.responseURL.includes('/signin?') ) {
                 this.error_count += 1;
                 this._update_statistics();
-                console.log('Got sign-in redirect from: ' + query);
+                console.log('Got sign-in redirect from: ' + url);
                 if ( !this.signin_warned ) {
                     window.alert(
                         'Amazon Order History Reporter Chrome Extension\n\n' +
@@ -257,7 +257,7 @@ class RequestScheduler {
                     chrome.runtime.sendMessage(
                         {
                             action: 'open_tab',
-                            url: query
+                            url: url
                         }
                     );
                 }
@@ -266,13 +266,13 @@ class RequestScheduler {
                 return;
             }
             console.log(
-              'Finished ' + query +
+              'Finished ' + url +
                 ' with queue size ' + this.queue.size());
             const converted = event_converter(evt);
             if (!nocache) {
-                this.cache.set(query, converted);
+                this.cache.set(url, converted);
             }
-            success_callback(converted, query);
+            success_callback(converted, url);
             this._recordSingleSuccess();
         };
         req.timeout = 20000;  // 20 seconds
@@ -282,7 +282,7 @@ class RequestScheduler {
                 this._update_statistics();
                 return;
             }
-            console.log('Timed out while fetching: ' + query);
+            console.log('Timed out while fetching: ' + url);
             this.error_count += 1;
             this.running_count -= 1;
             this._update_statistics();

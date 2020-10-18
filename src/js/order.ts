@@ -5,6 +5,7 @@
 import * as util from './util';
 import * as date from './date';
 import * as extraction from './extraction';
+import * as signin from './signin';
 import * as sprintf from 'sprintf-js';
 import * as dom2json from './dom2json';
 import * as request_scheduler from './request_scheduler';
@@ -706,35 +707,14 @@ class OrderImpl {
         );
 
         return Promise.all([
-            fetch(util.defaulted(this.list_url, ''))
-                .then(
-                    response => response.text(),
-                    err => {
-                        const msg = 'got error while fetching debug data for: ' + this.list_url + ' ' + err;
-                        console.warn(msg);
-                        throw err;
-                    }
-                )
+            signin.checkedFetch( util.defaulted(this.list_url, '') )
+                .then( response => response.text())
                 .then( text => { diagnostics['list_html'] = text; } ),
-            fetch(util.defaulted(this.detail_url, ''))
-                .then(
-                    response => response.text(),
-                    err => {
-                        const msg = 'got error while fetching debug data for: ' + this.detail_url + ' ' + err;
-                        console.warn(msg);
-                        throw err;
-                    }
-                )
+            signin.checkedFetch( util.defaulted(this.detail_url, '') )
+                .then( response => response.text() )
                 .then( text => { diagnostics['detail_html'] = text; } ),
-            fetch(util.defaulted(this.payments_url, ''))
-                .then(
-                    response => response.text(),
-                    err => {
-                        const msg = 'got error while fetching debug data for: ' + this.payments_url + ' ' + err;
-                        console.warn(msg);
-                        throw msg;
-                    }
-                )
+            signin.checkedFetch(util.defaulted(this.payments_url, ''))
+                .then( response => response.text() )
                 .then( text => { diagnostics['invoice_html'] = text; } )
         ]).then(
             () => diagnostics,

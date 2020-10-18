@@ -1,7 +1,7 @@
 /* Copyright(c) 2020 Philip Mulcahy. */
 
 
-export function checkSigninRedirect(
+function checkSigninRedirect(
     response: Response,
     original_url: string
 ): void {
@@ -14,4 +14,18 @@ export function checkSigninRedirect(
         window.alert(msg);
         throw msg;
     }
+}
+
+export function checkedFetch(url: string): Promise<Response> {
+    return fetch(url).then( 
+        (response: Response) => {
+            checkSigninRedirect( response, url );
+            return response;
+        },
+        err => {
+            const msg = 'Got error while fetching debug data for: ' + url + ' ' + err;
+            console.warn(msg);
+            throw err;
+        }
+    );
 }
