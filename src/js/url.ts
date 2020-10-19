@@ -9,9 +9,6 @@ export function orderDetailUrlFromListElement(
     orderId: string,
     site: string
 ): string {
-    if (orderId == 'D01-0681872-9979807' ) {
-        console.log('TODO: looking for detail link for D01-0681872-9979807');
-    }
     const patterns: string[] = ['order-detail', 'order-summary'];
     const matching_urls: string[] = Array.from(elem.querySelectorAll('a'))
         .filter( a => a.hasAttribute('href') )

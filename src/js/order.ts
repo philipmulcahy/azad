@@ -569,9 +569,6 @@ class OrderImpl {
             return items;
         };
         const doc = elem.ownerDocument;
-        if(!doc) {
-            console.warn('TODO - get rid of these');
-        }
         this.date = date.normalizeDateString(
             util.defaulted(
                 getField(
