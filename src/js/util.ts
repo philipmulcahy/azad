@@ -57,24 +57,6 @@ export function getSite(): string {
     return stem;
 }
 
-export function getOrderDetailUrl(orderId: string, site: string) {
-    if (orderId.startsWith('D')) {
-       return  'https://' + site + '/gp/your-account/order-history/' +
-               'ref=ppx_yo_dt_b_search?opt=ab&search=' + orderId;
-    }
-    return 'https://' + site + '/gp/your-account/order-details/' +
-           'ref=oh_aui_or_o01_?ie=UTF8&orderID=' + orderId;
-}
-
-export function getOrderPaymentUrl(orderId: string, site: string) {
-    if ( !orderId ) {return 'N/A'; }
-    return orderId.startsWith('D') ?
-        'https://' + site + '/gp/digital/your-account/order-summary.html' +
-            '?ie=UTF8&orderID=' + orderId + '&print=1&' :
-        'https://' + site + '/gp/css/summary/print.html' +
-            '/ref=oh_aui_ajax_pi?ie=UTF8&orderID=' + orderId;
-}
-
 export function addButton(name: string, cb: any, button_class: string) {
     removeButton(name);
     const a = document.createElement('button');
