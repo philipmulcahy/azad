@@ -33,7 +33,6 @@ class FakeRequestScheduler {
                                 ' in url_html_map whose keys are: ' +
                                 Object.keys(this.url_html_map);
                     console.error(msg);
-                    throw msg;
                 }
                 const fake_evt = {
                     target: {
@@ -73,7 +72,7 @@ export function orderFromTestData(
         const url_map: Record<string, string>  = {};
         url_map[order_dump.list_url] = order_dump.list_html;
         url_map[order_dump.detail_url] = order_dump.detail_html;
-        url_map[order_dump.invoice_url] = order_dump.invoice_html;
+        url_map[order_dump.payments_url] = order_dump.invoice_html;
         const scheduler = new FakeRequestScheduler( url_map );
         const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;
         const order_elems = util.findMultipleNodeValues(

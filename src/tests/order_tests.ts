@@ -25,10 +25,6 @@ function testOneTarget(
         defects: [],
     };
     console.log('testing:', target.site, target.order_id);
-    // TODO: remove before commit
-    if (target.order_id != 'D01-8755888-0539825') {
-        return Promise.resolve(result);
-    }
     const order_promise = order_data.orderFromTestData(
         target.order_id,
         target.scrape_date,
