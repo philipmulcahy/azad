@@ -162,11 +162,8 @@ const COLS: Record<string, any>[] = [
                     } else {
                         a.textContent = payment + '; '
                     }
-                    order.id().then(
-                        id => a.setAttribute(
-                            'href',
-                            util.getOrderPaymentUrl(id, util.getSite())
-                        )
+                    order.detail_url().then(
+                        detail_url => a.setAttribute( 'href', detail_url)
                     );
                 });
                 if(datatable) {

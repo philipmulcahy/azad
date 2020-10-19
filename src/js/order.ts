@@ -2,13 +2,14 @@
 
 'use strict';
 
-import * as util from './util';
 import * as date from './date';
 import * as extraction from './extraction';
 import * as signin from './signin';
 import * as sprintf from 'sprintf-js';
 import * as dom2json from './dom2json';
 import * as request_scheduler from './request_scheduler';
+import * as urls from './url';
+import * as util from './util';
 
 function getField(xpath: string, elem: HTMLElement): string|null {
     try {
@@ -356,8 +357,8 @@ const extractDetailPromise = (
     scheduler: request_scheduler.IRequestScheduler
 ) => new Promise<IOrderDetails>(
     (resolve, reject) => {
-        const query = order.detail_url;
-        if(!query) {
+        const url = order.detail_url;
+        if(!url) {
             const msg = 'null order detail query: cannot schedule';
             console.error(msg);
             reject(msg);
@@ -370,7 +371,7 @@ const extractDetailPromise = (
             };
             try {
                 scheduler.scheduleToPromise<IOrderDetails>(
-                    query,
+                    url,
                     event_converter,
                     util.defaulted(order.id, '9999'),
                     false
@@ -379,7 +380,7 @@ const extractDetailPromise = (
                     url => reject('timeout or other problem when fetching ' + url),
                 );
             } catch (ex) {
-                const msg = 'scheduler rejected ' + order.id + ' ' + query;
+                const msg = 'scheduler rejected ' + order.id + ' ' + url;
                 console.error(msg);
                 reject(msg);
             }
@@ -642,8 +643,10 @@ class OrderImpl {
         }
 
         if (this.id && this.site) {
-            this.detail_url = util.getOrderDetailUrl(this.id, this.site);
-            this.payments_url = util.getOrderPaymentUrl(this.id, this.site);
+            this.detail_url = urls.orderDetailUrlFromListElement(
+                elem, this.id, this.site
+            );
+            this.payments_url = urls.getOrderPaymentUrl(this.id, this.site);
         }
 
         this.items = getItems(elem);
