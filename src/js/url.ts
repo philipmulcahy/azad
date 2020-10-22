@@ -1,5 +1,22 @@
 /* Copyright(c) 2020 Philip Mulcahy. */
 
+export function getSite(): string {
+    if ( typeof( window ) === 'undefined' ) {
+        return 'www.azadexample.com'
+    }
+    const href = window.location.href;
+    const regex = new RegExp(
+        'https:\\/\\/((www|smile)\\.amazon\\.[^\\/]+)'
+    );
+    const executed = regex.exec(href);
+    if (!executed || executed.length < 1) {
+        console.error('didn\'t get a match for site from: ' + href);
+        return 'www.azadexample.com';
+    }
+    const stem = executed[1];
+    return stem;
+}
+
 function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
     return value !== null && value !== undefined;
 }

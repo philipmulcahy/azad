@@ -7,6 +7,7 @@ import * as azad_table from './table';
 import * as request_scheduler from './request_scheduler';
 import * as signin from './signin';
 import * as stats from './statistics';
+import * as urls from './url';
 import * as util from './util';
 
 let scheduler: request_scheduler.IRequestScheduler | null = null;
@@ -155,26 +156,37 @@ function registerContentScript() {
     const bg_port = getBackgroundPort();
     if (bg_port) {
         bg_port.onMessage.addListener( msg => {
-            switch(msg.action) {
-                case 'dump_order_detail':
-                    azad_table.dumpOrderDiagnostics(msg.order_id)
-                    break;
-                case 'scrape_years':
-                    years = msg.years;
-                    if (years) {
-                        fetchAndShowOrders(years);
-                    }
-                    break;
-                case 'clear_cache':
-                    getScheduler().clearCache();
-                    alert('Amazon Order History Reporter Chrome Extension\n\n' +
-                          'Cache cleared');
-                    break;
-                case 'abort':
-                    resetScheduler();
-                    break;
-                default:
-                    console.warn('unknown action: ' + msg.action);
+            try {
+                switch(msg.action) {
+                    case 'dump_order_detail':
+                        azad_table.dumpOrderDiagnostics(msg.order_id)
+                        break;
+                    case 'scrape_years':
+                        years = msg.years;
+                        if (years) {
+                            fetchAndShowOrders(years);
+                        }
+                        break;
+                    case 'clear_cache':
+                        getScheduler().clearCache();
+                        window.alert(
+                            'Amazon Order History Reporter Chrome' +
+                            ' Extension\n\n' +
+                            'Cache cleared'
+                        );
+                        break;
+                    case 'force_logout':
+                        signin.forceLogOut(urls.getSite());
+                        break;
+                    case 'abort':
+                        resetScheduler();
+                        break;
+                    default:
+                        console.warn('unknown action: ' + msg.action);
+                }
+            } catch (ex) {
+                console.error('message handler blew up with ' + ex +
+                              ' while trying to process ' + msg);
             }
         } );
     }

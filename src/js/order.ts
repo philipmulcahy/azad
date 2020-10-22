@@ -330,7 +330,7 @@ function extractDetailFromDoc(
             doc.documentElement
         );
         if( suffix ) {
-            return 'https://' + util.getSite() + suffix;
+            return 'https://' + urls.getSite() + suffix;
         }
         return '';
     };
@@ -738,7 +738,7 @@ function getOrdersForYearAndQueryTemplate(
         return sprintf.sprintf(
             query_template,
             {
-                site: util.getSite(),
+                site: urls.getSite(),
                 year: year,
                 startOrderPos: startOrderPos
             }
@@ -775,7 +775,7 @@ function getOrdersForYearAndQueryTemplate(
             ordersElem = d.getElementById('ordersContainer');
         } catch(err) {
             const msg = 'Error: maybe you\'re not logged into ' +
-                        'https://' + util.getSite() + '/gp/css/order-history ' +
+                        'https://' + urls.getSite() + '/gp/css/order-history ' +
                         err;
             console.warn(msg)
             throw msg;
@@ -1013,7 +1013,7 @@ function fetchYear(
             '&startIndex=%(startOrderPos)s' +
             '&language=en_GB'],
     }
-    let templates = templates_by_site[util.getSite()];
+    let templates = templates_by_site[urls.getSite()];
     if ( !templates ) {
         templates = templates_by_site['other'];
         alert('Amazon Order History Reporter Chrome Extension\n\n' +

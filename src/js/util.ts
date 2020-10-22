@@ -40,23 +40,6 @@ function getXPathResult() {
     return XPathResult;
 }
 
-export function getSite(): string {
-    if ( typeof( window ) === 'undefined' ) {
-        return 'www.azadexample.com'
-    }
-    const href = window.location.href;
-    const regex = new RegExp(
-        'https:\\/\\/((www|smile)\\.amazon\\.[^\\/]+)'
-    );
-    const executed = regex.exec(href);
-    if (!executed || executed.length < 1) {
-        console.error('didn\'t get a match for site from: ' + href);
-        return 'www.azadexample.com';
-    }
-    const stem = executed[1];
-    return stem;
-}
-
 export function addButton(name: string, cb: any, button_class: string) {
     removeButton(name);
     const a = document.createElement('button');
