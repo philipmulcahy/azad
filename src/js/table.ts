@@ -9,6 +9,7 @@ import * as progress_bar from './progress_bar';
 import * as settings from './settings';
 import * as sprintf from 'sprintf-js';
 import * as stats from './statistics';
+import * as urls from './url';
 import * as util from './util';
 
 'use strict';
@@ -201,7 +202,7 @@ function getCols(): Promise< Record<string, any>[] > {
     const waits: Promise<any>[] = [];
     const results: Record<string, any>[] = [];  
     COLS.forEach( col => {
-        if ( ('sites' in col) ? col.sites.test(util.getSite()) : true ) {
+        if ( ('sites' in col) ? col.sites.test(urls.getSite()) : true ) {
             if ( 'visibility' in col ) {
                 const visible_promise: Promise<boolean> = col.visibility();
                 waits.push(visible_promise);

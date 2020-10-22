@@ -4,6 +4,7 @@
     "content_security_policy": "script-src 'self' https://www.google-analytics.com/analytics.js; object-src 'self'",
     "permissions": [
         "contextMenus",
+        "cookies",
         "https://smile.amazon.ca/",
         "https://www.amazon.ca/",
         "https://smile.amazon.com/",

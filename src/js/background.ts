@@ -66,6 +66,11 @@ function registerConnectionListener() {
                                 port.postMessage(msg)
                             );
                             break;
+                        case 'force_logout':
+                            Object.values(content_ports).forEach( port =>
+                                port.postMessage(msg)
+                            );
+                            break;
                         case 'abort':
                             Object.values(content_ports).forEach( port =>
                                 port.postMessage(msg)
@@ -129,6 +134,18 @@ function registerMessageListener() {
                 : 'from the extension'
         );
         switch(request.action) {
+            case 'remove_cookie':
+                chrome.cookies.remove(
+                    {
+                        url: request.cookie_url,
+                        name: request.cookie_name
+                    },
+                    () => console.log(
+                        'removed cookie ' + request.cookie_url + ' ' +
+                        request.cookie_name
+                    )
+                )
+                break;
             case 'open_tab':
                 chrome.tabs.create( { url: request.url } );
                 break;

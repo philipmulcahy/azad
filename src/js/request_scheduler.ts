@@ -4,6 +4,7 @@
 
 import * as binary_heap from './binary_heap';
 import * as cachestuff from './cachestuff';
+import * as signin from './signin';
 import * as stats from './statistics';
 
 export interface IResponse<T> {
@@ -223,7 +224,9 @@ class RequestScheduler {
         req.onerror = (): void =>  {
             this.running_count -= 1;
             this.error_count += 1;
-            console.log( 'Unknown error fetching ' + url );
+            if (!signin.checkTooManyRedirects(url, req) ) {
+                console.log( 'Unknown error fetching ' + url );
+            }
             this._update_statistics();
             this._checkDone();
         };
@@ -246,20 +249,8 @@ class RequestScheduler {
                 this._update_statistics();
                 console.log('Got sign-in redirect from: ' + url);
                 if ( !this.signin_warned ) {
-                    window.alert(
-                        'Amazon Order History Reporter Chrome Extension\n\n' +
-                        'It looks like you might have been logged out of Amazon.\n' +
-                        'Sometimes this can be "partial" - some types of order info stay logged in and some do not.\n' +
-                        'I will now attempt to open a new tab with a login prompt. Please use it to login,\n' +
-                        'and then retry your chosen orange button.'
-                    );
+                    signin.alertPartiallyLoggedOutAndOpenLoginTab(url);
                     this.signin_warned = true;
-                    chrome.runtime.sendMessage(
-                        {
-                            action: 'open_tab',
-                            url: url
-                        }
-                    );
                 }
                 this.running_count -= 1;
                 this._update_statistics();
