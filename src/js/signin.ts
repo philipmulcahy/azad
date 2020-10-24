@@ -66,9 +66,12 @@ export function alertPartiallyLoggedOutAndOpenLoginTab(url: string): void {
 
 // check if request has ended in HTTP310 and return True if it has.
 export function checkTooManyRedirects(url: string, req: XMLHttpRequest): boolean {
-    if (req.status == 310) {
+    if ([310, 0].includes(req.status)) {
         const msg = 'HTTP310: too many redirects when fetching ' + url + ' ' +
-                    'which has been redirected to ' + req.responseURL + '\n' +
+                    'which has been redirected ' +
+                    req.responseURL ?
+                        'to ' + req.responseURL :
+                        '' + '\n' +
                     'You might want to consider using the ' +
                     '"force full log out" button and logging yourself back ' +
                     'into Amazon.';
@@ -81,6 +84,16 @@ export function checkTooManyRedirects(url: string, req: XMLHttpRequest): boolean
 }
 
 export function forceLogOut(site_url: string) {
+    // Dear code reader,
+    // This function is a bit of a "try everything"
+    // strategy for getting the user logged out enough that
+    // any broken state will prevent problems such as infinite redirects
+    // and other Amazon site behaviour that blocks the extension from working.
+    // In any particular situation, some of the things we do here may be
+    // overkill, but each of the strategies have helped in certain situations.
+
+    // Delete some cookies (this is delegated to the background script, because
+    // we're not allowed to do it in a content script.
     const cookies: string[] = document.cookie.split('; ');
     cookies.forEach( (cookie: string) => {
         const name: string = cookie.split('=')[0];
@@ -92,8 +105,28 @@ export function forceLogOut(site_url: string) {
             }
         );
     });
-    window.alert(
-        'Logged out from Amazon queued as requested. ' +
-        'Please log back in and have another try: Good Luck!'
+
+    // Amazon stores some non-cookie state that appears to be used to
+    // regenerate some cookies.
+    localStorage.clear();
+
+    const logout_url = site_url + '/gp/flex/sign-out.html';
+
+    // Call the logout url directly.
+    fetch(logout_url).then(
+        () => console.log('fetched logout url'),
+        (err) => console.warn('fetch logout url failed: ' + err)
     );
+
+    // Call the logout (redirected) page on this tab.
+    const logout_with_redirect_url = logout_url + 
+        '?path=' + window.location.href +
+        '&signIn=1&useRedirectOnSuccess=1' +
+        '&action=sign-out&ref_=nav_AccountFlyout_signout';
+    window.location.href = logout_with_redirect_url;
+
+    const msg = 'Logged out from Amazon queued as requested. ' +
+                'Please log back in and have another try: Good Luck!';
+    console.log(msg);
+    window.alert(msg);
 }

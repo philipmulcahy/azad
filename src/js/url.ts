@@ -1,5 +1,7 @@
 /* Copyright(c) 2020 Philip Mulcahy. */
 
+'use strict';
+
 export function getSite(): string {
     if ( typeof( window ) === 'undefined' ) {
         return 'www.azadexample.com'

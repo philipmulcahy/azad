@@ -4,6 +4,7 @@
 
 import * as azad_order from './order';
 import * as azad_table from './table';
+import * as notice from './notice';
 import * as request_scheduler from './request_scheduler';
 import * as signin from './signin';
 import * as stats from './statistics';
@@ -15,18 +16,7 @@ let background_port: chrome.runtime.Port | null = null;
 let years: number[] = [];
 let stats_timeout: NodeJS.Timeout | null = null;
 
-function getSite(): string {
-    const matches: RegExpMatchArray|null = window.location
-                                                 .href
-                                                 .match( /\/\/([^/]*)/ );
-    if (!matches) {
-        console.error('cannot extract site from ' + window.location.href);
-        return '';
-    }
-    return matches[1];
-}
-
-const SITE: string = getSite();
+const SITE: string = urls.getSite();
 
 function getScheduler(): request_scheduler.IRequestScheduler {
     if (!scheduler) {
@@ -169,14 +159,15 @@ function registerContentScript() {
                         break;
                     case 'clear_cache':
                         getScheduler().clearCache();
-                        window.alert(
+                        notice.showNotificationBar(
                             'Amazon Order History Reporter Chrome' +
                             ' Extension\n\n' +
-                            'Cache cleared'
+                            'Cache cleared',
+                            document
                         );
                         break;
                     case 'force_logout':
-                        signin.forceLogOut(urls.getSite());
+                        signin.forceLogOut('https://' + SITE);
                         break;
                     case 'abort':
                         resetScheduler();

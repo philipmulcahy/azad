@@ -32,3 +32,17 @@
 #azad_order_table {
     background-color: White;
 }
+
+#azad_notification_container {
+    z-index: 200;
+    position: absolute;
+    background-color: White;
+}
+
+.azad_notification_bar {
+    border: solid Orange;
+    border-width: 2px;
+    background-color: White;
+    opacity: 1;
+    transition: opacity 500ms;
+}
