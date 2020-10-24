@@ -3,6 +3,7 @@
 'use strict';
 
 import * as date from './date';
+import * as notice from './notice';
 import * as extraction from './extraction';
 import * as signin from './signin';
 import * as sprintf from 'sprintf-js';
@@ -718,7 +719,10 @@ class OrderImpl {
                 .then( text => { diagnostics['invoice_html'] = text; } )
         ]).then(
             () => diagnostics,
-            error_msg => {window.alert(error_msg); return diagnostics;}
+            error_msg => {
+                notice.showNotificationBar(error_msg, document);
+                return diagnostics;
+            }
         );
     }
 }
@@ -1016,11 +1020,13 @@ function fetchYear(
     let templates = templates_by_site[urls.getSite()];
     if ( !templates ) {
         templates = templates_by_site['other'];
-        alert('Amazon Order History Reporter Chrome Extension\n\n' +
-              'Your site is not fully supported.\n' +
-              'For better support, click on the popup where it says\n' +
-              '"CLICK HERE if you get incorrect results!",\n' +
-              'and provide the diagnostic information');
+        notice.showNotificationBar(
+            'Your site is not fully supported.\n' +
+            'For better support, click on the popup where it says\n' +
+            '"CLICK HERE if you get incorrect results!",\n' +
+            'and provide the diagnostic information',
+            document
+        );
     }
 
     const promises_to_promises: Array<Promise<any>> = templates.map(
