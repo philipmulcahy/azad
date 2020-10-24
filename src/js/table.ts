@@ -5,6 +5,7 @@ import 'datatables';
 import * as azad_order from './order';
 import * as csv from './csv';
 import * as diagnostic_download from './diagnostic_download';
+import * as notice from './notice';
 import * as progress_bar from './progress_bar';
 import * as settings from './settings';
 import * as sprintf from 'sprintf-js';
@@ -524,12 +525,25 @@ export function dumpOrderDiagnostics(order_id: string) {
     const order = order_map[order_id];
     if (order) {
         const utc_today = new Date().toISOString().substr(0,10);
-        order.assembleDiagnostics().then(
-            diagnostics => diagnostic_download.save_json_to_file(
-                diagnostics,
-                order_id + '_' + utc_today + '.json'
-            )
-        );
+        const file_name = order_id + '_' + utc_today + '.json';
+        order.assembleDiagnostics()
+            .then(
+                diagnostics => diagnostic_download.save_json_to_file(
+                    diagnostics,
+                    file_name
+                )
+            ).then(
+                () => notice.showNotificationBar(
+                    'Debug file ' + file_name + ' saved.',
+                    document
+                ),
+                err => {
+                    const msg = 'Failed to create debug file: ' + file_name +
+                                ' ' + err;
+                    console.warn(msg);
+                    notice.showNotificationBar(msg, document);
+                }
+            );
     }
 }
 
