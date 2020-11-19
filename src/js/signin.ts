@@ -6,19 +6,6 @@ const MIN_ALERT_REPEAT_INTERVAL_S = 30;
 
 let alerts_enabled: boolean = true;
 
-function rateLimitedAlert(msg: string):void {
-    if (alerts_enabled) {
-        alerts_enabled = false;
-        setTimeout(
-            () => {
-                alerts_enabled = true;
-            },
-            MIN_ALERT_REPEAT_INTERVAL_S * 1000
-        );
-        notice.showNotificationBar(msg, document);
-    }
-}
-
 function checkSigninRedirect(
     response: Response,
     original_url: string
@@ -29,7 +16,7 @@ function checkSigninRedirect(
                     ' \nThis might be because you are not fully' +
                     ' logged in to Amazon.';
         console.warn(msg);
-        rateLimitedAlert(msg);
+        notice.showNotificationBar(msg, document);
         throw msg;
     }
 }
@@ -43,6 +30,7 @@ export function checkedFetch(url: string): Promise<Response> {
         err => {
             const msg = 'Got error while fetching debug data for: ' + url + ' ' + err;
             console.warn(msg);
+            notice.showNotificationBar(msg, document);
             throw err;
         }
     );
@@ -82,7 +70,7 @@ export function checkTooManyRedirects(url: string, req: XMLHttpRequest): boolean
                 '"force full log out" button and logging yourself back ' +
                 'into Amazon.';
         console.warn(msg);
-        rateLimitedAlert(msg);
+        notice.showNotificationBar(msg, document);
         return true;
     } else {
         return false;
