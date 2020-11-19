@@ -8,7 +8,11 @@ export interface IJsonObject {
     [index: string]: any
 }
 
-export function toJSON(node: any, include_attribs?: Set<string>): IJsonObject {
+export function toJSON(
+    node: any,
+    include_attribs?: Set<string>,
+    exclude_elem_types?: Set<string>
+): IJsonObject|null {
   // @ts-ignore: this has weird/missing type.
   node = node || this;
 
@@ -17,6 +21,9 @@ export function toJSON(node: any, include_attribs?: Set<string>): IJsonObject {
   };
   if (node.tagName) {
     obj.tagName = node.tagName.toLowerCase();
+    if (exclude_elem_types && exclude_elem_types.has(obj.tagName)) {
+        return null;
+    }
   } else
   if (node.nodeName) {
     obj.nodeName = node.nodeName;
@@ -39,11 +46,9 @@ export function toJSON(node: any, include_attribs?: Set<string>): IJsonObject {
   }
   const childNodes: NodeListOf<ChildNode> = node.childNodes;
   if (childNodes) {
-    const length = childNodes.length;
-    const arr = obj.childNodes = new Array(length);
-    for (i = 0; i < length; i++) {
-      arr[i] = toJSON(childNodes[i], include_attribs);
-    }
+    obj.childNodes = Array.from(childNodes)
+                          .map( n => toJSON(n, include_attribs) )
+                          .filter( n => n ) 
   }
   return obj;
 }
