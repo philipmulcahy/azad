@@ -2,7 +2,7 @@
 ## amazon order history reporter chrome extension
 
 ---
----
+
 # HELP!
 
 ## Common problems, with some fixes
@@ -80,31 +80,37 @@ If you have log files, debug info, or screenshts to send but don't want them to 
 
 #### How to save a log file
 
-* On the screen showing the report, press Ctrl+Shift+I.
-* The log will appear at the bottom of the screen. RIGHT-click and select "Save as..."
+* On the screen showing the report, press Ctrl+Shift+I (Cmd+Shift+I on MacOs) to open Chrome Developer Tools
+* The Console log might appear at the bottom of the screen, but if it doesn't press "Console" (near to top of the tools pane)
+* RIGHT-click on the log pane and select "Save as..."
 * Save the file as desired.
 
 
-#### How to save a debug file:
+#### How to save an order debug json file:
 
-* You can only do this when you see the results showing.
-* RIGHT-click on the order ID (in the order id column) for the row with the issue.
+* You can only do this when you see the results table.
+* RIGHT-click on the order ID link (in the order id column) for the row with the issue.
 * Select "save order debug info".
-* The debug info will automatically save to your downloads folder.
----
+* The debug info should automatically save to your downloads folder.
+
 ---
 
 ### official installation page
 
 https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi
 
-### supported development package(s)
+### required development package(s)
 Node.js®, available at https://nodejs.org
 
 ### supported development platforms
 MacOS, Windows
 
-#### MacOS
+#### MacO
+* I use homebrew to install node.js and git.
+* clone the project source code or fork it: https://github.com/philipmulcahy/azad
+* there are a bunch of convenience commands in the npm project file such as:
+  * npm run build
+  * npm run lint
 
 #### Windows install
 * Install Node.js® from https://nodejs.org. Enable the option to install Chocolatey, Python 2, and Visual Studio Build Tools.
@@ -145,6 +151,7 @@ npm run winpackage
 * Navigate to the build folder.
 
 ### installing "secret" unit test data
+(it's secret because it contains order details of contributors to the project)
 pushd src/tests
 git clone git@github.com:philipmulcahy/azad_test_data.git
 
