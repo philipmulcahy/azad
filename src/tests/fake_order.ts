@@ -110,18 +110,10 @@ export function expectedFromTestData(
     order_id: string,
     collection_date: string,
     site: string
-) {
+): Record<string, any> {
     const path = sitePath(site) + '/expected/' + order_id + '_' + collection_date + '.json';
-    const json_promise: Promise<string> = new Promise( (resolve, reject) => {
-        fs.readFile(path, 'utf8', (err: string, json: string) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(json)
-            }
-        })
-    });
-    return json_promise.then( json => JSON.parse(json) );
+    const json: string = fs.readFileSync(path, 'utf8');
+    return JSON.parse(json);
 }
 
 export class ITestTarget {

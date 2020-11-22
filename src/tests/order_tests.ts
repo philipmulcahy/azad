@@ -1,7 +1,8 @@
 /* Copyright(c) 2019 Philip Mulcahy. */
 
 import * as order_data from './fake_order'; 
-import * as util from './../js/util';
+import * as azad_order from '../js/order';
+import * as util from '../js/util';
 
 const assert = require('assert');
 
@@ -25,22 +26,21 @@ function testOneTarget(
         defects: [],
     };
     console.log('testing:', target.site, target.order_id);
-    const order_promise = order_data.orderFromTestData(
+    const order_promise: Promise<azad_order.IOrder> = order_data.orderFromTestData(
         target.order_id,
         target.scrape_date,
         target.site
     );
-    const expectations_promise = order_data.expectedFromTestData(
+    const expected = order_data.expectedFromTestData(
         target.order_id,
         target.scrape_date,
         target.site
     );
-    return Promise.all([order_promise, expectations_promise]).then( params => {
-        const [order, expected] = params;
+    return order_promise.then( order => {
         const keys = Object.keys(expected);
         const key_validation_promises = keys.map( key => {
             const expected_value = util.defaulted(expected[key], '');
-            const actual_value_promise = order[key]();
+            const actual_value_promise = (order as Record<string, any>)[key]();
             return actual_value_promise.then( (actual_value: string) => {
                 console.log('key:', key, expected_value, actual_value);
                 const actual_string = JSON.stringify(actual_value);
