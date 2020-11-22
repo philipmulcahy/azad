@@ -40,6 +40,10 @@ function getCachedAttributeNames() {
     return new Set<string>(['class', 'href', 'id', 'style']);
 }
 
+function getCacheExcludedElementTypes() {
+    return new Set<string>(['img']);
+}
+
 interface IOrderDetails {
     date: string;
     total: string;
