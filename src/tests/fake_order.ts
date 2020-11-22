@@ -51,12 +51,24 @@ class FakeRequestScheduler {
     isLive(): boolean { return null; }
 }
 
+function getSites(): string[] {
+    const sites: string[] = fs.readdirSync(DATA_ROOT_PATH)
+                              .filter( (site: string) => site[0] != '.' )
+                              // ignore hidden files/folders
+    console.log('expected sites:' , sites);
+    return sites;
+}
+
+function sitePath(site: string): string {
+    return  DATA_ROOT_PATH + '/' + site;
+}
+
 export function orderFromTestData(
     order_id: string,
     collection_date: string,
     site: string
 ): Promise<azad_order.IOrder> {
-    const path = DATA_ROOT_PATH + '/' + site + '/input/' + order_id + '_' +
+    const path = sitePath(site) + '/input/' + order_id + '_' +
                  collection_date + '.json';
     const json_promise: Promise<string> = new Promise( (resolve, reject) => {
         fs.readFile(path, 'utf8', (err: string, json: string) => {
@@ -99,7 +111,7 @@ export function expectedFromTestData(
     collection_date: string,
     site: string
 ) {
-    const path = DATA_ROOT_PATH + '/' + site + '/expected/' + order_id + '_' + collection_date + '.json';
+    const path = sitePath(site) + '/expected/' + order_id + '_' + collection_date + '.json';
     const json_promise: Promise<string> = new Promise( (resolve, reject) => {
         fs.readFile(path, 'utf8', (err: string, json: string) => {
             if (err) {
@@ -121,65 +133,60 @@ export class ITestTarget {
 }
 
 export function discoverTestData(): Promise<ITestTarget[]> {
-    const sites_promise: Promise<string[]> = fs.promises.readdir(DATA_ROOT_PATH);
-    sites_promise.then(sites => console.log('expected sites:' , sites));
-    return sites_promise.then( sites => {
+    // We don't care what's inside these promises:
+    // we just want to know when they're  all resolved.
+    const expected_promises: Promise<any>[] = [];
 
-        // We don't care what's inside these promises:
-        // we just want to know when they're  all resolved.
-        const expected_promises: Promise<any>[] = [];
-
-        // This is the data we want: site name to list of filenames.
-        // The filenames each encode an order id and a scrape datetime.
-        const site_to_expecteds: Record<string,string[]> = {}
-        sites
-            .filter( site => site[0] != '.' )  // ignore hidden files/folders
-            .forEach( (site: string) => {
-                const expected_promise: Promise<string[]>
-                    = fs.promises.readdir(
-                        DATA_ROOT_PATH + '/' + site + '/expected'
-                    );
-                expected_promises.push(expected_promise);
-                expected_promise.then( expecteds =>
-                    expecteds.forEach( expected => {
-                        console.log('expected order:', site, expected);
-                    })
+    // This is the data we want: site name to list of filenames.
+    // The filenames each encode an order id and a scrape datetime.
+    const site_to_expecteds: Record<string,string[]> = {}
+    getSites()
+        .filter( site => site[0] != '.' )  // ignore hidden files/folders
+        .forEach( (site: string) => {
+            const expected_promise: Promise<string[]>
+                = fs.promises.readdir(
+                    sitePath(site) + '/expected'
                 );
-                expected_promises.push(expected_promise);
-                expected_promise.then( (expecteds: string[]) => {
-                    site_to_expecteds[site] = expecteds.filter(
-                        exp => exp.match(/^[^.].*\.json$/)
-                    );
-                });
-            } );
-        return Promise.all(  // Wait for all of the promises to resolve.
-            expected_promises
-        ).then( () => {
-            const test_targets: ITestTarget[] = [];
-            Object.keys(site_to_expecteds).sort().forEach( site => {
-                const expecteds = site_to_expecteds[site];
-                expecteds
-                    /* .filter( e => e.match(/9651082/) ) */
-                    .sort()
-                    .filter( e => e.match(/^[^.].*\.json$/) )
-                    .forEach( expected => {
-                        const target: ITestTarget = {
-                            site: site,
-                            order_id: expected.match(
-                                /^([A-Z0-9-]*)_.*\.json/
-                            )[1],
-                            scrape_date: expected.match(
-                                /^.*_(\d\d\d\d-\d\d-\d\d).json$/
-                            )[1],
-                            input_path: DATA_ROOT_PATH + '/' + site +
-                                        '/input/' + expected,
-                            expected_path: DATA_ROOT_PATH + '/' + site +
-                                           '/expected/' + expected,
-                        };
-                        test_targets.push(target);
-                    });
-            } );
-            return test_targets;
+            expected_promises.push(expected_promise);
+            expected_promise.then( expecteds =>
+                expecteds.forEach( expected => {
+                    console.log('expected order:', site, expected);
+                })
+            );
+            expected_promises.push(expected_promise);
+            expected_promise.then( (expecteds: string[]) => {
+                site_to_expecteds[site] = expecteds.filter(
+                    exp => exp.match(/^[^.].*\.json$/)
+                );
+            });
         } );
+    return Promise.all(  // Wait for all of the promises to resolve.
+        expected_promises
+    ).then( () => {
+        const test_targets: ITestTarget[] = [];
+        Object.keys(site_to_expecteds).sort().forEach( site => {
+            const expecteds = site_to_expecteds[site];
+            expecteds
+                /* .filter( e => e.match(/9651082/) ) */
+                .sort()
+                .filter( e => e.match(/^[^.].*\.json$/) )
+                .forEach( expected => {
+                    const target: ITestTarget = {
+                        site: site,
+                        order_id: expected.match(
+                            /^([A-Z0-9-]*)_.*\.json/
+                        )[1],
+                        scrape_date: expected.match(
+                            /^.*_(\d\d\d\d-\d\d-\d\d).json$/
+                        )[1],
+                        input_path: sitePath(site) +
+                                    '/input/' + expected,
+                        expected_path: sitePath(site) +
+                                       '/expected/' + expected,
+                    };
+                    test_targets.push(target);
+                });
+        } );
+        return test_targets;
     } );
 }
