@@ -2,7 +2,7 @@
 
 'use strict';
 
-const fs = require('fs');
+import * as fs from 'fs';
 import * as util from '../js/util';
 const jsdom = require('jsdom');
 const xpath = require('xpath');
@@ -51,10 +51,22 @@ class FakeRequestScheduler {
     isLive(): boolean { return null; }
 }
 
+function dirHasInputAndExpectedDirs(dir: fs.Dirent): boolean {
+    return fs.readdirSync(
+        sitePath(dir.name), {withFileTypes: true}
+    ).filter(
+        (de: fs.Dirent) => ['expected', 'input'].includes(de.name) && de.isDirectory()
+    ).length == 2;
+}
+
 function getSites(): string[] {
-    const sites: string[] = fs.readdirSync(DATA_ROOT_PATH)
-                              .filter( (site: string) => site[0] != '.' )
-                              // ignore hidden files/folders
+    const sites: string[] = fs
+        .readdirSync(DATA_ROOT_PATH, {withFileTypes: true})
+        .filter(
+            (de: fs.Dirent) => de.isDirectory &&  // directories only
+                               de.name[0] != '.' &&  // ignore hidden
+                               dirHasInputAndExpectedDirs(de))
+        .map((de: fs.Dirent) => de.name)
     console.log('expected sites:' , sites);
     return sites;
 }
