@@ -608,7 +608,7 @@ class OrderImpl {
                 ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
             ].filter( el => el.hasAttribute('href') )
              .map( el => el.getAttribute('href') )
-             .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
+             .map( href => href.match(/.*(?:orderID=|orderNumber%3D)([A-Z0-9-]*).*/) )
              .filter( match => match )[0][1];
         } catch (error) {
             console.warn(
@@ -1073,11 +1073,11 @@ export function getOrdersByYear(
             }
         )
     ).then(
-        (array2_of_order_promise: Promise<IOrder>[][]) => {
+        (a2_of_o_promise: Promise<IOrder>[][]) => {
             // Flatten the array of arrays of Promise<Order> into
             // an array of Promise<Order>.
             const order_promises: Promise<IOrder>[] = [];
-            array2_of_order_promise.forEach(
+            a2_of_o_promise.forEach(
                 (year_order_promises: Promise<IOrder>[]) => {
                     year_order_promises.forEach(
                         (order_promise: Promise<IOrder>) => {
