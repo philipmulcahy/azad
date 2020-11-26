@@ -9,10 +9,24 @@ const xpath = require('xpath');
 import * as azad_order from '../js/order';
 import * as request_scheduler from '../js/request_scheduler';
 
+////////////////////////////////////////////////////////////////////////////////
+// TEST TYPES:
+// -----------
+//
+// A) Build order from json dump file containing urls and html scraped from real
+//    Amazon accounts: 
+//    json dump file pattern ${SITE}/input/${ORDER_ID}_${DATETIME}.json
+//    json file containing expected order fields:
+//      ${SITE}/expected/${ORDER_ID}_${DATETIME}.json
+//
+// B) Build order from order_list folder
+//
+//
+////////////////////////////////////////////////////////////////////////////////
+
 const DATA_ROOT_PATH = './src/tests/azad_test_data/data';
 
 class FakeRequestScheduler {
-
     url_html_map: Record<string, string>;
 
     constructor(url_html_map: Record<string,string>) {
@@ -51,23 +65,31 @@ class FakeRequestScheduler {
     isLive(): boolean { return null; }
 }
 
-function dirHasInputAndExpectedDirs(dir: fs.Dirent): boolean {
+function dirHasDirs(dir: fs.Dirent, dirs: string[]): boolean {
     return fs.readdirSync(
         sitePath(dir.name), {withFileTypes: true}
     ).filter(
-        (de: fs.Dirent) => ['expected', 'input'].includes(de.name) && de.isDirectory()
-    ).length == 2;
+        (de: fs.Dirent) => dirs.includes(de.name) && de.isDirectory()
+    ).length == dirs.length;
 }
 
-function getSites(): string[] {
-    const sites: string[] = fs
-        .readdirSync(DATA_ROOT_PATH, {withFileTypes: true})
-        .filter(
-            (de: fs.Dirent) => de.isDirectory &&  // directories only
-                               de.name[0] != '.' &&  // ignore hidden
-                               dirHasInputAndExpectedDirs(de))
+function getSiteDirs(): fs.Dirent[] {
+    return fs.readdirSync(DATA_ROOT_PATH, {withFileTypes: true})
+             .filter((de: fs.Dirent) => de.isDirectory &&  // directories only
+                                        de.name[0] != '.')  // ignore hidden
+}
+
+function getASites(): string[] {
+    const sites: string[] = getSiteDirs()
+        .filter((de: fs.Dirent) => dirHasDirs(de, ['expected', 'input']))
         .map((de: fs.Dirent) => de.name)
-    console.log('expected sites:' , sites);
+    return sites;
+}
+
+function getBSites(): string[] {
+    const sites: string[] = getSiteDirs()
+        .filter((de: fs.Dirent) => dirHasDirs(de, ['order_list']))
+        .map((de: fs.Dirent) => de.name)
     return sites;
 }
 
@@ -84,7 +106,7 @@ export function orderFromTestData(
                  collection_date + '.json';
     const json: string = fs.readFileSync(path, 'utf8');
     const order_dump = JSON.parse(json);
-    const url_map: Record<string, string>  = {};
+    const url_map: Record<string, string> = {};
     url_map[order_dump.list_url] = order_dump.list_html;
     url_map[order_dump.detail_url] = order_dump.detail_html;
     url_map[order_dump.payments_url] = order_dump.invoice_html;
@@ -118,7 +140,38 @@ export function expectedFromTestData(
     return JSON.parse(json);
 }
 
-export class ITestTarget {
+export function orderFromTestDataB() {
+    const order_id = 'D01-9486382-0309461';
+    const site = 'amazon.de';
+    const path = '/Users/philip/dev/azad/src/tests/azad_test_data/data/amazon.de/order_list/Gu108_A.html';
+    const list_url = 'https://unknown_list_url.com';
+    const list_html: string = fs.readFileSync(path, 'utf8');
+    const url_map: Record<string, string> = {};
+    url_map[list_url] = list_html;
+    const scheduler = new FakeRequestScheduler( url_map );
+    const list_doc = new jsdom.JSDOM(list_html).window.document;
+    const order_elems = util.findMultipleNodeValues(
+        './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
+        list_doc.body
+    );
+    const list_elem: HTMLElement = <HTMLElement>(order_elems.filter(
+        (el: HTMLElement) => Array(...el.getElementsByTagName('a'))
+            .filter( el => el.hasAttribute('href') )
+            .map( el => el.getAttribute('href') )
+            // "https://www.amazon.de:443/gp/redirect.html/ref=ppx_yo_dt_b_amzn_o04?_encoding=UTF8&amp;location=https%3A%2F%2Fwww.audible.de%2Forder-detail%3ForderNumber%3DD01-6816308-9691801%26orderType%3DREGULAR&amp;source=standards&amp;token=3DE81B8D696294E017D9EAE857EBCE90E128789D"
+            // "/-/en/gp/your-account/order-details/ref=ppx_yo_dt_b_order_details_o03?ie=UTF8&amp;orderID=303-6405422-4189967"
+            .map( href => href.match(/.*(?:orderID=|orderNumber%3D)([A-Z0-9-]*).*/) )
+            .filter( match => match )[0][1] == order_id
+    )[0]);
+    return azad_order.create(
+        list_elem,
+        scheduler,
+        list_url
+    );
+}
+
+
+export interface ITestTarget {
     site: string;
     order_id: string;
     scrape_date: string;
@@ -130,7 +183,7 @@ export function discoverTestData(): ITestTarget[] {
     // This is the data we want: site name to list of filenames.
     // The filenames each encode an order id and a scrape datetime.
     const site_to_expecteds: Record<string,string[]> = {}
-    getSites()
+    getASites()
         .forEach( (site: string) => {
             const expecteds: string[] = fs.readdirSync(
                     sitePath(site) + '/expected');
