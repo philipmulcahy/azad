@@ -432,12 +432,16 @@ function reallyDisplayOrders(
                         let col_index = 0;
                         getCols().then( cols => cols.forEach( col_spec => {
                             if(col_spec.is_numeric) {
-                                col_spec.sum = floatVal(
-                                    api.column(col_index)
-                                       .data()
-                                       .map( (v: string | number) => floatVal(v) )
-                                       .reduce( (a: number, b: number) => a + b, 0 )
-                                );
+                                try {
+                                    col_spec.sum = floatVal(
+                                        api.column(col_index)
+                                           .data()
+                                           .map( (v: string | number) => floatVal(v) )
+                                           .reduce( (a: number, b: number) => a + b, 0 )
+                                    );
+                                } catch(ex) {
+                                    console.error(ex);
+                                }
                                 col_spec.pageSum = floatVal(
                                     api.column(col_index, { page: 'current' })
                                        .data()

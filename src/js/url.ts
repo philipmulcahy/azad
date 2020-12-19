@@ -63,3 +63,10 @@ export function getOrderPaymentUrl(orderId: string, site: string) {
             '/ref=oh_aui_ajax_pi?ie=UTF8&orderID=' + orderId;
 }
 
+export function normalizeUrl(url: string): string {
+    if (!url.startsWith('https://')) {
+        return getSite() + url;
+    }
+    return url;
+}
+

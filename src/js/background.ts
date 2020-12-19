@@ -37,10 +37,16 @@ function registerConnectionListener() {
                             advertiseYears();
                             break;
                         case 'statistics_update':
-                            if (control_port) {
-                                control_port!.postMessage(msg);
+                          if (control_port) {
+                            try {
+                              control_port!.postMessage(msg);
+                            } catch (ex) {
+                              console.debug(
+                                'could not post stats message to control port'
+                              );
                             }
-                            break;
+                          }
+                          break;
                         default:
                             console.warn('unknown action: ' + msg.action);
                             break;
@@ -147,6 +153,7 @@ function registerMessageListener() {
                 )
                 break;
             case 'open_tab':
+                console.log('opening: ' + request.url);
                 chrome.tabs.create( { url: request.url } );
                 break;
             default:
