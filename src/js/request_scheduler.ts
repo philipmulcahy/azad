@@ -6,6 +6,7 @@ import * as binary_heap from './binary_heap';
 import * as cachestuff from './cachestuff';
 import * as signin from './signin';
 import * as stats from './statistics';
+import * as url from './url';
 
 export interface IResponse<T> {
     result: T,
@@ -72,6 +73,7 @@ class RequestScheduler {
         priority: string,
         nocache: boolean
     ): Promise<IResponse<T>> {
+        query = url.normalizeUrl(query);
         return new Promise<any>(
             (resolve, reject) => {
                 try {
@@ -220,6 +222,7 @@ class RequestScheduler {
         nocache: boolean
     ) {
         const req = new XMLHttpRequest();
+        console.log('opening xhr on ' + url);
         req.open('GET', url, true);
         req.onerror = (): void =>  {
             this.running_count -= 1;
