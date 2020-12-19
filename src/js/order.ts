@@ -315,7 +315,7 @@ function extractDetailFromDoc(
 
     const refund = function (): string {
         let a = getField(
-            ['Refund'].map( //TODO other field names?
+            ['Refund', 'Totale rimborso'].map( //TODO other field names?
                 label => sprintf.sprintf(
                     '//div[contains(@id,"od-subtotals")]//' +
                     'span[contains(text(),"%s")]/' +
