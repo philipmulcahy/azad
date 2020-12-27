@@ -64,9 +64,12 @@ export function getOrderPaymentUrl(orderId: string, site: string) {
 }
 
 export function normalizeUrl(url: string): string {
+    const site = getSite();
     if (!url.startsWith('https://')) {
-        return getSite() + url;
+        if(!url.startsWith(site)) {
+            url = site + url;
+        }
+        url = 'https://' + url;
     }
     return url;
 }
-
