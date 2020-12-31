@@ -1,6 +1,7 @@
 /* Copyright(c) 2020 Philip Mulcahy. */
 
 import * as notice from './notice';
+import * as urls from './url';
 
 const MIN_ALERT_REPEAT_INTERVAL_S = 30; 
 
@@ -47,6 +48,7 @@ export function alertPartiallyLoggedOutAndOpenLoginTab(url: string): void {
         'and then retry your chosen orange button.',
         document
     );
+    url = urls.normalizeUrl(url);
     chrome.runtime.sendMessage(
         {
             action: 'open_tab',
