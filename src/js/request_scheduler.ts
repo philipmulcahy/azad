@@ -192,21 +192,20 @@ class RequestScheduler {
         this._update_statistics();
         setTimeout(
             () => {
+                this.running_count -= 1;
                 success_callback(cached_response, query);
-                this._recordSingleSuccess();
+                this._recordSingleCompletion();
             }
         );
     }
 
-    _recordSingleSuccess() {
+    _recordSingleCompletion() {
         // Defer checking if we're done, because success_callback
         // (triggered above) probably involves a promise chain, and might
         // enqueue more work that might be abandonned if we shut this
         // scheduler down prematurely.
         setTimeout(
             () => {
-                this.running_count -= 1;
-                this.completed_count += 1;
                 this._executeSomeIfPossible();
                 this._update_statistics();
                 this._checkDone();
@@ -230,57 +229,54 @@ class RequestScheduler {
             if (!signin.checkTooManyRedirects(url, req) ) {
                 console.log( 'Unknown error fetching ' + url );
             }
-            this._update_statistics();
-            this._checkDone();
+            this._recordSingleCompletion();
         };
         req.onload = (evt: any): void => {
+            this.running_count -= 1;
             if (!this.live) {
-                this.running_count -= 1;
+                this.error_count += 1;
                 this._update_statistics();
                 return;
             }
-            if ( req.status != 200 ) {
-                this.error_count += 1;
-                console.warn(
-                    'Got HTTP' + req.status + ' fetching ' + url);
-                this.running_count -= 1;
-                this._update_statistics();
-                return;
-            }
-            if ( req.responseURL.includes('/signin?') ) {
-                this.error_count += 1;
-                this._update_statistics();
-                console.log('Got sign-in redirect from: ' + url);
-                if ( !this.signin_warned ) {
-                    signin.alertPartiallyLoggedOutAndOpenLoginTab(url);
-                    this.signin_warned = true;
+            try {
+                if (
+                    req.responseURL.includes('/signin?') || req.status == 404
+                ) {
+                    this.error_count += 1;
+                    console.log(
+                        'Got sign-in redirect or 404 from: ' + url + req.status);
+                    if ( !this.signin_warned ) {
+                        signin.alertPartiallyLoggedOutAndOpenLoginTab(url);
+                        this.signin_warned = true;
+                    }
+                } else if ( req.status != 200 ) {
+                    this.error_count += 1;
+                    console.warn(
+                        'Got HTTP' + req.status + ' fetching ' + url);
+                } else {
+                    this.completed_count += 1;
+                    console.log(
+                        'Finished ' + url +
+                        ' with queue size ' + this.queue.size());
+                    const converted = event_converter(evt);
+                    if (!nocache) {
+                        this.cache.set(url, converted);
+                    }
+                    success_callback(converted, url);
                 }
-                this.running_count -= 1;
-                this._update_statistics();
-                return;
+            } catch (ex) {
+                console.error('req handling caught unexpected: ' + ex);
             }
-            console.log(
-              'Finished ' + url +
-                ' with queue size ' + this.queue.size());
-            const converted = event_converter(evt);
-            if (!nocache) {
-                this.cache.set(url, converted);
-            }
-            success_callback(converted, url);
-            this._recordSingleSuccess();
+            this._recordSingleCompletion();
         };
         req.timeout = 20000;  // 20 seconds
         req.ontimeout = (evt: any): void => {
-            if (!this.live) {
-                this.running_count -= 1;
-                this._update_statistics();
-                return;
-            }
-            console.log('Timed out while fetching: ' + url);
-            this.error_count += 1;
             this.running_count -= 1;
-            this._update_statistics();
-            this._checkDone();
+            this.error_count += 1;
+            if (this.live) {
+                this._recordSingleCompletion();
+                console.warn('Timed out while fetching: ' + url);
+            }
         }
         this.running_count += 1;
         this._update_statistics();
@@ -288,6 +284,10 @@ class RequestScheduler {
     }
 
     _executeSomeIfPossible() {
+        console.log(
+            '_executeSomeIfPossible: size: ' + this.queue.size() +
+            ', running: ' + this.running_count
+        );
         while (this.running_count < this.CONCURRENCY &&
                this.queue.size() > 0
         ) {
@@ -304,6 +304,11 @@ class RequestScheduler {
     }
 
     _checkDone() {
+        console.log(
+            '_checkDone: size: ' + this.queue.size() +
+            ', running: ' + this.running_count +
+            ', completed: ' + this.completed_count
+        );
         if (
             this.queue.size() == 0 &&
             this.running_count == 0 &&
