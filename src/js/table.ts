@@ -431,23 +431,21 @@ function reallyDisplayOrders(
                         };
                         let col_index = 0;
                         getCols().then( cols => cols.forEach( col_spec => {
-                            if(col_spec.is_numeric) {
-                                try {
-                                    col_spec.sum = floatVal(
-                                        api.column(col_index)
-                                           .data()
-                                           .map( (v: string | number) => floatVal(v) )
-                                           .reduce( (a: number, b: number) => a + b, 0 )
-                                    );
-                                } catch(ex) {
-                                    console.error(ex);
+                            const sum_col = function(col: any) {
+                                const data = col.data();
+                                if (data) {
+                                    const sum = data
+                                        .map( (v: string | number) => floatVal(v) )
+                                        .reduce( (a: number, b: number) => a + b, 0 );
+                                    return floatVal(sum);
+                                } else {
+                                    return 0;
                                 }
-                                col_spec.pageSum = floatVal(
-                                    api.column(col_index, { page: 'current' })
-                                       .data()
-                                       .map( (v: string | number) => floatVal(v) )
-                                       .reduce( (a: number, b: number) => a + b, 0 )
-                                );
+                            }
+                            if(col_spec.is_numeric) {
+                                col_spec.sum = sum_col(api.column(col_index));
+                                col_spec.pageSum = sum_col(
+                                    api.column(col_index, { page: 'current' }));
                                 $(api.column(col_index).footer()).html(
                                     sprintf.sprintf('page=%s; all=%s',
                                         col_spec.pageSum.toFixed(2),
@@ -554,11 +552,14 @@ export function dumpOrderDiagnostics(order_id: string) {
 export function updateProgressBar(): void {
     if (progress_indicator) {
         const completed = stats.get('completed');
+        const cache_hits = stats.get('cache_hits');
         const queued = stats.get('queued');
         const running = stats.get('running');
         if (completed!=null && queued!=null && running!=null) {
-           const ratio: number = completed / (completed + queued + running);
-           progress_indicator.update_progress(ratio);
+           const ratio: number = (completed + cache_hits) / (completed + queued + running + cache_hits);
+           if (ratio) {
+               progress_indicator.update_progress(ratio);
+           }
         }
     }
 }
