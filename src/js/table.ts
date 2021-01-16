@@ -104,8 +104,14 @@ const COLS: Record<string, any>[] = [
         is_numeric: true
     },
     {
-        field_name: 'postage',
+        field_name: 'shipping',
         value_promise_func: 'postage',
+        is_numeric: true,
+        help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.'
+    },
+    {
+        field_name: 'shipping_refund',
+        value_promise_func: 'postage_refund',
         is_numeric: true,
         help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.'
     },
@@ -275,11 +281,11 @@ function appendCell(
         td.setAttribute('class', td.getAttribute('class') + 'azad_elem_has_help ');
         td.setAttribute('title', col_spec.help);
     }
-    order.id().then( id => {
-        if (id == '203-4990948-9075513' && col_spec.field_name == 'postage') {
-            value_written_promise.then(() => console.log('written promise resolved'));
-        }
-    })
+    // order.id().then( id => {
+    //     if (id == '203-4990948-9075513' && col_spec.field_name == 'postage') {
+    //         value_written_promise.then(() => console.log('written promise resolved'));
+    //     }
+    // })
     return value_written_promise;
 }
 
