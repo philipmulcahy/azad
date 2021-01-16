@@ -48,6 +48,7 @@ interface IOrderDetails {
     date: string;
     total: string;
     postage: string;
+    postage_refund: string;
     gift: string;
     us_tax: string;
     vat: string;
@@ -183,6 +184,27 @@ function extractDetailFromDoc(
             extraction.by_regex(
                 [
                     ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
+                        label => sprintf.sprintf(
+                            '//div[contains(@id,"od-subtotals")]//' +
+                            'span[contains(text(),"%s")]/' +
+                            'parent::div/following-sibling::div/span',
+                            label
+                        )
+                    ).join('|') //20191025
+                ],
+                null,
+                null,
+                doc.documentElement
+            ),
+            ''
+        );
+    };
+
+    const postage_refund = function(): string {
+        return util.defaulted(
+            extraction.by_regex(
+                [
+                    ['FREE Shipping'].map(
                         label => sprintf.sprintf(
                             '//div[contains(@id,"od-subtotals")]//' +
                             'span[contains(text(),"%s")]/' +
@@ -344,6 +366,7 @@ function extractDetailFromDoc(
         date: order_date(),
         total: total(),
         postage: postage(),
+        postage_refund: postage_refund(),
         gift: gift(),
         us_tax: us_tax(),
         vat: vat(),
@@ -407,6 +430,7 @@ export interface IOrder {
     items(): Promise<Items>;
     payments(): Promise<any>;
     postage(): Promise<string>;
+    postage_refund(): Promise<string>;
     gift(): Promise<string>;
     us_tax(): Promise<string>;
     vat(): Promise<string>;
@@ -471,6 +495,11 @@ class Order {
 
     postage(): Promise<string> {
         return this._detail_dependent_promise( detail => detail.postage );
+    }
+    postage_refund(): Promise<string> {
+        return this._detail_dependent_promise(
+            detail => detail.postage_refund
+        );
     }
     gift(): Promise<string> {
         return this._detail_dependent_promise( detail => detail.gift );
