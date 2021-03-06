@@ -469,7 +469,7 @@ class Order {
         return Promise.resolve(util.defaulted(this.impl.date, ''));
     }
     total(): Promise<string> {
-        return this._detail_dependent_promise( detail => detail.total );
+        return this._detail_dependent_promise(detail => detail.total);
     }
     who(): Promise<string> {
         return Promise.resolve(util.defaulted(this.impl.who, ''));
