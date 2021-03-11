@@ -558,7 +558,6 @@ class OrderImpl {
     total: string|null;
     who: string|null;
     detail_promise: Promise<IOrderDetailsAndItems>|null;
-    items: item.Items|null;
     payments_promise: Promise<string[]>|null;
     scheduler: request_scheduler.IRequestScheduler;
 
@@ -577,7 +576,6 @@ class OrderImpl {
         this.total = null;
         this.who = null;
         this.detail_promise = null;
-        this.items = null;
         this.payments_promise = null;
         this.scheduler = scheduler;
         this._extractOrder(ordersPageElem);
@@ -660,7 +658,6 @@ class OrderImpl {
             );
             this.payments_url = urls.getOrderPaymentUrl(this.id, this.site);
         }
-        this.items = item.getItems(elem);
         this.detail_promise = extractDetailPromise(this, this.scheduler);
         this.payments_promise = new Promise<string[]>(
             (
@@ -711,7 +708,6 @@ class OrderImpl {
             'date',
             'total',
             'who',
-            'items'
         ];
         field_names.forEach(
             ((field_name: keyof OrderImpl) => {
@@ -720,7 +716,14 @@ class OrderImpl {
             })
         );
 
+        const order = new Order(this);
+        const items_promise = order.items();
+        items_promise.then( items => {
+            diagnostics['items'] = items;
+        });
+
         return Promise.all([
+            items_promise,
             signin.checkedFetch( util.defaulted(this.list_url, '') )
                 .then( response => response.text())
                 .then( text => { diagnostics['list_html'] = text; } ),
