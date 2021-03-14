@@ -403,7 +403,10 @@ const extractDetailPromise = (
                 const doc = util.parseStringToDOM( evt.target.responseText );
                 return {
                     details: extractDetailFromDoc(order, doc),
-                    items: item.extractItems(doc.documentElement),
+                    items: item.extractItems(
+                        util.defaulted(order.id, ''),
+                        doc.documentElement
+                    ),
                 };
             };
             try {
@@ -486,7 +489,11 @@ class Order {
         if (this.impl.detail_promise) {
             return this.impl.detail_promise.then( details => {
                 details.items.forEach(item => {
-                    items[item.description()] = item.url();
+                    try {
+                        items[item.description] = item.url;
+                    } catch (ex) {
+                        console.error(ex);
+                    }
                 });
                 return items;
             });

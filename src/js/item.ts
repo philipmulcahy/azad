@@ -3,17 +3,21 @@
 import * as util from './util';
 
 export interface IItem {
-    description(): string;
-    url(): string;
-    price():string;
+    description: string;
+    url: string;
+    price: string;
+    quantity: number;
+    order_id: string;
 }
 
 export type Items = Record<string, string>;
 
-export function extractItems(orderElem: HTMLElement): IItem[] {
+export function extractItems(
+    order_id: string, order_elem: HTMLElement
+): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
         '//div[./div[./div[@class="a-row" and ./a[@class="a-link-normal"]] and .//span[contains(@class, "price") ]/nobr]]',
-        orderElem
+        order_elem
     );
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
         const link = <HTMLElement>util.findSingleNodeValue(
@@ -33,9 +37,10 @@ export function extractItems(orderElem: HTMLElement): IItem[] {
             console.warn('could not find price for: ' + description);
         }
         const item = {
-            description: () => description,
-            url: () => url,
-            price: () => price,
+            description: description,
+            url: url,
+            price: price,
+            order_id: order_id
         } 
         return item
     });

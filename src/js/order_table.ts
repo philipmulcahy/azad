@@ -1,4 +1,4 @@
-/* Copyright(c) 2016-2020 Philip Mulcahy. */
+/* Copyright(c) 2016-2021 Philip Mulcahy. */
 
 const $ = require('jquery');
 import 'datatables';
@@ -386,11 +386,11 @@ function addOrderTable(
     });
 }
 
-function reallyDisplayOrders(
+function reallyDisplay(
     orders: azad_order.IOrder[], beautiful: boolean,
     wait_for_all_values_before_resolving: boolean
 ): Promise<HTMLTableElement> {
-    console.log('amazon_order_history_table.reallyDisplayOrders starting');
+    console.log('amazon_order_history_table.reallyDisplay starting');
     for (let entry in order_map) {
         delete order_map[entry];
     }
@@ -405,6 +405,14 @@ function reallyDisplayOrders(
                 if (datatable) {
                     datatable.destroy();
                 }
+                addProgressBar();
+                util.removeButton('data table');
+                util.addButton(
+                    'plain table',
+                    function() { display(order_promises, false, false); },
+                    'azad_table_button'
+                );
+                addCsvButton(order_promises)
                 datatable = (<any>$('#azad_order_table')).DataTable({
                     'bPaginate': true,
                     'lengthMenu': [ [10, 25, 50, 100, -1],
@@ -462,28 +470,20 @@ function reallyDisplayOrders(
                         }));
                     }
                 });
-                addProgressBar();
-                util.removeButton('data table');
-                util.addButton(
-                    'plain table',
-                    function() { displayOrders(order_promises, false, false); },
-                    'azad_table_button'
-                );
-                addCsvButton(order_promises)
             });
         } else {
             addProgressBar();
             util.removeButton('plain table');
             util.addButton(
                 'data table',
-                function() { displayOrders(order_promises, true, false); },
+                function() { display(order_promises, true, false); },
                 'azad_table_button'
             );
             addCsvButton(order_promises)
         }
     });
 
-    console.log('azad.reallyDisplayOrders returning');
+    console.log('azad.reallyDisplay returning');
     return table_promise;
 }
 
@@ -496,7 +496,7 @@ function addCsvButton(orders: Promise<azad_order.IOrder>[]): void {
     util.addButton(	
        title,
        function() {	
-           displayOrders(orders, false, true).then(
+           display(orders, false, true).then(
                table => settings.getBoolean('show_totals_in_csv').then(
                    show_totals => csv.download(table, show_totals)
                )
@@ -508,24 +508,24 @@ function addCsvButton(orders: Promise<azad_order.IOrder>[]): void {
 
 // TODO: refactor so that order retrieval belongs to azad_table, but
 // diagnostics building belongs to azad_order.
-export function displayOrders(
+export function display(
     orderPromises: Promise<azad_order.IOrder>[],
     beautiful: boolean,
     wait_for_all_values_before_resolving: boolean
 ): Promise<HTMLTableElement> {
-    console.log('amazon_order_history_table.displayOrders starting');
+    console.log('amazon_order_history_table.display starting');
     return Promise.all(orderPromises).then( orders => {
-        console.log('amazon_order_history_table.displayOrders then func starting');
-        const table_promise: Promise<HTMLTableElement> = reallyDisplayOrders(
+        console.log('amazon_order_history_table.display then func starting');
+        const table_promise: Promise<HTMLTableElement> = reallyDisplay(
             orders, beautiful, wait_for_all_values_before_resolving
         );
         console.log(
-            'amazon_order_history_table.displayOrders then func returning ' +
+            'amazon_order_history_table.display then func returning ' +
             'table promise.'
         );
         return table_promise;
     });
-    console.log('amazon_order_history_table.displayOrders returning');
+    console.log('amazon_order_history_table.display returning');
 }
 
 export function dumpOrderDiagnostics(order_id: string) {
