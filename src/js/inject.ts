@@ -3,7 +3,7 @@
 'use strict';
 
 import * as azad_order from './order';
-import * as order_table from './order_table';
+import * as azad_table from './table';
 import * as notice from './notice';
 import * as request_scheduler from './request_scheduler';
 import * as signin from './signin';
@@ -34,7 +34,7 @@ function setStatsTimeout() {
         const bg_port = getBackgroundPort();
         if (bg_port) {
             stats.publish(bg_port, years); 
-            order_table.updateProgressBar();
+            azad_table.updateProgressBar();
         }
     }
     if (stats_timeout) {
@@ -122,7 +122,7 @@ function fetchAndShowOrders(years: number[]): void {
                     document
                 );
             }
-            order_table.display(orderPromises, beautiful, false);
+            azad_table.display(orderPromises, beautiful, false);
             return document.querySelector('[id="azad_order_table"]');
         }
     );
@@ -151,7 +151,7 @@ function registerContentScript() {
             try {
                 switch(msg.action) {
                     case 'dump_order_detail':
-                        order_table.dumpOrderDiagnostics(msg.order_id)
+                        azad_table.dumpOrderDiagnostics(msg.order_id)
                         break;
                     case 'scrape_years':
                         years = msg.years;

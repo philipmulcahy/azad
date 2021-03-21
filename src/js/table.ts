@@ -3,6 +3,7 @@
 const $ = require('jquery');
 import 'datatables';
 import * as azad_order from './order';
+import * as azad_item from './item';
 import * as csv from './csv';
 import * as diagnostic_download from './diagnostic_download';
 import * as notice from './notice';
@@ -38,6 +39,7 @@ const addCell = function(row: any, value: any) {
 /**
  * Add a td to the row tr element, and return the td.
  */
+
 const addElemCell = function(
         row: HTMLElement,
         elem: HTMLElement
@@ -53,7 +55,7 @@ const TAX_HELP = 'Caution: tax is often not listed when stuff is not supplied by
 
 type RenderFunc = (order: azad_order.IOrder, td: HTMLElement) => Promise<void>;
 
-const COLS: Record<string, any>[] = [
+const ORDER_COLS: Record<string, any>[] = [
     {
         field_name: 'order id',
         render_func:
@@ -203,12 +205,25 @@ const COLS: Record<string, any>[] = [
         is_numeric: false,
         visibility: () => settings.getBoolean('show_invoice_links')
     }
-]
+];
+
+const ITEM_COLS: Record<string, any>[] = [
+    {
+        field_name: 'order id',
+        value_promise_func: 'order_id',
+        is_numeric: false
+    },
+    {
+        field_name: 'description',
+        value_promise_func: 'order_id',
+        is_numeric: false
+    },
+];
 
 function getCols(): Promise< Record<string, any>[] > {
     const waits: Promise<any>[] = [];
     const results: Record<string, any>[] = [];  
-    COLS.forEach( col => {
+    ORDER_COLS.forEach( col => {
         if ( ('sites' in col) ? col.sites.test(urls.getSite()) : true ) {
             if ( 'visibility' in col ) {
                 const visible_promise: Promise<boolean> = col.visibility();
@@ -228,7 +243,7 @@ function getCols(): Promise< Record<string, any>[] > {
 
 function appendCell(
     tr: HTMLTableRowElement,
-    order: azad_order.IOrder,
+    entity: azad_order.IOrder|azad_item.IItem,
     col_spec: Record<string, any>,
 ): Promise<void> {
     const td = document.createElement('td')
@@ -254,12 +269,16 @@ function appendCell(
     }
     const value_written_promise: Promise<void> =
         col_spec.hasOwnProperty('render_func') ?
-            col_spec.render_func(order, td) :
+            col_spec.render_func(entity, td) :
             (() => {
                 const value_promise: Promise<any> = <Promise<any>>(
-                    order[<keyof azad_order.IOrder>(
-                        col_spec.value_promise_func
-                    )]()
+                    ('id' in entity) ?
+                        entity[<keyof azad_order.IOrder>(
+                            col_spec.value_promise_func
+                        )]() :
+                        entity[<keyof azad_item.IItem>(
+                            col_spec.value_promise_func
+                        )]()
                 );
                 return value_promise
                     .then(null_converter)
@@ -300,9 +319,39 @@ function appendOrderRow(
     );
 }
 
+function appendItemRow(
+    table: HTMLElement,
+    item: azad_item.IItem
+): Promise<Promise<void>[]> {
+    const tr = document.createElement('tr');
+    table.appendChild(tr);
+    return getCols().then( cols =>
+        cols.map( col_spec => appendCell(tr, item, col_spec) )
+    );
+}
+
 function addOrderTable(
     doc: HTMLDocument,
     orders: azad_order.IOrder[],
+    wait_for_all_values_before_resolving: boolean
+): Promise<HTMLTableElement> {
+    return addTable(doc, orders, wait_for_all_values_before_resolving);
+}
+
+function addItemTable(
+    doc: HTMLDocument,
+    orders: azad_order.IOrder[],
+    wait_for_all_values_before_resolving: boolean
+): Promise<HTMLTableElement> {
+    const item_promises = ordersToItems(orders);
+    return item_promises.then(
+        items => addTable(doc, items, wait_for_all_values_before_resolving)
+    )
+}
+
+function addTable(
+    doc: HTMLDocument,
+    entities: azad_order.IOrder[]|azad_item.IItem[],
     wait_for_all_values_before_resolving: boolean
 ): Promise<HTMLTableElement> {
     const addHeader = function(row: HTMLElement, value: string, help: string) {
@@ -358,11 +407,19 @@ function addOrderTable(
         const tbody = doc.createElement('tbody');
         table.appendChild(tbody);
 
+        function appendEntityRow(entity:IItem|IOrder): Promise<Promise<void>> {
+            if ('id' in entity) {
+                order.id().then( id => { order_map[id] = order; } );
+                 return appendOrderRow(tbody, entity);
+            } else {
+                return appendItemRow(tbody, entity)
+            }
+        }
+
         // Record all the promises: we're going to need to wait on all of them
         // to resolve before we can hand over the table to our callers.
-        const row_done_promises = orders.map( order => {
-            order.id().then( id => { order_map[id] = order; } );
-            return appendOrderRow(tbody, order);
+        const row_done_promises = entities.map( entity => {
+            return appendEntityRow(tbody, entity);
         });
 
         if (wait_for_all_values_before_resolving) {
@@ -386,6 +443,19 @@ function addOrderTable(
     });
 }
 
+function ordersToItems(orders: azad_order.IOrder[]): Promise<azad_item.IItem[]>
+{
+    return Promise.all(
+        orders.map(order => order.items()).then(
+            itemss => {
+                const items: azad_item.IItem[] = [];
+                itemss.forEach( order_items => items.push(...order_items) );
+                return items;
+            }
+        )
+    );
+}
+
 function reallyDisplay(
     orders: azad_order.IOrder[], beautiful: boolean,
     wait_for_all_values_before_resolving: boolean
@@ -398,7 +468,10 @@ function reallyDisplay(
     const order_promises = orders.map(
         (order: azad_order.IOrder) => Promise.resolve(order)
     );
-    const table_promise = addOrderTable(document, orders, wait_for_all_values_before_resolving);
+    const items_not_orders: boolean = true;
+    const table_promise = items_not_orders ?
+        addItemTable(document, orders, wait_for_all_values_before_resolving) :
+        addOrderTable(document, orders, wait_for_all_values_before_resolving);
     table_promise.then( _ => {
         if (beautiful) {
             $(document).ready( () => {
