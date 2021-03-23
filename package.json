@@ -30,7 +30,6 @@
         "style-loader": "^1.2.1",
         "ts-loader": "^7.0.5",
         "typedoc": "^0.19.1",
-        "typescript": "^3.9.7",
         "webpack": "^4.44.1",
         "write-file-webpack-plugin": "^4.5.1"
     },
@@ -49,6 +48,7 @@
         "serialize-javascript": "^3.1.0",
         "sprintf-js": "^1.1.2",
         "sprintf.js": "^0.1.4",
+        "typescript": "^3.9.9",
         "xpath": "0.0.27"
     }
 }

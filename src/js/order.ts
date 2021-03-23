@@ -1,8 +1,9 @@
-/* Copyright(c) 2017-2020 Philip Mulcahy. */
+/* Copyright(c) 2017-2021 Philip Mulcahy. */
 
 'use strict';
 
 import * as date from './date';
+import * as azad_entity from './entity';
 import * as notice from './notice';
 import * as extraction from './extraction';
 import * as signin from './signin';
@@ -60,7 +61,7 @@ interface IOrderDetails {
     invoice_url: string;
 
     [index: string]: string;
-}
+};
 
 function extractDetailFromDoc(
     order: OrderImpl, doc: HTMLDocument
@@ -384,7 +385,7 @@ function extractDetailFromDoc(
 interface IOrderDetailsAndItems {
     details: IOrderDetails;
     items: item.IItem[];
-}
+};
 
 const extractDetailPromise = (
     order: OrderImpl,
@@ -428,7 +429,7 @@ const extractDetailPromise = (
     }
 );
 
-export interface IOrder {
+export interface IOrder extends azad_entity.IEntity {
     id(): Promise<string>;
     detail_url(): Promise<string>;
     invoice_url(): Promise<string>;
@@ -438,6 +439,7 @@ export interface IOrder {
     total(): Promise<string>;
     who(): Promise<string>;
     items(): Promise<item.Items>;
+    item_list(): Promise<item.IItem[]>;
     payments(): Promise<any>;
     postage(): Promise<string>;
     postage_refund(): Promise<string>;
@@ -450,7 +452,7 @@ export interface IOrder {
     who(): Promise<string>;
 
     assembleDiagnostics(): Promise<Record<string,any>>;
-}
+};
 
 
 class Order {
@@ -494,6 +496,19 @@ class Order {
                     } catch (ex) {
                         console.error(ex);
                     }
+                });
+                return items;
+            });
+        } else {
+            return Promise.resolve(items);
+        }
+    }
+    item_list(): Promise<item.IItem[]> {
+        const items: item.IItem[] = []; 
+        if (this.impl.detail_promise) {
+            return this.impl.detail_promise.then( details => {
+                details.items.forEach(item => {
+                    items.push(item);
                 });
                 return items;
             });
@@ -753,7 +768,7 @@ class OrderImpl {
 interface IOrdersPageData {
     expected_order_count: number;
     order_elems: dom2json.IJsonObject;
-}
+};
 
 function getOrdersForYearAndQueryTemplate(
     year: number,

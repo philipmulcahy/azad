@@ -1,4 +1,4 @@
-/* Copyright(c) 2016-2020 Philip Mulcahy. */
+/* Copyright(c) 2016-2021 Philip Mulcahy. */
 
 'use strict';
 
