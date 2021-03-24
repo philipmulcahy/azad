@@ -211,19 +211,30 @@ const ORDER_COLS: Record<string, any>[] = [
 const ITEM_COLS: Record<string, any>[] = [
     {
         field_name: 'order id',
-        value_promise_func: 'order_id',
+        render_func:
+            (item: azad_item.IItem, td: HTMLElement): null => {
+                td.innerHTML = '<a href="' + item.order_detail_url +
+                               '">' + item.order_id + '</a>';
+                return null;
+            },
         is_numeric: false
-    },
-    {
+    }, {
         field_name: 'quantity',
         value_promise_func: 'quantity',
         is_numeric: false
-    },
-    {
+    }, {
         field_name: 'description',
-        value_promise_func: 'description',
+        render_func: (item: azad_item.IItem, td: HTMLElement): null => {
+                td.innerHTML = '<a href="' + item.url +
+                               '">' + item.description + '</a>';
+                return null;
+            },
         is_numeric: false
-    },
+    }, {
+        field_name: 'price',
+        value_promise_func: 'price',
+        is_numeric: false
+    }
 ];
 
 function getCols(items_not_orders: boolean): Promise< Record<string, any>[] > {

@@ -6,6 +6,7 @@ import * as util from './util';
 export interface IItem extends azad_entity.IEntity {
     description: string;
     url: string;
+    order_detail_url: string;
     price: string;
     quantity: number;
     order_id: string;
@@ -14,7 +15,7 @@ export interface IItem extends azad_entity.IEntity {
 export type Items = Record<string, string>;
 
 export function extractItems(
-    order_id: string, order_elem: HTMLElement
+    order_id: string, order_detail_url: string, order_elem: HTMLElement
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
         '//div[./div[./div[@class="a-row" and ./a[@class="a-link-normal"]] and .//span[contains(@class, "price") ]/nobr]]',
@@ -32,7 +33,7 @@ export function extractItems(
             qty = parseInt(
                 util.defaulted(
                     util.findSingleNodeValue(
-                        '//span[@class="item-view-qty"]',
+                        './/span[@class="item-view-qty"]',
                         <HTMLElement>itemElem
                     ).textContent,
                     '1'
@@ -55,6 +56,7 @@ export function extractItems(
         const item = {
             description: description,
             url: url,
+            order_detail_url: order_detail_url,
             price: price,
             order_id: order_id,
             quantity: qty

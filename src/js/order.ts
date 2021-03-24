@@ -406,6 +406,7 @@ const extractDetailPromise = (
                     details: extractDetailFromDoc(order, doc),
                     items: item.extractItems(
                         util.defaulted(order.id, ''),
+                        util.defaulted(order.detail_url, ''),
                         doc.documentElement
                     ),
                 };
