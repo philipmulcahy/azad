@@ -492,8 +492,10 @@ function ordersToItems(orders: azad_order.IOrder[]): Promise<azad_item.IItem[]>
 }
 
 function reallyDisplay(
-    orders: azad_order.IOrder[], beautiful: boolean,
-    wait_for_all_values_before_resolving: boolean
+    orders: azad_order.IOrder[],
+    beautiful: boolean,
+    wait_for_all_values_before_resolving: boolean,
+    items_not_orders: boolean,
 ): Promise<HTMLTableElement> {
     console.log('amazon_order_history_table.reallyDisplay starting');
     for (let entry in order_map) {
@@ -503,7 +505,6 @@ function reallyDisplay(
     const order_promises = orders.map(
         (order: azad_order.IOrder) => Promise.resolve(order)
     );
-    const items_not_orders: boolean = true;
     const cols = getCols(items_not_orders);
     const table_promise = items_not_orders ?
         addItemTable(
@@ -627,14 +628,21 @@ export function display(
     console.log('amazon_order_history_table.display starting');
     return Promise.all(orderPromises).then( orders => {
         console.log('amazon_order_history_table.display then func starting');
-        const table_promise: Promise<HTMLTableElement> = reallyDisplay(
-            orders, beautiful, wait_for_all_values_before_resolving
+        return settings.getBoolean('show_items_not_orders').then(
+            items_not_orders => {
+                const table_promise: Promise<HTMLTableElement> = reallyDisplay(
+                    orders,
+                    beautiful,
+                    wait_for_all_values_before_resolving,
+                    items_not_orders
+                );
+                console.log(
+                    'amazon_order_history_table.display then func returning ' +
+                    'table promise.'
+                );
+                return table_promise;
+            }
         );
-        console.log(
-            'amazon_order_history_table.display then func returning ' +
-            'table promise.'
-        );
-        return table_promise;
     });
     console.log('amazon_order_history_table.display returning');
 }
