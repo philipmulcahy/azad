@@ -41,7 +41,9 @@ export function extractItems(
             );
         } catch(ex) {
             qty = 1;
-            console.error(ex);
+            if (!ex.includes('match')) {
+                console.log(ex);
+            }
         }
         let price = '';
         try {

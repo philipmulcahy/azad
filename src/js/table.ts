@@ -52,16 +52,30 @@ const addElemCell = function(
     return td;
 };
 
-const TAX_HELP = 'Caution: tax is often not listed when stuff is not supplied by Amazon, is cancelled, or is pre-order.';
+const TAX_HELP = 'Caution: tax is often missing when not supplied by Amazon, cancelled, or pre-order.';
 
-type RenderFunc = (order: azad_order.IOrder, td: HTMLElement) => Promise<void>;
+interface ColSpec {
+    field_name: string;
 
-const ORDER_COLS: Record<string, any>[] = [
+    // Yes: using IEntity here means a tonne of downcasting in the implementations.
+    // The alternatives seem (to me) worse.
+    render_func?: (entity: azad_entity.IEntity, td: HTMLElement) => Promise<null>;
+
+    is_numeric: boolean;
+    value_promise_func_name?: string;
+    help?: string;
+    sites?: RegExp;
+    visibility?: () => Promise<boolean>;
+    sum?: number;
+    pageSum?: number;
+};
+
+const ORDER_COLS: ColSpec[] = [
     {
         field_name: 'order id',
         render_func:
-            (order: azad_order.IOrder, td: HTMLElement) => order.id().then(
-                id => order.detail_url().then(
+            (order: azad_entity.IEntity, td: HTMLElement) => (order as azad_order.IOrder).id().then(
+                id => (order as azad_order.IOrder).detail_url().then(
                     url => {
                         td.innerHTML = '<a href="' + url + '">' + id + '</a>';
                         return null;
@@ -72,8 +86,8 @@ const ORDER_COLS: Record<string, any>[] = [
     },
     {
         field_name: 'items',
-        render_func: (order: azad_order.IOrder, td: HTMLElement) => 
-            order.items().then( items => {
+        render_func: (order: azad_entity.IEntity, td: HTMLElement) => 
+            (order as azad_order.IOrder).items().then( items => {
                 const ul = td.ownerDocument!.createElement('ul');
                 for(let title in items) {
                     if (Object.prototype.hasOwnProperty.call(items, title)) {
@@ -93,73 +107,73 @@ const ORDER_COLS: Record<string, any>[] = [
     },
     {
         field_name: 'to',
-        value_promise_func: 'who',
+        value_promise_func_name: 'who',
         is_numeric: false
     },
     {
         field_name: 'date',
-        value_promise_func: 'date',
+        value_promise_func_name: 'date',
         is_numeric: false,
     },
     {
         field_name: 'total',
-        value_promise_func: 'total',
+        value_promise_func_name: 'total',
         is_numeric: true
     },
     {
         field_name: 'shipping',
-        value_promise_func: 'postage',
+        value_promise_func_name: 'postage',
         is_numeric: true,
         help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.'
     },
     {
         field_name: 'shipping_refund',
-        value_promise_func: 'postage_refund',
+        value_promise_func_name: 'postage_refund',
         is_numeric: true,
         help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.'
     },
     {
         field_name: 'gift',
-        value_promise_func: 'gift',
+        value_promise_func_name: 'gift',
         is_numeric: true
     },
     {
         field_name: 'VAT',
-        value_promise_func: 'vat',
+        value_promise_func_name: 'vat',
         is_numeric: true,
         help: TAX_HELP,
         sites: new RegExp('amazon(?!.com)')
     },
     {
         field_name: 'tax',
-        value_promise_func: 'us_tax',
+        value_promise_func_name: 'us_tax',
         is_numeric: true,
         help: TAX_HELP,
         sites: new RegExp('\\.com$')
     },
     {
         field_name: 'GST',
-        value_promise_func: 'gst',
+        value_promise_func_name: 'gst',
         is_numeric: true,
         help: TAX_HELP,
         sites: new RegExp('\\.ca$')
     },
     {
         field_name: 'PST',
-        value_promise_func: 'pst',
+        value_promise_func_name: 'pst',
         is_numeric: true,
         help: TAX_HELP,
         sites: new RegExp('\\.ca$')
     },
     {
         field_name: 'refund',
-        value_promise_func: 'refund',
+        value_promise_func_name: 'refund',
         is_numeric: true
     },
     {
         field_name: 'payments',
-        render_func: (order: azad_order.IOrder, td: HTMLElement) => {
-            return order.payments().then( payments => {
+        render_func: (order: azad_entity.IEntity, td: HTMLElement) => {
+            return (order as azad_order.IOrder).payments().then( payments => {
                 const ul = td.ownerDocument!.createElement('ul');
                 td.textContent = '';
                 payments.forEach( (payment: any) => {
@@ -173,7 +187,7 @@ const ORDER_COLS: Record<string, any>[] = [
                     } else {
                         a.textContent = payment + '; '
                     }
-                    order.detail_url().then(
+                   (order as azad_order.IOrder).detail_url().then(
                         detail_url => a.setAttribute( 'href', detail_url)
                     );
                 });
@@ -189,8 +203,8 @@ const ORDER_COLS: Record<string, any>[] = [
     },
     {
         field_name: 'invoice',
-        render_func: (order: azad_order.IOrder, td: HTMLElement) => {
-            return order.invoice_url().then( url => {
+        render_func: (order: azad_entity.IEntity, td: HTMLElement) => {
+            return (order as azad_order.IOrder).invoice_url().then( url => {
                 if ( url ) {
                     const link = td.ownerDocument!.createElement('a');
                     link.textContent = url;
@@ -208,52 +222,54 @@ const ORDER_COLS: Record<string, any>[] = [
     }
 ];
 
-const ITEM_COLS: Record<string, any>[] = [
+const ITEM_COLS: ColSpec[] = [
     {
         field_name: 'order id',
         render_func:
-            (item: azad_item.IItem, td: HTMLElement): null => {
+            (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
+                const item = entity as azad_item.IItem;
                 td.innerHTML = '<a href="' + item.order_detail_url +
                                '">' + item.order_id + '</a>';
-                return null;
+                return Promise.resolve(null);
             },
         is_numeric: false
     }, {
         field_name: 'quantity',
-        value_promise_func: 'quantity',
+        value_promise_func_name: 'quantity',
         is_numeric: false
     }, {
         field_name: 'description',
-        render_func: (item: azad_item.IItem, td: HTMLElement): null => {
+        render_func: (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
+                const item = entity as azad_item.IItem;
                 td.innerHTML = '<a href="' + item.url +
                                '">' + item.description + '</a>';
-                return null;
+                return Promise.resolve(null);
             },
         is_numeric: false
     }, {
         field_name: 'price',
-        value_promise_func: 'price',
+        value_promise_func_name: 'price',
         is_numeric: false
     }
 ];
 
-function getCols(items_not_orders: boolean): Promise< Record<string, any>[] > {
+function getCols(
+    items_not_orders: boolean
+): Promise<ColSpec[]> {
     const waits: Promise<any>[] = [];
-    const results: Record<string, any>[] = [];  
-    const cols = items_not_orders ?  ITEM_COLS : ORDER_COLS;
+    const results: ColSpec[] = [];  
+    const cols = items_not_orders ? ITEM_COLS : ORDER_COLS;
     cols.forEach( col => {
-        if ( ('sites' in col) ? col.sites.test(urls.getSite()) : true ) {
-            if ( 'visibility' in col ) {
-                const visible_promise: Promise<boolean> = col.visibility();
-                waits.push(visible_promise);
-                visible_promise.then( visible => {
-                    if ( visible ) {
-                        results.push( col );
-                    }
-                });
-            } else {
-                results.push( col );
-            }
+        if (col?.sites?.test(urls.getSite()) ?? true) {
+            const visible_promise = col.visibility ?
+                col.visibility() :
+                Promise.resolve(true);
+            waits.push(visible_promise);
+            visible_promise.then( visible => {
+                if ( visible ) {
+                    results.push( col );
+                }
+            });
         }
     });
     return Promise.all(waits).then( _ => results );
@@ -285,8 +301,8 @@ function extract_value(
 function appendCell(
     tr: HTMLTableRowElement,
     entity: azad_entity.IEntity,
-    col_spec: Record<string, any>,
-): Promise<void> {
+    col_spec: ColSpec,
+): Promise<null> {
     const td = document.createElement('td')
     td.textContent = 'pending';
     tr.appendChild(td);
@@ -308,22 +324,22 @@ function appendCell(
             return '';
         }
     }
-    const value_written_promise: Promise<void> =
-        col_spec.hasOwnProperty('render_func') ?
-            col_spec.render_func(entity, td) :
+    const value_written_promise: Promise<null> =
+        col_spec.render_func ?
+            col_spec?.render_func(entity, td) :
             (() => {
-                const value_or_promise_func = col_spec.value_promise_func;
+                const field_name = col_spec.value_promise_func_name;
                 const callable_or_value: (()=>Promise<string|number>)|number|string = ('id' in entity) ?
-                    (<azad_order.IOrder>(entity))[
-                        <keyof azad_order.IOrder>(value_or_promise_func)
+                    (entity as azad_order.IOrder)[
+                        field_name as keyof azad_order.IOrder
                     ]:
-                    (<azad_item.IItem>(entity))[
-                        <keyof azad_item.IItem>(value_or_promise_func)
+                    (entity as azad_item.IItem)[
+                        field_name as keyof azad_item.IItem
                     ];
                 const value_promise: Promise<number|string> = (
                     typeof(callable_or_value) === 'function'
                 ) ?
-                    callable_or_value() :
+                    callable_or_value.bind(entity)() :
                     Promise.resolve(callable_or_value)
                 return value_promise
                     .then(null_converter)
@@ -341,8 +357,11 @@ function appendCell(
     td.setAttribute('class', td.getAttribute('class') + ' ' +
             'azad_col_' + col_spec.field_name + ' ' +
             'azad_numeric_' + (col_spec.is_numeric ? 'yes' : 'no' ) + ' ');
-    if ('help' in col_spec) {
-        td.setAttribute('class', td.getAttribute('class') + 'azad_elem_has_help ');
+    if (col_spec.help) {
+        td.setAttribute(
+            'class',
+            td.getAttribute('class') + 'azad_elem_has_help '
+        );
         td.setAttribute('title', col_spec.help);
     }
     // order.id().then( id => {
@@ -356,11 +375,12 @@ function appendCell(
 function appendEntityRow(
     table: HTMLElement,
     entity: azad_entity.IEntity,
-    cols: Promise<Record<string, any>[]>
-): Promise<Promise<void>[]> {
+    cols: Promise<ColSpec[]>
+): Promise<Promise<null>[]> {
     if ('id' in entity) {
-        (entity as azad_order.IOrder).id().then(
-            id => { order_map[id] = entity; }
+        const order = entity as azad_order.IOrder;
+        order.id().then(
+            id => { order_map[id] = order; }
         );
     }
     const tr = document.createElement('tr');
@@ -374,7 +394,7 @@ function addOrderTable(
     doc: HTMLDocument,
     orders: azad_order.IOrder[],
     wait_for_all_values_before_resolving: boolean,
-    cols: Promise<Record<string, any>[]>
+    cols: Promise<ColSpec[]>
 ): Promise<HTMLTableElement> {
     return addTable(doc, orders, wait_for_all_values_before_resolving, cols);
 }
@@ -383,7 +403,7 @@ function addItemTable(
     doc: HTMLDocument,
     orders: azad_order.IOrder[],
     wait_for_all_values_before_resolving: boolean,
-    cols: Promise<Record<string, any>[]>
+    cols: Promise<ColSpec[]>
 ): Promise<HTMLTableElement> {
     const item_promises = ordersToItems(orders);
     return item_promises.then(
@@ -396,7 +416,7 @@ function addTable(
     doc: HTMLDocument,
     entities: azad_entity.IEntity[],
     wait_for_all_values_before_resolving: boolean,
-    cols: Promise<Record<string, any>[]>
+    cols: Promise<ColSpec[]>
 ): Promise<HTMLTableElement> {
     const addHeader = function(row: HTMLElement, value: string, help: string) {
         const th = row.ownerDocument!.createElement('th');
@@ -446,8 +466,8 @@ function addTable(
 
     return cols.then( actual_cols => {
         actual_cols.forEach( col_spec => {
-            addHeader(hr, col_spec.field_name, col_spec.help);
-            addHeader(fr, col_spec.field_name, col_spec.help);
+            addHeader(hr, col_spec.field_name, col_spec?.help ?? '');
+            addHeader(fr, col_spec.field_name, col_spec?.help ?? '');
         });
 
         const tbody = doc.createElement('tbody');
@@ -461,7 +481,7 @@ function addTable(
 
         if (wait_for_all_values_before_resolving) {
             return Promise.all(row_done_promises).then( row_promises => {
-                const value_done_promises: Promise<void>[] = [];
+                const value_done_promises: Promise<null>[] = [];
                 row_promises.forEach(
                     cell_done_promises => value_done_promises.push(
                         ...cell_done_promises

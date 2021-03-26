@@ -435,21 +435,20 @@ export interface IOrder extends azad_entity.IEntity {
     detail_url(): Promise<string>;
     invoice_url(): Promise<string>;
 
-    site(): Promise<string>;
     date(): Promise<string>;
-    total(): Promise<string>;
-    who(): Promise<string>;
-    items(): Promise<item.Items>;
+    gift(): Promise<string>;
+    gst(): Promise<string>;
     item_list(): Promise<item.IItem[]>;
+    items(): Promise<item.Items>;
     payments(): Promise<any>;
     postage(): Promise<string>;
     postage_refund(): Promise<string>;
-    gift(): Promise<string>;
-    us_tax(): Promise<string>;
-    vat(): Promise<string>;
-    gst(): Promise<string>;
     pst(): Promise<string>;
     refund(): Promise<string>;
+    site(): Promise<string>;
+    total(): Promise<string>;
+    us_tax(): Promise<string>;
+    vat(): Promise<string>;
     who(): Promise<string>;
 
     assembleDiagnostics(): Promise<Record<string,any>>;
