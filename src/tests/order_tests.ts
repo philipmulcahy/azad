@@ -1,4 +1,4 @@
-/* Copyright(c) 2019 Philip Mulcahy. */
+/* Copyright(c) 2019-2021 Philip Mulcahy. */
 
 import * as order_data from './fake_order'; 
 import * as azad_order from '../js/order';
@@ -61,7 +61,9 @@ function main() {
     // const single_test_order = order_data.orderFromTestDataB();
     const test_targets = order_data.discoverTestData();
     const test_results_promise = Promise.all(
-        test_targets.map(target => testOneTarget(target)));
+        test_targets
+            // .filter(target => target.order_id == '112-1097135-4205023')
+            .map(target => testOneTarget(target)));
     test_results_promise.then(
         (results: ITestResult[]) => console.log(results)
     );

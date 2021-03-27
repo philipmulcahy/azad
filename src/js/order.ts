@@ -109,34 +109,38 @@ function extractDetailFromDoc(
     const total = function(): string {
         const a = extraction.by_regex(
             [
-                '//span[@class="a-color-price a-text-bold"]/text()',    //Scott 112-7790528-5248242 en_US as of 20191024
+                '//span[@class="a-color-price a-text-bold"]/text()',
 
-                '//b[contains(text(),"Total for this Order")]/text()',  //Scott D01-0235439-4093031 en_US as of 20191025
+                '//b[contains(text(),"Total for this Order")]/text()',
+
+                '//span[contains(@id,"grand-total-amount")]/text()',
 
                 '//div[contains(@id,"od-subtotals")]//' +
                 '*[contains(text(),"Grand Total") ' +
                 'or contains(text(),"Montant total TTC")' +
                 'or contains(text(),"Total général du paiement")' +
-                ']/parent::div/following-sibling::div/span',           //20191025
+                ']/parent::div/following-sibling::div/span',
 
-                '//*[contains(text(),"Grand Total:") ' +               //(Summary, Invoice)Digital Kindle Payment grand total/.com/(en_US, es_US-->en) as of 20191015
-                'or  contains(text(),"Total general:")' +              //(Summary, Invoice)Digital Kindle Payment grand total/.com/(es_US) as of 20191015
+                '//*[contains(text(),"Grand total:") ' +
+                'or  contains(text(),"Grand Total:") ' +
+                'or  contains(text(),"Total general:")' +
                 'or  contains(text(),"Total for this order:")' +
-                'or  contains(text(),"Total of this order:")' +        //(Summary, Invoice)Digital Kindle Payment grand total/.com/es_US-->en as of 20191015
-                'or  contains(text(),"Total de este pedido:")' +       //(Summary, Invoice)Digital Kindle Payment grand total/.com/es_US as of 20191015
-                'or  contains(text(),"Total del pedido:")' +           //(Summary, Invoice)Physical Order total/.com/es_US as of 20191015
+                'or  contains(text(),"Total of this order:")' +
+                'or  contains(text(),"Total de este pedido:")' +
+                'or  contains(text(),"Total del pedido:")' +
                 'or  contains(text(),"Montant total TTC:")' +
                 'or  contains(text(),"Total général du paiement:")' +
                 ']',
 
-                '//*[contains(text(),"Grand Total:") ' +               //(Summary, Invoice)Digital Kindle Payment grand total/.com/(en_US, es_US-->en) as of 20191015
-                'or  contains(text(),"Total general:")' +              //(Summary, Invoice)Digital Kindle Payment grand total/.com/(es_US) as of 20191015
-                'or  contains(text(),"Total for this order:")' +
-                'or  contains(text(),"Total of this order:")' +        //(Summary, Invoice)Digital Kindle Payment grand total/.com/es_US-->en as of 20191015
-                'or  contains(text(),"Total de este pedido:")' +       //(Summary, Invoice)Digital Kindle Payment grand total/.com/es_US as of 20191015
-                'or  contains(text(),"Order Total:")' +                //(Summary, Invoice)Physical Order total/.com/es_US-->en as of 20191015
-                'or  contains(text(),"Total del pedido:")' +           //(Summary, Invoice)Physical Order total/.com/es_US as of 20191015
-                'or  contains(text(),"Montant total TTC:")' +
+                '//*[contains(text(),"Grand total:") ' +
+                'or  contains(text(),"Grand Total:") ' +
+                'or  contains(text(),"Total general:") ' +
+                'or  contains(text(),"Total for this order:") ' +
+                'or  contains(text(),"Total of this order:") ' +
+                'or  contains(text(),"Total de este pedido:") ' +
+                'or  contains(text(),"Order Total:") ' +
+                'or  contains(text(),"Total del pedido:") ' +
+                'or  contains(text(),"Montant total TTC:") ' +
                 'or  contains(text(),"Total général du paiement:")' +
                 ']/parent::*',
             ],
@@ -257,14 +261,19 @@ function extractDetailFromDoc(
     };
 
     const us_tax = function(): string {
-        let a = getField(
-            '//span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span/text()',
+        const moneyRegEx = /\\s+(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))/;
+        let a = extraction.by_regex(
+            [
+                '//span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span/text()',
+                '//span[contains(@id, "totalTax-amount")]/text()',
+            ],
+            moneyRegEx,
+            null,
             doc.documentElement
         );
         if ( !a ) {
             a = getField('.//tr[contains(td,"Tax Collected:")]', doc.documentElement);
             if (a) {
-                const moneyRegEx = '\\s+(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))'
                 // Result
                 // 0: "Tax Collected: USD $0.00"
                 // 1: "USD $0.00"
