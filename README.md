@@ -1,9 +1,12 @@
 # azad
 ## amazon order history reporter chrome extension
 
----
 
-# HELP!
+## Official installation page
+
+https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi
+
+# Help!
 
 ## Common problems, with some fixes
 
@@ -14,18 +17,16 @@
 Clear amazon cookies: open chrome://settings/siteData and type amazon in the search box, then delete them all. This will log you out.
 Then log back in and try again.
 
-### Out of date cache data
+### Out-of-date cache data
 
 #### How could this have happened to me?
 
 Maybe a new version of the extension has broken how the cache data is interpreted, or Amazon has changed their website breaking compatibility between the cached data and the live site (the cached data contains amazon generated urls).
 
-
 #### What's the workaround?
 
 If the extension is working, stop it by pressing the stop button.
 Then click the "Clear Cache" button and resume normal use.
-
 
 ### Log-in message
 
@@ -33,19 +34,16 @@ Parts of Amazon's websites appear to have defences against denial of service or 
 If the extension needs to make a lot of requests (because you've got lots of orders or you choose many years, then it can log you out. This often happens only for types of orders or types of order related pages (payments, details) etc, leaving the other types of pages functional. The extension detects this and opens up a new sign-in page so you can log back in.
 Once you've done this, you can restart the year fetch - it should avoid re-fetching stuff it's already put in the cache.
 
-
 ### Stuck progress in popup status/statistics
 
 Symptoms: pending task count sticks at a non-zero number for many seconds.
 I don't understand why this happens, but the workaround that has always worked for me is to remove all amazon cookies (this will log you out) and then everything works again.
 If you look in the extension logs (see below), a clue that this is appropriate is entries in the log that complain about too many redirections.
 
-
 ### Amazon changed their site
 
 The extension needs to be updated by developers to learn the new layout.
-Please check to see that no-one else has filed a ticket for the same problem. If they have, join in the fun on that ticket rather than making your own "me-too" ticket.
-
+Please check to see that no-one else has filed a ticket for the same problem. If they have, join in the fun on that ticket rather than making your own "me-too" ticket. At some point you're going to need to work with us by providing debug data and testing experimental versions of the extension. I don't have direct access to your orders (or likely you country's version of Amazon), so if you're not willing to help, please don't waste everybody's time with a ticket - your issue will not get fixed.
 
 ### You've got a country+order_type combination we've not got test data for
 
@@ -86,78 +84,28 @@ If you have log files, debug info, or screenshts to send but don't want them to 
 * Save the file as desired.
 
 
-#### How to save an order debug json file:
+#### How to save and send an order debug json file
 
 * You can only do this when you see the results table.
 * RIGHT-click on the order ID link (in the order id column) for the row with the issue.
 * Select "save order debug info".
 * The debug info should automatically save to your downloads folder.
+* DO NOT attach this file to a github ticket - although it doesn't contain passwords or full credit card numbers, it is likely to contain your name and address and some details of stuff you've ordered. Instead, send it to azadextension@gmail.com with the subject line including the ticket link. I (Philip) do not monitor this email address so you should also post on the ticket to say you've emailed a json file.
+* Q: Who gets to see my data?
+* A: The developer of the extension and possibly a small group of collaborators. The data is kept in a private repo whose maximum number of developers is limited to 10. Currently only one collaborator has access.
+* Q: Why do you keep the data?
+* A: To ensure that the fixes we prepare using your data stay fixed (known as a regression test).
 
----
+#### How to try out an experimental version
 
-### official installation page
+This may be necessary if you are sent a link to a zip file (probably something like https://mulcahyfamily.org/azad/azad_12345678.zip)
 
-https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi
-
-### required development package(s)
-Node.js®, available at https://nodejs.org
-
-### supported development platforms
-MacOS, Windows
-
-#### MacO
-* I use homebrew to install node.js and git.
-* clone the project source code or fork it: https://github.com/philipmulcahy/azad
-* there are a bunch of convenience commands in the npm project file such as:
-  * npm run build
-  * npm run lint
-
-#### Windows install
-* Install Node.js® from https://nodejs.org. Enable the option to install Chocolatey, Python 2, and Visual Studio Build Tools.
-* Install GitHub Desktop from https://desktop.github.com.
-* Go to https://github.com/philipmulcahy/azad and create a fork.
-* Open GitHub Desktop, go to File, Clone Repository, clone from your azad fork.
-* Start CMD
-* 	CD %UserProfile%\Documents\GitHub\azad
-(This is the path shown by GitHub Desktop)
-* 	npm install --init
-
-
-### linting (uses npm lint tools)
-```
-npm run lint
-```
-
-### building
-```
-npm run build
-```
-
-### packaging; this includes building
-#### for MacOS
-```
-npm run package
-```
-#### for Windows
-```
-npm run winpackage
-```
-
-### installing locally on chrome
-* Open chrome, and type chrome://extensions in the address bar.
-* Enable the Developer mode slider.
-* Remove the store version of the extension.
-* Click "Load unpacked".
-* Navigate to the build folder.
-
-### installing "secret" unit test data
-(it's secret because it contains order details of contributors to the project)
-pushd src/tests
-git clone git@github.com:philipmulcahy/azad_test_data.git
-
-### running 'unit' tests
-* build (see above)
-* open/refresh src/tests/tests.html in your browser
-
-### edit-test-loop
-Remember to re-build, reload the extension on the chrome://extensions page and reload the targeted amazon page after saving changes to files.
+1) Download the zip file
+2) Unzip it to a folder
+3) Open chrome://extensions/
+4) Set "Developer mode" (slider in top right hand corner)
+5) Disable any existing installed Amazon Order History Reporter extension - you don't want two of them fighting (slider in bottom right of the extension's tile).
+6) Click "Load unpacked" (top left)
+7) Navigate to the azad folder you unzipped in step (2)
+8) Open an Amazon tab and start testing.
+9) Remember to uninstall or disable the test version once you've finished playing. It will not automatically update with fixes, unlike the chrome web store version.
