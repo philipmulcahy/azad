@@ -75,7 +75,7 @@ function strategy1(
         } catch(ex) {
             console.warn('could not find price for: ' + description);
         }
-        const item = {
+        return {
             description: description,
             url: url,
             order_detail_url: order_detail_url,
@@ -83,7 +83,6 @@ function strategy1(
             order_id: order_id,
             quantity: qty
         } 
-        return item
     });
     return items;
 }
@@ -114,7 +113,7 @@ function strategy2(
         } catch(ex) {
             console.warn('could not find price for: ' + description);
         }
-        const item = {
+        return {
             description: description,
             url: url,
             order_detail_url: order_detail_url,
@@ -122,7 +121,6 @@ function strategy2(
             order_id: order_id,
             quantity: qty
         } 
-        return item
     });
     return items;
 }
