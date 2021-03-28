@@ -1,8 +1,9 @@
-/* Copyright(c) 2017-2020 Philip Mulcahy. */
+/* Copyright(c) 2017-2021 Philip Mulcahy. */
 
 'use strict';
 
 import * as date from './date';
+import * as azad_entity from './entity';
 import * as notice from './notice';
 import * as extraction from './extraction';
 import * as signin from './signin';
@@ -11,6 +12,7 @@ import * as dom2json from './dom2json';
 import * as request_scheduler from './request_scheduler';
 import * as urls from './url';
 import * as util from './util';
+import * as item from './item';
 
 function getField(xpath: string, elem: HTMLElement): string|null {
     try {
@@ -59,7 +61,7 @@ interface IOrderDetails {
     invoice_url: string;
 
     [index: string]: string;
-}
+};
 
 function extractDetailFromDoc(
     order: OrderImpl, doc: HTMLDocument
@@ -380,10 +382,15 @@ function extractDetailFromDoc(
     return details;
 }
 
+interface IOrderDetailsAndItems {
+    details: IOrderDetails;
+    items: item.IItem[];
+};
+
 const extractDetailPromise = (
     order: OrderImpl,
     scheduler: request_scheduler.IRequestScheduler
-) => new Promise<IOrderDetails>(
+) => new Promise<IOrderDetailsAndItems>(
     (resolve, reject) => {
         const url = order.detail_url;
         if(!url) {
@@ -393,18 +400,25 @@ const extractDetailPromise = (
         } else {
             const event_converter = function(
                 evt: { target: { responseText: string; }; }
-            ): IOrderDetails {
+            ): IOrderDetailsAndItems {
                 const doc = util.parseStringToDOM( evt.target.responseText );
-                return extractDetailFromDoc(order, doc);
+                return {
+                    details: extractDetailFromDoc(order, doc),
+                    items: item.extractItems(
+                        util.defaulted(order.id, ''),
+                        util.defaulted(order.detail_url, ''),
+                        doc.documentElement
+                    ),
+                };
             };
             try {
-                scheduler.scheduleToPromise<IOrderDetails>(
+                scheduler.scheduleToPromise<IOrderDetailsAndItems>(
                     url,
                     event_converter,
                     util.defaulted(order.id, '9999'),
                     false
                 ).then(
-                    (response: request_scheduler.IResponse<IOrderDetails>) => resolve(response.result),
+                    (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => resolve(response.result),
                     url => reject('timeout or other problem when fetching ' + url),
                 );
             } catch (ex) {
@@ -416,31 +430,29 @@ const extractDetailPromise = (
     }
 );
 
-export type Items = Record<string, string>;
-
-export interface IOrder {
+export interface IOrder extends azad_entity.IEntity {
     id(): Promise<string>;
     detail_url(): Promise<string>;
     invoice_url(): Promise<string>;
 
-    site(): Promise<string>;
     date(): Promise<string>;
-    total(): Promise<string>;
-    who(): Promise<string>;
-    items(): Promise<Items>;
+    gift(): Promise<string>;
+    gst(): Promise<string>;
+    item_list(): Promise<item.IItem[]>;
+    items(): Promise<item.Items>;
     payments(): Promise<any>;
     postage(): Promise<string>;
     postage_refund(): Promise<string>;
-    gift(): Promise<string>;
-    us_tax(): Promise<string>;
-    vat(): Promise<string>;
-    gst(): Promise<string>;
     pst(): Promise<string>;
     refund(): Promise<string>;
+    site(): Promise<string>;
+    total(): Promise<string>;
+    us_tax(): Promise<string>;
+    vat(): Promise<string>;
     who(): Promise<string>;
 
     assembleDiagnostics(): Promise<Record<string,any>>;
-}
+};
 
 
 class Order {
@@ -474,8 +486,35 @@ class Order {
     who(): Promise<string> {
         return Promise.resolve(util.defaulted(this.impl.who, ''));
     }
-    items(): Promise<Items> {
-        return Promise.resolve(util.defaulted(this.impl.items, {}));
+    items(): Promise<item.Items> {
+        const items: item.Items = {}; 
+        if (this.impl.detail_promise) {
+            return this.impl.detail_promise.then( details => {
+                details.items.forEach(item => {
+                    try {
+                        items[item.description] = item.url;
+                    } catch (ex) {
+                        console.error(ex);
+                    }
+                });
+                return items;
+            });
+        } else {
+            return Promise.resolve(items);
+        }
+    }
+    item_list(): Promise<item.IItem[]> {
+        const items: item.IItem[] = []; 
+        if (this.impl.detail_promise) {
+            return this.impl.detail_promise.then( details => {
+                details.items.forEach(item => {
+                    items.push(item);
+                });
+                return items;
+            });
+        } else {
+            return Promise.resolve(items);
+        }
     }
     payments(): Promise<string[]> {
         return util.defaulted(
@@ -488,7 +527,9 @@ class Order {
         detail_lambda: (d: IOrderDetails) => string
     ): Promise<string> {
         if (this.impl.detail_promise) {
-            return this.impl.detail_promise.then( detail_lambda );
+            return this.impl.detail_promise.then(
+                details => detail_lambda(details.details)
+            );
         }
         return Promise.resolve('');
     }
@@ -538,8 +579,7 @@ class OrderImpl {
     date: string|null;
     total: string|null;
     who: string|null;
-    detail_promise: Promise<IOrderDetails>|null;
-    items: Items|null;
+    detail_promise: Promise<IOrderDetailsAndItems>|null;
     payments_promise: Promise<string[]>|null;
     scheduler: request_scheduler.IRequestScheduler;
 
@@ -558,50 +598,11 @@ class OrderImpl {
         this.total = null;
         this.who = null;
         this.detail_promise = null;
-        this.items = null;
         this.payments_promise = null;
         this.scheduler = scheduler;
         this._extractOrder(ordersPageElem);
     }
     _extractOrder(elem: HTMLElement) {
-        const getItems = function(elem: HTMLElement): Items {
-            /*
-              <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
-                  The Rise and Fall of D.O.D.O.
-              </a>
-              or
-              <a class="a-link-normal" href="/gp/product/B06X9BZNDM/ref=oh_aui_d_detailpage_o00_?ie=UTF8&amp;psc=1">
-                  Provenance
-              </a>
-              but a-link-normal is more common than this, so we need to match on gp/product
-              like this: .//div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]
-              then we get:
-                  name from contained text
-                  link from href attribute
-                  item: not sure what we use this for - will it still work?
-            */
-            const itemResult: Node[] = util.findMultipleNodeValues(
-// Note, some items don't have title= links, and some don't have links which contain '/gp/product/'. See D01-9406277-3414619. Confirming "a-row" seems to be enough.
-//                './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
-                './/div[@class="a-row"]/a[@class="a-link-normal"]',
-                elem
-            );
-            const items: Items = {};
-            itemResult.forEach(
-                (node: Node) => {
-                    const item: HTMLElement = <HTMLElement>node;
-                    const name = item.innerHTML
-                                     .replace(/[\n\r]/g, " ")
-                                     .replace(/  */g, " ")
-                                     .replace(/&amp;/g, "&")
-                                     .replace(/&nbsp;/g, " ")
-                                     .trim();
-                    const link = util.defaulted(item.getAttribute('href'), '');
-                    items[name] = link;
-                }
-            );
-            return items;
-        };
         const doc = elem.ownerDocument;
         this.date = date.normalizeDateString(
             util.defaulted(
@@ -679,8 +680,6 @@ class OrderImpl {
             );
             this.payments_url = urls.getOrderPaymentUrl(this.id, this.site);
         }
-
-        this.items = getItems(elem);
         this.detail_promise = extractDetailPromise(this, this.scheduler);
         this.payments_promise = new Promise<string[]>(
             (
@@ -731,7 +730,6 @@ class OrderImpl {
             'date',
             'total',
             'who',
-            'items'
         ];
         field_names.forEach(
             ((field_name: keyof OrderImpl) => {
@@ -740,7 +738,14 @@ class OrderImpl {
             })
         );
 
+        const order = new Order(this);
+        const items_promise = order.items();
+        items_promise.then( items => {
+            diagnostics['items'] = items;
+        });
+
         return Promise.all([
+            items_promise,
             signin.checkedFetch( util.defaulted(this.list_url, '') )
                 .then( response => response.text())
                 .then( text => { diagnostics['list_html'] = text; } ),
@@ -763,7 +768,7 @@ class OrderImpl {
 interface IOrdersPageData {
     expected_order_count: number;
     order_elems: dom2json.IJsonObject;
-}
+};
 
 function getOrdersForYearAndQueryTemplate(
     year: number,

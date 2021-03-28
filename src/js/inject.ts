@@ -122,7 +122,7 @@ function fetchAndShowOrders(years: number[]): void {
                     document
                 );
             }
-            azad_table.displayOrders(orderPromises, beautiful, false);
+            azad_table.display(orderPromises, beautiful, false);
             return document.querySelector('[id="azad_order_table"]');
         }
     );
