@@ -19,7 +19,7 @@ type ItemsExtractor = (order_id: string, order_detail_url: string, order_elem: H
 export function extractItems(
     order_id: string, order_detail_url: string, order_elem: HTMLElement
 ): IItem[] {
-    const strategies: ItemsExtractor[] = [strategy1, strategy2];
+    const strategies: ItemsExtractor[] = [strategy0, strategy1, strategy2, strategy3];
     for (let i=0; i!=strategies.length; i+=1) {
         const strategy = strategies[i];
         try {
@@ -28,13 +28,13 @@ export function extractItems(
                 return items;
             }
         } catch (ex) {
-            console.error(ex);
+            console.error('strategy' + i.toString() + ' ' + ex);
         }
     }
     return [];
 }
 
-function strategy1(
+function strategy0(
     order_id: string, order_detail_url: string, order_elem: HTMLElement
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
@@ -87,7 +87,87 @@ function strategy1(
     return items;
 }
 
+// Digital orders.
+function strategy1(
+    order_id: string, order_detail_url: string, order_elem: HTMLElement
+): IItem[] {
+    const itemElems: Node[] = util.findMultipleNodeValues(
+        '//*[contains(text(), "Ordered") or contains(text(), "Commandé")]/parent::*/parent::*/parent::*',
+        order_elem
+    );
+    const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
+        const link = <HTMLElement>util.findSingleNodeValue(
+            './/a[contains(@href, "/dp/")]',
+            <HTMLElement>itemElem
+        );
+        const description = util.defaulted(link.textContent, '').trim();
+        const url = util.defaulted(link.getAttribute('href'), '').trim();
+        const qty_match = link.parentNode
+                             ?.parentNode
+                             ?.textContent
+                             ?.match(/Qty: (\d+)/);
+        const sqty = qty_match ? qty_match[1] : '1';
+        const qty = parseInt(sqty);
+        const price_match = link.parentNode
+                               ?.parentNode
+                               ?.nextSibling
+                               ?.nextSibling
+                               ?.textContent
+                               ?.match(util.moneyRegEx())
+        const price = price_match ? price_match[1] : '';
+        return {
+            description: description,
+            url: url,
+            order_detail_url: order_detail_url,
+            price: price,
+            order_id: order_id,
+            quantity: qty
+        } 
+    });
+    return items;
+}
+
+// Amazon.com 2016
 function strategy2(
+    order_id: string, order_detail_url: string, order_elem: HTMLElement
+): IItem[] {
+    const itemElems: Node[] = util.findMultipleNodeValues(
+        '//div[contains(@id, "orderDetails")]//a[contains(@href, "/product/")]/parent::*',
+        order_elem
+    );
+    const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
+        const link = <HTMLElement>util.findSingleNodeValue(
+            './/a[contains(@href, "/product/")]',
+            <HTMLElement>itemElem
+        );
+        const description = util.defaulted(link.textContent, '').trim();
+        const url = util.defaulted(link.getAttribute('href'), '').trim();
+        const qty_match = link.parentNode
+                             ?.parentNode
+                             ?.textContent
+                             ?.match(/Qty: (\d+)/);
+        const sqty = qty_match ? qty_match[1] : '1';
+        const qty = parseInt(sqty);
+        const price_match = link.parentNode
+                               ?.parentNode
+                               ?.nextSibling
+                               ?.nextSibling
+                               ?.textContent
+                               ?.match(util.moneyRegEx())
+        const price = price_match ? price_match[1] : '';
+        return {
+            description: description,
+            url: url,
+            order_detail_url: order_detail_url,
+            price: price,
+            order_id: order_id,
+            quantity: qty
+        } 
+    });
+    return items.filter( item => item.description != '' );
+}
+// This strategy works for Amazon.com grocery orders in 2021.
+function strategy3(
     order_id: string, order_detail_url: string, order_elem: HTMLElement
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(

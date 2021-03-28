@@ -115,3 +115,19 @@ export function clearBody() {
         }
     );
 }
+
+export function moneyRegEx() {
+    return /\s+((GBP|USD|CAD|EUR|AUD|[$£€])?\s?(\d+[.,]\d\d))\s+/;
+/*
+    /
+        \s+
+        (
+            (
+                GBP|USD|CAD|EUR|AUD|[$£€]
+            )?
+            \s?
+            (\d+[.,]\d\d)
+        )
+    /
+*/
+}

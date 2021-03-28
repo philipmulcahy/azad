@@ -263,13 +263,12 @@ function extractDetailFromDoc(
     };
 
     const us_tax = function(): string {
-        const moneyRegEx = /\\s+(((?:GBP|USD|CAD|EUR|AUD)?)\\s?(([$£€]?)\\s?(\\d+[.,]\\d\\d)))/;
         let a = extraction.by_regex(
             [
                 '//span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span/text()',
                 '//span[contains(@id, "totalTax-amount")]/text()',
             ],
-            moneyRegEx,
+            util.moneyRegEx(),
             null,
             doc.documentElement
         );
@@ -285,7 +284,7 @@ function extractDetailFromDoc(
                 // 5:     "0.00"
                 try {
                     // @ts-ignore stop complaining: you're in a try block!
-                    a = a.match(moneyRegEx)[1];
+                    a = a.match(util.moneyRegEx())[1];
                 } catch {
                     a = null;
                 }

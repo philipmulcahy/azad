@@ -62,7 +62,9 @@ function main() {
     const test_targets = order_data.discoverTestData();
     const test_results_promise = Promise.all(
         test_targets
-            .filter(target => target.order_id == '112-1097135-4205023')
+            // .filter(target => target.order_id == '112-1097135-4205023')
+            // .filter(target => target.order_id == 'D01-8755888-0539825')
+            // .filter(target => target.order_id == '002-9651082-1715432')
             .map(target => testOneTarget(target)));
     test_results_promise.then(
         (results: ITestResult[]) => console.log(results)
