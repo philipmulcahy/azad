@@ -2,10 +2,15 @@
   "compilerOptions": {
     "allowJs": true,
     "esModuleInterop": true,
-    "module": "es6",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "ES2020.Promise"
+    ],
+    "module": "ES2020",
     "moduleResolution": "node",
     "noImplicitAny": true,
     "sourceMap": true,
-    "target": "es6"
+    "target": "ES2018"
   }
 }
