@@ -14,16 +14,29 @@ export interface IItem extends azad_entity.IEntity {
 
 export type Items = Record<string, string>;
 
-type ItemsExtractor = (order_id: string, order_detail_url: string, order_elem: HTMLElement) => IItem[];
+type ItemsExtractor = (
+    order_id: string,
+    order_detail_url: string,
+    order_elem: HTMLElement,
+    context: string,
+) => IItem[];
 
 export function extractItems(
-    order_id: string, order_detail_url: string, order_elem: HTMLElement
+    order_id: string,
+    order_detail_url: string,
+    order_elem: HTMLElement,
+    context: string,
 ): IItem[] {
     const strategies: ItemsExtractor[] = [strategy0, strategy1, strategy2, strategy3];
     for (let i=0; i!=strategies.length; i+=1) {
         const strategy = strategies[i];
         try {
-            const items = strategy(order_id, order_detail_url, order_elem);
+            const items = strategy(
+                order_id,
+                order_detail_url,
+                order_elem,
+                context + ';extractItems:strategy:' + i,
+            );
             if (items.length) {
                 return items;
             }
@@ -35,7 +48,10 @@ export function extractItems(
 }
 
 function strategy0(
-    order_id: string, order_detail_url: string, order_elem: HTMLElement
+    order_id: string,
+    order_detail_url: string,
+    order_elem: HTMLElement,
+    context: string
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
         '//div[./div[./div[@class="a-row" and ./a[@class="a-link-normal"]] and .//span[contains(@class, "price") ]/nobr]]',
@@ -44,7 +60,8 @@ function strategy0(
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
         const link = <HTMLElement>util.findSingleNodeValue(
             './/div[@class="a-row"]/a[@class="a-link-normal"]',
-            <HTMLElement>itemElem
+            <HTMLElement>itemElem,
+            context,
         );
         const description = util.defaulted(link.textContent, '').trim();
         const url = util.defaulted(link.getAttribute('href'), '').trim();
@@ -54,7 +71,8 @@ function strategy0(
                 util.defaulted(
                     util.findSingleNodeValue(
                         './/span[@class="item-view-qty"]',
-                        <HTMLElement>itemElem
+                        <HTMLElement>itemElem,
+                        context,
                     ).textContent,
                     '1'
                 ).trim()
@@ -69,7 +87,8 @@ function strategy0(
         try {
             const priceElem = <HTMLElement>util.findSingleNodeValue(
                 './/span[contains(@class, "price")]//nobr',
-                <HTMLElement>itemElem
+                <HTMLElement>itemElem,
+                context,
             );
             price = util.defaulted(priceElem.textContent, '').trim();
         } catch(ex) {
@@ -89,7 +108,10 @@ function strategy0(
 
 // Digital orders.
 function strategy1(
-    order_id: string, order_detail_url: string, order_elem: HTMLElement
+    order_id: string,
+    order_detail_url: string,
+    order_elem: HTMLElement,
+    context: string,
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
         '//*[contains(text(), "Ordered") or contains(text(), "Commandé")]/parent::*/parent::*/parent::*',
@@ -98,7 +120,8 @@ function strategy1(
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
         const link = <HTMLElement>util.findSingleNodeValue(
             './/a[contains(@href, "/dp/")]',
-            <HTMLElement>itemElem
+            <HTMLElement>itemElem,
+            context,
         );
         const description = util.defaulted(link.textContent, '').trim();
         const url = util.defaulted(link.getAttribute('href'), '').trim();
@@ -129,7 +152,10 @@ function strategy1(
 
 // Amazon.com 2016
 function strategy2(
-    order_id: string, order_detail_url: string, order_elem: HTMLElement
+    order_id: string,
+    order_detail_url: string,
+    order_elem: HTMLElement,
+    context: string,
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
         '//div[contains(@id, "orderDetails")]//a[contains(@href, "/product/")]/parent::*',
@@ -138,7 +164,8 @@ function strategy2(
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
         const link = <HTMLElement>util.findSingleNodeValue(
             './/a[contains(@href, "/product/")]',
-            <HTMLElement>itemElem
+            <HTMLElement>itemElem,
+            context,
         );
         const description = util.defaulted(link.textContent, '').trim();
         const url = util.defaulted(link.getAttribute('href'), '').trim();
@@ -168,7 +195,10 @@ function strategy2(
 }
 // This strategy works for Amazon.com grocery orders in 2021.
 function strategy3(
-    order_id: string, order_detail_url: string, order_elem: HTMLElement
+    order_id: string,
+    order_detail_url: string,
+    order_elem: HTMLElement,
+    context: string,
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
         '//div[contains(@class, "a-section")]//span[contains(@id, "item-total-price")]/parent::div/parent::div/parent::div',
@@ -177,7 +207,8 @@ function strategy3(
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
         const link = <HTMLElement>util.findSingleNodeValue(
             './/a[contains(@class, "a-link-normal") and contains(@href, "/product/")]',
-            <HTMLElement>itemElem
+            <HTMLElement>itemElem,
+            context,
         );
         const description = util.defaulted(link.textContent, '').trim();
         const url = util.defaulted(link.getAttribute('href'), '').trim();
@@ -187,7 +218,8 @@ function strategy3(
         try {
             const priceElem = <HTMLElement>util.findSingleNodeValue(
                 './/span[contains(@id, "item-total-price")]',
-                <HTMLElement>itemElem
+                <HTMLElement>itemElem,
+                context,
             );
             price = util.defaulted(priceElem.textContent, '').trim();
         } catch(ex) {
