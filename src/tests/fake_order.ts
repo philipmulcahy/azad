@@ -120,7 +120,7 @@ export function orderFromTestData(
         (order_elems as HTMLElement[]).filter(
             (el: HTMLElement) => {
                 try {
-                    Array(...el.getElementsByTagName('a'))
+                    return Array(...el.getElementsByTagName('a'))
                         .filter( el => el.hasAttribute('href') )
                         .map( el => el.getAttribute('href') )
                         .map( href => href?.match(/.*orderID=([A-Z0-9-]*).*/) )
