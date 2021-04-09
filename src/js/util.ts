@@ -63,7 +63,9 @@ export function removeButton(name: string) {
     }
 }
 
-export function findSingleNodeValue(xpath: string, elem: HTMLElement): Node {
+export function findSingleNodeValue(
+    xpath: string, elem: HTMLElement, context: string
+): Node {
     try {
         const node = elem.ownerDocument!.evaluate(
             xpath,
@@ -77,30 +79,44 @@ export function findSingleNodeValue(xpath: string, elem: HTMLElement): Node {
         }
         return node;
     } catch (ex) {
-        throw ex + ': findSingleNodeValue didn\'t match: ' + xpath;
+        const msg = (
+			'findSingleNodeValue didn\'t match: ' + xpath
+		) + (
+			context ?
+				('; Context:' + context) :
+				''
+		) + '; ' + JSON.stringify(ex);
+        throw msg;
     }
 }
 
 export function findMultipleNodeValues(
     xpath: string,
-    elem: HTMLElement
+    elem: HTMLElement,
 ): Node[] {
-    const snapshot = elem.ownerDocument!.evaluate(
-        xpath,
-        elem,
-        null,
-        getXPathResult().ORDERED_NODE_SNAPSHOT_TYPE,
-        null
-    );
-    const values: Node[] = [];
-    let i;
-    for(i = 0; i !== snapshot.snapshotLength; i += 1) {
-        const node: Node|null = snapshot.snapshotItem(i);
-        if (node) {
-            values.push(node);
-        }
-    }
-    return values;
+	try {
+		const snapshot = elem.ownerDocument!.evaluate(
+			xpath,
+			elem,
+			null,
+			getXPathResult().ORDERED_NODE_SNAPSHOT_TYPE,
+			null
+		);
+		const values: Node[] = [];
+		let i;
+		for(i = 0; i !== snapshot.snapshotLength; i += 1) {
+			const node: Node|null = snapshot.snapshotItem(i);
+			if (node) {
+				values.push(node);
+			}
+		}
+		return values;
+	} catch( ex ) {
+		if (ex) {
+			throw ex;
+		}
+		throw 'Unknown exception from findMultipleNodeValues.'
+	}
 }
 
 export function clearBody() {

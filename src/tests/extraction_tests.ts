@@ -9,6 +9,7 @@ import * as extraction from '../js/extraction';
 
 const detailExtractionTest = function(): boolean {
     const order_detail_html = order_data.order_D01_9960417_3589456_html();
+    const context = 'detail_extraction_test';
     const parser = new DOMParser();
     const doc = parser.parseFromString( order_detail_html, 'text/html' );
 //        const order = {
@@ -25,7 +26,8 @@ const detailExtractionTest = function(): boolean {
         ], 
         /VAT: (?:[^-$£€0-9]*)([-$£€0-9.]*)/, 
         'N/A',
-        doc.documentElement
+        doc.documentElement,
+        context,
     );
     if (basic) {
         return basic.substring(3) == '0.90';

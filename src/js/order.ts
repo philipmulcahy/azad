@@ -14,11 +14,13 @@ import * as urls from './url';
 import * as util from './util';
 import * as item from './item';
 
-function getField(xpath: string, elem: HTMLElement): string|null {
+function getField(
+    xpath: string,
+    elem: HTMLElement,
+    context: string
+): string|null {
     try {
-        const valueElem = util.findSingleNodeValue(
-            xpath, elem
-        );
+        const valueElem = util.findSingleNodeValue(xpath, elem, context);
         return valueElem!.textContent!.trim();
     } catch (_) {
         return null;
@@ -28,10 +30,11 @@ function getField(xpath: string, elem: HTMLElement): string|null {
 function getAttribute(
     xpath: string,
     attribute_name: string,
-    elem: HTMLElement
+    elem: HTMLElement,
+    context: string,
 ): string|null {
     try {
-        const targetElem = util.findSingleNodeValue(xpath, elem);
+        const targetElem = util.findSingleNodeValue(xpath, elem, context);
         return (<HTMLElement>targetElem)!.getAttribute(attribute_name);
     } catch (_) {
         return null;
@@ -66,6 +69,7 @@ interface IOrderDetails {
 function extractDetailFromDoc(
     order: OrderImpl, doc: HTMLDocument
 ): IOrderDetails {
+    const context = 'id:' + order.id;
     const who = function(){
         if(order.who) {
             return order.who;
@@ -74,15 +78,24 @@ function extractDetailFromDoc(
         let x = getField(
             // TODO: this seems brittle, depending on the precise path of the element.
             '//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
-            doc_elem
+            doc_elem,
+            context
         ); // US Digital
         if ( !x ) {
             x = getField('.//div[contains(@class,"recipient")]' +
-                '//span[@class="trigger-text"]', doc_elem);
+                '//span[@class="trigger-text"]', doc_elem, context);
             if ( !x ) {
-                x = getField('.//div[contains(text(),"Recipient")]', doc_elem);
+                x = getField(
+                    './/div[contains(text(),"Recipient")]',
+                    doc_elem,
+                    context
+                );
                 if ( !x ) {
-                    x = getField('//li[contains(@class,"displayAddressFullName")]/text()', doc_elem);
+                    x = getField(
+                        '//li[contains(@class,"displayAddressFullName")]/text()',
+                        doc_elem,
+                        context,
+                    );
                     if ( !x ) {
                         x = 'null';
                     }
@@ -100,7 +113,8 @@ function extractDetailFromDoc(
             ],
             /(?:Ordered on|Commandé le|Digital Order:) (.*)/i,
             order.date,
-            doc.documentElement
+            doc.documentElement,
+            context,
         );
         if (d) {
             return date.normalizeDateString(d);
@@ -148,7 +162,8 @@ function extractDetailFromDoc(
             ],
             null,
             order.total,
-            doc.documentElement
+            doc.documentElement,
+            context,
         );
         if (a) {
             return a.replace(/.*: /, '').replace('-', '');
@@ -170,7 +185,8 @@ function extractDetailFromDoc(
             ],
             null,
             null,
-            doc.documentElement
+            doc.documentElement,
+            context,
         );
         if ( a ) {
             const b = a.match(
@@ -200,7 +216,8 @@ function extractDetailFromDoc(
                 ],
                 null,
                 null,
-                doc.documentElement
+                doc.documentElement,
+                context,
             ),
             ''
         );
@@ -221,7 +238,8 @@ function extractDetailFromDoc(
                 ],
                 null,
                 null,
-                doc.documentElement
+                doc.documentElement,
+                context,
             ),
             ''
         );
@@ -249,7 +267,8 @@ function extractDetailFromDoc(
             xpaths,
             null,
             null,
-            doc.documentElement
+            doc.documentElement,
+            context,
         );
         if( a != null ) {
             const b = a.match(
@@ -270,10 +289,15 @@ function extractDetailFromDoc(
             ],
             util.moneyRegEx(),
             null,
-            doc.documentElement
+            doc.documentElement,
+            context,
         );
         if ( !a ) {
-            a = getField('.//tr[contains(td,"Tax Collected:")]', doc.documentElement);
+            a = getField(
+                './/tr[contains(td,"Tax Collected:")]',
+                doc.documentElement,
+                context,
+            );
             if (a) {
                 // Result
                 // 0: "Tax Collected: USD $0.00"
@@ -315,7 +339,8 @@ function extractDetailFromDoc(
             ],
             /(:?VAT:)? *([-$£€0-9.]*)/i,
             null,
-            doc.documentElement
+            doc.documentElement,
+            context,
         );
         return util.defaulted(a, '');
     };
@@ -340,7 +365,8 @@ function extractDetailFromDoc(
             ],
             /(VAT: *)([-$£€0-9.]*)/i,
             null,
-            doc.documentElement
+            doc.documentElement,
+            context,
         );
         return util.defaulted(a, '');
     };
@@ -355,7 +381,8 @@ function extractDetailFromDoc(
                     label
                 )
             ).join('|'),
-            doc.documentElement
+            doc.documentElement,
+            context,
         );
         return util.defaulted(a, '');
     };
@@ -364,7 +391,8 @@ function extractDetailFromDoc(
         const suffix: string|null = getAttribute(
             '//a[contains(@href, "/invoice")]',
             'href',
-            doc.documentElement
+            doc.documentElement,
+            context,
         );
         if( suffix ) {
             return 'https://' + urls.getSite() + suffix;
@@ -400,6 +428,7 @@ const extractDetailPromise = (
     scheduler: request_scheduler.IRequestScheduler
 ) => new Promise<IOrderDetailsAndItems>(
     (resolve, reject) => {
+        const context = 'id:' + order.id;
         const url = order.detail_url;
         if(!url) {
             const msg = 'null order detail query: cannot schedule';
@@ -415,7 +444,8 @@ const extractDetailPromise = (
                     items: item.extractItems(
                         util.defaulted(order.id, ''),
                         util.defaulted(order.detail_url, ''),
-                        doc.documentElement
+                        doc.documentElement,
+                        context,
                     ),
                 };
             };
@@ -612,35 +642,7 @@ class OrderImpl {
     }
     _extractOrder(elem: HTMLElement) {
         const doc = elem.ownerDocument;
-        this.date = date.normalizeDateString(
-            util.defaulted(
-                getField(
-                    [
-                        'Commande effectuée',
-                        'Order placed',
-                        'Ordine effettuato',
-                         'Pedido realizado'
-                    ].map(
-                        label => sprintf.sprintf(
-                            './/div[contains(span,"%s")]' +
-                            '/../div/span[contains(@class,"value")]',
-                            label
-                        )
-                    ).join('|'),
-                    elem
-                ),
-                ''
-            )
-        );
-        // This field is no longer always available, particularly for .com
-        // We replace it (where we know the search pattern for the country)
-        // with information from the order detail page.
-        this.total = getField('.//div[contains(span,"Total")]' +
-            '/../div/span[contains(@class,"value")]', elem);
-        console.log('total direct:', this.total);
-        this.who = getField('.//div[contains(@class,"recipient")]' +
-            '//span[@class="trigger-text"]', elem);
-        
+
         try {
             this.id = [
                 ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
@@ -656,6 +658,37 @@ class OrderImpl {
             throw error;
         }
 
+        const context = 'id:' + this.id;
+        this.date = date.normalizeDateString(
+            util.defaulted(
+                getField(
+                    [
+                        'Commande effectuée',
+                        'Order placed',
+                        'Ordine effettuato',
+                         'Pedido realizado'
+                    ].map(
+                        label => sprintf.sprintf(
+                            './/div[contains(span,"%s")]' +
+                            '/../div/span[contains(@class,"value")]',
+                            label
+                        )
+                    ).join('|'),
+                    elem,
+                    context,
+                ),
+                ''
+            )
+        );
+        // This field is no longer always available, particularly for .com
+        // We replace it (where we know the search pattern for the country)
+        // with information from the order detail page.
+        this.total = getField('.//div[contains(span,"Total")]' +
+            '/../div/span[contains(@class,"value")]', elem, context);
+        console.log('total direct:', this.total);
+        this.who = getField('.//div[contains(@class,"recipient")]' +
+            '//span[@class="trigger-text"]', elem, context);
+
         this.site = function(o: OrderImpl) {
             if (o.list_url) {
                 const list_url_match = o.list_url.match(
@@ -670,7 +703,8 @@ class OrderImpl {
         if (!this.id) {
             const id_node: Node = util.findSingleNodeValue(
                 '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
-                elem
+                elem,
+                context,
             );
             const id_elem: HTMLElement = <HTMLElement>id_node;
             const more_than_id: string|null = id_elem.getAttribute('href');
@@ -797,8 +831,9 @@ function getOrdersForYearAndQueryTemplate(
 
     const convertOrdersPage = function(evt: any): IOrdersPageData {
         const d = util.parseStringToDOM(evt.target.responseText);
+        const context = 'Converting orders page';
         const countSpan = util.findSingleNodeValue(
-            './/span[@class="num-orders"]', d.documentElement);
+            './/span[@class="num-orders"]', d.documentElement, context);
         if ( !countSpan ) {
             const msg = 'Error: cannot find order count elem in: ' + evt.target.responseText
             console.error(msg);

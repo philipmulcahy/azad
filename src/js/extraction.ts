@@ -11,7 +11,8 @@ export function by_regex(
     xpaths: string[],
     regex: RegExp | null,
     default_value: string|number|null,
-    elem: HTMLElement
+    elem: HTMLElement,
+    context: string,
 ): string | null {
     let i;
     for ( i=0; i!=xpaths.length; i++ ) {
@@ -20,10 +21,13 @@ export function by_regex(
         try {
             a = util.findSingleNodeValue(
                 xpath,
-                elem
+                elem,
+                context,
             );
         } catch ( ex ) {
-            console.log('got ' + ex + ' when evaluating ' + xpath);
+            console.log(
+				'Caught ' + JSON.stringify(ex)
+			);
         }
         if ( a ) {
             if ( regex ) {
