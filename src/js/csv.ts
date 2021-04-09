@@ -13,7 +13,10 @@ function string_or_null(s: string | null | undefined) {
     return '';
 }
 
-export function download(table: HTMLTableElement, sums_for_spreadsheet: boolean) {
+export function download(
+    table: HTMLTableElement,
+    sums_for_spreadsheet: boolean,
+) {
     const tableToArrayOfArrays
             = function(table: HTMLTableElement): (string[])[] {
         const rows: HTMLTableRowElement[]
@@ -21,7 +24,7 @@ export function download(table: HTMLTableElement, sums_for_spreadsheet: boolean)
         const result: string[][] = [];
         for(
             let i=0;
-            i<rows.length + ( sums_for_spreadsheet  ?  -1  :  0 );
+            i < rows.length + ( sums_for_spreadsheet ? -1 : 0 );
             ++i
         ) {
             let cells = rows[i].cells;
