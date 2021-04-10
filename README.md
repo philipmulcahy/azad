@@ -80,6 +80,7 @@ If you have log files, debug info, or screenshts to send but don't want them to 
 
 * On the screen showing the report, press Ctrl+Shift+I (Cmd+Shift+I on MacOs) to open Chrome Developer Tools
 * The Console log might appear at the bottom of the screen, but if it doesn't press "Console" (near to top of the tools pane)
+* Once the console is open, do your thing with the extension. If you command a scrape and only then open the console, you'll probably only get the last few hundred lines of log. I think this is to save memory.
 * RIGHT-click on the log pane and select "Save as..."
 * Save the file as desired.
 
