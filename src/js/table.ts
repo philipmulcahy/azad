@@ -646,7 +646,14 @@ export function display(
     wait_for_all_values_before_resolving: boolean
 ): Promise<HTMLTableElement> {
     console.log('amazon_order_history_table.display starting');
-    return Promise.all(orderPromises).then( orders => {
+    return Promise.allSettled(orderPromises).then( settled => {
+        const orders: azad_order.IOrder[] = settled
+            .filter(s => s.status == 'fulfilled')
+            .map(s => (s as PromiseFulfilledResult<azad_order.IOrder>).value);
+        const problems: any[] = settled
+            .filter(s => s.status == 'rejected')
+            .map(s => (s as PromiseRejectedResult).reason);
+        problems.forEach(p => console.warn('Bad order: ' + JSON.stringify(p)));
         console.log('amazon_order_history_table.display then func starting');
         return settings.getBoolean('show_items_not_orders').then(
             items_not_orders => {

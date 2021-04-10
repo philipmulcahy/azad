@@ -1,4 +1,4 @@
-/* Copyright(c) 2018-2020 Philip Mulcahy. */
+/* Copyright(c) 2018-2021 Philip Mulcahy. */
 
 const webpack = require("webpack");
 const path = require("path");
@@ -46,7 +46,7 @@ const chrome_extension_options = {
         ]
     },
     resolve: {
-        extensions: ['.tsx', '.ts', '.ts', '.js'],
+        extensions: ['.tsx', '.ts', '.js'],
     },
     plugins: [
         // clean the build folder
@@ -131,7 +131,7 @@ const node_options = {
     },
     resolve: {
         alias: {},
-        extensions: ['.tsx', '.ts', '.ts', '.js'],
+        extensions: ['.tsx', '.ts', '.js'],
     },
     plugins: [
         // clean the build folder

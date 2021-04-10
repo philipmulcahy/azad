@@ -61,8 +61,8 @@ class FakeRequestScheduler {
 
     abort(): void {}
     clearCache(): void {}
-    statistics(): Record<string, number> { return null; }
-    isLive(): boolean { return null; }
+    statistics(): Record<string, number> { return {}; }
+    isLive(): boolean { return true; }
 }
 
 function dirHasDirs(dir: fs.Dirent, dirs: string[]): boolean {
@@ -75,7 +75,7 @@ function dirHasDirs(dir: fs.Dirent, dirs: string[]): boolean {
 
 function getSiteDirs(): fs.Dirent[] {
     return fs.readdirSync(DATA_ROOT_PATH, {withFileTypes: true})
-             .filter((de: fs.Dirent) => de.isDirectory &&  // directories only
+             .filter((de: fs.Dirent) => de.isDirectory() &&  // directories only
                                         de.name[0] != '.')  // ignore hidden
 }
 
@@ -116,13 +116,22 @@ export function orderFromTestData(
         './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
         list_doc.body
     );
-    const list_elem: HTMLElement = <HTMLElement>(order_elems.filter(
-        (el: HTMLElement) => Array(...el.getElementsByTagName('a'))
-            .filter( el => el.hasAttribute('href') )
-            .map( el => el.getAttribute('href') )
-            .map( href => href.match(/.*orderID=([A-Z0-9-]*).*/) )
-            .filter( match => match )[0][1] == order_dump.id
-    )[0]);
+    const list_elem: HTMLElement = <HTMLElement>(
+        (order_elems as HTMLElement[]).filter(
+            (el: HTMLElement) => {
+                try {
+                    return Array(...el.getElementsByTagName('a'))
+                        .filter( el => el.hasAttribute('href') )
+                        .map( el => el.getAttribute('href') )
+                        .map( href => href?.match(/.*orderID=([A-Z0-9-]*).*/) )
+                        .filter( match => match )![0]![1] == order_dump.id
+
+                } catch(ex) {
+                    return null
+                }
+            }
+        )[0]
+    );
     return azad_order.create(
         list_elem,
         scheduler,
@@ -150,19 +159,29 @@ export function orderFromTestDataB() {
     url_map[list_url] = list_html;
     const scheduler = new FakeRequestScheduler( url_map );
     const list_doc = new jsdom.JSDOM(list_html).window.document;
-    const order_elems = util.findMultipleNodeValues(
+    const order_elems: HTMLElement[] = util.findMultipleNodeValues(
         './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
         list_doc.body
-    );
-    const list_elem: HTMLElement = <HTMLElement>(order_elems.filter(
-        (el: HTMLElement) => Array(...el.getElementsByTagName('a'))
-            .filter( el => el.hasAttribute('href') )
-            .map( el => el.getAttribute('href') )
-            // "https://www.amazon.de:443/gp/redirect.html/ref=ppx_yo_dt_b_amzn_o04?_encoding=UTF8&amp;location=https%3A%2F%2Fwww.audible.de%2Forder-detail%3ForderNumber%3DD01-6816308-9691801%26orderType%3DREGULAR&amp;source=standards&amp;token=3DE81B8D696294E017D9EAE857EBCE90E128789D"
-            // "/-/en/gp/your-account/order-details/ref=ppx_yo_dt_b_order_details_o03?ie=UTF8&amp;orderID=303-6405422-4189967"
-            .map( href => href.match(/.*(?:orderID=|orderNumber%3D)([A-Z0-9-]*).*/) )
-            .filter( match => match )[0][1] == order_id
-    )[0]);
+    ) as HTMLElement[];
+    const list_elems = (
+        order_elems.filter(
+            (el: HTMLElement) => (
+                Array<HTMLElement>(...el.getElementsByTagName('a')) as HTMLElement[]
+            )
+                .filter( el => el.hasAttribute('href') )
+                .map( el => el.getAttribute('href') )
+                // "https://www.amazon.de:443/gp/redirect.html/ref=ppx_yo_dt_b_amzn_o04?_encoding=UTF8&amp;location=https%3A%2F%2Fwww.audible.de%2Forder-detail%3ForderNumber%3DD01-6816308-9691801%26orderType%3DREGULAR&amp;source=standards&amp;token=3DE81B8D696294E017D9EAE857EBCE90E128789D"
+                // "/-/en/gp/your-account/order-details/ref=ppx_yo_dt_b_order_details_o03?ie=UTF8&amp;orderID=303-6405422-4189967"
+                .map( href => href?.match(/.*(?:orderID=|orderNumber%3D)([A-Z0-9-]*).*/) )
+                .filter(
+                    match => {
+                        const candidate_id = match![1] ?? '';
+                        return candidate_id == order_id;
+                    }
+                )
+        )
+    ) as HTMLElement[];
+    const list_elem: HTMLElement = list_elems[0];
     return azad_order.create(
         list_elem,
         scheduler,
@@ -204,12 +223,12 @@ export function discoverTestData(): ITestTarget[] {
             .forEach( expected => {
                 const target: ITestTarget = {
                     site: site,
-                    order_id: expected.match(
+                    order_id: expected?.match(
                         /^([A-Z0-9-]*)_.*\.json/
-                    )[1],
-                    scrape_date: expected.match(
+                    )![1] ?? '',
+                    scrape_date: expected?.match(
                         /^.*_(\d\d\d\d-\d\d-\d\d).json$/
-                    )[1],
+                    )![1] ?? '',
                     input_path: sitePath(site) +
                                 '/input/' + expected,
                     expected_path: sitePath(site) +

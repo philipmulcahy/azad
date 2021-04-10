@@ -9,7 +9,7 @@
         "clean": "rm -rf azad*.zip build/* build-node/* doc",
         "build": "node utils/build.js",
         "doc": " typedoc --out ./doc/ ./src/js/",
-        "lint": "tsc --strict --alwaysStrict --noEmit src/js/inject.ts src/js/control.ts src/js/background.ts src/tests/all.ts",
+        "lint": "tsc --strict --alwaysStrict --noEmit",
         "package": "utils/package.sh",
         "private_package": "npm run package; cp azad.zip azad_$(git log -1 | grep commit | sed 's/^commit //' | cut -c 1-8).zip",
         "test": "node build-node/order_tests.bundle.js",
