@@ -170,7 +170,7 @@ function extractDetailFromDoc(
         }
         return util.defaulted(a, '');
     };
-
+    
     // TODO Need to exclude gift wrap
     const gift = function(): string {
         const a = extraction.by_regex(
@@ -178,6 +178,8 @@ function extractDetailFromDoc(
                 '//div[contains(@id,"od-subtotals")]//' +
                 'span[contains(text(),"Gift") or contains(text(),"Importo Buono Regalo")]/' +
                 'parent::div/following-sibling::div/span',
+
+                '//span[contains(@id, "giftCardAmount-amount")]/text()', // Whole foods or Amazon Fresh.
 
                 '//*[text()[contains(.,"Gift Certificate")]]',
 
@@ -190,7 +192,7 @@ function extractDetailFromDoc(
         );
         if ( a ) {
             const b = a.match(
-                /Gift (?:Certificate|Card) Amount: *([$£€0-9.]*)/);
+                /Gift (?:Certificate|Card) Amount: *([$£€0-9.]*)/i);
             if( b !== null ) {
                 return b[1];
             }
