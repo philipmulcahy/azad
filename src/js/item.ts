@@ -5,17 +5,19 @@ import * as util from './util';
 
 export interface IItem extends azad_entity.IEntity {
     description: string;
-    url: string;
+    order_date: string;
     order_detail_url: string;
+    order_id: string;
     price: string;
     quantity: number;
-    order_id: string;
+    url: string;
 };
 
 export type Items = Record<string, string>;
 
 type ItemsExtractor = (
     order_id: string,
+    order_date: string,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string,
@@ -23,16 +25,23 @@ type ItemsExtractor = (
 
 export function extractItems(
     order_id: string,
+    order_date: string,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string,
 ): IItem[] {
-    const strategies: ItemsExtractor[] = [strategy0, strategy1, strategy2, strategy3];
+    const strategies: ItemsExtractor[] = [
+        strategy0,
+        strategy1,
+        strategy2,
+        strategy3,
+    ];
     for (let i=0; i!=strategies.length; i+=1) {
-        const strategy = strategies[i];
+        const strategy: ItemsExtractor = strategies[i];
         try {
             const items = strategy(
                 order_id,
+                order_date,
                 order_detail_url,
                 order_elem,
                 context + ';extractItems:strategy:' + i,
@@ -49,6 +58,7 @@ export function extractItems(
 
 function strategy0(
     order_id: string,
+    order_date: string,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string
@@ -96,11 +106,12 @@ function strategy0(
         }
         return {
             description: description,
-            url: url,
+            order_date: order_date,
             order_detail_url: order_detail_url,
-            price: price,
             order_id: order_id,
-            quantity: qty
+            price: price,
+            quantity: qty,
+            url: url,
         } 
     });
     return items;
@@ -109,6 +120,7 @@ function strategy0(
 // Digital orders.
 function strategy1(
     order_id: string,
+    order_date: string,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string,
@@ -140,11 +152,12 @@ function strategy1(
         const price = price_match ? price_match[1] : '';
         return {
             description: description,
-            url: url,
+            order_date: order_date,
             order_detail_url: order_detail_url,
-            price: price,
             order_id: order_id,
-            quantity: qty
+            price: price,
+            quantity: qty,
+            url: url,
         } 
     });
     return items;
@@ -153,6 +166,7 @@ function strategy1(
 // Amazon.com 2016
 function strategy2(
     order_id: string,
+    order_date: string,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string,
@@ -184,11 +198,12 @@ function strategy2(
         const price = price_match ? price_match[1] : '';
         return {
             description: description,
-            url: url,
+            order_date: order_date,
             order_detail_url: order_detail_url,
-            price: price,
             order_id: order_id,
-            quantity: qty
+            price: price,
+            quantity: qty,
+            url: url,
         } 
     });
     return items.filter( item => item.description != '' );
@@ -196,6 +211,7 @@ function strategy2(
 // This strategy works for Amazon.com grocery orders in 2021.
 function strategy3(
     order_id: string,
+    order_date: string,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string,
@@ -227,11 +243,12 @@ function strategy3(
         }
         return {
             description: description,
-            url: url,
+            order_date: order_date,
             order_detail_url: order_detail_url,
-            price: price,
             order_id: order_id,
-            quantity: qty
+            price: price,
+            quantity: qty,
+            url: url,
         } 
     });
     return items;

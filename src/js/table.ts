@@ -234,6 +234,16 @@ const ITEM_COLS: ColSpec[] = [
             },
         is_numeric: false
     }, {
+        field_name: 'order date',
+        render_func:
+            (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
+                const item = entity as azad_item.IItem;
+                const date = item.order_date;
+                td.innerHTML = date; 
+                return Promise.resolve(null);
+            },
+        is_numeric: false
+    }, {
         field_name: 'quantity',
         value_promise_func_name: 'quantity',
         is_numeric: false
