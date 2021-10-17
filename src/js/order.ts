@@ -192,7 +192,7 @@ function extractDetailFromDoc(
         );
         if ( a ) {
             const b = a.match(
-                /Gift (?:Certificate|Card) Amount: *([$£€0-9.]*)/i);
+                /Gift (?:Certificate|Card) Amount: *-?([$£€0-9.]*)/i);
             if( b !== null ) {
                 return b[1];
             }
