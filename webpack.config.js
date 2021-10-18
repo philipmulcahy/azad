@@ -68,49 +68,33 @@ const chrome_extension_options = {
         new CleanWebpackPlugin(),
         // expose and write the allowed env vars on the compiled bundle
         new webpack.EnvironmentPlugin(["NODE_ENV"]),
-        new CopyWebpackPlugin([{
-            from: "src/manifest.json",
-            transform: function (content, path) {
-                // generates the manifest file using the package.json informations
-                return Buffer.from(
-                    JSON.stringify({
-                        description: process.env.npm_package_description,
-                        version: process.env.npm_package_version,
-                        ...JSON.parse(content.toString())
-                    })
-                )
-            }
-        }]),
-        new CopyWebpackPlugin([{
-            from: "src/img/icon48.png"
-        }]),
-        new CopyWebpackPlugin([{
-            from: "src/img/icon128.png"
-        }]),
-        new CopyWebpackPlugin([{
-            from: "src/html/popup.html"
-        }]),
-        new CopyWebpackPlugin([{
-            from: "src/styles/popup.css"
-        }]),
-        new CopyWebpackPlugin([{
-            from: "src/img/sort_asc.png"
-        }]),
-        new CopyWebpackPlugin([{
-            from: "src/img/sort_both.png"
-        }]),
-        new CopyWebpackPlugin([{
-            from: "src/img/sort_desc.png"
-        }]),
-        new CopyWebpackPlugin([{
-            from: "node_modules/datatables/media/css/jquery.dataTables.min.css"
-        }]),
-        new CopyWebpackPlugin([{
-            from: "src/styles/inject.css"
-        }]),
-        new CopyWebpackPlugin([{
-            from: "src/styles/datatables_override.css"
-        }])
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: "src/manifest.json",
+                    transform: function (content, path) {
+                        // generates the manifest file using the package.json informations
+                        return Buffer.from(
+                            JSON.stringify({
+                                description: process.env.npm_package_description,
+                                version: process.env.npm_package_version,
+                                ...JSON.parse(content.toString())
+                            })
+                        )
+                    }
+                },
+                { from: "node_modules/datatables/media/css/jquery.dataTables.min.css" },
+                { from: "src/html/popup.html" },
+                { from: "src/img/icon128.png" },
+                { from: "src/img/icon48.png" },
+                { from: "src/img/sort_asc.png" },
+                { from: "src/img/sort_both.png" },
+                { from: "src/img/sort_desc.png" },
+                { from: "src/styles/datatables_override.css" },
+                { from: "src/styles/inject.css" },
+                { from: "src/styles/popup.css" }
+            ]
+        })
     ]
 };
 
