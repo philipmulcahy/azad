@@ -31,7 +31,8 @@
         "ts-loader": "^7.0.5",
         "typedoc": "^0.20.34",
         "typescript": "^3.9.7",
-        "webpack": "^4.46.0",
+        "webpack": "^5.58.2",
+        "webpack-cli": "^4.9.1",
         "write-file-webpack-plugin": "^4.5.1"
     },
     "dependencies": {
@@ -40,6 +41,7 @@
         "@types/moment": "^2.13.0",
         "@types/node": "^14.6.1",
         "@types/sprintf-js": "^1.1.2",
+        "@types/webpack": "^5.28.0",
         "datatables": "^1.10.18",
         "jquery": "^3.5.1",
         "jsdom": "^16.4.0",

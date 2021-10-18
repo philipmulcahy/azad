@@ -26,8 +26,12 @@ const chrome_extension_options = {
             {
                 test: /\.tsx?$/,
                 exclude: /node_modules/,
-                loader: 'ts-loader',
-                options: {compilerOptions: {outDir: "./build"}},
+                use: [
+                    {
+                        loader: 'ts-loader',
+                        options: {compilerOptions: {outDir: "./build"}},
+                    }
+                ],
             },
             {
                 test: /\.css$/,
@@ -35,12 +39,23 @@ const chrome_extension_options = {
             },
             {
                 test: new RegExp('\.(' + imageFileExtensions.join('|') + ')$'),
-                loader: "file-loader?name=[name].[ext]",
+                use: [
+                    {
+                        loader: 'file-loader',
+                        options: {
+                            name: '[name].[ext]'
+                        }
+                    }
+                ],
                 exclude: /node_modules/,
             },
             {
                 test: /\.html$/,
-                loader: "html-loader",
+                use: [
+                    {
+                        loader: 'html-loader'
+                    }
+                ],
                 exclude: /node_modules/,
             }
         ]
@@ -111,20 +126,36 @@ const node_options = {
     },
     module: {
         rules: [
+            // TODO upgrade to https://webpack.js.org/guides/asset-modules/
             {
                 test: new RegExp('\.(' + imageFileExtensions.join('|') + ')$'),
-                loader: "file-loader?name=[name].[ext]",
-                exclude: /node_modules/
+                use: [
+                    {
+                        loader: 'file-loader',
+                        options: {
+                            name: '[name].[ext]'
+                        }
+                    }
+                ],
+                exclude: /node_modules/,
             },
             {
                 test: /\.tsx?$/,
                 exclude: /node_modules/,
-                loader: 'ts-loader',
-                options: {compilerOptions: {outDir: "./build-node"}},
+                use: [
+                    {
+                        loader: 'ts-loader',
+                        options: {compilerOptions: {outDir: "./build-node"}}
+                    }
+                ],
             },
             {
                 test: /\.html$/,
-                loader: "html-loader",
+                use: [
+                    {
+                        loader: 'html-loader',
+                    }
+                ],
                 exclude: /node_modules/
             }
         ]
