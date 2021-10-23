@@ -1,10 +1,19 @@
 {
-    "manifest_version": 2,
+    "manifest_version": 3,
     "name": "Amazon Order History Reporter",
-    "content_security_policy": "script-src 'self' https://www.google-analytics.com/analytics.js; object-src 'self'",
+    "content_security_policy": {
+        "extension_pages":
+            "script-src 'self'; object-src 'self'"
+    },
     "permissions": [
         "contextMenus",
         "cookies",
+        "storage"
+    ],
+    "background": {
+        "service_worker": "background.bundle.js"
+    },
+    "host_permissions": [
         "https://smile.amazon.ca/",
         "https://www.amazon.ca/",
         "https://smile.amazon.com/",
@@ -19,15 +28,8 @@
         "https://smile.amazon.it/",
         "https://www.amazon.it/",
         "https://www.amazon.com.mx/",
-        "https://www.amazon.com.au/",
-        "storage"
+        "https://www.amazon.com.au/"
     ],
-    "background": {
-        "scripts": [
-            "background.bundle.js"
-        ],
-        "persistent": false
-    },
     "content_scripts": [
         {
             "matches": [
@@ -56,7 +58,7 @@
             ]
         }
     ],
-    "browser_action": {
+    "action": {
         "default_title": "Amazon Order History Reporter",
         "default_popup": "popup.html"
     },

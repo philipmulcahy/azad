@@ -4,10 +4,7 @@
 
 const $ = require('jquery');
 
-import * as analytics from './google_analytics';
 import * as settings from './settings';
-
-analytics.init();
 
 function activateIdle() {
     console.log('activateIdle');
@@ -65,24 +62,11 @@ function connectToBackground() {
     });
 }
 
-function sendGAButtonClick(action: string) {
-    window.ga(
-        'send',
-        {
-            hitType: 'event',
-            eventCategory: 'control',
-            eventAction: action,
-            eventLabel: ''
-        }
-    );
-}
-
 function registerActionButtons() {
     $('#azad_clear_cache').on('click', () => {
         if (background_port) {
             console.log('clear cache clicked');
             background_port.postMessage({action: 'clear_cache'});
-            sendGAButtonClick('clear_cache');
         } else {
             console.warn('clear cache clicked, but I have no background port');
         }
@@ -92,7 +76,6 @@ function registerActionButtons() {
         if (background_port) {
             console.log('force logout clicked');
             background_port.postMessage({action: 'force_logout'});
-            sendGAButtonClick('force_logout');
         } else {
             console.log('force logout clicked, but I have no background port');
         }
@@ -100,12 +83,10 @@ function registerActionButtons() {
     $('#azad_stop').on('click', () => {
         console.log('stop clicked');
         handleStopClick();
-        sendGAButtonClick('stop_scraping');
 
     });
     $('#azad_hide_controls').on('click', () => {
         console.log('closing popup');
-        sendGAButtonClick('close_popup');
         window.close();
     });
 }
@@ -119,7 +100,6 @@ function showYearButtons(years: number[]) {
         );
     });
     $('.azad_year_button').on('click', handleYearClick);
-    
 }
 
 declare global {
