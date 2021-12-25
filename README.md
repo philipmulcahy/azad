@@ -6,7 +6,7 @@ A few ["commercial" features](https://github.com/philipmulcahy/azad/issues?q=is%
 There's a reasonably straightforward path to delivering some of them. Significant investment in time might be required for the others.
 
 To make progress, two challenges need to be addressed:
-1) Prioritisation. You can help by filling out this (<1 minute) [anonymousvoting form](https://forms.gle/fjbVkBSJZoVEmP3m9) (new and improved - you no longer have to be me to access the form: sorry!)
+1) Prioritisation. You can help by filling out this (<1 minute) [anonymous voting form](https://forms.gle/fjbVkBSJZoVEmP3m9) (new and improved - you no longer have to be me to access the form: sorry!)
 2) Motivation. I share and work on this extension for free, but need donations to the [linked hospice charity](https://www.justgiving.com/fundraising/azad-pah) to be more proportional to the value commercial users are receiving. At the moment, the vast majority of donations appear to be from private/family users, not businesses, and the total amount donated is a tiny fraction of both the value of my donated time, and the value business are receiving.
 
 ### The plan 
