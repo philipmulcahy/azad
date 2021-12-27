@@ -2,6 +2,7 @@
 
 import * as azad_entity from './entity';
 import * as util from './util';
+import { IRequestScheduler, IResponse } from './request_scheduler';
 
 export interface IItem extends azad_entity.IEntity {
     description: string;
@@ -10,6 +11,7 @@ export interface IItem extends azad_entity.IEntity {
     order_id: string;
     price: string;
     quantity: number;
+    category: string;
     url: string;
 };
 
@@ -27,7 +29,11 @@ export function extractItems(
     order_id: string,
     order_date: string,
     order_detail_url: string,
+
+    // this is the only input essential to this function, the rest are just merged with the output hash
     order_elem: HTMLElement,
+
+    // it seems like context is just used for logging and is not essential to any of the strategy logic
     context: string,
 ): IItem[] {
     const strategies: ItemsExtractor[] = [
@@ -46,6 +52,7 @@ export function extractItems(
                 order_elem,
                 context + ';extractItems:strategy:' + i,
             );
+
             if (items.length) {
                 return items;
             }
@@ -53,28 +60,51 @@ export function extractItems(
             console.error('strategy' + i.toString() + ' ' + ex);
         }
     }
+
     return [];
 }
 
+
+// TODO not the best place for this method, should rearrange and possibly change the callsite where this is used
+export function getCategoriesForProduct(scheduler: IRequestScheduler, productUrl: string): Promise<string> {
+    return scheduler.scheduleToPromise<string>(
+        productUrl,
+        // the result of this transformation is cached; clear cache when debugging & changing this line
+        // the scheduler cache uses localstorage which has a very limited storage size, so do not store full page results
+        (evt) => {
+            const productPage = util.parseStringToDOM(evt.target.responseText);
+            return util.findSingleNodeValue('//*[@id="wayfinding-breadcrumbs_feature_div"]/ul', productPage.documentElement, '').textContent.
+                // remove all duplicate spaces and newlines. This creates a reasonably formatted category breadcrumb.
+                replace(/\n|\r|[ ]{2,}/g, "")
+        },
+        '00000',
+        false
+    ).then((response: IResponse<string>) => response.result);
+}
+
 function strategy0(
+    // TODO these values are just appended to the resulting object; this could be done in `extractItems` instead
     order_id: string,
     order_date: string,
     order_detail_url: string,
+
     order_elem: HTMLElement,
+
     context: string
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
-        '//div[./div[./div[@class="a-row" and ./a[@class="a-link-normal"]] and .//span[contains(@class, "price") ]/nobr]]',
+        '//div[./div[./div[@class="a-row" and ./a[@class="a-link-normal"]] and .//span[contains(@class, "price") ]]]',
         order_elem
     );
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
-        const link = <HTMLElement>util.findSingleNodeValue(
+        const productLink = <HTMLElement>util.findSingleNodeValue(
             './/div[@class="a-row"]/a[@class="a-link-normal"]',
             <HTMLElement>itemElem,
             context,
         );
-        const description = util.defaulted(link.textContent, '').trim();
-        const url = util.defaulted(link.getAttribute('href'), '').trim();
+        const description = util.defaulted(productLink.textContent, '').trim();
+        const amazonProductURL = util.defaulted(productLink.getAttribute('href'), '').trim();
+
         let qty: number = 0;
         try {
             qty = parseInt(
@@ -96,7 +126,7 @@ function strategy0(
         let price = '';
         try {
             const priceElem = <HTMLElement>util.findSingleNodeValue(
-                './/span[contains(@class, "price")]//nobr',
+                './/span[contains(@class, "price")]',
                 <HTMLElement>itemElem,
                 context,
             );
@@ -104,15 +134,18 @@ function strategy0(
         } catch(ex) {
             console.warn('could not find price for: ' + description);
         }
+
         return {
-            description: description,
             order_date: order_date,
-            order_detail_url: order_detail_url,
             order_id: order_id,
+            order_detail_url: order_detail_url,
+
+            description: description,
             price: price,
             quantity: qty,
-            url: url,
-        } 
+            category: '',
+            url: amazonProductURL,
+        }
     });
     return items;
 }
@@ -122,7 +155,9 @@ function strategy1(
     order_id: string,
     order_date: string,
     order_detail_url: string,
+
     order_elem: HTMLElement,
+
     context: string,
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
@@ -158,7 +193,7 @@ function strategy1(
             price: price,
             quantity: qty,
             url: url,
-        } 
+        }
     });
     return items;
 }
@@ -204,7 +239,7 @@ function strategy2(
             price: price,
             quantity: qty,
             url: url,
-        } 
+        }
     });
     return items.filter( item => item.description != '' );
 }
@@ -249,7 +284,7 @@ function strategy3(
             price: price,
             quantity: qty,
             url: url,
-        } 
+        }
     });
     return items;
 }
