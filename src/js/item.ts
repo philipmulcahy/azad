@@ -4,11 +4,13 @@ import * as azad_entity from './entity';
 import * as extraction from './extraction';
 import * as util from './util';
 import * as order_header from './order_header';
+import { IRequestScheduler, IResponse } from './request_scheduler';
 
 export interface IItem extends azad_entity.IEntity {
     description: string;
     price: string;
     quantity: number;
+    category: string;
     url: string;
     asin: string;
     order_header: order_header.IOrderHeader;
@@ -36,8 +38,12 @@ function extract_asin_from_url(url: string): string {
 }
 
 export function extractItems(
+
+    // this is the only input essential to this function, the rest are just merged with the output hash
   order_elem: HTMLElement,
   order_header: order_header.IOrderHeader,
+
+    // it seems like context is just used for logging and is not essential to any of the strategy logic
   context: string,
 ): IItem[] {
   const strategies: ItemsExtractor[] = [
@@ -64,6 +70,31 @@ export function extractItems(
   return [];
 }
 
+
+// TODO not the best place for this method, should rearrange and possibly change the callsite where this is used
+export function getCategoriesForProduct(scheduler: IRequestScheduler, productUrl: string): Promise<string> {
+    return scheduler.scheduleToPromise<string>(
+        productUrl,
+        // the result of this transformation is cached; clear cache when debugging & changing this line
+        // the scheduler cache uses localstorage which has a very limited storage size, so do not store full page results
+
+        (evt) => {
+            const productPage = util.parseStringToDOM(evt.target.responseText).documentElement;
+
+            try {
+                return extraction.findSingleNodeValue('//*[@id="wayfinding-breadcrumbs_feature_div"]/ul', productPage, '').textContent.
+                // remove all duplicate spaces and newlines. This creates a reasonably formatted category breadcrumb.
+                replace(/\n|\r|[ ]{2,}/g, "")
+            } catch (ex) {
+                // if the breadcrumb doesn't exist, the category is highlighted bold on a submenu bar, let's extract that
+                return extraction.findSingleNodeValue('//*[@id="nav-subnav"]/a[contains(@class, "nav-b")]', productPage, '').textContent.trim()
+            }
+        },
+        '00000',
+        false
+    ).then((response: IResponse<string>) => response.result);
+}
+
 function strategy0(
     order_elem: HTMLElement,
     order_header: order_header.IOrderHeader,
@@ -79,13 +110,14 @@ function strategy0(
         order_elem
     );
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
-        const link = <HTMLElement>extraction.findSingleNodeValue(
+        const productLink = <HTMLElement>extraction.findSingleNodeValue(
             './/a[@class="a-link-normal" and contains(@href, "/gp/product/") and not(img)]',
             <HTMLElement>itemElem,
             context,
         );
-        const description = util.defaulted(link.textContent, '').trim();
-        const url = util.defaulted(link.getAttribute('href'), '').trim();
+        const description = util.defaulted(productLink.textContent, '').trim();
+        const amazonProductURL = util.defaulted(productLink.getAttribute('href'), '').trim();
+
         let qty: number = 0;
         try {
             qty = parseInt(
@@ -115,15 +147,16 @@ function strategy0(
         } catch(ex) {
             console.warn('could not find price for: ' + description);
         }
-        const asin = extract_asin_from_url(url);
+        const asin = extract_asin_from_url(amazonProductURL);
+
         return {
             description: description,
             order_header: order_header,
             price: price,
             quantity: qty,
-            url: url,
-            asin: asin,
-        };
+            category: '',
+            url: amazonProductURL,
+        }
     });
     return items;
 }
@@ -166,8 +199,7 @@ function strategy1(
             price: price,
             quantity: qty,
             url: url,
-            asin: asin,
-        };
+        }
     });
     return items;
 }
@@ -213,8 +245,7 @@ function strategy2(
             price: price,
             quantity: qty,
             url: url,
-            asin: asin,
-        };
+        }
     });
     return items.filter( item => item.description != '' );
 }
@@ -257,8 +288,7 @@ function strategy3(
             price: price,
             quantity: qty,
             url: url,
-            asin: asin,
-        };
+        }
     });
     return items;
 }
