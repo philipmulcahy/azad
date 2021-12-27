@@ -170,7 +170,7 @@ function extractDetailFromDoc(
         }
         return util.defaulted(a, '');
     };
-    
+
     // TODO Need to exclude gift wrap
     const gift = function(): string {
         const a = extraction.by_regex(
@@ -425,6 +425,8 @@ interface IOrderDetailsAndItems {
     items: item.IItem[];
 };
 
+import { getCategoriesForProduct } from './item';
+
 const extractDetailPromise = (
     order: OrderImpl,
     scheduler: request_scheduler.IRequestScheduler
@@ -438,7 +440,7 @@ const extractDetailPromise = (
             reject(msg);
         } else {
             const event_converter = function(
-                evt: { target: { responseText: string; }; }
+                evt: { target: { responseText: string } }
             ): IOrderDetailsAndItems {
                 const doc = util.parseStringToDOM( evt.target.responseText );
                 return {
@@ -449,9 +451,10 @@ const extractDetailPromise = (
                         util.defaulted(order.detail_url, ''),
                         doc.documentElement,
                         context,
-                    ),
+                ),
                 };
             };
+
             try {
                 scheduler.scheduleToPromise<IOrderDetailsAndItems>(
                     url,
@@ -459,7 +462,14 @@ const extractDetailPromise = (
                     util.defaulted(order.id, '9999'),
                     false
                 ).then(
-                    (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => resolve(response.result),
+                    (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => {
+                        const promiseArray = [];
+                        for(const item of response.result.items) {
+                            promiseArray.push(getCategoriesForProduct(scheduler, item.url).then((category: string) => item.category = category))
+                        }
+
+                        return Promise.allSettled(promiseArray).then(() => resolve(response.result))
+                    },
                     url => reject('timeout or other problem when fetching ' + url),
                 );
             } catch (ex) {
@@ -528,11 +538,12 @@ class Order {
         return Promise.resolve(util.defaulted(this.impl.who, ''));
     }
     items(): Promise<item.Items> {
-        const items: item.Items = {}; 
+        const items: item.Items = {};
         if (this.impl.detail_promise) {
             return this.impl.detail_promise.then( details => {
                 details.items.forEach(item => {
                     try {
+                        // TODO why are doing this? Why not handle this in the getItems() call?
                         items[item.description] = item.url;
                     } catch (ex) {
                         console.error(ex);
@@ -545,7 +556,7 @@ class Order {
         }
     }
     item_list(): Promise<item.IItem[]> {
-        const items: item.IItem[] = []; 
+        const items: item.IItem[] = [];
         if (this.impl.detail_promise) {
             return this.impl.detail_promise.then( details => {
                 details.items.forEach(item => {
@@ -735,7 +746,7 @@ class OrderImpl {
                     if (this.id?.startsWith('D')) {
                         resolve([
                             this.total ?
-                                util.defaulted(this.date, '') + 
+                                util.defaulted(this.date, '') +
                                 ': ' + util.defaulted(this.total, '') :
                                 util.defaulted(this.date, '')
                         ]);
@@ -1171,6 +1182,7 @@ export function getOrdersByYear(
     );
 }
 
+// TODO looks like the best entrypoint to test a single order
 export function create(
     ordersPageElem: HTMLElement,
     scheduler: request_scheduler.IRequestScheduler,
