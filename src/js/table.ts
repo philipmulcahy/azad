@@ -86,7 +86,7 @@ const ORDER_COLS: ColSpec[] = [
     },
     {
         field_name: 'items',
-        render_func: (order: azad_entity.IEntity, td: HTMLElement) => 
+        render_func: (order: azad_entity.IEntity, td: HTMLElement) =>
             (order as azad_order.IOrder).items().then( items => {
                 const ul = td.ownerDocument!.createElement('ul');
                 for(let title in items) {
@@ -104,8 +104,24 @@ const ORDER_COLS: ColSpec[] = [
                 return null;
             }),
         is_numeric: false
-    },
-    {
+    }, {
+        field_name: 'categories',
+        render_func: (order: azad_entity.IEntity, td: HTMLElement) =>
+            (order as azad_order.IOrder).item_list().then( items => {
+                const ul = td.ownerDocument!.createElement('ul');
+                for(const item of items) {
+                    if(item.category) {
+                        const li = td.ownerDocument!.createElement('li');
+                        li.textContent = item.category
+                        ul.appendChild(li);
+                    }
+                }
+                td.textContent = '';
+                td.appendChild(ul);
+                return null;
+            }),
+            is_numeric: false
+    }, {
         field_name: 'to',
         value_promise_func_name: 'who',
         is_numeric: false
@@ -239,7 +255,7 @@ const ITEM_COLS: ColSpec[] = [
             (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
                 const item = entity as azad_item.IItem;
                 const date = item.order_date;
-                td.innerHTML = date; 
+                td.innerHTML = date;
                 return Promise.resolve(null);
             },
         is_numeric: false
@@ -257,6 +273,14 @@ const ITEM_COLS: ColSpec[] = [
             },
         is_numeric: false
     }, {
+        field_name: 'category',
+        render_func: (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
+            const item = entity as azad_item.IItem;
+            td.innerHTML = item.category;
+            return Promise.resolve(null);
+        },
+        is_numeric: false
+    }, {
         field_name: 'price',
         value_promise_func_name: 'price',
         is_numeric: false
@@ -267,7 +291,7 @@ function getCols(
     items_not_orders: boolean
 ): Promise<ColSpec[]> {
     const waits: Promise<any>[] = [];
-    const results: ColSpec[] = [];  
+    const results: ColSpec[] = [];
     const cols = items_not_orders ? ITEM_COLS : ORDER_COLS;
     cols.forEach( col => {
         if (col?.sites?.test(urls.getSite()) ?? true) {
@@ -287,8 +311,8 @@ function getCols(
 
 function maybe_promise_to_promise(
     field: azad_entity.Field
-): Promise<azad_entity.Value> {    
-    const called = 
+): Promise<azad_entity.Value> {
+    const called =
         typeof(field) === 'function' ?
             (field as ()=>Promise<azad_entity.Value>)() :
             field;
@@ -362,7 +386,7 @@ function appendCell(
                             }
                             return null;
                         }
-                    ); 
+                    );
             })();
     td.setAttribute('class', td.getAttribute('class') + ' ' +
             'azad_col_' + col_spec.field_name + ' ' +
@@ -490,6 +514,8 @@ function addTable(
         });
 
         if (wait_for_all_values_before_resolving) {
+            console.log("waiting for all row promises to resolve");
+
             return Promise.all(row_done_promises).then( row_promises => {
                 const value_done_promises: Promise<null>[] = [];
                 row_promises.forEach(
@@ -501,7 +527,8 @@ function addTable(
                     'value_done_promises.length',
                     value_done_promises.length
                 );
-                return Promise.all(value_done_promises).then( _ => table );
+
+                return Promise.allSettled(value_done_promises).then( _ => table );
             });
 
         } else {
@@ -541,6 +568,7 @@ function reallyDisplay(
             document, orders, wait_for_all_values_before_resolving, cols) :
         addOrderTable(
             document, orders, wait_for_all_values_before_resolving, cols);
+
     table_promise.then( _ => {
         if (beautiful) {
             $(document).ready( () => {
@@ -614,6 +642,7 @@ function reallyDisplay(
                 });
             });
         } else {
+            console.log("table promise resolved, adding ui");
             addProgressBar();
             util.removeButton('plain table');
             util.addButton(
@@ -635,16 +664,20 @@ function addProgressBar(): void {
 
 function addCsvButton(orders: Promise<azad_order.IOrder>[]): void {
     const title = "download spreadsheet ('.csv')";
-    util.addButton(	
+    util.addButton(
        title,
-       function() {	
+       function() {
            display(orders, false, true).then(
-               table => settings.getBoolean('show_totals_in_csv').then(
-                   show_totals => csv.download(table, show_totals)
-               )
-           );
+               table => {
+                   console.log("table generated, preparing download");
+
+                   settings.getBoolean('show_totals_in_csv').then(
+                    show_totals => csv.download(table, show_totals)
+                    )
+                }
+           ).catch(_ => console.error("failed to generate table"));
        },
-       'azad_table_button'	
+       'azad_table_button'
     );
 }
 
@@ -663,8 +696,10 @@ export function display(
         const problems: any[] = settled
             .filter(s => s.status == 'rejected')
             .map(s => (s as PromiseRejectedResult).reason);
+
         problems.forEach(p => console.warn('Bad order: ' + JSON.stringify(p)));
         console.log('amazon_order_history_table.display then func starting');
+
         return settings.getBoolean('show_items_not_orders').then(
             items_not_orders => {
                 const table_promise: Promise<HTMLTableElement> = reallyDisplay(
@@ -674,14 +709,12 @@ export function display(
                     items_not_orders
                 );
                 console.log(
-                    'amazon_order_history_table.display then func returning ' +
-                    'table promise.'
+                    'amazon_order_history_table.display then func returning table promise.'
                 );
                 return table_promise;
             }
         );
     });
-    console.log('amazon_order_history_table.display returning');
 }
 
 export function dumpOrderDiagnostics(order_id: string) {
