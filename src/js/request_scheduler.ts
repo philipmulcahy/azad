@@ -16,7 +16,7 @@ export interface IResponse<T> {
 export interface IRequestScheduler {
     scheduleToPromise<T>(
         query: string,
-        event_converter: (evt: any) => any,
+        event_converter: (evt: { target: { responseText: string } }) => any,
         priority: string,
         nocache: boolean
     ): Promise<IResponse<T>>;
@@ -46,7 +46,7 @@ class RequestScheduler {
 
     _schedule(
         query: string,
-        event_converter: (evt: any) => any,
+        event_converter: (evt: { target: { responseText: string } }) => any,
         success_callback: (results: any, query: string) => void,
         failure_callback: (query: string) => void,
         priority: string,
@@ -69,7 +69,7 @@ class RequestScheduler {
 
     scheduleToPromise<T>(
         query: string,
-        event_converter: (evt: any) => any,
+        event_converter: (evt: { target: { responseText: string } }) => any,
         priority: string,
         nocache: boolean
     ): Promise<IResponse<T>> {
@@ -229,6 +229,7 @@ class RequestScheduler {
             if (!signin.checkTooManyRedirects(url, req) ) {
                 console.log( 'Unknown error fetching ' + url );
             }
+            failure_callback(url);
             this._recordSingleCompletion();
         };
         req.onload = (evt: any): void => {
@@ -243,16 +244,16 @@ class RequestScheduler {
                     req.responseURL.includes('/signin?') || req.status == 404
                 ) {
                     this.error_count += 1;
-                    console.log(
-                        'Got sign-in redirect or 404 from: ' + url + req.status);
+                    console.log('Got sign-in redirect or 404 from: ' + url + req.status);
                     if ( !this.signin_warned ) {
                         signin.alertPartiallyLoggedOutAndOpenLoginTab(url);
                         this.signin_warned = true;
                     }
+                    failure_callback(url);
                 } else if ( req.status != 200 ) {
                     this.error_count += 1;
-                    console.warn(
-                        'Got HTTP' + req.status + ' fetching ' + url);
+                    console.warn('Got HTTP' + req.status + ' fetching ' + url);
+                    failure_callback(url);
                 } else {
                     this.completed_count += 1;
                     console.log(
@@ -265,6 +266,7 @@ class RequestScheduler {
                     success_callback(converted, url);
                 }
             } catch (ex) {
+                failure_callback(url);
                 console.error('req handling caught unexpected: ' + ex);
             }
             this._recordSingleCompletion();
@@ -274,6 +276,7 @@ class RequestScheduler {
             this.running_count -= 1;
             this.error_count += 1;
             if (this.live) {
+                failure_callback(url);
                 this._recordSingleCompletion();
                 console.warn('Timed out while fetching: ' + url);
             }
