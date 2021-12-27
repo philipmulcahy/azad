@@ -81,6 +81,25 @@ const ORDER_COLS: ColSpec[] = [
             }),
         is_numeric: false,
     },
+    {
+        field_name: 'categories',
+        render_func: (order: azad_entity.IEntity, td: HTMLElement) =>
+            (order as azad_order.IOrder).item_list().then( items => {
+                const ul = td.ownerDocument!.createElement('ul');
+                for(const item of items) {
+                    if(item.category) {
+                        const li = td.ownerDocument!.createElement('li');
+                        li.textContent = item.category
+                        ul.appendChild(li);
+                    }
+                }
+                td.textContent = '';
+                td.appendChild(ul);
+                return null;
+            }),
+            is_numeric: false
+    },
+
     // {
     //     field_name: 'shipment_derived_items',
     //     render_func: async function(
@@ -338,6 +357,16 @@ const ITEM_COLS: ColSpec[] = [
                 return Promise.resolve(null);
             },
         is_numeric: false,
+
+    }, {
+        field_name: 'category',
+        render_func: (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
+            const item = entity as azad_item.IItem;
+            td.innerHTML = item.category;
+            return Promise.resolve(null);
+        },
+        is_numeric: false
+
     }, {
         field_name: 'price',
         value_promise_func_name: 'price',
