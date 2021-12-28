@@ -137,6 +137,17 @@ function extractDetailFromDoc(
                 'or contains(text(),"Total général du paiement")' +
                 ']/parent::div/following-sibling::div/span',
 
+                '//span[contains(text(),"Grand Total:")]' +
+                '/parent::*/parent::*/div/span[' +
+                'contains(text(), "$") or ' +
+                'contains(text(), "£") or ' +
+                'contains(text(), "€") or ' +
+                'contains(text(), "AUD") or ' +
+                'contains(text(), "CAD") or ' +
+                'contains(text(), "GBP") or ' +
+                'contains(text(), "USD") ' +
+                ']/parent::*/parent::*',
+
                 '//*[contains(text(),"Grand total:") ' +
                 'or  contains(text(),"Grand Total:") ' +
                 'or  contains(text(),"Total general:")' +
@@ -148,17 +159,6 @@ function extractDetailFromDoc(
                 'or  contains(text(),"Total général du paiement:")' +
                 ']',
 
-                '//*[contains(text(),"Grand total:") ' +
-                'or  contains(text(),"Grand Total:") ' +
-                'or  contains(text(),"Total general:") ' +
-                'or  contains(text(),"Total for this order:") ' +
-                'or  contains(text(),"Total of this order:") ' +
-                'or  contains(text(),"Total de este pedido:") ' +
-                'or  contains(text(),"Order Total:") ' +
-                'or  contains(text(),"Total del pedido:") ' +
-                'or  contains(text(),"Montant total TTC:") ' +
-                'or  contains(text(),"Total général du paiement:")' +
-                ']/parent::*',
             ],
             null,
             order.total,
@@ -166,7 +166,10 @@ function extractDetailFromDoc(
             context,
         );
         if (a) {
-            return a.replace(/.*: /, '').replace('-', '');
+            const whitespace = /[\n\t ]/g;
+            return a.replace(/^.*:/, '')
+                    .replace(/[\n\t ]/g, '')  // whitespace
+                    .replace('-', '');
         }
         return util.defaulted(a, '');
     };
