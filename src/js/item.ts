@@ -72,10 +72,16 @@ export function getCategoriesForProduct(scheduler: IRequestScheduler, productUrl
         // the result of this transformation is cached; clear cache when debugging & changing this line
         // the scheduler cache uses localstorage which has a very limited storage size, so do not store full page results
         (evt) => {
-            const productPage = util.parseStringToDOM(evt.target.responseText);
-            return util.findSingleNodeValue('//*[@id="wayfinding-breadcrumbs_feature_div"]/ul', productPage.documentElement, '').textContent.
+            const productPage = util.parseStringToDOM(evt.target.responseText).documentElement;
+
+            try {
+                return util.findSingleNodeValue('//*[@id="wayfinding-breadcrumbs_feature_div"]/ul', productPage, '').textContent.
                 // remove all duplicate spaces and newlines. This creates a reasonably formatted category breadcrumb.
                 replace(/\n|\r|[ ]{2,}/g, "")
+            } catch (ex) {
+                // if the breadcrumb doesn't exist, the category is highlighted bold on a submenu bar, let's extract that
+                return util.findSingleNodeValue('//*[@id="nav-subnav"]/a[contains(@class, "nav-b")]', productPage, '').textContent.trim()
+            }
         },
         '00000',
         false
@@ -83,7 +89,6 @@ export function getCategoriesForProduct(scheduler: IRequestScheduler, productUrl
 }
 
 function strategy0(
-    // TODO these values are just appended to the resulting object; this could be done in `extractItems` instead
     order_id: string,
     order_date: string,
     order_detail_url: string,
@@ -243,6 +248,7 @@ function strategy2(
     });
     return items.filter( item => item.description != '' );
 }
+
 // This strategy works for Amazon.com grocery orders in 2021.
 function strategy3(
     order_id: string,
