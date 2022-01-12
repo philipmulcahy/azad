@@ -33,6 +33,7 @@ export function extractItems(
     const strategies: ItemsExtractor[] = [
         strategy0,
         strategy1,
+        strategy2a,
         strategy2,
         strategy3,
     ];
@@ -63,13 +64,19 @@ function strategy0(
     order_elem: HTMLElement,
     context: string
 ): IItem[] {
-    const itemElems: Node[] = util.findMultipleNodeValues(
-        '//div[./div[./div[@class="a-row" and ./a[@class="a-link-normal"]] and .//span[contains(@class, "price") ]/nobr]]',
+    const item_xpath = '//div[' +
+        'contains(@class, "fixed-left-grid-inner") and ' +
+        './/a[contains(@href, "/gp/product/")] and ' +
+        './/*[contains(@class, "price")]' +
+    ']';
+    const findMultipleNodeValues = util.findMultipleNodeValues;
+    const itemElems: Node[] = findMultipleNodeValues(
+        item_xpath,
         order_elem
     );
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
         const link = <HTMLElement>util.findSingleNodeValue(
-            './/div[@class="a-row"]/a[@class="a-link-normal"]',
+            './/a[@class="a-link-normal" and contains(@href, "/gp/product/") and not(img)]',
             <HTMLElement>itemElem,
             context,
         );
@@ -96,7 +103,7 @@ function strategy0(
         let price = '';
         try {
             const priceElem = <HTMLElement>util.findSingleNodeValue(
-                './/span[contains(@class, "price")]//nobr',
+                './/*[contains(@class, "price")]',
                 <HTMLElement>itemElem,
                 context,
             );
@@ -131,7 +138,7 @@ function strategy1(
     );
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
         const link = <HTMLElement>util.findSingleNodeValue(
-            './/a[contains(@href, "/dp/")]',
+            './/a[contains(@href, "/product/") and contains(@href, "asin")]',
             <HTMLElement>itemElem,
             context,
         );
@@ -161,6 +168,55 @@ function strategy1(
         } 
     });
     return items;
+}
+
+// TODO  Add logging/counting of how frequently each strategy "wins",
+// TODO  and then prune/merge/improve.
+
+// Amazon.com scrape in 2022 for a 2016 physical order.
+function strategy2a(
+    order_id: string,
+    order_date: string,
+    order_detail_url: string,
+    order_elem: HTMLElement,
+    context: string,
+): IItem[] {
+    const itemElems: Node[] = util.findMultipleNodeValues(
+        '//div[contains(@id, "ordersContainer")]',
+        order_elem
+    );
+    const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
+        const link = <HTMLElement>util.findSingleNodeValue(
+            './/a[contains(@href, "/product/")]',
+            <HTMLElement>itemElem,
+            context,
+        );
+        const description = util.defaulted(link.textContent, '').trim();
+        const url = util.defaulted(link.getAttribute('href'), '').trim();
+        const qty_match = link.parentNode
+                             ?.parentNode
+                             ?.textContent
+                             ?.match(/Qty: (\d+)/);
+        const sqty = qty_match ? qty_match[1] : '1';
+        const qty = parseInt(sqty);
+        const price_match = link.parentNode
+                               ?.parentNode
+                               ?.nextSibling
+                               ?.nextSibling
+                               ?.textContent
+                               ?.match(util.moneyRegEx())
+        const price = price_match ? price_match[1] : '';
+        return {
+            description: description,
+            order_date: order_date,
+            order_detail_url: order_detail_url,
+            order_id: order_id,
+            price: price,
+            quantity: qty,
+            url: url,
+        } 
+    });
+    return items.filter( item => item.description != '' );
 }
 
 // Amazon.com 2016
@@ -208,6 +264,7 @@ function strategy2(
     });
     return items.filter( item => item.description != '' );
 }
+
 // This strategy works for Amazon.com grocery orders in 2021.
 function strategy3(
     order_id: string,
