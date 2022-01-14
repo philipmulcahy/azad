@@ -566,11 +566,17 @@ function reallyDisplay(
                             const parse = (i: string | number) => {
                                 try {
                                     if(typeof i === 'string') {
-                                        return (i === 'N/A' || i === '-' || i === 'pending') ?
+                                        return (
+                                            i === 'N/A' ||
+                                            i === '-' ||
+                                            i === 'pending'
+                                        ) ?
                                             0 :
                                             parseFloat(
-                                                i.replace(/^([£$]|CAD|EUR|GBP) */, '')
-                                                 .replace(/,/, '.')
+                                                i.replace(
+                                                    /^([£$]|AUD|CAD|EUR|GBP|USD) */,
+                                                    ''
+                                                ).replace(/,/, '.')
                                             );
                                     }
                                     if(typeof i === 'number') { return i; }
