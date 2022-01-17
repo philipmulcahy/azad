@@ -387,12 +387,6 @@ function appendEntityRow(
     entity: azad_entity.IEntity,
     cols: Promise<ColSpec[]>
 ): Promise<Promise<null>[]> {
-    if ('id' in entity) {
-        const order = entity as azad_order.IOrder;
-        order.id().then(
-            id => { order_map[id] = order; }
-        );
-    }
     const tr = document.createElement('tr');
     table.appendChild(tr);
     return cols.then( cols =>
@@ -419,7 +413,7 @@ function addItemTable(
     return item_promises.then(
         items => addTable(
             doc, items, wait_for_all_values_before_resolving, cols)
-    )
+    );
 }
 
 function addTable(
@@ -531,6 +525,11 @@ function reallyDisplay(
     for (let entry in order_map) {
         delete order_map[entry];
     }
+    orders.forEach( order => {
+        order.id().then(
+            id => { order_map[id] = order; }
+        );
+    });
     util.clearBody();
     const order_promises = orders.map(
         (order: azad_order.IOrder) => Promise.resolve(order)
