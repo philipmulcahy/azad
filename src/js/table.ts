@@ -239,7 +239,7 @@ const ITEM_COLS: ColSpec[] = [
             (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
                 const item = entity as azad_item.IItem;
                 const date = item.order_date;
-                td.innerHTML = date; 
+                td.innerHTML = date ? util.dateToDateIsoString(date): '?';
                 return Promise.resolve(null);
             },
         is_numeric: false
@@ -292,10 +292,13 @@ function maybe_promise_to_promise(
         typeof(field) === 'function' ?
             (field as ()=>Promise<azad_entity.Value>)() :
             field;
-    const promise = typeof(called) === 'object' && 'then' in called ?
-        called :
-        Promise.resolve(called);
-    return promise;
+    if (called == null) {
+        return Promise.resolve(null);
+    } else if (typeof(called) === 'object' && 'then' in called) {
+        return called;
+    } else {
+        return Promise.resolve(called);
+    }
 }
 
 function extract_value(
@@ -339,14 +342,14 @@ function appendCell(
             col_spec?.render_func(entity, td) :
             (() => {
                 const field_name = col_spec.value_promise_func_name;
-                const callable_or_value: (()=>Promise<string|number>)|number|string = ('id' in entity) ?
+                const callable_or_value: azad_entity.Field = ('id' in entity) ?
                     (entity as azad_order.IOrder)[
                         field_name as keyof azad_order.IOrder
                     ]:
                     (entity as azad_item.IItem)[
                         field_name as keyof azad_item.IItem
                     ];
-                const value_promise: Promise<number|string> = (
+                const value_promise: Promise<azad_entity.Value> = (
                     typeof(callable_or_value) === 'function'
                 ) ?
                     callable_or_value.bind(entity)() :

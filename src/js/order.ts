@@ -50,7 +50,7 @@ function getCacheExcludedElementTypes() {
 }
 
 interface IOrderDetails {
-    date: Date;
+    date: Date|null;
     total: string;
     postage: string;
     postage_refund: string;
@@ -63,7 +63,7 @@ interface IOrderDetails {
     who: string;
     invoice_url: string;
 
-    [index: string]: string;
+    [index: string]: string|Date|null;
 };
 
 function extractDetailFromDoc(
@@ -105,21 +105,24 @@ function extractDetailFromDoc(
         return x;
     };
 
-    const order_date = function(): Date {
+    const order_date = function(): Date|null {
+        const def_string = order.date ?
+            util.dateToDateIsoString(order.date):
+            null;
         const d = extraction.by_regex(
             [
                 '//*[contains(@class,"order-date-invoice-item")]/text()',
                 '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',
             ],
             /(?:Ordered on|Commandé le|Digital Order:) (.*)/i,
-            order.date,
+            def_string,
             doc.documentElement,
             context,
         );
         if (d) {
-            return date.normalizeDateString(d);
+            return new Date(date.normalizeDateString(d));
         }
-        return util.defaulted(order.date, '');
+        return util.defaulted(order.date, null);
     };
 
     const total = function(): string {
@@ -448,7 +451,7 @@ const extractDetailPromise = (
                     details: extractDetailFromDoc(order, doc),
                     items: item.extractItems(
                         util.defaulted(order.id, ''),
-                        util.defaulted(order.date, ''),
+                        order.date,
                         util.defaulted(order.detail_url, ''),
                         doc.documentElement,
                         context,
@@ -479,7 +482,7 @@ export interface IOrder extends azad_entity.IEntity {
     detail_url(): Promise<string>;
     invoice_url(): Promise<string>;
 
-    date(): Promise<string>;
+    date(): Promise<Date|null>;
     gift(): Promise<string>;
     gst(): Promise<string>;
     item_list(): Promise<item.IItem[]>;
@@ -521,8 +524,8 @@ class Order {
     site(): Promise<string> {
         return Promise.resolve(util.defaulted(this.impl.site, ''));
     }
-    date(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.date, ''));
+    date(): Promise<Date|null> {
+        return Promise.resolve(this.impl.date);
     }
     total(): Promise<string> {
         return this._detail_dependent_promise(detail => detail.total);
@@ -665,27 +668,32 @@ class OrderImpl {
         }
 
         const context = 'id:' + this.id;
-        this.date = date.normalizeDateString(
-            util.defaulted(
-                getField(
-                    [
-                        'Commande effectuée',
-                        'Order placed',
-                        'Ordine effettuato',
-                         'Pedido realizado'
-                    ].map(
-                        label => sprintf.sprintf(
-                            './/div[contains(span,"%s")]' +
-                            '/../div/span[contains(@class,"value")]',
-                            label
-                        )
-                    ).join('|'),
-                    elem,
-                    context,
-                ),
-                ''
-            )
-        );
+        this.date = null;
+        try {
+            this.date = new Date(
+                date.normalizeDateString(
+                    util.defaulted(
+                        getField(
+                            [
+                                'Commande effectuée',
+                                'Order placed',
+                                'Ordine effettuato',
+                                 'Pedido realizado'
+                            ].map(
+                                label => sprintf.sprintf(
+                                    './/div[contains(span,"%s")]' +
+                                    '/../div/span[contains(@class,"value")]',
+                                    label
+                                )
+                            ).join('|'),
+                            elem,
+                            context,
+                        ),
+                        ''
+                    )
+                )
+            );
+        } catch (_) {}
         // This field is no longer always available, particularly for .com
         // We replace it (where we know the search pattern for the country)
         // with information from the order detail page.
@@ -736,11 +744,13 @@ class OrderImpl {
                     reject: (msg: string) => void
                 ) => {
                     if (this.id?.startsWith('D')) {
+                        const date = this.date ?
+                            util.dateToDateIsoString(this.date) :
+                            '';
                         resolve([
                             this.total ?
-                                util.defaulted(this.date, '') + 
-                                ': ' + util.defaulted(this.total, '') :
-                                util.defaulted(this.date, '')
+                                date + ': ' + this.total :
+                                date 
                         ]);
                     } else {
                         const event_converter = function(evt: any) {
