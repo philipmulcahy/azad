@@ -112,7 +112,14 @@ const ORDER_COLS: ColSpec[] = [
     },
     {
         field_name: 'date',
-        value_promise_func_name: 'date',
+        render_func:
+            (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
+                const order = entity as azad_order.IOrder;
+                return order.date().then((date: Date|null) => {
+                    td.innerHTML = date ? util.dateToDateIsoString(date): '?';
+                    return Promise.resolve(null);
+                });
+            },
         is_numeric: false,
     },
     {
