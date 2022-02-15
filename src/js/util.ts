@@ -1,4 +1,4 @@
-/* Copyright(c) 2016-2021 Philip Mulcahy. */
+/* Copyright(c) 2016-2022 Philip Mulcahy. */
 
 'use strict';
 
@@ -148,6 +148,9 @@ export function moneyRegEx(): RegExp {
 */
 }
 
-export function dateToDateIsoString(d: Date): string {
+export function dateToDateIsoString(d: Date|null): string {
+    if (!d) {
+        return 'NULL';
+    }
     return d.toISOString().substr(0,10);
 }

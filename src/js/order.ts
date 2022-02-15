@@ -1,4 +1,4 @@
-/* Copyright(c) 2017-2021 Philip Mulcahy. */
+/* Copyright(c) 2017-2022 Philip Mulcahy. */
 
 'use strict';
 
@@ -13,6 +13,8 @@ import * as request_scheduler from './request_scheduler';
 import * as urls from './url';
 import * as util from './util';
 import * as item from './item';
+import * as fetch from './order_fetch';
+import * as order_types from './order_types';
 
 function getField(
     xpath: string,
@@ -49,26 +51,9 @@ function getCacheExcludedElementTypes() {
     return new Set<string>(['img']);
 }
 
-interface IOrderDetails {
-    date: Date|null;
-    total: string;
-    postage: string;
-    postage_refund: string;
-    gift: string;
-    us_tax: string;
-    vat: string;
-    gst: string;
-    pst: string;
-    refund: string;
-    who: string;
-    invoice_url: string;
-
-    [index: string]: string|Date|null;
-};
-
 function extractDetailFromDoc(
-    order: OrderImpl, doc: HTMLDocument
-): IOrderDetails {
+    order: order_types.IOrder, doc: HTMLDocument
+): order_types.IOrderDetails {
     const context = 'id:' + order.id;
     const who = function(){
         if(order.who) {
@@ -106,8 +91,8 @@ function extractDetailFromDoc(
     };
 
     const order_date = function(): Date|null {
-        const def_string = order.date ?
-            util.dateToDateIsoString(order.date):
+        const def_string = order.date_direct() ?
+            util.dateToDateIsoString(order.date_direct()):
             null;
         const d = extraction.by_regex(
             [
@@ -122,7 +107,7 @@ function extractDetailFromDoc(
         if (d) {
             return new Date(date.normalizeDateString(d));
         }
-        return util.defaulted(order.date, null);
+        return util.defaulted(order.date_direct(), null);
     };
 
     const total = function(): string {
@@ -408,7 +393,7 @@ function extractDetailFromDoc(
         return '';
     };
 
-    const details: IOrderDetails = {
+    const details: order_types.IOrderDetails = {
         date: order_date(),
         total: total(),
         postage: postage(),
@@ -426,81 +411,58 @@ function extractDetailFromDoc(
     return details;
 }
 
-interface IOrderDetailsAndItems {
-    details: IOrderDetails;
-    items: item.IItem[];
-};
-
-const extractDetailPromise = (
-    order: OrderImpl,
+function extractDetailPromise(
+    order: order_types.IOrder,
     scheduler: request_scheduler.IRequestScheduler
-) => new Promise<IOrderDetailsAndItems>(
-    (resolve, reject) => {
-        const context = 'id:' + order.id;
-        const url = order.detail_url;
-        if(!url) {
-            const msg = 'null order detail query: cannot schedule';
-            console.error(msg);
-            reject(msg);
-        } else {
-            const event_converter = function(
-                evt: { target: { responseText: string; }; }
-            ): IOrderDetailsAndItems {
-                const doc = util.parseStringToDOM( evt.target.responseText );
-                return {
-                    details: extractDetailFromDoc(order, doc),
-                    items: item.extractItems(
-                        util.defaulted(order.id, ''),
-                        order.date,
-                        util.defaulted(order.detail_url, ''),
-                        doc.documentElement,
-                        context,
-                    ),
-                };
-            };
-            try {
-                scheduler.scheduleToPromise<IOrderDetailsAndItems>(
-                    url,
-                    event_converter,
-                    util.defaulted(order.id, '9999'),
-                    false
-                ).then(
-                    (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => resolve(response.result),
-                    url => reject('timeout or other problem when fetching ' + url),
-                );
-            } catch (ex) {
-                const msg = 'scheduler rejected ' + order.id + ' ' + url;
+): Promise<IOrderDetailsAndItems> { 
+    return new Promise<IOrderDetailsAndItems>(
+        (resolve, reject) => {
+            const context = 'id:' + order.id;
+            const url = order.detail_url_direct();
+            if(!url) {
+                const msg = 'null order detail query: cannot schedule';
                 console.error(msg);
                 reject(msg);
+            } else {
+                const event_converter = function(
+                    evt: { target: { responseText: string; }; }
+                ): IOrderDetailsAndItems {
+                    const doc = util.parseStringToDOM( evt.target.responseText );
+                    return {
+                        details: extractDetailFromDoc(order, doc),
+                        items: item.extractItems(
+                            util.defaulted(order.id_direct(), ''),
+                            order.date_direct(),
+                            util.defaulted(order.detail_url_direct(), ''),
+                            doc.documentElement,
+                            context,
+                        ),
+                    };
+                };
+                try {
+                    scheduler.scheduleToPromise<IOrderDetailsAndItems>(
+                        url,
+                        event_converter,
+                        util.defaulted(order.id_direct(), '9999'),
+                        false
+                    ).then(
+                        (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => resolve(response.result),
+                        url => reject('timeout or other problem when fetching ' + url),
+                    );
+                } catch (ex) {
+                    const msg = 'scheduler rejected ' + order.id + ' ' + url;
+                    console.error(msg);
+                    reject(msg);
+                }
             }
         }
-    }
-);
+    );
+}
 
-export interface IOrder extends azad_entity.IEntity {
-    id(): Promise<string>;
-    detail_url(): Promise<string>;
-    invoice_url(): Promise<string>;
-
-    date(): Promise<Date|null>;
-    gift(): Promise<string>;
-    gst(): Promise<string>;
-    item_list(): Promise<item.IItem[]>;
-    items(): Promise<item.Items>;
-    payments(): Promise<any>;
-    postage(): Promise<string>;
-    postage_refund(): Promise<string>;
-    pst(): Promise<string>;
-    refund(): Promise<string>;
-    site(): Promise<string>;
-    total(): Promise<string>;
-    us_tax(): Promise<string>;
-    vat(): Promise<string>;
-    who(): Promise<string>;
-
-    assembleDiagnostics(): Promise<Record<string,any>>;
+export interface IOrderDetailsAndItems {
+    details: order_types.IOrderDetails;
+    items: item.IItem[];
 };
-
 
 class Order {
     impl: OrderImpl;
@@ -828,140 +790,167 @@ interface IOrdersPageData {
     order_elems: dom2json.IJsonObject;
 };
 
+function convertOrdersPage(evt: any, year: number): IOrdersPageData {
+    const d = util.parseStringToDOM(evt.target.responseText);
+    const context = 'Converting orders page';
+    const countSpan = util.findSingleNodeValue(
+        './/span[@class="num-orders"]', d.documentElement, context);
+    if ( !countSpan ) {
+        const msg = 'Error: cannot find order count elem in: ' + evt.target.responseText
+        console.error(msg);
+        throw(msg);
+    }
+    const textContent = countSpan.textContent;
+    const splits = textContent!.split(' ');
+    if (splits.length == 0) {
+        const msg = 'Error: not enough parts';
+        console.error(msg);
+        throw(msg);
+    }
+    const expected_order_count: number = parseInt( splits[0], 10 );
+    console.log(
+        'Found ' + expected_order_count + ' orders for ' + year
+    );
+    if(isNaN(expected_order_count)) {
+        console.warn(
+            'Error: cannot find order count in ' + countSpan.textContent
+        );
+    }
+    let ordersElem;
+    try {
+        ordersElem = d.getElementById('ordersContainer');
+    } catch(err) {
+        const msg = 'Error: maybe you\'re not logged into ' +
+                    'https://' + urls.getSite() + '/gp/css/order-history ' +
+                    err;
+        console.warn(msg)
+        throw msg;
+    }
+    const order_elems: HTMLElement[] = util.findMultipleNodeValues(
+        './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
+        ordersElem
+    ).map( node => <HTMLElement>node );
+    const serialized_order_elems = order_elems.map(
+        elem => dom2json.toJSON(elem, getCachedAttributeNames())
+    );
+    if ( !serialized_order_elems.length ) {
+        console.error(
+            'no order elements in converted order list page: ' +
+            evt.target.responseURL
+        );
+    }
+    const converted = {
+        expected_order_count: expected_order_count,
+        order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
+    }
+    return converted;
+}
+
+function translateOrdersPageData(
+    response: request_scheduler.IResponse<IOrdersPageData>,
+    scheduler: request_scheduler.IRequestScheduler
+): Promise<IOrder>[] {
+    const orders_page_data = response.result;
+    const order_elems = orders_page_data.order_elems.map(
+        (elem: any) => dom2json.toDOM(elem)
+    );
+    function makeOrderPromise(elem: HTMLElement): Promise<IOrder> {
+        const order = create(elem, scheduler, response.query);
+        return Promise.resolve(order);
+    }
+    const promises = order_elems.map(makeOrderPromise);
+    return promises;
+};
+
+function getOrderPromises(
+    expected_order_count: number,
+    year: number,
+    query_template: string,
+    scheduler: request_scheduler.IRequestScheduler
+): Promise<Promise<IOrder>[]> {
+    const page_done_promises: Promise<null>[] = [];
+    const order_promises: Promise<IOrder>[] = [];
+
+    function convertOrdersPageYear(evt: any) {
+        return convertOrdersPage(evt, year);
+    }
+
+    for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
+        console.log(
+            'sending request for order: ' + iorder + ' onwards'
+        );
+        page_done_promises.push(
+            scheduler.scheduleToPromise<IOrdersPageData>(
+                generateQueryString(iorder, query_template, year),
+                convertOrdersPageYear,
+                '2',
+                false
+            ).then(
+                page_data => {
+                    const promises = translateOrdersPageData(
+                        page_data, scheduler);
+                    order_promises.push(...promises);
+                }
+            ).then(
+                () => null,
+                (msg) => {
+                    console.error(msg);
+                    return null;
+                }
+            )
+        );
+    }
+    console.log('finished sending order list page requests');
+    return Promise.all(page_done_promises).then(
+        () => {
+            console.log('returning all order promises');
+            return order_promises;
+        }
+   );
+}
+
+function generateQueryString(
+    startOrderPos: number,
+    query_template: string,
+    year: number
+) {
+    return sprintf.sprintf(
+        query_template,
+        {
+            site: urls.getSite(),
+            year: year,
+            startOrderPos: startOrderPos
+        }
+    );
+};
+
 function getOrdersForYearAndQueryTemplate(
     year: number,
     query_template: string,
     scheduler: request_scheduler.IRequestScheduler,
     nocache_top_level: boolean
 ): Promise<Promise<IOrder>[]> {
-    const generateQueryString = function(startOrderPos: number) {
-        return sprintf.sprintf(
-            query_template,
-            {
-                site: urls.getSite(),
-                year: year,
-                startOrderPos: startOrderPos
-            }
-        );
-    };
-
-    const convertOrdersPage = function(evt: any): IOrdersPageData {
-        const d = util.parseStringToDOM(evt.target.responseText);
-        const context = 'Converting orders page';
-        const countSpan = util.findSingleNodeValue(
-            './/span[@class="num-orders"]', d.documentElement, context);
-        if ( !countSpan ) {
-            const msg = 'Error: cannot find order count elem in: ' + evt.target.responseText
-            console.error(msg);
-            throw(msg);
-        }
-        const textContent = countSpan.textContent;
-        const splits = textContent!.split(' ');
-        if (splits.length == 0) {
-            const msg = 'Error: not enough parts';
-            console.error(msg);
-            throw(msg);
-        }
-        const expected_order_count: number = parseInt( splits[0], 10 );
-        console.log(
-            'Found ' + expected_order_count + ' orders for ' + year
-        );
-        if(isNaN(expected_order_count)) {
-            console.warn(
-                'Error: cannot find order count in ' + countSpan.textContent
-            );
-        }
-        let ordersElem;
-        try {
-            ordersElem = d.getElementById('ordersContainer');
-        } catch(err) {
-            const msg = 'Error: maybe you\'re not logged into ' +
-                        'https://' + urls.getSite() + '/gp/css/order-history ' +
-                        err;
-            console.warn(msg)
-            throw msg;
-        }
-        const order_elems: HTMLElement[] = util.findMultipleNodeValues(
-            './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
-            ordersElem
-        ).map( node => <HTMLElement>node );
-        const serialized_order_elems = order_elems.map(
-            elem => dom2json.toJSON(elem, getCachedAttributeNames())
-        );
-        if ( !serialized_order_elems.length ) {
-            console.error(
-                'no order elements in converted order list page: ' +
-                evt.target.responseURL
-            );
-        }
-        const converted = {
-            expected_order_count: expected_order_count,
-            order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
-        }
-        return converted;
-    };
+    function convertOrdersPageYear(evt: any) {
+        return convertOrdersPage(evt, year);
+    }
 
     const expected_order_count_promise: Promise<number> = scheduler.scheduleToPromise<IOrdersPageData>(
-        generateQueryString(0),
-        convertOrdersPage,
+        generateQueryString(0, query_template, year),
+        convertOrdersPageYear,
         '00000',
         nocache_top_level
     ).then(
         response => response.result.expected_order_count
     );
 
-    const translateOrdersPageData = function(
-        response: request_scheduler.IResponse<IOrdersPageData>
-    ): Promise<IOrder>[] {
-        const orders_page_data = response.result;
-        const order_elems = orders_page_data.order_elems.map(
-            (elem: any) => dom2json.toDOM(elem)
-        );
-        function makeOrderPromise(elem: HTMLElement): Promise<IOrder> {
-            const order = create(elem, scheduler, response.query);
-            return Promise.resolve(order);
-        }
-        const promises = order_elems.map(makeOrderPromise);
-        return promises;
-    };
-
-    const getOrderPromises = function(expected_order_count: number): Promise<Promise<IOrder>[]> {
-        const page_done_promises: Promise<null>[] = [];
-        const order_promises: Promise<IOrder>[] = [];
-        for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
-            console.log(
-                'sending request for order: ' + iorder + ' onwards'
-            );
-            page_done_promises.push(
-                scheduler.scheduleToPromise<IOrdersPageData>(
-                    generateQueryString(iorder),
-                    convertOrdersPage,
-                    '2',
-                    false
-                ).then(
-                    page_data => {
-                        const promises = translateOrdersPageData(page_data);
-                        order_promises.push(...promises);
-                    }
-                ).then(
-                    () => null,
-                    (msg) => {
-                        console.error(msg);
-                        return null;
-                    }
-                )
-            );
-        }
-        console.log('finished sending order list page requests');
-        return Promise.all(page_done_promises).then(
-            () => {
-                console.log('returning all order promises');
-                return order_promises;
-            }
-       );
+    function orderPromiseGetter(expected_order_count: number):
+        Promise<Promise<IOrder>[]>
+    {
+        return getOrderPromises(
+            expected_order_count, year, query_template, scheduler);
     }
 
-    return expected_order_count_promise.then( getOrderPromises );
+    return expected_order_count_promise.then( orderPromiseGetter );
 }
 
 const TEMPLATES_BY_SITE: Record<string, string[]> = {
