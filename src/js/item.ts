@@ -95,7 +95,7 @@ function strategy0(
             );
         } catch(ex) {
             qty = 1;
-            if (!ex.includes('match')) {
+            if (!String(ex).includes('match')) {
                 console.log(ex);
             }
         }
