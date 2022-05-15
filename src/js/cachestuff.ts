@@ -88,14 +88,14 @@ class LocalCacheImpl {
                 console.error(
                     'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
                     encoded
-                );  
+                );
             }
             if (!packed) {
                 throw "not found";
             }
             ++this.hit_count;
             const decompressed = lzjs.decompress(packed.value);
-            try { 
+            try {
                 const result: string = JSON.parse(decompressed);
                 restoreDates(result);
                 return result;
@@ -103,7 +103,7 @@ class LocalCacheImpl {
                 console.error(
                     'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
                     decompressed
-                );  
+                );
             }
             return null;
         } catch(err) {
@@ -135,7 +135,7 @@ class LocalCacheImpl {
                     console.error(
                         'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
                         encoded
-                    );  
+                    );
                 }
             } catch(error) {
                 console.debug('couldn\'t get timestamp for key: ' + key);

@@ -118,7 +118,7 @@ function strategy0(
             price: price,
             quantity: qty,
             url: url,
-        } 
+        }
     });
     return items;
 }
@@ -164,7 +164,7 @@ function strategy1(
             price: price,
             quantity: qty,
             url: url,
-        } 
+        }
     });
     return items;
 }
@@ -213,7 +213,7 @@ function strategy2(
             price: price,
             quantity: qty,
             url: url,
-        } 
+        }
     });
     return items.filter( item => item.description != '' );
 }
@@ -259,7 +259,7 @@ function strategy3(
             price: price,
             quantity: qty,
             url: url,
-        } 
+        }
     });
     return items;
 }

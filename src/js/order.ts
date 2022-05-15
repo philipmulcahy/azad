@@ -176,7 +176,7 @@ function extractDetailFromDoc(
         }
         return util.defaulted(a, '');
     };
-    
+
     // TODO Need to exclude gift wrap
     const gift = function(): string {
         const a = extraction.by_regex(
@@ -534,7 +534,7 @@ class Order {
         return Promise.resolve(util.defaulted(this.impl.who, ''));
     }
     items(): Promise<item.Items> {
-        const items: item.Items = {}; 
+        const items: item.Items = {};
         if (this.impl.detail_promise) {
             return this.impl.detail_promise.then( details => {
                 details.items.forEach(item => {
@@ -551,7 +551,7 @@ class Order {
         }
     }
     item_list(): Promise<item.IItem[]> {
-        const items: item.IItem[] = []; 
+        const items: item.IItem[] = [];
         if (this.impl.detail_promise) {
             return this.impl.detail_promise.then( details => {
                 details.items.forEach(item => {
@@ -750,7 +750,7 @@ class OrderImpl {
                         resolve([
                             this.total ?
                                 date + ': ' + this.total :
-                                date 
+                                date
                         ]);
                     } else {
                         const event_converter = function(evt: any) {

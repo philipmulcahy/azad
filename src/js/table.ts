@@ -86,7 +86,7 @@ const ORDER_COLS: ColSpec[] = [
     },
     {
         field_name: 'items',
-        render_func: (order: azad_entity.IEntity, td: HTMLElement) => 
+        render_func: (order: azad_entity.IEntity, td: HTMLElement) =>
             (order as azad_order.IOrder).items().then( items => {
                 const ul = td.ownerDocument!.createElement('ul');
                 for(let title in items) {
@@ -274,7 +274,7 @@ function getCols(
     items_not_orders: boolean
 ): Promise<ColSpec[]> {
     const waits: Promise<any>[] = [];
-    const results: ColSpec[] = [];  
+    const results: ColSpec[] = [];
     const cols = items_not_orders ? ITEM_COLS : ORDER_COLS;
     cols.forEach( col => {
         if (col?.sites?.test(urls.getSite()) ?? true) {
@@ -294,8 +294,8 @@ function getCols(
 
 function maybe_promise_to_promise(
     field: azad_entity.Field
-): Promise<azad_entity.Value> {    
-    const called = 
+): Promise<azad_entity.Value> {
+    const called =
         typeof(field) === 'function' ?
             (field as ()=>Promise<azad_entity.Value>)() :
             field;
@@ -372,7 +372,7 @@ function appendCell(
                             }
                             return null;
                         }
-                    ); 
+                    );
             })();
     td.setAttribute('class', td.getAttribute('class') + ' ' +
             'azad_col_' + col_spec.field_name + ' ' +

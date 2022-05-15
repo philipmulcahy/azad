@@ -1,6 +1,6 @@
 /* Copyright(c) 2019-2021 Philip Mulcahy. */
 
-import * as order_data from './fake_order'; 
+import * as order_data from './fake_order';
 import * as azad_order from '../js/order';
 import * as util from '../js/util';
 
