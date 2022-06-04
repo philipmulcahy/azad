@@ -50,7 +50,7 @@ function getCacheExcludedElementTypes() {
 }
 
 interface IOrderDetails {
-    date: string;
+    date: Date|null;
     total: string;
     postage: string;
     postage_refund: string;
@@ -63,7 +63,7 @@ interface IOrderDetails {
     who: string;
     invoice_url: string;
 
-    [index: string]: string;
+    [index: string]: string|Date|null;
 };
 
 function extractDetailFromDoc(
@@ -105,21 +105,24 @@ function extractDetailFromDoc(
         return x;
     };
 
-    const order_date = function(): string {
+    const order_date = function(): Date|null {
+        const def_string = order.date ?
+            util.dateToDateIsoString(order.date):
+            null;
         const d = extraction.by_regex(
             [
                 '//*[contains(@class,"order-date-invoice-item")]/text()',
                 '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',
             ],
             /(?:Ordered on|Commandé le|Digital Order:) (.*)/i,
-            order.date,
+            def_string,
             doc.documentElement,
             context,
         );
         if (d) {
-            return date.normalizeDateString(d);
+            return new Date(date.normalizeDateString(d));
         }
-        return util.defaulted(order.date, '');
+        return util.defaulted(order.date, null);
     };
 
     const total = function(): string {
@@ -173,7 +176,7 @@ function extractDetailFromDoc(
         }
         return util.defaulted(a, '');
     };
-    
+
     // TODO Need to exclude gift wrap
     const gift = function(): string {
         const a = extraction.by_regex(
@@ -448,7 +451,7 @@ const extractDetailPromise = (
                     details: extractDetailFromDoc(order, doc),
                     items: item.extractItems(
                         util.defaulted(order.id, ''),
-                        util.defaulted(order.date, ''),
+                        order.date,
                         util.defaulted(order.detail_url, ''),
                         doc.documentElement,
                         context,
@@ -479,7 +482,7 @@ export interface IOrder extends azad_entity.IEntity {
     detail_url(): Promise<string>;
     invoice_url(): Promise<string>;
 
-    date(): Promise<string>;
+    date(): Promise<Date|null>;
     gift(): Promise<string>;
     gst(): Promise<string>;
     item_list(): Promise<item.IItem[]>;
@@ -521,8 +524,8 @@ class Order {
     site(): Promise<string> {
         return Promise.resolve(util.defaulted(this.impl.site, ''));
     }
-    date(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.date, ''));
+    date(): Promise<Date|null> {
+        return Promise.resolve(this.impl.date);
     }
     total(): Promise<string> {
         return this._detail_dependent_promise(detail => detail.total);
@@ -531,7 +534,7 @@ class Order {
         return Promise.resolve(util.defaulted(this.impl.who, ''));
     }
     items(): Promise<item.Items> {
-        const items: item.Items = {}; 
+        const items: item.Items = {};
         if (this.impl.detail_promise) {
             return this.impl.detail_promise.then( details => {
                 details.items.forEach(item => {
@@ -548,7 +551,7 @@ class Order {
         }
     }
     item_list(): Promise<item.IItem[]> {
-        const items: item.IItem[] = []; 
+        const items: item.IItem[] = [];
         if (this.impl.detail_promise) {
             return this.impl.detail_promise.then( details => {
                 details.items.forEach(item => {
@@ -620,7 +623,7 @@ class OrderImpl {
     detail_url: string|null;
     payments_url: string|null;
     invoice_url: string|null;
-    date: string|null;
+    date: Date|null;
     total: string|null;
     who: string|null;
     detail_promise: Promise<IOrderDetailsAndItems>|null;
@@ -665,27 +668,32 @@ class OrderImpl {
         }
 
         const context = 'id:' + this.id;
-        this.date = date.normalizeDateString(
-            util.defaulted(
-                getField(
-                    [
-                        'Commande effectuée',
-                        'Order placed',
-                        'Ordine effettuato',
-                         'Pedido realizado'
-                    ].map(
-                        label => sprintf.sprintf(
-                            './/div[contains(span,"%s")]' +
-                            '/../div/span[contains(@class,"value")]',
-                            label
-                        )
-                    ).join('|'),
-                    elem,
-                    context,
-                ),
-                ''
-            )
-        );
+        this.date = null;
+        try {
+            this.date = new Date(
+                date.normalizeDateString(
+                    util.defaulted(
+                        getField(
+                            [
+                                'Commande effectuée',
+                                'Order placed',
+                                'Ordine effettuato',
+                                 'Pedido realizado'
+                            ].map(
+                                label => sprintf.sprintf(
+                                    './/div[contains(span,"%s")]' +
+                                    '/../div/span[contains(@class,"value")]',
+                                    label
+                                )
+                            ).join('|'),
+                            elem,
+                            context,
+                        ),
+                        ''
+                    )
+                )
+            );
+        } catch (_) {}
         // This field is no longer always available, particularly for .com
         // We replace it (where we know the search pattern for the country)
         // with information from the order detail page.
@@ -736,11 +744,13 @@ class OrderImpl {
                     reject: (msg: string) => void
                 ) => {
                     if (this.id?.startsWith('D')) {
+                        const date = this.date ?
+                            util.dateToDateIsoString(this.date) :
+                            '';
                         resolve([
                             this.total ?
-                                util.defaulted(this.date, '') + 
-                                ': ' + util.defaulted(this.total, '') :
-                                util.defaulted(this.date, '')
+                                date + ': ' + this.total :
+                                date
                         ]);
                     } else {
                         const event_converter = function(evt: any) {
@@ -954,169 +964,170 @@ function getOrdersForYearAndQueryTemplate(
     return expected_order_count_promise.then( getOrderPromises );
 }
 
+const TEMPLATES_BY_SITE: Record<string, string[]> = {
+    'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s'],
+    'www.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s'],
+   'www.amazon.com.au': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s'],
+    'smile.amazon.de': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s' +
+        '&language=en_GB'],
+    'www.amazon.de': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s' +
+        '&language=en_GB'],
+    'www.amazon.es': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s' +
+        '&language=en_GB'],
+    'www.amazon.in': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s' +
+        '&language=en_GB'],
+    'www.amazon.it': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s' +
+        '&language=en_GB'],
+    'smile.amazon.ca': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s'],
+    'www.amazon.ca': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s'],
+    'smile.amazon.fr': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s'],
+    'www.amazon.fr': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s'],
+    'smile.amazon.com': [
+        'https://%(site)s/gp/css/order-history' +
+        '?opt=ab' +
+        '&ie=UTF8' +
+        '&digitalOrders=1' +
+        '&unifiedOrders=0' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s' +
+        '&language=en_US',
+
+        'https://%(site)s/gp/css/order-history' +
+        '?opt=ab' +
+        '&ie=UTF8' +
+        '&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s' +
+        '&language=en_US'],
+    'www.amazon.com': [
+        'https://%(site)s/gp/css/order-history' +
+        '?opt=ab' +
+        '&ie=UTF8' +
+        '&digitalOrders=1' +
+        '&unifiedOrders=0' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s' +
+        '&language=en_US',
+
+        'https://%(site)s/gp/css/order-history' +
+        '?opt=ab' +
+        '&ie=UTF8' +
+        '&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s' +
+        '&language=en_US'],
+    'www.amazon.com.mx': [
+        'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_date' +
+        '?ie=UTF8' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s',
+
+        'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_yo_new_digital' +
+        '?ie=UTF8' +
+        '&digitalOrders=1' +
+        '&orderFilter=year-%(year)s' +
+        '&unifiedOrders=0' +
+        '&startIndex=%(startOrderPos)s'],
+    'other': [
+        'https://%(site)s/gp/css/order-history' +
+        '?opt=ab' +
+        '&ie=UTF8' +
+        '&digitalOrders=1' +
+        '&unifiedOrders=0' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s' +
+        '&language=en_GB',
+
+        'https://%(site)s/gp/css/order-history' +
+        '?opt=ab' +
+        '&ie=UTF8' +
+        '&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s' +
+        '&language=en_GB'],
+}
+
 function fetchYear(
     year: number,
     scheduler: request_scheduler.IRequestScheduler,
     nocache_top_level: boolean
 ): Promise<Promise<IOrder>[]> {
-    const templates_by_site: Record<string, string[]> = {
-        'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s'],
-        'www.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s'],
-       'www.amazon.com.au': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s'],
-        'smile.amazon.de': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_GB'],
-        'www.amazon.de': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_GB'],
-        'www.amazon.es': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_GB'],
-        'www.amazon.in': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_GB'],
-        'www.amazon.it': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_GB'],
-        'smile.amazon.ca': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s'],
-        'www.amazon.ca': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s'],
-        'smile.amazon.fr': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s'],
-        'www.amazon.fr': ['https://%(site)s/gp/css/order-history' +
-            '?opt=ab&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&returnTo=' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s'],
-        'smile.amazon.com': [
-            'https://%(site)s/gp/css/order-history' +
-            '?opt=ab' +
-            '&ie=UTF8' +
-            '&digitalOrders=1' +
-            '&unifiedOrders=0' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_US',
-
-            'https://%(site)s/gp/css/order-history' +
-            '?opt=ab' +
-            '&ie=UTF8' +
-            '&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_US'],
-        'www.amazon.com': [
-            'https://%(site)s/gp/css/order-history' +
-            '?opt=ab' +
-            '&ie=UTF8' +
-            '&digitalOrders=1' +
-            '&unifiedOrders=0' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_US',
-
-            'https://%(site)s/gp/css/order-history' +
-            '?opt=ab' +
-            '&ie=UTF8' +
-            '&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_US'],
-        'www.amazon.com.mx': [
-            'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_date' +
-            '?ie=UTF8' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s',
-
-            'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_yo_new_digital' +
-            '?ie=UTF8' +
-            '&digitalOrders=1' +
-            '&orderFilter=year-%(year)s' +
-            '&unifiedOrders=0' +
-            '&startIndex=%(startOrderPos)s'],
-        'other': [
-            'https://%(site)s/gp/css/order-history' +
-            '?opt=ab' +
-            '&ie=UTF8' +
-            '&digitalOrders=1' +
-            '&unifiedOrders=0' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_GB',
-
-            'https://%(site)s/gp/css/order-history' +
-            '?opt=ab' +
-            '&ie=UTF8' +
-            '&digitalOrders=1' +
-            '&unifiedOrders=1' +
-            '&orderFilter=year-%(year)s' +
-            '&startIndex=%(startOrderPos)s' +
-            '&language=en_GB'],
-    }
-    let templates = templates_by_site[urls.getSite()];
+    let templates = TEMPLATES_BY_SITE[urls.getSite()];
     if ( !templates ) {
-        templates = templates_by_site['other'];
+        templates = TEMPLATES_BY_SITE['other'];
         notice.showNotificationBar(
             'Your site is not fully supported.\n' +
             'For better support, click on the popup where it says\n' +
             '"CLICK HERE if you get incorrect results!",\n' +
-            'and provide the diagnostic information',
+            'provide diagnostic information, and help me help you.',
             document
         );
     }
 
-    const promises_to_promises: Array<Promise<any>> = templates.map(
+    const promises_to_promises: Promise<Promise<IOrder>[]>[] = templates.map(
         template => template + '&disableCsd=no-js'
     ).map(
         template => getOrdersForYearAndQueryTemplate(

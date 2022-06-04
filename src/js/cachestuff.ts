@@ -9,6 +9,30 @@ function millisNow() {
     return (new Date()).getTime();
 }
 
+// Replace datey strings with equivalent Dates.
+// Why? Because JSON.stringify and then JSON.parse
+// causes Date objects to be converted to strings.
+function restoreDates(obj: any) {
+    if (typeof(obj) == 'object') {
+        // restore any immediate child date values
+        Object.keys(obj)
+            .filter(key => key.endsWith('date'))
+            .filter(key => typeof(obj[key]) == 'string')
+            .forEach(key => {
+                const value = obj[key];
+                try {
+                    const date = new Date(value);
+                    obj[key] = date;
+                } catch(ex) {
+                    console.warn(
+                        'tried to create Date from ' + value + ' for ' + key);
+                }
+            });
+        // recurse
+        Object.values(obj).forEach(v => restoreDates(v));
+    }
+}
+
 class LocalCacheImpl {
 
     cache_name: string;
@@ -64,21 +88,22 @@ class LocalCacheImpl {
                 console.error(
                     'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
                     encoded
-                );  
+                );
             }
             if (!packed) {
                 throw "not found";
             }
             ++this.hit_count;
             const decompressed = lzjs.decompress(packed.value);
-            try { 
+            try {
                 const result: string = JSON.parse(decompressed);
+                restoreDates(result);
                 return result;
             } catch(ex) {
                 console.error(
                     'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
                     decompressed
-                );  
+                );
             }
             return null;
         } catch(err) {
@@ -110,7 +135,7 @@ class LocalCacheImpl {
                     console.error(
                         'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
                         encoded
-                    );  
+                    );
                 }
             } catch(error) {
                 console.debug('couldn\'t get timestamp for key: ' + key);

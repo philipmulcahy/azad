@@ -5,7 +5,7 @@ import * as util from './util';
 
 export interface IItem extends azad_entity.IEntity {
     description: string;
-    order_date: string;
+    order_date: Date|null;
     order_detail_url: string;
     order_id: string;
     price: string;
@@ -17,7 +17,7 @@ export type Items = Record<string, string>;
 
 type ItemsExtractor = (
     order_id: string,
-    order_date: string,
+    order_date: Date|null,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string,
@@ -25,7 +25,7 @@ type ItemsExtractor = (
 
 export function extractItems(
     order_id: string,
-    order_date: string,
+    order_date: Date|null,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string,
@@ -58,7 +58,7 @@ export function extractItems(
 
 function strategy0(
     order_id: string,
-    order_date: string,
+    order_date: Date|null,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string
@@ -93,7 +93,7 @@ function strategy0(
                     '1'
                 ).trim()
             );
-        } catch(ex) {
+        } catch(ex: any) {
             qty = 1;
             if (!String(ex).includes('match')) {
                 console.log(ex);
@@ -118,7 +118,7 @@ function strategy0(
             price: price,
             quantity: qty,
             url: url,
-        } 
+        }
     });
     return items;
 }
@@ -126,7 +126,7 @@ function strategy0(
 // Digital orders.
 function strategy1(
     order_id: string,
-    order_date: string,
+    order_date: Date|null,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string,
@@ -136,7 +136,7 @@ function strategy1(
         order_elem
     );
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
-        let link = <HTMLElement>util.findSingleNodeValue(
+        const link = <HTMLElement>util.findSingleNodeValue(
             './/a[contains(@href, "/dp/")]',
             <HTMLElement>itemElem,
             context,
@@ -164,7 +164,7 @@ function strategy1(
             price: price,
             quantity: qty,
             url: url,
-        } 
+        }
     });
     return items;
 }
@@ -175,7 +175,7 @@ function strategy1(
 // Amazon.com 2016
 function strategy2(
     order_id: string,
-    order_date: string,
+    order_date: Date|null,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string,
@@ -213,7 +213,7 @@ function strategy2(
             price: price,
             quantity: qty,
             url: url,
-        } 
+        }
     });
     return items.filter( item => item.description != '' );
 }
@@ -221,7 +221,7 @@ function strategy2(
 // This strategy works for Amazon.com grocery orders in 2021.
 function strategy3(
     order_id: string,
-    order_date: string,
+    order_date: Date|null,
     order_detail_url: string,
     order_elem: HTMLElement,
     context: string,
@@ -259,7 +259,7 @@ function strategy3(
             price: price,
             quantity: qty,
             url: url,
-        } 
+        }
     });
     return items;
 }

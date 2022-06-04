@@ -2,7 +2,7 @@
 
 function getBarContainer(doc: HTMLDocument): HTMLDivElement {
     const id = 'azad_notification_bar_container';
-    const c: HTMLElement|null = doc.getElementById(id); 
+    const c: HTMLElement|null = doc.getElementById(id);
     if (c) {
         return <HTMLDivElement>c;
     }

@@ -48,7 +48,7 @@ export function toJSON(
   if (childNodes) {
     obj.childNodes = Array.from(childNodes)
                           .map( n => toJSON(n, include_attribs) )
-                          .filter( n => n ) 
+                          .filter( n => n )
   }
   return obj;
 }

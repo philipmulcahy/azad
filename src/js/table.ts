@@ -86,7 +86,7 @@ const ORDER_COLS: ColSpec[] = [
     },
     {
         field_name: 'items',
-        render_func: (order: azad_entity.IEntity, td: HTMLElement) => 
+        render_func: (order: azad_entity.IEntity, td: HTMLElement) =>
             (order as azad_order.IOrder).items().then( items => {
                 const ul = td.ownerDocument!.createElement('ul');
                 for(let title in items) {
@@ -112,7 +112,14 @@ const ORDER_COLS: ColSpec[] = [
     },
     {
         field_name: 'date',
-        value_promise_func_name: 'date',
+        render_func:
+            (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
+                const order = entity as azad_order.IOrder;
+                return order.date().then((date: Date|null) => {
+                    td.innerHTML = date ? util.dateToDateIsoString(date): '?';
+                    return Promise.resolve(null);
+                });
+            },
         is_numeric: false,
     },
     {
@@ -239,7 +246,7 @@ const ITEM_COLS: ColSpec[] = [
             (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
                 const item = entity as azad_item.IItem;
                 const date = item.order_date;
-                td.innerHTML = date; 
+                td.innerHTML = date ? util.dateToDateIsoString(date): '?';
                 return Promise.resolve(null);
             },
         is_numeric: false
@@ -267,7 +274,7 @@ function getCols(
     items_not_orders: boolean
 ): Promise<ColSpec[]> {
     const waits: Promise<any>[] = [];
-    const results: ColSpec[] = [];  
+    const results: ColSpec[] = [];
     const cols = items_not_orders ? ITEM_COLS : ORDER_COLS;
     cols.forEach( col => {
         if (col?.sites?.test(urls.getSite()) ?? true) {
@@ -287,15 +294,18 @@ function getCols(
 
 function maybe_promise_to_promise(
     field: azad_entity.Field
-): Promise<azad_entity.Value> {    
-    const called = 
+): Promise<azad_entity.Value> {
+    const called =
         typeof(field) === 'function' ?
             (field as ()=>Promise<azad_entity.Value>)() :
             field;
-    const promise = typeof(called) === 'object' && 'then' in called ?
-        called :
-        Promise.resolve(called);
-    return promise;
+    if (called == null) {
+        return Promise.resolve(null);
+    } else if (typeof(called) === 'object' && 'then' in called) {
+        return called;
+    } else {
+        return Promise.resolve(called);
+    }
 }
 
 function extract_value(
@@ -339,14 +349,14 @@ function appendCell(
             col_spec?.render_func(entity, td) :
             (() => {
                 const field_name = col_spec.value_promise_func_name;
-                const callable_or_value: (()=>Promise<string|number>)|number|string = ('id' in entity) ?
+                const callable_or_value: azad_entity.Field = ('id' in entity) ?
                     (entity as azad_order.IOrder)[
                         field_name as keyof azad_order.IOrder
                     ]:
                     (entity as azad_item.IItem)[
                         field_name as keyof azad_item.IItem
                     ];
-                const value_promise: Promise<number|string> = (
+                const value_promise: Promise<azad_entity.Value> = (
                     typeof(callable_or_value) === 'function'
                 ) ?
                     callable_or_value.bind(entity)() :
@@ -362,7 +372,7 @@ function appendCell(
                             }
                             return null;
                         }
-                    ); 
+                    );
             })();
     td.setAttribute('class', td.getAttribute('class') + ' ' +
             'azad_col_' + col_spec.field_name + ' ' +

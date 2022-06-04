@@ -26,14 +26,14 @@ function activateDone(years: number[]) {
 
 function showOnly(button_ids: any[]) {
     $('.azad_action').addClass('hidden');
-    button_ids.forEach( id => $('#' + id).removeClass('hidden') ); 
+    button_ids.forEach( id => $('#' + id).removeClass('hidden') );
 }
 
 let background_port: chrome.runtime.Port|null = null;
 function connectToBackground() {
     console.log('connectToBackground');
 
-    // @ts-ignore: tsc objects to null first parameter for connect();  
+    // @ts-ignore: tsc objects to null first parameter for connect();
     background_port = chrome.runtime.connect(null, { name: 'azad_control' });
 
     background_port.onMessage.addListener( msg => {
@@ -57,7 +57,7 @@ function connectToBackground() {
                 }
                 break;
             default:
-                console.warn('unknown action: ' + msg.action); 
+                console.warn('unknown action: ' + msg.action);
         }
     });
 }
@@ -116,7 +116,7 @@ function handleYearClick(evt: { target: { value: any; }; }) {
         console.log('sending scrape_years', year);
         background_port.postMessage({
             action: 'scrape_years',
-            years: years, 
+            years: years,
         });
     } else {
         console.warn('background_port not set');
