@@ -431,51 +431,53 @@ interface IOrderDetailsAndItems {
     items: item.IItem[];
 };
 
-const extractDetailPromise = (
+function extractDetailPromise(
     order: OrderImpl,
     scheduler: request_scheduler.IRequestScheduler
-) => new Promise<IOrderDetailsAndItems>(
-    (resolve, reject) => {
-        const context = 'id:' + order.id;
-        const url = order.detail_url;
-        if(!url) {
-            const msg = 'null order detail query: cannot schedule';
-            console.error(msg);
-            reject(msg);
-        } else {
-            const event_converter = function(
-                evt: { target: { responseText: string; }; }
-            ): IOrderDetailsAndItems {
-                const doc = util.parseStringToDOM( evt.target.responseText );
-                return {
-                    details: extractDetailFromDoc(order, doc),
-                    items: item.extractItems(
-                        util.defaulted(order.id, ''),
-                        order.date,
-                        util.defaulted(order.detail_url, ''),
-                        doc.documentElement,
-                        context,
-                    ),
-                };
-            };
-            try {
-                scheduler.scheduleToPromise<IOrderDetailsAndItems>(
-                    url,
-                    event_converter,
-                    util.defaulted(order.id, '9999'),
-                    false
-                ).then(
-                    (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => resolve(response.result),
-                    url => reject('timeout or other problem when fetching ' + url),
-                );
-            } catch (ex) {
-                const msg = 'scheduler rejected ' + order.id + ' ' + url;
+){
+    return new Promise<IOrderDetailsAndItems>(
+        (resolve, reject) => {
+            const context = 'id:' + order.id;
+            const url = order.detail_url;
+            if(!url) {
+                const msg = 'null order detail query: cannot schedule';
                 console.error(msg);
                 reject(msg);
+            } else {
+                const event_converter = function(
+                    evt: { target: { responseText: string; }; }
+                ): IOrderDetailsAndItems {
+                    const doc = util.parseStringToDOM( evt.target.responseText );
+                    return {
+                        details: extractDetailFromDoc(order, doc),
+                        items: item.extractItems(
+                            util.defaulted(order.id, ''),
+                            order.date,
+                            util.defaulted(order.detail_url, ''),
+                            doc.documentElement,
+                            context,
+                        ),
+                    };
+                };
+                try {
+                    scheduler.scheduleToPromise<IOrderDetailsAndItems>(
+                        url,
+                        event_converter,
+                        util.defaulted(order.id, '9999'),
+                        false
+                    ).then(
+                        (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => resolve(response.result),
+                        url => reject('timeout or other problem when fetching ' + url),
+                    );
+                } catch (ex) {
+                    const msg = 'scheduler rejected ' + order.id + ' ' + url;
+                    console.error(msg);
+                    reject(msg);
+                }
             }
         }
-    }
-);
+    )
+};
 
 export interface IOrder extends azad_entity.IEntity {
     id(): Promise<string>;
