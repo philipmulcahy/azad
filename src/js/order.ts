@@ -1154,6 +1154,13 @@ function fetchYear(
     });
 }
 
+function fetchMonth(
+    year: number,
+    month: number, // 1 based
+    nocache_top_level: boolean
+): Promise<Promise<IOrder>[]> {
+}
+
 export function getOrdersByYear(
     years: number[],
     scheduler: request_scheduler.IRequestScheduler,
