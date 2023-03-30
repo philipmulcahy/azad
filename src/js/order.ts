@@ -74,34 +74,38 @@ function extractDetailFromDoc(
         if(order.who) {
             return order.who;
         }
+
         const doc_elem = doc.documentElement;
+
         let x = getField(
             // TODO: this seems brittle, depending on the precise path of the element.
             '//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
             doc_elem,
             context
         ); // US Digital
+        if(x) return x;
+
+        x = getField('.//div[contains(@class,"recipient")]' +
+            '//span[@class="trigger-text"]', doc_elem, context);
+        if(x) return x;
+
+        x = getField(
+            './/div[contains(text(),"Recipient")]',
+            doc_elem,
+            context
+        );
+        if(x) return x;
+
+        x = getField(
+            '//li[contains(@class,"displayAddressFullName")]/text()',
+            doc_elem,
+            context,
+        );
+
         if ( !x ) {
-            x = getField('.//div[contains(@class,"recipient")]' +
-                '//span[@class="trigger-text"]', doc_elem, context);
-            if ( !x ) {
-                x = getField(
-                    './/div[contains(text(),"Recipient")]',
-                    doc_elem,
-                    context
-                );
-                if ( !x ) {
-                    x = getField(
-                        '//li[contains(@class,"displayAddressFullName")]/text()',
-                        doc_elem,
-                        context,
-                    );
-                    if ( !x ) {
-                        x = 'null';
-                    }
-                }
-            }
+            x = 'null';
         }
+
         return x;
     };
 
@@ -173,7 +177,7 @@ function extractDetailFromDoc(
         }
         return util.defaulted(a, '');
     };
-    
+
     // TODO Need to exclude gift wrap
     const gift = function(): string {
         const a = extraction.by_regex(
@@ -531,7 +535,7 @@ class Order {
         return Promise.resolve(util.defaulted(this.impl.who, ''));
     }
     items(): Promise<item.Items> {
-        const items: item.Items = {}; 
+        const items: item.Items = {};
         if (this.impl.detail_promise) {
             return this.impl.detail_promise.then( details => {
                 details.items.forEach(item => {
@@ -548,7 +552,7 @@ class Order {
         }
     }
     item_list(): Promise<item.IItem[]> {
-        const items: item.IItem[] = []; 
+        const items: item.IItem[] = [];
         if (this.impl.detail_promise) {
             return this.impl.detail_promise.then( details => {
                 details.items.forEach(item => {
@@ -738,7 +742,7 @@ class OrderImpl {
                     if (this.id?.startsWith('D')) {
                         resolve([
                             this.total ?
-                                util.defaulted(this.date, '') + 
+                                util.defaulted(this.date, '') +
                                 ': ' + util.defaulted(this.total, '') :
                                 util.defaulted(this.date, '')
                         ]);

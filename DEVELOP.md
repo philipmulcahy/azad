@@ -53,6 +53,7 @@ npm run winpackage
 * Disable or remove the store version of the extension.
 * Click "Load unpacked".
 * Navigate to the build folder.
+* You'll need to repeat this process each time you make a change to the extension.
 
 ## installing "secret" unit test data
 (secret because the data contains order details of contributors to the project)
@@ -67,3 +68,5 @@ git clone git@github.com:philipmulcahy/azad_test_data.git
 
 ## edit-test-loop
 Remember to re-build, reload the extension on the chrome://extensions page and reload the targeted amazon page after saving changes to files.
+
+Tip: `inject.ts` is the entrypoint for the extension. That's a good place to start investigating the code.
