@@ -95,10 +95,10 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
             );
         }
         const card_names: string[] = map_payment_field(
-            'Payment Method: ([A-Za-z0-9 /]*) \|'
+            'Payment Method: ([A-Za-z0-9 /]*) \\|'
         );
         const card_number_suffixes = map_payment_field(
-            'Last digits: (\d+)'
+            'Last digits: (\\d+)'
         );
         const payment_amounts = map_payment_field(
             'Grand Total: (.*) Payment Method'

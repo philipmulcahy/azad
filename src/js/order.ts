@@ -74,34 +74,38 @@ function extractDetailFromDoc(
         if(order.who) {
             return order.who;
         }
+
         const doc_elem = doc.documentElement;
+
         let x = getField(
             // TODO: this seems brittle, depending on the precise path of the element.
             '//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
             doc_elem,
             context
         ); // US Digital
+        if(x) return x;
+
+        x = getField('.//div[contains(@class,"recipient")]' +
+            '//span[@class="trigger-text"]', doc_elem, context);
+        if(x) return x;
+
+        x = getField(
+            './/div[contains(text(),"Recipient")]',
+            doc_elem,
+            context
+        );
+        if(x) return x;
+
+        x = getField(
+            '//li[contains(@class,"displayAddressFullName")]/text()',
+            doc_elem,
+            context,
+        );
+
         if ( !x ) {
-            x = getField('.//div[contains(@class,"recipient")]' +
-                '//span[@class="trigger-text"]', doc_elem, context);
-            if ( !x ) {
-                x = getField(
-                    './/div[contains(text(),"Recipient")]',
-                    doc_elem,
-                    context
-                );
-                if ( !x ) {
-                    x = getField(
-                        '//li[contains(@class,"displayAddressFullName")]/text()',
-                        doc_elem,
-                        context,
-                    );
-                    if ( !x ) {
-                        x = 'null';
-                    }
-                }
-            }
+            x = 'null';
         }
+
         return x;
     };
 
