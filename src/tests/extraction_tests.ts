@@ -23,8 +23,8 @@ const detailExtractionTest = function(): boolean {
     const basic = extraction.by_regex(
         [
             '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "VAT: ")]]'
-        ], 
-        /VAT: (?:[^-$£€0-9]*)([-$£€0-9.]*)/, 
+        ],
+        /VAT: (?:[^-$£€0-9]*)([-$£€0-9.]*)/,
         'N/A',
         doc.documentElement,
         context,

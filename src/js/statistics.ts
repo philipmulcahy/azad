@@ -13,7 +13,7 @@ export function get(name: string): number {
 export function publish(port: chrome.runtime.Port, years: number[]) {
     port.postMessage({
         action: 'statistics_update',
-        statistics: stats, 
+        statistics: stats,
         years: years,
     });
 }

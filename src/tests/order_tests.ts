@@ -1,6 +1,6 @@
 /* Copyright(c) 2019-2021 Philip Mulcahy. */
 
-import * as order_data from './fake_order'; 
+import * as order_data from './fake_order';
 import * as azad_order from '../js/order';
 import * as util from '../js/util';
 
@@ -38,9 +38,12 @@ function testOneTarget(
     const key_validation_promises = keys.map( key => {
         const expected_value = util.defaulted(expected[key], '');
         const actual_value_promise = (order as Record<string, any>)[key]();
-        return actual_value_promise.then( (actual_value: string) => {
+        return actual_value_promise.then( (actual_value: string|Date) => {
             console.log('key:', key, expected_value, actual_value);
-            const actual_string = JSON.stringify(actual_value);
+            if ( key.toLowerCase().includes('date') ) {
+              actual_value = util.dateToDateIsoString(actual_value as Date)
+            }
+            let actual_string = JSON.stringify(actual_value);
             const expected_string = JSON.stringify(expected_value);
             if ( actual_string != expected_string ) {
                 const msg = key + ' should be ' + expected_string +

@@ -14,7 +14,7 @@ import * as request_scheduler from '../js/request_scheduler';
 // -----------
 //
 // A) Build order from json dump file containing urls and html scraped from real
-//    Amazon accounts: 
+//    Amazon accounts:
 //    json dump file pattern ${SITE}/input/${ORDER_ID}_${DATETIME}.json
 //    json file containing expected order fields:
 //      ${SITE}/expected/${ORDER_ID}_${DATETIME}.json

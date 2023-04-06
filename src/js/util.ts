@@ -119,7 +119,7 @@ export function findMultipleNodeValues(
 	}
 }
 
-export function clearBody() {
+export function clearBody(): void {
     Array.from(document.body.children).forEach(
         function(elem: Element) {
             if( !(
@@ -132,7 +132,7 @@ export function clearBody() {
     );
 }
 
-export function moneyRegEx() {
+export function moneyRegEx(): RegExp {
     return /\s+((GBP|USD|CAD|EUR|AUD|[$£€])?\s?(\d+[.,]\d\d))\s+/;
 /*
     /
@@ -146,4 +146,8 @@ export function moneyRegEx() {
         )
     /
 */
+}
+
+export function dateToDateIsoString(d: Date): string {
+    return d.toISOString().substr(0,10);
 }

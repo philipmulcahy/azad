@@ -33,7 +33,7 @@ function setStatsTimeout() {
     const sendStatsMsg = () => {
         const bg_port = getBackgroundPort();
         if (bg_port) {
-            stats.publish(bg_port, years); 
+            stats.publish(bg_port, years);
             azad_table.updateProgressBar();
         }
     }
@@ -46,7 +46,7 @@ function setStatsTimeout() {
             sendStatsMsg();
         },
         2000
-    ); 
+    );
 }
 
 function resetScheduler(): void {
@@ -142,7 +142,7 @@ function advertiseYears() {
 }
 
 function registerContentScript() {
-    // @ts-ignore null IS allowed as first arg to connect. 
+    // @ts-ignore null IS allowed as first arg to connect.
     background_port = chrome.runtime.connect(null, {name: 'azad_inject'});
 
     const bg_port = getBackgroundPort();

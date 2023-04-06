@@ -3,7 +3,7 @@
 import * as notice from './notice';
 import * as urls from './url';
 
-const MIN_ALERT_REPEAT_INTERVAL_S = 30; 
+const MIN_ALERT_REPEAT_INTERVAL_S = 30;
 
 let alerts_enabled: boolean = true;
 
@@ -23,7 +23,7 @@ function checkSigninRedirect(
 }
 
 export function checkedFetch(url: string): Promise<Response> {
-    return fetch(url).then( 
+    return fetch(url).then(
         (response: Response) => {
             checkSigninRedirect( response, url );
             return response;
@@ -117,7 +117,7 @@ export function forceLogOut(site_url: string) {
                 {
                     action: 'remove_cookie',
                     cookie_name: name,
-                    cookie_url: site_url 
+                    cookie_url: site_url
                 }
             )
         )
@@ -136,7 +136,7 @@ export function forceLogOut(site_url: string) {
     );
 
     // Call the logout (redirected) page on this tab.
-    const logout_with_redirect_url = logout_url + 
+    const logout_with_redirect_url = logout_url +
         '?path=/' +
         '&signIn=1&useRedirectOnSuccess=1' +
         '&action=sign-out&ref_=nav_AccountFlyout_signout';
