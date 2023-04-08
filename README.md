@@ -4,6 +4,40 @@
 
 https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi
 
+# Summary
+
+This extension extracts order history from your Amazon account.
+
+Amazon used to provide csv reports via https://www.amazon.com/gp/b2b/for US customers only, but it didn't include digital orders, shipping, total amount, or payment information. Sometime in the middle of 2020, Amazon withdrew the feature even in the US.
+
+This extension aims to fill the gap.
+
+# How to Use
+
+After you install the extension, you won't see anything until you view your order history on the website (Your Account -> Your Orders).
+
+Get to your orders page, then click on the extension icon at the top right of the Chrome window; look for an orange upper case A. Once you do this, you  should see buttons with years on the extensions pop-up window.
+Clicking on one of these buttons causes the extension to sift through all of your order pages and show you a searchable, sortable table with all of the orders in. It can take a few seconds to get all of the pages.
+A blue button enables you to download a CSV (viewable in Excel and other spreadsheet programs) of the order table the extension has assembled.
+It's better not to have more than one amazon tab open while the extension is doing stuff.
+
+Currently supported:
+amazon.com.au, .ca, .de, .es, .in, co.uk, com, .com.mx (partial).
+
+For other Amazon sites, please submit debug information as described in https://github.com/philipmulcahy/azad/blob/master/README.md
+
+Bug reports are gratefully accepted, with extra points awarded for:
+1) reproducibility - if you describe it well and I can reproduce it then it's normally straightforward to fix.
+2) staying in contact - fire and forget bug reports are often impossible to reproduce and are seriously demotivating.
+3) using courteous language.
+4) using English - you're not paying me and while I can scrape by in French and German, I'm spending more of my spare time on this project than you are, and it's not about learning human languages.
+5) having read the (very brief) instructions - and if English is not your favorite language, you have two choices:
+   i) Google translate (don't send it to me!)
+   ii) Sending me a translation (better than Google's) of the instructions. 
+       I will figure out how to incorporate it and list you in the credits.
+
+Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
+
 # Help!
 
 ## Common problems, with some fixes
