@@ -42,8 +42,8 @@ function connectToBackground() {
             case 'scrape_complete':
                 break;
             case 'advertise_years':
+                showPeriodButtons([1, 2, 3]);  // most recent 1, 2, and 3 months
                 showYearButtons(msg.years);
-                showPeriodButtons([1,3]);  // last 1 and 3 months
                 break;
             case 'statistics_update':
                 {
@@ -98,7 +98,7 @@ function showYearButtons(years: number[]) {
     $('.azad_year_button').remove();
     years.sort().reverse().forEach( year => {
         $('#azad_year_list').append(
-            '<input type="button" class="azad_year_button" value="' + year + '" />'
+            '<button class="azad_year_button" value="' + year + '">' + year + '</button>'
         );
     });
     $('.azad_year_button').on('click', handleYearClick);
@@ -107,9 +107,9 @@ function showYearButtons(years: number[]) {
 function showPeriodButtons(month_counts: number[]) {
   console.log('show month buttons', month_counts);
   $('.azad_months_button').remove();
-  month_counts.sort().reverse().forEach( month_count => {
+  month_counts.sort().forEach( month_count => {
     $('#azad_year_list').append(
-      '<input type="button" class="azad_months_button" value="' + month_count + '" />' 
+      '<button class="azad_months_button" value="' + month_count + '" >' + month_count + 'm</button>' 
     );
   });
   $('.azad_months_button').on('click', handleMonthsClick);

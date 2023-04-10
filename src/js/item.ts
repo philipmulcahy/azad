@@ -31,11 +31,12 @@ function extract_asin_from_url(url: string): string {
   ];
   const results = patterns.map(p => p.exec(url));
   const filtered_matches = results.filter(r => r);
-  if (filtered_matches) {
-    return filtered_matches[0][1];
-  } else {
-    return '';
+  try {
+    return filtered_matches![0]![1];
+  } catch (ex) {
+    console.error(ex);
   }
+  return '';
 }
 
 export function extractItems(
