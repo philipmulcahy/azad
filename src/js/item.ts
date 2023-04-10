@@ -26,8 +26,8 @@ type ItemsExtractor = (
 
 function extract_asin_from_url(url: string): string {
   const patterns = [
-    /\/gp\/product\/([A-Za-z0-9]+)\//,
-    /\/dp\/([A-Za-z0-9]+)\//,
+    /\/gp\/product\/([A-Za-z0-9]+)/,
+    /\/dp\/([A-Za-z0-9]+)/,
   ];
   const results = patterns.map(p => p.exec(url));
   const filtered_matches = results.filter(r => r);
