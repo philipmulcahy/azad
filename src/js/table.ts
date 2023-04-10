@@ -82,7 +82,7 @@ const ORDER_COLS: ColSpec[] = [
                     }
                 )
             ),
-        is_numeric: false
+        is_numeric: false,
     },
     {
         field_name: 'items',
@@ -103,12 +103,12 @@ const ORDER_COLS: ColSpec[] = [
                 td.appendChild(ul);
                 return null;
             }),
-        is_numeric: false
+        is_numeric: false,
     },
     {
         field_name: 'to',
         value_promise_func_name: 'who',
-        is_numeric: false
+        is_numeric: false,
     },
     {
         field_name: 'date',
@@ -125,7 +125,7 @@ const ORDER_COLS: ColSpec[] = [
     {
         field_name: 'total',
         value_promise_func_name: 'total',
-        is_numeric: true
+        is_numeric: true,
     },
     {
         field_name: 'shipping',
@@ -137,45 +137,45 @@ const ORDER_COLS: ColSpec[] = [
         field_name: 'shipping_refund',
         value_promise_func_name: 'postage_refund',
         is_numeric: true,
-        help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.'
+        help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.',
     },
     {
         field_name: 'gift',
         value_promise_func_name: 'gift',
-        is_numeric: true
+        is_numeric: true,
     },
     {
         field_name: 'VAT',
         value_promise_func_name: 'vat',
         is_numeric: true,
         help: TAX_HELP,
-        sites: new RegExp('amazon(?!.com)')
+        sites: new RegExp('amazon(?!.com)'),
     },
     {
         field_name: 'tax',
         value_promise_func_name: 'us_tax',
         is_numeric: true,
         help: TAX_HELP,
-        sites: new RegExp('\\.com$')
+        sites: new RegExp('\\.com$'),
     },
     {
         field_name: 'GST',
         value_promise_func_name: 'gst',
         is_numeric: true,
         help: TAX_HELP,
-        sites: new RegExp('\\.ca$')
+        sites: new RegExp('\\.ca$'),
     },
     {
         field_name: 'PST',
         value_promise_func_name: 'pst',
         is_numeric: true,
         help: TAX_HELP,
-        sites: new RegExp('\\.ca$')
+        sites: new RegExp('\\.ca$'),
     },
     {
         field_name: 'refund',
         value_promise_func_name: 'refund',
-        is_numeric: true
+        is_numeric: true,
     },
     {
         field_name: 'payments',
@@ -206,7 +206,7 @@ const ORDER_COLS: ColSpec[] = [
                 return null;
             });
         },
-        is_numeric: false
+        is_numeric: false,
     },
     {
         field_name: 'invoice',
@@ -225,7 +225,7 @@ const ORDER_COLS: ColSpec[] = [
             });
         },
         is_numeric: false,
-        visibility: () => settings.getBoolean('show_invoice_links')
+        visibility: () => settings.getBoolean('show_invoice_links'),
     }
 ];
 
@@ -239,7 +239,7 @@ const ITEM_COLS: ColSpec[] = [
                                '">' + item.order_id + '</a>';
                 return Promise.resolve(null);
             },
-        is_numeric: false
+        is_numeric: false,
     }, {
         field_name: 'order date',
         render_func:
@@ -249,11 +249,11 @@ const ITEM_COLS: ColSpec[] = [
                 td.innerHTML = date ? util.dateToDateIsoString(date): '?';
                 return Promise.resolve(null);
             },
-        is_numeric: false
+        is_numeric: false,
     }, {
         field_name: 'quantity',
         value_promise_func_name: 'quantity',
-        is_numeric: false
+        is_numeric: false,
     }, {
         field_name: 'description',
         render_func: (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
@@ -262,12 +262,16 @@ const ITEM_COLS: ColSpec[] = [
                                '">' + item.description + '</a>';
                 return Promise.resolve(null);
             },
-        is_numeric: false
+        is_numeric: false,
     }, {
         field_name: 'price',
         value_promise_func_name: 'price',
-        is_numeric: false
-    }
+        is_numeric: false,
+    }, {
+      field_name: 'ASIN',
+      value_promise_func_name: 'asin',
+      is_numeric: false,
+    },
 ];
 
 function getCols(
