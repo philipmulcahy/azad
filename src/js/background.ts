@@ -5,6 +5,12 @@
 
 const content_ports: Record<number, any> = {};
 
+function broadcast_to_content_pages(msg: any) {
+    Object.values(content_ports).forEach( port =>
+        port.postMessage(msg)
+    );
+}
+
 let control_port: {
     postMessage: (arg0: { action: string; years: number[]; }) => void;
 } | null = null;
@@ -63,24 +69,24 @@ function registerConnectionListener() {
                                 'forwarding scrape_years',
                                 msg.years
                             );
-                            Object.values(content_ports).forEach( port =>
-                                port.postMessage(msg)
+                            broadcast_to_content_pages(msg);
+                            break;
+                        case 'scrape_range':
+                            console.log(
+                                'forwarding scrape_range',
+                                msg.start_date,
+                                msg.end_date,
                             );
+                            broadcast_to_content_pages(msg);
                             break;
                         case 'clear_cache':
-                            Object.values(content_ports).forEach( port =>
-                                port.postMessage(msg)
-                            );
+                            broadcast_to_content_pages(msg);
                             break;
                         case 'force_logout':
-                            Object.values(content_ports).forEach( port =>
-                                port.postMessage(msg)
-                            );
+                            broadcast_to_content_pages(msg);
                             break;
                         case 'abort':
-                            Object.values(content_ports).forEach( port =>
-                                port.postMessage(msg)
-                            );
+                            broadcast_to_content_pages(msg);
                             break;
                         default:
                             console.warn('unknown action: ' + msg.action);

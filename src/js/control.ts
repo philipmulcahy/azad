@@ -5,6 +5,7 @@
 const $ = require('jquery');
 
 import * as settings from './settings';
+import * as util from './util';
 
 function activateIdle() {
     console.log('activateIdle');
@@ -42,6 +43,7 @@ function connectToBackground() {
                 break;
             case 'advertise_years':
                 showYearButtons(msg.years);
+                showPeriodButtons([1,3]);  // last 1 and 3 months
                 break;
             case 'statistics_update':
                 {
@@ -102,10 +104,15 @@ function showYearButtons(years: number[]) {
     $('.azad_year_button').on('click', handleYearClick);
 }
 
-declare global {
-    interface Window {
-        ga(action: string, data: any) : void;
-    }
+function showPeriodButtons(month_counts: number[]) {
+  console.log('show month buttons', month_counts);
+  $('.azad_months_button').remove();
+  month_counts.sort().reverse().forEach( month_count => {
+    $('#azad_year_list').append(
+      '<input type="button" class="azad_months_button" value="' + month_count + '" />' 
+    );
+  });
+  $('.azad_months_button').on('click', handleMonthsClick);
 }
 
 function handleYearClick(evt: { target: { value: any; }; }) {
@@ -121,15 +128,23 @@ function handleYearClick(evt: { target: { value: any; }; }) {
     } else {
         console.warn('background_port not set');
     }
-    window.ga(
-        'send',
-        {
-            hitType: 'event',
-            eventCategory: 'control',
-            eventAction: 'scrape_year_click',
-            eventLabel: 'scrape_year_click:' + year
-        }
-    );
+}
+
+function handleMonthsClick(evt: { target: { value: any; }; }) {
+    const month_count = Number(evt.target.value);
+    const end_date = new Date();
+    const start_date = util.subtract_months(end_date, month_count);
+    activateScraping([month_count]);
+    if (background_port) {
+        console.log('sending scrape_range', start_date, end_date);
+        background_port.postMessage({
+            action: 'scrape_range',
+            start_date: start_date,
+            end_date: end_date,
+        });
+    } else {
+        console.warn('background_port not set');
+    }
 }
 
 function handleStopClick() {

@@ -672,6 +672,7 @@ class OrderImpl {
         }
 
         const context = 'id:' + this.id;
+
         this.date = null;
         try {
             this.date = new Date(
@@ -682,7 +683,7 @@ class OrderImpl {
                                 'Commande effectuée',
                                 'Order placed',
                                 'Ordine effettuato',
-                                 'Pedido realizado'
+                                'Pedido realizado'
                             ].map(
                                 label => sprintf.sprintf(
                                     './/div[contains(span,"%s")]' +
@@ -697,13 +698,17 @@ class OrderImpl {
                     )
                 )
             );
-        } catch (_) {}
+        } catch (ex) {
+          console.warn('could not get order date for ' + this.id);
+        }
+
         // This field is no longer always available, particularly for .com
         // We replace it (where we know the search pattern for the country)
         // with information from the order detail page.
         this.total = getField('.//div[contains(span,"Total")]' +
             '/../div/span[contains(@class,"value")]', elem, context);
         console.log('total direct:', this.total);
+
         this.who = getField('.//div[contains(@class,"recipient")]' +
             '//span[@class="trigger-text"]', elem, context);
 
@@ -1187,6 +1192,50 @@ export function getOrdersByYear(
             return order_promises;
         }
     );
+}
+
+export async function getOrdersByRange(
+  start_date: Date,
+  end_date: Date,
+  scheduler: request_scheduler.IRequestScheduler,
+  latest_year: number,
+): Promise<Promise<IOrder>[]> {
+  console.assert(start_date < end_date);
+  const start_year = start_date.getFullYear();
+  const end_year = end_date.getFullYear();
+
+  let years: number[] = []
+  for (let y=start_year; y<=end_year; y++) {
+    years.push(y);
+  }
+
+  const order_years = years.map(
+      year => {
+        const nocache_top_level = latest_year == year;
+        return fetchYear(year, scheduler, nocache_top_level)
+      }
+  );
+
+  const unflattened = await util.get_settled_and_discard_rejects(order_years);
+  const flattened_promises: Promise<IOrder>[] = unflattened.flat();
+  const settled: IOrder[] = await util.get_settled_and_discard_rejects(flattened_promises);
+
+  const f_in_date_window = async function(order: IOrder): Promise<boolean> {
+    const order_date = await order.date();
+    if (order_date) {
+      return start_date <= order_date && order_date <= end_date;
+    } else {
+      return false;
+    }
+  }
+
+  const filtered_orders: IOrder[] = await util.filter_by_async_predicate(
+    settled,
+    f_in_date_window,
+  );
+
+  // Wrap each order in a promise to match getOrdersByYear return signature.
+  return filtered_orders.map(o => Promise.resolve(o));
 }
 
 export function create(

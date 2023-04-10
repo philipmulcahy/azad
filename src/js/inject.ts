@@ -95,37 +95,60 @@ function getYears(): Promise<number[]> {
     return cached_years;
 }
 
-function fetchAndShowOrders(years: number[]): void {
+async function latestYear(): Promise<number> {
+  const all_years = await getYears();
+  return all_years[0];
+}
+
+async function showOrders(order_promises: Promise<azad_order.IOrder>[]): Promise<void> {
+    let beautiful = true;
+    if (order_promises.length >= 500) {
+        beautiful = false;
+        notice.showNotificationBar(
+            '500 or more orders found. That\'s a lot!\n' +
+            'We\'ll start you off with a plain table to make display faster.\n' +
+            'You can click the blue "datatable" button to restore sorting, filtering etc.',
+            document
+        );
+    }
+    azad_table.display(order_promises, beautiful, false);
+}
+
+async function fetchAndShowOrdersByYears(years: number[]): Promise<void> {
     if ( document.visibilityState != 'visible' ) {
         console.log(
-            'fetchAndShowOrders() returning without doing anything: ' +
+            'fetchAndShowOrdersByYears() returning without doing anything: ' +
             'tab is not visible'
         );
         return;
     }
     resetScheduler();
-    getYears().then(
-        all_years => azad_order.getOrdersByYear(
-            years,
-            getScheduler(),
-            all_years[0]
-        )
-    ).then(
-        orderPromises => {
-            let beautiful = true;
-            if (orderPromises.length >= 500) {
-                beautiful = false;
-                notice.showNotificationBar(
-                    '500 or more orders found. That\'s a lot!\n' +
-                    'We\'ll start you off with a plain table to make display faster.\n' +
-                    'You can click the blue "datatable" button to restore sorting, filtering etc.',
-                    document
-                );
-            }
-            azad_table.display(orderPromises, beautiful, false);
-            return document.querySelector('[id="azad_order_table"]');
-        }
+    const latest_year: number = await latestYear();
+    const order_promises = await azad_order.getOrdersByYear(
+        years,
+        getScheduler(),
+        latest_year, 
     );
+    showOrders(order_promises);
+}
+
+async function fetchAndShowOrdersByRange(start_date: Date, end_date: Date): Promise<void> {
+    if ( document.visibilityState != 'visible' ) {
+        console.log(
+            'fetchAndShowOrdersByRange() returning without doing anything: ' +
+            'tab is not visible'
+        );
+        return;
+    }
+    resetScheduler();
+    const latest_year: number = await latestYear();
+    const order_promises = await azad_order.getOrdersByRange(
+      start_date,
+      end_date,
+      getScheduler(),
+      latest_year,
+    );
+    showOrders(order_promises);
 }
 
 function advertiseYears() {
@@ -156,7 +179,14 @@ function registerContentScript() {
                     case 'scrape_years':
                         years = msg.years;
                         if (years) {
-                            fetchAndShowOrders(years);
+                            fetchAndShowOrdersByYears(years);
+                        }
+                        break;
+                    case 'scrape_range':
+                        const start_date: Date = new Date(msg.start_date);
+                        const end_date: Date = new Date(msg.end_date);
+                        if (years) {
+                            fetchAndShowOrdersByRange(start_date, end_date);
                         }
                         break;
                     case 'clear_cache':
