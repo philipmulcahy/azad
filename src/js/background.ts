@@ -3,6 +3,8 @@
 
 'use strict';
 
+import * as util from './util';
+
 const content_ports: Record<number, any> = {};
 
 function broadcast_to_content_pages(msg: any) {
@@ -101,6 +103,36 @@ function registerConnectionListener() {
     });
 }
 
+function registerExternalConnectionListener() {
+  const ALLOWED_EXTENSION_IDS: string[] = [
+    'lanjobgdpfchcekdbfelnkhcbppkpldm',  // azad_test dev Philip@ball.local
+  ];
+
+  chrome.runtime.onMessageExternal.addListener(
+    function(message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) {
+      if (!ALLOWED_EXTENSION_IDS.includes(sender.id))
+        return;  // don't allow access
+      else if (message.action == 'get_items_3m') {
+        const month_count = 3;
+        const end_date = new Date();
+        const start_date = util.subtract_months(end_date, month_count);
+        console.log('sending scrape_range', start_date, end_date);
+        const msg = {
+          action: 'scrape_range',
+          start_date: start_date,
+          end_date: end_date,
+        };
+        broadcast_to_content_pages(msg);
+        sendResponse({status: 'ack'});
+      } else {
+        sendResponse({status: 'unsupported'});
+      }
+      return true;  // Incompletely documented, but seems to be needed to allow
+                    // sendResponse calls to succeed.
+    }
+  );
+}
+
 function registerRightClickActions() {
     chrome.contextMenus.create( {
         id: 'save_order_debug_info',
@@ -183,3 +215,4 @@ function advertiseYears() {
 registerConnectionListener();
 registerRightClickActions();
 registerMessageListener();
+registerExternalConnectionListener();
