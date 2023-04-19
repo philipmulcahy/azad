@@ -656,12 +656,10 @@ function addCsvButton(orders: Promise<azad_order.IOrder>[]): void {
     const title = "download spreadsheet ('.csv')";
     util.addButton(	
        title,
-       function() {	
-           display(orders, false, true).then(
-               table => settings.getBoolean('show_totals_in_csv').then(
-                   show_totals => csv.download(table, show_totals)
-               )
-           );
+       async function() {	
+           const table: HTMLTableElement = await display(orders, false, true);
+           const show_totals: boolean = await settings.getBoolean('show_totals_in_csv');
+           csv.download(table, show_totals)
        },
        'azad_table_button'	
     );

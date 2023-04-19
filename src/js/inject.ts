@@ -3,10 +3,12 @@
 'use strict';
 
 import * as azad_order from './order';
+import * as csv from './csv';
 import * as azad_table from './table';
 import * as notice from './notice';
 import * as request_scheduler from './request_scheduler';
 import * as signin from './signin';
+import * as settings from './settings';
 import * as stats from './statistics';
 import * as urls from './url';
 import * as util from './util';
@@ -100,7 +102,9 @@ async function latestYear(): Promise<number> {
   return all_years[0];
 }
 
-async function showOrders(order_promises: Promise<azad_order.IOrder>[]): Promise<void> {
+async function showOrders(
+  order_promises: Promise<azad_order.IOrder>[]
+): Promise<HTMLTableElement> {
     let beautiful = true;
     if (order_promises.length >= 500) {
         beautiful = false;
@@ -111,10 +115,12 @@ async function showOrders(order_promises: Promise<azad_order.IOrder>[]): Promise
             document
         );
     }
-    azad_table.display(order_promises, beautiful, false);
+    return azad_table.display(order_promises, beautiful, false);
 }
 
-async function fetchAndShowOrdersByYears(years: number[]): Promise<void> {
+async function fetchAndShowOrdersByYears(
+  years: number[]
+): Promise<HTMLTableElement|undefined> {
     if ( document.visibilityState != 'visible' ) {
         console.log(
             'fetchAndShowOrdersByYears() returning without doing anything: ' +
@@ -129,10 +135,12 @@ async function fetchAndShowOrdersByYears(years: number[]): Promise<void> {
         getScheduler(),
         latest_year, 
     );
-    showOrders(order_promises);
+    return showOrders(order_promises);
 }
 
-async function fetchAndShowOrdersByRange(start_date: Date, end_date: Date): Promise<void> {
+async function fetchAndShowOrdersByRange(
+  start_date: Date, end_date: Date
+): Promise<HTMLTableElement|undefined> {
     if ( document.visibilityState != 'visible' ) {
         console.log(
             'fetchAndShowOrdersByRange() returning without doing anything: ' +
@@ -148,7 +156,26 @@ async function fetchAndShowOrdersByRange(start_date: Date, end_date: Date): Prom
       getScheduler(),
       latest_year,
     );
-    showOrders(order_promises);
+    return showOrders(order_promises);
+}
+
+async function fetchShowAndDumpItemsByRange(
+  start_date: Date, end_date: Date
+): Promise<void> {
+  const original_items_setting = await settings.getBoolean('show_items_not_orders');
+  const table: (HTMLTableElement|undefined) = await fetchAndShowOrdersByRange(
+    start_date,
+    end_date
+  );
+
+  // EZP, the primary consumers of this file are processing this file:
+  // They don't need the file polluted by aggregation rows.
+  const show_totals = false; 
+
+  if (typeof(table) != 'undefined') {
+    return csv.download(table, show_totals)
+  }
+  else return undefined;
 }
 
 function advertiseYears() {
@@ -164,7 +191,7 @@ function advertiseYears() {
     });
 }
 
-function registerContentScript() {
+async function registerContentScript() {
     // @ts-ignore null IS allowed as first arg to connect.
     background_port = chrome.runtime.connect(null, {name: 'azad_inject'});
 
@@ -183,11 +210,18 @@ function registerContentScript() {
                         }
                         break;
                     case 'scrape_range':
-                        const start_date: Date = new Date(msg.start_date);
-                        const end_date: Date = new Date(msg.end_date);
-                        if (years) {
-                            fetchAndShowOrdersByRange(start_date, end_date);
+                        {
+                          const start_date: Date = new Date(msg.start_date);
+                          const end_date: Date = new Date(msg.end_date);
+                          fetchAndShowOrdersByRange(start_date, end_date);
                         }
+                        break;
+                    case 'scrape_range_and_dump_items':
+                        {
+                          const start_date: Date = new Date(msg.start_date);
+                          const end_date: Date = new Date(msg.end_date);
+                          fetchShowAndDumpItemsByRange(start_date, end_date);
+                        };
                         break;
                     case 'clear_cache':
                         getScheduler().clearCache();

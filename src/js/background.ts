@@ -104,12 +104,19 @@ function registerConnectionListener() {
 }
 
 function registerExternalConnectionListener() {
-  const ALLOWED_EXTENSION_IDS: string[] = [
+  const ALLOWED_EXTENSION_IDS: (string|undefined)[] = [
     'lanjobgdpfchcekdbfelnkhcbppkpldm',  // azad_test dev Philip@ball.local
+    'jjegocddaijoaiooabldmkcmlfdahkoe',  // EZP Regular Release 
+    'ccffmpedppmmccbelbkmembkkggbmnce',  // EZP Early testers Release
+    'ciklnhigjmbmehniheaolibcchfmabfp'  // EZP Alpha Tester Release
   ];
 
   chrome.runtime.onMessageExternal.addListener(
-    function(message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) {
+    function(
+      message: any,
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response?: any) => void
+    ){
       if (!ALLOWED_EXTENSION_IDS.includes(sender.id))
         return;  // don't allow access
       else if (message.action == 'get_items_3m') {
@@ -118,7 +125,7 @@ function registerExternalConnectionListener() {
         const start_date = util.subtract_months(end_date, month_count);
         console.log('sending scrape_range', start_date, end_date);
         const msg = {
-          action: 'scrape_range',
+          action: 'scrape_range_and_dump_items',
           start_date: start_date,
           end_date: end_date,
         };
