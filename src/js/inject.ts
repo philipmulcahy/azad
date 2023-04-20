@@ -103,7 +103,7 @@ async function latestYear(): Promise<number> {
 }
 
 async function showOrders(
-  order_promises: Promise<azad_order.IOrder>[]
+  order_promises: Promise<azad_order.IOrder>[],
 ): Promise<HTMLTableElement> {
     let beautiful = true;
     if (order_promises.length >= 500) {
@@ -115,7 +115,7 @@ async function showOrders(
             document
         );
     }
-    return azad_table.display(order_promises, beautiful, false);
+    return azad_table.display(order_promises, beautiful, true);
 }
 
 async function fetchAndShowOrdersByYears(
