@@ -40,9 +40,11 @@ function connectToBackground() {
         switch(msg.action) {
             case 'scrape_complete':
                 break;
-            case 'advertise_years':
-                showPeriodButtons([1, 2, 3]);  // most recent 1, 2, and 3 months
-                showYearButtons(msg.years);
+            case 'advertise_periods':
+                const months = (msg.periods as number[]).filter(p => p<=12);
+                const years = (msg.periods as number[]).filter(p => p>=2000);
+                showMonthsButtons(months);
+                showYearButtons(years);
                 break;
             case 'statistics_update':
                 {
@@ -51,9 +53,9 @@ function connectToBackground() {
                         .join('; ');
                     $('#azad_statistics').text(text);
                     if ((msg.statistics.queued + msg.statistics.running) > 0) {
-                        activateScraping(msg.years);
+                        activateScraping(msg.periods);
                     } else {
-                        activateDone(msg.years);
+                        activateDone(msg.periods);
                     }
                 }
                 break;
@@ -103,7 +105,7 @@ function showYearButtons(years: number[]) {
     $('.azad_year_button').on('click', handleYearClick);
 }
 
-function showPeriodButtons(month_counts: number[]) {
+function showMonthsButtons(month_counts: number[]) {
   console.log('show month buttons', month_counts);
   $('.azad_months_button').remove();
   month_counts.sort().forEach( month_count => {

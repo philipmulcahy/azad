@@ -84,7 +84,7 @@ function setElemClickHandlers(key_to_elem: Record<string, HTMLElement>) {
 }
 
 export function initialiseUi(): Promise<void> {
-  console.info('settings.initialiseUi() starting');
+    console.info('settings.initialiseUi() starting');
     return new Promise<void>( function( resolve ) {
         chrome.storage.sync.get(
             EXTENSION_KEY,

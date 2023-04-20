@@ -120,7 +120,7 @@ async function showOrdersOrItems(
 
     // TODO: remove the third param from this call, and chase the removal
     // all the way down the call tree below it.
-    return azad_table.display(order_promises, beautiful, true, items_not_orders);
+    return azad_table.display(order_promises, beautiful, items_not_orders);
 }
 
 async function fetchAndShowOrdersByYears(
@@ -185,17 +185,17 @@ async function fetchShowAndDumpItemsByRange(
   else return undefined;
 }
 
-function advertiseYears() {
-    getYears().then( years => {
-        console.log('advertising years', years);
-        const bg_port = getBackgroundPort();
-        if (bg_port) {
-            bg_port.postMessage({
-                action: 'advertise_years',
-                years: years
-            });
-        }
-    });
+async function advertisePeriods() {
+    const years = await getYears();
+    console.log('advertising years', years);
+    const bg_port = getBackgroundPort();
+    const periods = [1, 2, 3].concat(years);
+    if (bg_port) {
+        bg_port.postMessage({
+            action: 'advertise_periods',
+            periods: periods
+        });
+    }
 }
 
 async function registerContentScript() {
@@ -259,4 +259,4 @@ async function registerContentScript() {
 
 console.log('Amazon Order History Reporter starting');
 registerContentScript();
-advertiseYears();
+advertisePeriods();

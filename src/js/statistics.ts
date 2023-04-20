@@ -14,6 +14,6 @@ export function publish(port: chrome.runtime.Port, years: number[]) {
     port.postMessage({
         action: 'statistics_update',
         statistics: stats,
-        years: years,
+        period: years,
     });
 }

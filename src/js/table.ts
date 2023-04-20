@@ -415,26 +415,23 @@ function appendEntityRow(
 function addOrderTable(
     doc: HTMLDocument,
     orders: azad_order.IOrder[],
-    wait_for_all_values_before_resolving: boolean,
     cols: Promise<ColSpec[]>
 ): Promise<HTMLTableElement> {
-    return addTable(doc, orders, wait_for_all_values_before_resolving, cols);
+    return addTable(doc, orders, cols);
 }
 
 async function addItemTable(
     doc: HTMLDocument,
     orders: azad_order.IOrder[],
-    wait_for_all_values_before_resolving: boolean,
     cols: Promise<ColSpec[]>
 ): Promise<HTMLTableElement> {
     const items = await ordersToItems(orders);
-    return addTable(doc, items, wait_for_all_values_before_resolving, cols);
+    return addTable(doc, items, cols);
 }
 
 async function addTable(
     doc: HTMLDocument,
     entities: azad_entity.IEntity[],
-    wait_for_all_values_before_resolving: boolean,
     cols: Promise<ColSpec[]>
 ): Promise<HTMLTableElement> {
     const addHeader = function(row: HTMLElement, value: string, help: string) {
@@ -498,29 +495,25 @@ async function addTable(
         return appendEntityRow(tbody, entity, cols);
     });
 
-    if (wait_for_all_values_before_resolving) {
-        const row_promises = await Promise.all(row_done_promises);
-        const value_done_promises: Promise<null>[] = [];
-        row_promises.forEach(
-            cell_done_promises => value_done_promises.push(
-                ...cell_done_promises
-            )
+    const row_promises = await Promise.all(row_done_promises);
+    const value_done_promises: Promise<null>[] = [];
+    row_promises.forEach(
+        cell_done_promises => value_done_promises.push(
+            ...cell_done_promises
         )
-        console.log(
-            'value_done_promises.length',
-            value_done_promises.length
-        );
-        return Promise.allSettled(value_done_promises).then( settled => {
-          const rejected_count = settled.filter(row => row.status == 'rejected')
-                                        .length;
-          if (rejected_count) {
-            console.warn('table.addTable(...) encountered ', rejected_count, ' rejected value promises.');
-          }
-          return table;
-        });
-    } else {
-        return table;
-    }
+    )
+    console.log(
+        'value_done_promises.length',
+        value_done_promises.length
+    );
+    return Promise.allSettled(value_done_promises).then( settled => {
+      const rejected_count = settled.filter(row => row.status == 'rejected')
+                                    .length;
+      if (rejected_count) {
+        console.warn('table.addTable(...) encountered ', rejected_count, ' rejected value promises.');
+      }
+      return table;
+    });
 }
 
 function ordersToItems(orders: azad_order.IOrder[]): Promise<azad_item.IItem[]>
@@ -537,7 +530,6 @@ function ordersToItems(orders: azad_order.IOrder[]): Promise<azad_item.IItem[]>
 async function reallyDisplay(
     orders: azad_order.IOrder[],
     beautiful: boolean,
-    wait_for_all_values_before_resolving: boolean,
     items_not_orders: boolean,
 ): Promise<HTMLTableElement> {
     console.log('amazon_order_history_table.reallyDisplay starting');
@@ -556,9 +548,9 @@ async function reallyDisplay(
     const cols = getCols(items_not_orders);
     const table_promise = items_not_orders ?
         addItemTable(
-            document, orders, wait_for_all_values_before_resolving, cols) :
+            document, orders, cols) :
         addOrderTable(
-            document, orders, wait_for_all_values_before_resolving, cols);
+            document, orders, cols);
     table_promise.then( _ => {
         if (beautiful) {
             $(document).ready( () => {
@@ -569,7 +561,7 @@ async function reallyDisplay(
                 util.removeButton('data table');
                 util.addButton(
                     'plain table',
-                    function() { display(order_promises, false, false, items_not_orders); },
+                    function() { display(order_promises, false, items_not_orders); },
                     'azad_table_button'
                 );
                 addCsvButton(order_promises, items_not_orders)
@@ -642,7 +634,7 @@ async function reallyDisplay(
             util.removeButton('plain table');
             util.addButton(
                 'data table',
-                function() { display(order_promises, true, false, items_not_orders); },
+                function() { display(order_promises, true, items_not_orders); },
                 'azad_table_button'
             );
             addCsvButton(order_promises, items_not_orders)
@@ -662,7 +654,7 @@ function addCsvButton(orders: Promise<azad_order.IOrder>[], items_not_orders: bo
     util.addButton(	
        title,
        async function() {	
-           const table: HTMLTableElement = await display(orders, false, true, items_not_orders);
+           const table: HTMLTableElement = await display(orders, false, items_not_orders);
            const show_totals: boolean = await settings.getBoolean('show_totals_in_csv');
            csv.download(table, show_totals)
        },
@@ -670,12 +662,9 @@ function addCsvButton(orders: Promise<azad_order.IOrder>[], items_not_orders: bo
     );
 }
 
-// TODO: refactor so that order retrieval belongs to azad_table, but
-// diagnostics building belongs to azad_order.
 export async function display(
     orderPromises: Promise<azad_order.IOrder>[],
     beautiful: boolean,
-    wait_for_all_values_before_resolving: boolean,
     items_not_orders: boolean,
 ): Promise<HTMLTableElement> {
     console.log('amazon_order_history_table.display starting');
@@ -691,7 +680,6 @@ export async function display(
     const table_promise: Promise<HTMLTableElement> = reallyDisplay(
         orders,
         beautiful,
-        wait_for_all_values_before_resolving,
         items_not_orders
     );
     console.log(
