@@ -22,7 +22,7 @@ const SITE: string = urls.getSite();
 
 function getScheduler(): request_scheduler.IRequestScheduler {
     if (!scheduler) {
-        resetScheduler();
+        resetScheduler('unknown');
     }
     return scheduler!;
 }
@@ -35,7 +35,7 @@ function setStatsTimeout() {
     const sendStatsMsg = () => {
         const bg_port = getBackgroundPort();
         if (bg_port) {
-            stats.publish(bg_port, years);
+            stats.publish(bg_port, getScheduler().purpose());
             azad_table.updateProgressBar();
         }
     }
@@ -51,11 +51,11 @@ function setStatsTimeout() {
     );
 }
 
-function resetScheduler(): void {
+function resetScheduler(purpose: string): void {
     if (scheduler) {
         scheduler.abort();
     }
-    scheduler = request_scheduler.create();
+    scheduler = request_scheduler.create(purpose);
     setStatsTimeout();
 }
 
@@ -76,16 +76,17 @@ function getYears(): Promise<number[]> {
                 doc.documentElement
             );
             const years = snapshot
-             .filter( elem => elem )
-             .filter( elem => elem.textContent )
-             .map(
-                elem => elem!.textContent!
-                             .replace('en', '')  // amazon.fr
-                             .replace('nel', '')  // amazon.it
-                             .trim()
-            ).filter( element => (/^\d+$/).test(element) )
-             .map( (year_string: string) => Number(year_string) )
-             .filter( year => (year >= 2004) );
+                .filter( elem => elem )
+                .filter( elem => elem.textContent )
+                .map(
+                    elem => elem!.textContent!
+                                 .replace('en', '')  // amazon.fr
+                                 .replace('nel', '')  // amazon.it
+                                 .trim())
+                .filter( element => (/^\d+$/).test(element) )
+                .map( (year_string: string) => Number(year_string) )
+                .filter( year => (year >= 2004) )
+                .sort();
             return years;
         });
     }
@@ -133,7 +134,8 @@ async function fetchAndShowOrdersByYears(
         );
         return;
     }
-    resetScheduler();
+    const purpose: string = years.join(', ');
+    resetScheduler(purpose);
     const latest_year: number = await latestYear();
     const order_promises = await azad_order.getOrdersByYear(
         years,
@@ -153,7 +155,11 @@ async function fetchAndShowOrdersByRange(
         );
         return;
     }
-    resetScheduler();
+    const purpose: string
+      = util.dateToDateIsoString(start_date)
+      + ' -> '
+      + util.dateToDateIsoString(end_date);
+    resetScheduler(purpose);
     const latest_year: number = await latestYear();
     const order_promises = await azad_order.getOrdersByRange(
       start_date,
@@ -243,7 +249,7 @@ async function registerContentScript() {
                         signin.forceLogOut('https://' + SITE);
                         break;
                     case 'abort':
-                        resetScheduler();
+                        resetScheduler('aborted');
                         break;
                     default:
                         console.warn('unknown action: ' + msg.action);

@@ -10,10 +10,10 @@ export function get(name: string): number {
     return stats[name];
 }
 
-export function publish(port: chrome.runtime.Port, years: number[]) {
+export function publish(port: chrome.runtime.Port, purpose: string) {
     port.postMessage({
         action: 'statistics_update',
         statistics: stats,
-        period: years,
+        purpose: purpose,
     });
 }

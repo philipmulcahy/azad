@@ -18,10 +18,10 @@ function activateScraping(years: number[]) {
     $('#azad_state').text('scraping ' + years.join(','));
 }
 
-function activateDone(years: number[]) {
+function activateDone(periods: number) {
     console.log('activateDone');
     showOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
-    $('#azad_state').text(years.join(','));
+    $('#azad_state').text(periods);
 }
 
 function showOnly(button_ids: any[]) {
@@ -38,24 +38,24 @@ function connectToBackground() {
 
     background_port.onMessage.addListener( msg => {
         switch(msg.action) {
-            case 'scrape_complete':
-                break;
             case 'advertise_periods':
+                console.info('control got periods advertisement');
                 const months = (msg.periods as number[]).filter(p => p<=12);
                 const years = (msg.periods as number[]).filter(p => p>=2000);
                 showMonthsButtons(months);
                 showYearButtons(years);
                 break;
             case 'statistics_update':
+                console.info('control got statistics update');
                 {
                     const text = Object.entries(msg.statistics)
                         .map(([k,v]) => {return k + ':' + v;})
                         .join('; ');
                     $('#azad_statistics').text(text);
                     if ((msg.statistics.queued + msg.statistics.running) > 0) {
-                        activateScraping(msg.periods);
+                        activateScraping(msg.purpose);
                     } else {
-                        activateDone(msg.periods);
+                        activateDone(msg.purpose);
                     }
                 }
                 break;

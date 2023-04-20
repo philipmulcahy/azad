@@ -24,6 +24,7 @@ export interface IRequestScheduler {
     abort(): void;
     clearCache(): void;
     isLive(): boolean;
+    purpose(): string;
 }
 
 class RequestScheduler {
@@ -38,11 +39,15 @@ class RequestScheduler {
     error_count: number = 0;
     signin_warned: boolean = false;
     live = true;
+    _purpose: string;
 
-    constructor() {
+    constructor(purpose: string) {
+        this._purpose = purpose;
         console.log('constructing new RequestScheduler');
         this._update_statistics();
     }
+
+    purpose(): string { return this._purpose; }
 
     _schedule(
         query: string,
@@ -323,6 +328,6 @@ class RequestScheduler {
     }
 }
 
-export function create(): IRequestScheduler {
-    return new RequestScheduler();
+export function create(purpose: string): IRequestScheduler {
+    return new RequestScheduler(purpose);
 };

@@ -29,9 +29,6 @@ function registerConnectionListener() {
                 } );
                 port.onMessage.addListener( msg => {
                     switch(msg.action) {
-                        case 'scrape_complete':
-                            control_port!.postMessage(msg);
-                            break;
                         case 'advertise_periods':
                             console.log(
                                 'forwarding advertise_periods',

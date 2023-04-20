@@ -33,6 +33,8 @@ class FakeRequestScheduler {
         this.url_html_map = url_html_map;
     }
 
+    purpose(): string { return 'testing'; }
+
     scheduleToPromise<T>(
         query: string,
         event_converter: (evt: any) => any,
