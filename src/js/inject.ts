@@ -102,7 +102,7 @@ async function latestYear(): Promise<number> {
   return all_years[0];
 }
 
-async function showOrders(
+async function showOrdersOrItems(
   order_promises: Promise<azad_order.IOrder>[],
 ): Promise<HTMLTableElement> {
     let beautiful = true;
@@ -116,9 +116,11 @@ async function showOrders(
         );
     }
 
+    const items_not_orders = await settings.getBoolean('show_items_not_orders');
+
     // TODO: remove the third param from this call, and chase the removal
     // all the way down the call tree below it.
-    return azad_table.display(order_promises, beautiful, true);
+    return azad_table.display(order_promises, beautiful, true, items_not_orders);
 }
 
 async function fetchAndShowOrdersByYears(
@@ -138,7 +140,7 @@ async function fetchAndShowOrdersByYears(
         getScheduler(),
         latest_year, 
     );
-    return showOrders(order_promises);
+    return showOrdersOrItems(order_promises);
 }
 
 async function fetchAndShowOrdersByRange(
@@ -159,19 +161,21 @@ async function fetchAndShowOrdersByRange(
       getScheduler(),
       latest_year,
     );
-    return showOrders(order_promises);
+    return showOrdersOrItems(order_promises);
 }
 
 async function fetchShowAndDumpItemsByRange(
   start_date: Date, end_date: Date
 ): Promise<void> {
   const original_items_setting = await settings.getBoolean('show_items_not_orders');
+  await settings.storeBoolean('show_items_not_orders', true);
   const table: (HTMLTableElement|undefined) = await fetchAndShowOrdersByRange(
     start_date,
     end_date
   );
+  await settings.storeBoolean('show_items_not_orders', original_items_setting);
 
-  // EZP, the primary consumers of this file are processing this file:
+  // EZP, the primary consumers of this file are processing file with code:
   // They don't need the file polluted by aggregation rows.
   const show_totals = false; 
 

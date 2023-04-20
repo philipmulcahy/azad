@@ -17,6 +17,10 @@ import * as util from './util';
 
 'use strict';
 
+// TODO remove references to settings module from this file,
+// and instead build a TableSettings class that can be passed around.
+// e.g. less spooky action at a distance.
+
 const CELL_CLASS = 'azad_cellClass ';
 const ELEM_CLASS = 'azad_elemClass ';
 const LINK_CLASS = 'azad_linkClass ';
@@ -565,10 +569,10 @@ async function reallyDisplay(
                 util.removeButton('data table');
                 util.addButton(
                     'plain table',
-                    function() { display(order_promises, false, false); },
+                    function() { display(order_promises, false, false, items_not_orders); },
                     'azad_table_button'
                 );
-                addCsvButton(order_promises)
+                addCsvButton(order_promises, items_not_orders)
                 datatable = (<any>$('#azad_order_table')).DataTable({
                     'bPaginate': true,
                     'lengthMenu': [ [10, 25, 50, 100, -1],
@@ -638,10 +642,10 @@ async function reallyDisplay(
             util.removeButton('plain table');
             util.addButton(
                 'data table',
-                function() { display(order_promises, true, false); },
+                function() { display(order_promises, true, false, items_not_orders); },
                 'azad_table_button'
             );
-            addCsvButton(order_promises)
+            addCsvButton(order_promises, items_not_orders)
         }
     });
 
@@ -653,12 +657,12 @@ function addProgressBar(): void {
     progress_indicator = progress_bar.addProgressBar(document.body)
 }
 
-function addCsvButton(orders: Promise<azad_order.IOrder>[]): void {
+function addCsvButton(orders: Promise<azad_order.IOrder>[], items_not_orders: boolean): void {
     const title = "download spreadsheet ('.csv')";
     util.addButton(	
        title,
        async function() {	
-           const table: HTMLTableElement = await display(orders, false, true);
+           const table: HTMLTableElement = await display(orders, false, true, items_not_orders);
            const show_totals: boolean = await settings.getBoolean('show_totals_in_csv');
            csv.download(table, show_totals)
        },
@@ -668,38 +672,34 @@ function addCsvButton(orders: Promise<azad_order.IOrder>[]): void {
 
 // TODO: refactor so that order retrieval belongs to azad_table, but
 // diagnostics building belongs to azad_order.
-export function display(
+export async function display(
     orderPromises: Promise<azad_order.IOrder>[],
     beautiful: boolean,
-    wait_for_all_values_before_resolving: boolean
+    wait_for_all_values_before_resolving: boolean,
+    items_not_orders: boolean,
 ): Promise<HTMLTableElement> {
     console.log('amazon_order_history_table.display starting');
-    return Promise.allSettled(orderPromises).then( settled => {
-        const orders: azad_order.IOrder[] = settled
-            .filter(s => s.status == 'fulfilled')
-            .map(s => (s as PromiseFulfilledResult<azad_order.IOrder>).value);
-        const problems: any[] = settled
-            .filter(s => s.status == 'rejected')
-            .map(s => (s as PromiseRejectedResult).reason);
-        problems.forEach(p => console.warn('Bad order: ' + JSON.stringify(p)));
-        console.log('amazon_order_history_table.display then func starting');
-        return settings.getBoolean('show_items_not_orders').then(
-            items_not_orders => {
-                const table_promise: Promise<HTMLTableElement> = reallyDisplay(
-                    orders,
-                    beautiful,
-                    wait_for_all_values_before_resolving,
-                    items_not_orders
-                );
-                console.log(
-                    'amazon_order_history_table.display then func returning ' +
-                    'table promise.'
-                );
-                return table_promise;
-            }
-        );
-    });
+    const settled = await Promise.allSettled(orderPromises);
+    const orders: azad_order.IOrder[] = settled
+        .filter(s => s.status == 'fulfilled')
+        .map(s => (s as PromiseFulfilledResult<azad_order.IOrder>).value);
+    const problems: any[] = settled
+        .filter(s => s.status == 'rejected')
+        .map(s => (s as PromiseRejectedResult).reason);
+    problems.forEach(p => console.warn('Bad order: ' + JSON.stringify(p)));
+    console.log('amazon_order_history_table.display then func starting');
+    const table_promise: Promise<HTMLTableElement> = reallyDisplay(
+        orders,
+        beautiful,
+        wait_for_all_values_before_resolving,
+        items_not_orders
+    );
+    console.log(
+        'amazon_order_history_table.display then func returning ' +
+        'table promise.'
+    );
     console.log('amazon_order_history_table.display returning');
+    return table_promise;
 }
 
 export function dumpOrderDiagnostics(order_id: string) {
