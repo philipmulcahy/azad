@@ -20,6 +20,7 @@ function getSettings(entries: {[key: string]: any;} ): Record<string, any> {
 }
 
 function getElementsByKey(): Record<string, HTMLElement> {
+    console.info('settings.getElementsByKey()');
     const key_to_elem: Record<string, HTMLElement> = {};
     const checkboxes = util.findMultipleNodeValues(
         '//table[@id="azad_settings"]//input',
@@ -34,11 +35,13 @@ function getElementsByKey(): Record<string, HTMLElement> {
             console.warn('no id attribute found');
         }
     });
+    console.info('settings.getElementsByKey() -> ', key_to_elem);
     return key_to_elem;
 
 }
 
 function updateElement(elem: HTMLElement, value: boolean) {
+    console.info('settings.updateElem(...)');
     if (value) {
         elem.setAttribute('checked', 'true');
     } else {
@@ -50,6 +53,7 @@ function updateElements(
     elements: Record<string, HTMLElement>,
     values: Record<string, boolean>
 ) {
+    console.info('settings.updateElements(...)');
     for ( let key of Object.keys(elements) ) {
         let value: boolean = (values && key in values)  ?
                              <boolean>values[key] :
@@ -58,10 +62,12 @@ function updateElements(
         if (value && elem) {
             elem.setAttribute('checked', 'true');
         }
+        console.info('settings.updateElements(...)', key, value);
     };
 }
 
 function setElemClickHandlers(key_to_elem: Record<string, HTMLElement>) {
+  console.info('settings.setElemClickHandlers() starting');
   for( let key of Object.keys(key_to_elem) ) {
     const elem = key_to_elem[key];
     if (elem) {
@@ -77,7 +83,8 @@ function setElemClickHandlers(key_to_elem: Record<string, HTMLElement>) {
   };
 }
 
-export async function initialiseUi(): Promise<void> {
+export function initialiseUi(): Promise<void> {
+  console.info('settings.initialiseUi() starting');
     return new Promise<void>( function( resolve ) {
         chrome.storage.sync.get(
             EXTENSION_KEY,
@@ -93,26 +100,29 @@ export async function initialiseUi(): Promise<void> {
 }
 
 export function storeBoolean(key: string, value: boolean): Promise<void> {
-    return new Promise<void>( function( resolve ) {
+    return new Promise<void>( function( resolve, reject ) {
         chrome.storage.sync.get(
             EXTENSION_KEY,
             function(entries) {
                 const settings = getSettings(entries);
                 settings[key] = value;
                 const stringified_settings =  JSON.stringify(settings);
-                const updated_entries: Record<string, string> = {EXTENSION_KEY: stringified_settings};
+                const updated_entry: Record<string, string> = {}
+                updated_entry[EXTENSION_KEY] = stringified_settings;
                 chrome.storage.sync.set(
-                    updated_entries,
+                    updated_entry,
                     function() {
-                        if (chrome.runtime.lastError) {
-                            console.warn(
-                                'settings not written:',
-                                chrome.runtime.lastError.message
-                            );
-                        }
+                      if (chrome.runtime.lastError) {
+                        const msg = 'settings (maybe) not written: ' +
+                          chrome.runtime.lastError.message;
+                        console.warn(msg);
+                        reject(msg);
+                      } else {
+                        console.info('settings written:', updated_entry);
+                        resolve();
+                      }
                     }
-                )
-                resolve();
+                );
             }
         )
     });
@@ -130,4 +140,11 @@ export function getBoolean(key: string): Promise<boolean> {
             }
         );
     });
+}
+
+export function startMonitoringSettingsStorage() {
+  console.info('settings.startMonitoringSettingsStorage');
+  chrome.storage.onChanged.addListener((changes, area) => {
+    console.info('settings storage changed: ', area, changes);
+  });
 }

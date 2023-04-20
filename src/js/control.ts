@@ -10,7 +10,6 @@ import * as util from './util';
 function activateIdle() {
     console.log('activateIdle');
     showOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
-    console.log('hello world');
 }
 
 function activateScraping(years: number[]) {
@@ -154,6 +153,7 @@ function handleStopClick() {
 }
 
 function init() {
+    settings.startMonitoringSettingsStorage();
     settings.initialiseUi();
     console.log('init');
     activateIdle();

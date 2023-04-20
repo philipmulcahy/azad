@@ -417,20 +417,17 @@ function addOrderTable(
     return addTable(doc, orders, wait_for_all_values_before_resolving, cols);
 }
 
-function addItemTable(
+async function addItemTable(
     doc: HTMLDocument,
     orders: azad_order.IOrder[],
     wait_for_all_values_before_resolving: boolean,
     cols: Promise<ColSpec[]>
 ): Promise<HTMLTableElement> {
-    const item_promises = ordersToItems(orders);
-    return item_promises.then(
-        items => addTable(
-            doc, items, wait_for_all_values_before_resolving, cols)
-    );
+    const items = await ordersToItems(orders);
+    return addTable(doc, items, wait_for_all_values_before_resolving, cols);
 }
 
-function addTable(
+async function addTable(
     doc: HTMLDocument,
     entities: azad_entity.IEntity[],
     wait_for_all_values_before_resolving: boolean,
@@ -482,40 +479,37 @@ function addTable(
     fr.setAttribute('id', 'azad_order_table_fr');
     tfoot.appendChild(fr);
 
-    return cols.then( actual_cols => {
-        actual_cols.forEach( col_spec => {
-            addHeader(hr, col_spec.field_name, col_spec?.help ?? '');
-            addHeader(fr, col_spec.field_name, col_spec?.help ?? '');
-        });
-
-        const tbody = doc.createElement('tbody');
-        table.appendChild(tbody);
-
-        // Record all the promises: we're going to need to wait on all of them
-        // to resolve before we can hand over the table to our callers.
-        const row_done_promises = entities.map( entity => {
-            return appendEntityRow(tbody, entity, cols);
-        });
-
-        if (wait_for_all_values_before_resolving) {
-            return Promise.all(row_done_promises).then( row_promises => {
-                const value_done_promises: Promise<null>[] = [];
-                row_promises.forEach(
-                    cell_done_promises => value_done_promises.push(
-                        ...cell_done_promises
-                    )
-                )
-                console.log(
-                    'value_done_promises.length',
-                    value_done_promises.length
-                );
-                return Promise.all(value_done_promises).then( _ => table );
-            });
-
-        } else {
-            return table;
-        }
+    const actual_cols = await cols;
+    actual_cols.forEach( col_spec => {
+        addHeader(hr, col_spec.field_name, col_spec?.help ?? '');
+        addHeader(fr, col_spec.field_name, col_spec?.help ?? '');
     });
+
+    const tbody = doc.createElement('tbody');
+    table.appendChild(tbody);
+
+    // Record all the promises: we're going to need to wait on all of them
+    // to resolve before we can hand over the table to our callers.
+    const row_done_promises = entities.map( entity => {
+        return appendEntityRow(tbody, entity, cols);
+    });
+
+    if (wait_for_all_values_before_resolving) {
+        const row_promises = await Promise.all(row_done_promises);
+        const value_done_promises: Promise<null>[] = [];
+        row_promises.forEach(
+            cell_done_promises => value_done_promises.push(
+                ...cell_done_promises
+            )
+        )
+        console.log(
+            'value_done_promises.length',
+            value_done_promises.length
+        );
+        return Promise.all(value_done_promises).then( _ => table );
+    } else {
+        return table;
+    }
 }
 
 function ordersToItems(orders: azad_order.IOrder[]): Promise<azad_item.IItem[]>
@@ -529,7 +523,7 @@ function ordersToItems(orders: azad_order.IOrder[]): Promise<azad_item.IItem[]>
     );
 }
 
-function reallyDisplay(
+async function reallyDisplay(
     orders: azad_order.IOrder[],
     beautiful: boolean,
     wait_for_all_values_before_resolving: boolean,
