@@ -38,8 +38,8 @@ class FakeRequestScheduler {
     scheduleToPromise<T>(
         query: string,
         event_converter: (evt: any) => any,
-        priority: string,
-        nocache: boolean
+        _priority: string,
+        _nocache: boolean
     ): Promise<request_scheduler.IResponse<T>> {
         return new Promise<any> ( resolve => {
             setTimeout( () => {

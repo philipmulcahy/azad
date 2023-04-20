@@ -277,7 +277,7 @@ class RequestScheduler {
             this._recordSingleCompletion();
         };
         req.timeout = 20000;  // 20 seconds
-        req.ontimeout = (evt: any): void => {
+        req.ontimeout = (_evt: any): void => {
             this.running_count -= 1;
             this.error_count += 1;
             if (this.live) {
