@@ -506,7 +506,14 @@ async function addTable(
             'value_done_promises.length',
             value_done_promises.length
         );
-        return Promise.all(value_done_promises).then( _ => table );
+        return Promise.allSettled(value_done_promises).then( settled => {
+          const rejected_count = settled.filter(row => row.status == 'rejected')
+                                        .length;
+          if (rejected_count) {
+            console.warn('table.addTable(...) encountered ', rejected_count, ' rejected value promises.');
+          }
+          return table;
+        });
     } else {
         return table;
     }

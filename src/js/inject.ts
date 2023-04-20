@@ -115,6 +115,9 @@ async function showOrders(
             document
         );
     }
+
+    // TODO: remove the third param from this call, and chase the removal
+    // all the way down the call tree below it.
     return azad_table.display(order_promises, beautiful, true);
 }
 
