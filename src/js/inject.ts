@@ -105,10 +105,10 @@ async function latestYear(): Promise<number> {
 
 async function showOrdersOrItems(
   order_promises: Promise<azad_order.IOrder>[],
+  beautiful_table: boolean
 ): Promise<HTMLTableElement> {
-    let beautiful = true;
-    if (order_promises.length >= 500) {
-        beautiful = false;
+    if (order_promises.length >= 500 && beautiful_table) {
+        beautiful_table = false;
         notice.showNotificationBar(
             '500 or more orders found. That\'s a lot!\n' +
             'We\'ll start you off with a plain table to make display faster.\n' +
@@ -121,7 +121,7 @@ async function showOrdersOrItems(
 
     // TODO: remove the third param from this call, and chase the removal
     // all the way down the call tree below it.
-    return azad_table.display(order_promises, beautiful, items_not_orders);
+    return azad_table.display(order_promises, beautiful_table, items_not_orders);
 }
 
 async function fetchAndShowOrdersByYears(
@@ -142,12 +142,14 @@ async function fetchAndShowOrdersByYears(
         getScheduler(),
         latest_year, 
     );
-    return showOrdersOrItems(order_promises);
+    return showOrdersOrItems(order_promises, true);
 }
 
 async function fetchAndShowOrdersByRange(
-  start_date: Date, end_date: Date
+  start_date: Date, end_date: Date,
+  beautiful_table: boolean
 ): Promise<HTMLTableElement|undefined> {
+    console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);                   
     if ( document.visibilityState != 'visible' ) {
         console.log(
             'fetchAndShowOrdersByRange() returning without doing anything: ' +
@@ -167,7 +169,7 @@ async function fetchAndShowOrdersByRange(
       getScheduler(),
       latest_year,
     );
-    return showOrdersOrItems(order_promises);
+    return showOrdersOrItems(order_promises, beautiful_table);
 }
 
 async function fetchShowAndDumpItemsByRange(
@@ -177,7 +179,8 @@ async function fetchShowAndDumpItemsByRange(
   await settings.storeBoolean('show_items_not_orders', true);
   const table: (HTMLTableElement|undefined) = await fetchAndShowOrdersByRange(
     start_date,
-    end_date
+    end_date,
+    false
   );
   await settings.storeBoolean('show_items_not_orders', original_items_setting);
 
@@ -226,7 +229,7 @@ async function registerContentScript() {
                         {
                           const start_date: Date = new Date(msg.start_date);
                           const end_date: Date = new Date(msg.end_date);
-                          fetchAndShowOrdersByRange(start_date, end_date);
+                          fetchAndShowOrdersByRange(start_date, end_date, true);
                         }
                         break;
                     case 'scrape_range_and_dump_items':

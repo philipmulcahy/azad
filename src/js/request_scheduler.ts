@@ -292,7 +292,7 @@ class RequestScheduler {
     }
 
     _executeSomeIfPossible() {
-        console.log(
+        console.debug(
             '_executeSomeIfPossible: size: ' + this.queue.size() +
             ', running: ' + this.running_count
         );
@@ -312,7 +312,7 @@ class RequestScheduler {
     }
 
     _checkDone() {
-        console.log(
+        console.debug(
             '_checkDone: size: ' + this.queue.size() +
             ', running: ' + this.running_count +
             ', completed: ' + this.completed_count
