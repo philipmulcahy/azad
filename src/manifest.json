@@ -16,6 +16,7 @@
     "host_permissions": [
         "https://www.amazon.ca/",
         "https://www.amazon.com/",
+        "https://www.amazon.co.jp/",
         "https://www.amazon.co.uk/",
         "https://www.amazon.de/",
         "https://www.amazon.es/",
@@ -30,6 +31,7 @@
             "matches": [
                 "https://www.amazon.ca/*",
                 "https://www.amazon.com/*",
+                "https://www.amazon.co.jp/*",
                 "https://www.amazon.co.uk/*",
                 "https://www.amazon.de/*",
                 "https://www.amazon.es/*",

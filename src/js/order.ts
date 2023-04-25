@@ -974,6 +974,12 @@ function getOrdersForYearAndQueryTemplate(
 }
 
 const TEMPLATES_BY_SITE: Record<string, string[]> = {
+    'www.amazon.co.jp': ['https://%(site)s/gp/css/order-history' +
+        '?opt=ab&digitalOrders=1' +
+        '&unifiedOrders=1' +
+        '&returnTo=' +
+        '&orderFilter=year-%(year)s' +
+        '&startIndex=%(startOrderPos)s'],
     'www.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
         '?opt=ab&digitalOrders=1' +
         '&unifiedOrders=1' +
