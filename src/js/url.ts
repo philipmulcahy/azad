@@ -8,7 +8,7 @@ export function getSite(): string {
     }
     const href = window.location.href;
     const regex = new RegExp(
-        'https:\\/\\/((www|smile)\\.amazon\\.[^\\/]+)'
+        'https:\\/\\/(www\\.amazon\\.[^\\/]+)'
     );
     const executed = regex.exec(href);
     if (!executed || executed.length < 1) {

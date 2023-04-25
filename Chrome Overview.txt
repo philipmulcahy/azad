@@ -1,61 +1,60 @@
 This extension extracts order history from your Amazon account.
-Amazon provides https://www.amazon.com/gp/b2b/reports, but it doesn't include digital orders, shipping, total amount, or payment information, and isn't available for non-US customers.
+Amazon used to provide csv reports via https://www.amazon.com/gp/b2b/for US customers only, but it didn't include digital orders, shipping, total amount, or payment information. Sometime in the middle of 2020, Amazon withdrew the feature even in the US.
 
-This extension aims to fix that.
-
-This extension breaks whenever Amazon makes changes. If incorrect information is shown for an order, please RIGHT-click on the order id shown in the table and choose "save order debug info". After the debug file downloads, email it to philip, who is at mulcahyfamily.org, along with a description or screenshot of the result you get and what result you expect to get.
-Please note that the saved data will include everything you can see on the order list pages, order detail pages, and invoice pages, including your billing and shipping addresses, and may also include things such as the order itself, recommendations, Buy It Again items, etc., which show your shopping preferences.
+This extension aims to fill the gap.
 
 How to Use
 ----------
 After you install the extension, you won't see anything until you view your order history on the website (Your Account -> Your Orders).
 
-Get to your orders page, then click on the extension icon at the top right of the Chrome window; look for an orange upper case A. Once you do this, you  should see buttons with years.
+Get to your orders page, then click on the extension icon at the top right of the Chrome window; look for an orange upper case A. Once you do this, you  should see buttons with years on the extensions pop-up window.
 Clicking on one of these buttons causes the extension to sift through all of your order pages and show you a searchable, sortable table with all of the orders in. It can take a few seconds to get all of the pages.
-A blue button enables you to download a CSV (viewable in Excel or other spreadsheet programs) of the order table the extension has assembled.
+A blue button enables you to download a CSV (viewable in Excel and other spreadsheet programs) of the order table the extension has assembled.
+It's better not to have more than one amazon tab open while the extension is doing stuff.
 
 Currently supported:
-amazon.com.au
-amazon.ca
-amazon.de
-smile.amazon.de
-amazon.es
-amazon.in
-amazon.co.uk
-smile.amazon.co.uk
-amazon.com
-smile.amazon.com
+amazon.com.au, .ca, .de, .es, .in, co.uk, com, .com.mx (partial).
 
-For other Amazon sites, please submit debug information as described above.
-
+For other Amazon sites, please submit debug information as described in https://github.com/philipmulcahy/azad/blob/master/README.md
 
 Bug reports are gratefully accepted (see github link below), with extra points awarded for:
 1) reproducibility - if you describe it well and I can reproduce it then it's normally straightforward to fix.
-2) staying in contact - fire and forget bug reports are often impossible to reproduce and are seriously demotivating too.
+2) staying in contact - fire and forget bug reports are often impossible to reproduce and are seriously demotivating.
 3) using courteous language.
 4) using English - you're not paying me and while I can scrape by in French and German, I'm spending more of my spare time on this project than you are, and it's not about learning human languages.
 5) having read the (very brief) instructions - and if English is not your favorite language, you have two choices:
    i) Google translate (don't send it to me!)
-   ii) Sending me a translation (better than Google's) of the instructions.
+   ii) Sending me a translation (better than Google's) of the instructions. 
        I will figure out how to incorporate it and list you in the credits.
 
-Changes in 1.9.0:
------------------
-Big user interface change - the orange year buttons are no longer embedded in the page, but have been moved to new popup control panel, accessed via the extension's icon in the top right hand of the chrome "bar".
-Scott McNay has been working to improve data quality, particularly for US/.com users.
-JustGiving page link added to popup control panel - if you were thinking of trying to bribe us, click on that instead.
+Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
-Changes in 1.8.27:
-------------------
-* Right click on order link in the table and choose "save order debug info" to download debugging info for that order (useful for you to help developers debug why your order data isn't showing correctly, even when they don't have access to your account and aren't in your country)
+Changes 1.9.25:
+---------------
+Removed smile.* URL patterns: Amazon turned smile charity programmes off.
+Reliability improvements.
+Security improvements.
+Preparations for item ASIN column.
+Commercial feature for EZP.
 
-Changes in 1.8.26:
-------------------
-* Fixed payment detail extraction (thanks ndrd)
-* Experimental Mexico site support (thanks fredsherbet)
+Changes 1.9.24:
+---------------
+Security patches for many npm libraries
+
+Changes 1.9.23:
+---------------
+manifest v3 (google are going to block manifest v2 real soon now)
+better item scraping: issue162
+better order debug dumps: issue179
 
 Source Code
 -------------
 https://github.com/philipmulcahy/azad
 contributors (Thank you!): https://github.com/philipmulcahy/azad/graphs/contributors
-donations: https://www.justgiving.com/fundraising/azad-pah
+
+Donations
+---------------
+I have a day job, and cannot accept personal donations.
+Don't worry: just redirect your gratitude here instead: https://www.justgiving.com/fundraising/azad-pah.
+If you seek commercial features, please read https://github.com/philipmulcahy/azad/blob/master/README.md and https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md before contacting me directly.
+I am bored of reading proposals from malware distributors.

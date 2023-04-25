@@ -14,18 +14,13 @@
         "service_worker": "background.bundle.js"
     },
     "host_permissions": [
-        "https://smile.amazon.ca/",
         "https://www.amazon.ca/",
-        "https://smile.amazon.com/",
         "https://www.amazon.com/",
-        "https://smile.amazon.co.uk/",
         "https://www.amazon.co.uk/",
-        "https://smile.amazon.de/",
         "https://www.amazon.de/",
         "https://www.amazon.es/",
         "https://www.amazon.fr/",
         "https://www.amazon.in/",
-        "https://smile.amazon.it/",
         "https://www.amazon.it/",
         "https://www.amazon.com.mx/",
         "https://www.amazon.com.au/"
@@ -33,17 +28,13 @@
     "content_scripts": [
         {
             "matches": [
-                "https://smile.amazon.ca/*",
                 "https://www.amazon.ca/*",
-                "https://smile.amazon.com/*",
                 "https://www.amazon.com/*",
-                "https://smile.amazon.co.uk/*",
                 "https://www.amazon.co.uk/*",
                 "https://www.amazon.de/*",
                 "https://www.amazon.es/*",
                 "https://www.amazon.fr/*",
                 "https://www.amazon.in/*",
-                "https://smile.amazon.it/*",
                 "https://www.amazon.it/*",
                 "https://www.amazon.com.au/*",
                 "https://www.amazon.com.mx/*"

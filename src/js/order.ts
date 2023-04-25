@@ -974,12 +974,6 @@ function getOrdersForYearAndQueryTemplate(
 }
 
 const TEMPLATES_BY_SITE: Record<string, string[]> = {
-    'smile.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
     'www.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
         '?opt=ab&digitalOrders=1' +
         '&unifiedOrders=1' +
@@ -992,13 +986,6 @@ const TEMPLATES_BY_SITE: Record<string, string[]> = {
         '&returnTo=' +
         '&orderFilter=year-%(year)s' +
         '&startIndex=%(startOrderPos)s'],
-    'smile.amazon.de': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB'],
     'www.amazon.de': ['https://%(site)s/gp/css/order-history' +
         '?opt=ab&digitalOrders=1' +
         '&unifiedOrders=1' +
@@ -1027,19 +1014,7 @@ const TEMPLATES_BY_SITE: Record<string, string[]> = {
         '&orderFilter=year-%(year)s' +
         '&startIndex=%(startOrderPos)s' +
         '&language=en_GB'],
-    'smile.amazon.ca': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
     'www.amazon.ca': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
-    'smile.amazon.fr': ['https://%(site)s/gp/css/order-history' +
         '?opt=ab&digitalOrders=1' +
         '&unifiedOrders=1' +
         '&returnTo=' +
@@ -1051,24 +1026,6 @@ const TEMPLATES_BY_SITE: Record<string, string[]> = {
         '&returnTo=' +
         '&orderFilter=year-%(year)s' +
         '&startIndex=%(startOrderPos)s'],
-    'smile.amazon.com': [
-        'https://%(site)s/gp/css/order-history' +
-        '?opt=ab' +
-        '&ie=UTF8' +
-        '&digitalOrders=1' +
-        '&unifiedOrders=0' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_US',
-
-        'https://%(site)s/gp/css/order-history' +
-        '?opt=ab' +
-        '&ie=UTF8' +
-        '&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_US'],
     'www.amazon.com': [
         'https://%(site)s/gp/css/order-history' +
         '?opt=ab' +
