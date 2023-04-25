@@ -114,5 +114,7 @@ This may be necessary if you are sent a link to a zip file (probably something l
 I've closed the 2022 survey because a clearish signal has emerged - here are the top two requested features:
 1) Report ASINs, price, and quantity
 2) Scrape specific month/quarter
-Check out [doc/commercial_features.md] for what happens next...
+
+
+Check out [commercial_features.md](doc/commercial_features.md) for what happens next...
 
