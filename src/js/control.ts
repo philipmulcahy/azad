@@ -108,6 +108,7 @@ function showYearButtons(years: number[]) {
 function showMonthsButtons(month_counts: number[]) {
   console.log('show month buttons', month_counts);
   $('.azad_months_button').remove();
+  return;  // TODO reenable when PAH criterion met.
   month_counts.sort().forEach( month_count => {
     $('#azad_year_list').append(
       '<button class="azad_months_button" value="' + month_count + '" >' + month_count + 'm</button>' 
