@@ -1,9 +1,14 @@
 # Azad: amazon order history reporter chrome extension
 
 ## Official installation page
-
 https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi
 
+## Commercial Features 2023
+I've closed the 2022 survey because a clearish signal has emerged - here are the top two requested features:
+1) Report ASINs, price, and quantity
+2) Scrape specific month/quarter
+
+Check out [commercial_features.md](doc/commercial_features.md) for what happens next...
 # Help!
 
 ## Common problems, with some fixes
@@ -110,11 +115,4 @@ This may be necessary if you are sent a link to a zip file (probably something l
 9) Remember to uninstall or disable the test version once you've finished playing. It will not automatically update with fixes, unlike the chrome web store version.
 
 
-## Commercial Features 2023...
-I've closed the 2022 survey because a clearish signal has emerged - here are the top two requested features:
-1) Report ASINs, price, and quantity
-2) Scrape specific month/quarter
-
-
-Check out [commercial_features.md](doc/commercial_features.md) for what happens next...
 
