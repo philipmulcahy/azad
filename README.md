@@ -114,25 +114,4 @@ This may be necessary if you are sent a link to a zip file (probably something l
 I've closed the 2022 survey because a clearish signal has emerged - here are the top two requested features:
 1) Report ASINs, price, and quantity
 2) Scrape specific month/quarter
-I'll do some work in the coming weeks, and depending on how that goes, set some goals for charity donation totals.
-
-<del>
-## Commercial Features 2022
-If you're using Azad commercially (for drop shipping, or helping manage procurement etc.) you are not alone.
-A few ["commercial" features](https://github.com/philipmulcahy/azad/issues?q=is%3Aissue+is%3Aopen+label%3Acommercial_user_feature) are requested frequently.
-There's a reasonably straightforward path to delivering some of them. Significant investment in time might be required for the others.
-
-To make progress, two challenges need to be addressed:
-1) Prioritisation. You can help by filling out this (<1 minute) [anonymous voting form](https://forms.gle/fjbVkBSJZoVEmP3m9) (new and improved - you no longer have to be me to access the form: sorry!)
-2) Motivation. I share and work on this extension for free, but need donations to the [linked hospice charity](https://www.justgiving.com/fundraising/azad-pah) to be more proportional to the value commercial users are receiving. At the moment, the vast majority of donations appear to be from private/family users, not businesses, and the total amount donated is a tiny fraction of both the value of my donated time, and the value business are receiving.
-
-### The plan 
-* Wait for a [clear signal from commercial users](https://forms.gle/LNjkzMoQERSoz1wA9) on which feature proposals are most popular.
-* Build a roadmap and set charity donation targets for the milestones.
-* Donation targets reached => work happens on milestones in my free time.
-* You (probably) get features you want.
-* We all feel virtuous.
-
-_Health warning: I am but a simple developer - Amazon has the power to break this extension any time it likes by changing their websites._
-
-</del>
+Checkout [doc/commercial_features.md] for what happens next...

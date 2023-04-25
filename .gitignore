@@ -4,7 +4,6 @@ azad.zip
 azad_*.zip
 build
 build-node
-doc
 node_modules
 src/tests/azad_test_data
 tmp
