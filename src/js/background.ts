@@ -3,13 +3,21 @@
 
 'use strict';
 
+import * as util from './util';
+
 const content_ports: Record<number, any> = {};
 
+function broadcast_to_content_pages(msg: any) {
+    Object.values(content_ports).forEach( port =>
+        port.postMessage(msg)
+    );
+}
+
 let control_port: {
-    postMessage: (arg0: { action: string; years: number[]; }) => void;
+    postMessage: (arg0: { action: string; periods: number[]; }) => void;
 } | null = null;
 
-let advertised_years: number[] = [];
+let advertised_periods: number[] = [];
 
 function registerConnectionListener() {
     chrome.runtime.onConnect.addListener( port => {
@@ -21,20 +29,17 @@ function registerConnectionListener() {
                 } );
                 port.onMessage.addListener( msg => {
                     switch(msg.action) {
-                        case 'scrape_complete':
-                            control_port!.postMessage(msg);
-                            break;
-                        case 'advertise_years':
+                        case 'advertise_periods':
                             console.log(
-                                'forwarding advertise_years',
-                                msg.years
+                                'forwarding advertise_periods',
+                                msg.period
                             );
-                            advertised_years = [
+                            advertised_periods = [
                                 ...Array.from(new Set<number>(
-                                    advertised_years.concat(msg.years))
+                                    advertised_periods.concat(msg.periods))
                                 )
-                            ].sort();
-                            advertiseYears();
+                            ].sort((a, b) => a-b);
+                            advertisePeriods();
                             break;
                         case 'statistics_update':
                           if (control_port) {
@@ -63,36 +68,73 @@ function registerConnectionListener() {
                                 'forwarding scrape_years',
                                 msg.years
                             );
-                            Object.values(content_ports).forEach( port =>
-                                port.postMessage(msg)
+                            broadcast_to_content_pages(msg);
+                            break;
+                        case 'scrape_range':
+                            console.log(
+                                'forwarding scrape_range',
+                                msg.start_date,
+                                msg.end_date,
                             );
+                            broadcast_to_content_pages(msg);
                             break;
                         case 'clear_cache':
-                            Object.values(content_ports).forEach( port =>
-                                port.postMessage(msg)
-                            );
+                            broadcast_to_content_pages(msg);
                             break;
                         case 'force_logout':
-                            Object.values(content_ports).forEach( port =>
-                                port.postMessage(msg)
-                            );
+                            broadcast_to_content_pages(msg);
                             break;
                         case 'abort':
-                            Object.values(content_ports).forEach( port =>
-                                port.postMessage(msg)
-                            );
+                            broadcast_to_content_pages(msg);
                             break;
                         default:
                             console.warn('unknown action: ' + msg.action);
                             break;
                     }
                 });
-                advertiseYears();
+                advertisePeriods();
                 break;
             default:
                 console.warn('unknown port name: ' + port.name);
         }
     });
+}
+
+function registerExternalConnectionListener() {
+  const ALLOWED_EXTENSION_IDS: (string|undefined)[] = [
+    'lanjobgdpfchcekdbfelnkhcbppkpldm',  // azad_test dev Philip@ball.local
+    'jjegocddaijoaiooabldmkcmlfdahkoe',  // EZP Regular Release 
+    'ccffmpedppmmccbelbkmembkkggbmnce',  // EZP Early testers Release
+    'ciklnhigjmbmehniheaolibcchfmabfp'  // EZP Alpha Tester Release
+  ];
+
+  chrome.runtime.onMessageExternal.addListener(
+    function(
+      message: any,
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response?: any) => void
+    ){
+      if (!ALLOWED_EXTENSION_IDS.includes(sender.id))
+        return;  // don't allow access
+      else if (message.action == 'get_items_3m') {
+        const month_count = 3;
+        const end_date = new Date();
+        const start_date = util.subtract_months(end_date, month_count);
+        console.log('sending scrape_range', start_date, end_date);
+        const msg = {
+          action: 'scrape_range_and_dump_items',
+          start_date: start_date,
+          end_date: end_date,
+        };
+        broadcast_to_content_pages(msg);
+        sendResponse({status: 'ack'});
+      } else {
+        sendResponse({status: 'unsupported'});
+      }
+      return true;  // Incompletely documented, but seems to be needed to allow
+                    // sendResponse calls to succeed.
+    }
+  );
 }
 
 function registerRightClickActions() {
@@ -162,18 +204,19 @@ function registerMessageListener() {
     });
 }
 
-function advertiseYears() {
+function advertisePeriods() {
     if (control_port) {
-        console.log('advertising years', advertised_years);
+        console.log('advertising periods', advertised_periods);
         control_port.postMessage({
-            action: 'advertise_years',
-            years: advertised_years
+            action: 'advertise_periods',
+            periods: advertised_periods,
         });
     } else {
-        console.log('cannot advertise years yet: no control port is set');
+        console.log('Cannot advertise periods yet: no control port is set.');
     }
 }
 
 registerConnectionListener();
 registerRightClickActions();
 registerMessageListener();
+registerExternalConnectionListener();

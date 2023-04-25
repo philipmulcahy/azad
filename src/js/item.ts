@@ -11,6 +11,7 @@ export interface IItem extends azad_entity.IEntity {
     price: string;
     quantity: number;
     url: string;
+    asin: string;
 };
 
 export type Items = Record<string, string>;
@@ -22,6 +23,21 @@ type ItemsExtractor = (
     order_elem: HTMLElement,
     context: string,
 ) => IItem[];
+
+function extract_asin_from_url(url: string): string {
+  const patterns = [
+    /\/gp\/product\/([A-Za-z0-9]+)/,
+    /\/dp\/([A-Za-z0-9]+)/,
+  ];
+  const results = patterns.map(p => p.exec(url));
+  const filtered_matches = results.filter(r => r);
+  try {
+    return filtered_matches![0]![1];
+  } catch (ex) {
+    console.error(ex);
+  }
+  return '';
+}
 
 export function extractItems(
     order_id: string,
@@ -110,6 +126,7 @@ function strategy0(
         } catch(ex) {
             console.warn('could not find price for: ' + description);
         }
+        const asin = extract_asin_from_url(url);
         return {
             description: description,
             order_date: order_date,
@@ -118,6 +135,7 @@ function strategy0(
             price: price,
             quantity: qty,
             url: url,
+            asin: asin,
         }
     });
     return items;
@@ -156,6 +174,7 @@ function strategy1(
                                ?.textContent
                                ?.match(util.moneyRegEx())
         const price = price_match ? price_match[1] : '';
+        const asin = extract_asin_from_url(url);
         return {
             description: description,
             order_date: order_date,
@@ -164,6 +183,7 @@ function strategy1(
             price: price,
             quantity: qty,
             url: url,
+            asin: asin,
         }
     });
     return items;
@@ -205,6 +225,7 @@ function strategy2(
                                ?.textContent
                                ?.match(util.moneyRegEx())
         const price = price_match ? price_match[1] : '';
+        const asin = extract_asin_from_url(url);
         return {
             description: description,
             order_date: order_date,
@@ -213,6 +234,7 @@ function strategy2(
             price: price,
             quantity: qty,
             url: url,
+            asin: asin,
         }
     });
     return items.filter( item => item.description != '' );
@@ -251,6 +273,7 @@ function strategy3(
         } catch(ex) {
             console.warn('could not find price for: ' + description);
         }
+        const asin = extract_asin_from_url(url);
         return {
             description: description,
             order_date: order_date,
@@ -259,6 +282,7 @@ function strategy3(
             price: price,
             quantity: qty,
             url: url,
+            asin: asin,
         }
     });
     return items;

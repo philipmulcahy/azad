@@ -5,11 +5,11 @@
 const $ = require('jquery');
 
 import * as settings from './settings';
+import * as util from './util';
 
 function activateIdle() {
     console.log('activateIdle');
     showOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
-    console.log('hello world');
 }
 
 function activateScraping(years: number[]) {
@@ -18,10 +18,10 @@ function activateScraping(years: number[]) {
     $('#azad_state').text('scraping ' + years.join(','));
 }
 
-function activateDone(years: number[]) {
+function activateDone(periods: number) {
     console.log('activateDone');
     showOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
-    $('#azad_state').text(years.join(','));
+    $('#azad_state').text(periods);
 }
 
 function showOnly(button_ids: any[]) {
@@ -38,21 +38,24 @@ function connectToBackground() {
 
     background_port.onMessage.addListener( msg => {
         switch(msg.action) {
-            case 'scrape_complete':
-                break;
-            case 'advertise_years':
-                showYearButtons(msg.years);
+            case 'advertise_periods':
+                console.info('control got periods advertisement');
+                const months = (msg.periods as number[]).filter(p => p<=12);
+                const years = (msg.periods as number[]).filter(p => p>=2000);
+                showMonthsButtons(months);
+                showYearButtons(years);
                 break;
             case 'statistics_update':
+                console.info('control got statistics update');
                 {
                     const text = Object.entries(msg.statistics)
                         .map(([k,v]) => {return k + ':' + v;})
                         .join('; ');
                     $('#azad_statistics').text(text);
                     if ((msg.statistics.queued + msg.statistics.running) > 0) {
-                        activateScraping(msg.years);
+                        activateScraping(msg.purpose);
                     } else {
-                        activateDone(msg.years);
+                        activateDone(msg.purpose);
                     }
                 }
                 break;
@@ -96,16 +99,22 @@ function showYearButtons(years: number[]) {
     $('.azad_year_button').remove();
     years.sort().reverse().forEach( year => {
         $('#azad_year_list').append(
-            '<input type="button" class="azad_year_button" value="' + year + '" />'
+            '<button class="azad_year_button" value="' + year + '">' + year + '</button>'
         );
     });
     $('.azad_year_button').on('click', handleYearClick);
 }
 
-declare global {
-    interface Window {
-        ga(action: string, data: any) : void;
-    }
+function showMonthsButtons(month_counts: number[]) {
+  console.log('show month buttons', month_counts);
+  $('.azad_months_button').remove();
+  return;  // TODO reenable when PAH criterion met.
+  month_counts.sort().forEach( month_count => {
+    $('#azad_year_list').append(
+      '<button class="azad_months_button" value="' + month_count + '" >' + month_count + 'm</button>' 
+    );
+  });
+  $('.azad_months_button').on('click', handleMonthsClick);
 }
 
 function handleYearClick(evt: { target: { value: any; }; }) {
@@ -121,15 +130,23 @@ function handleYearClick(evt: { target: { value: any; }; }) {
     } else {
         console.warn('background_port not set');
     }
-    window.ga(
-        'send',
-        {
-            hitType: 'event',
-            eventCategory: 'control',
-            eventAction: 'scrape_year_click',
-            eventLabel: 'scrape_year_click:' + year
-        }
-    );
+}
+
+function handleMonthsClick(evt: { target: { value: any; }; }) {
+    const month_count = Number(evt.target.value);
+    const end_date = new Date();
+    const start_date = util.subtract_months(end_date, month_count);
+    activateScraping([month_count]);
+    if (background_port) {
+        console.log('sending scrape_range', start_date, end_date);
+        background_port.postMessage({
+            action: 'scrape_range',
+            start_date: start_date,
+            end_date: end_date,
+        });
+    } else {
+        console.warn('background_port not set');
+    }
 }
 
 function handleStopClick() {
@@ -139,6 +156,7 @@ function handleStopClick() {
 }
 
 function init() {
+    settings.startMonitoringSettingsStorage();
     settings.initialiseUi();
     console.log('init');
     activateIdle();

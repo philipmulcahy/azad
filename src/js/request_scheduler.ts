@@ -24,6 +24,7 @@ export interface IRequestScheduler {
     abort(): void;
     clearCache(): void;
     isLive(): boolean;
+    purpose(): string;
 }
 
 class RequestScheduler {
@@ -38,11 +39,15 @@ class RequestScheduler {
     error_count: number = 0;
     signin_warned: boolean = false;
     live = true;
+    _purpose: string;
 
-    constructor() {
+    constructor(purpose: string) {
+        this._purpose = purpose;
         console.log('constructing new RequestScheduler');
         this._update_statistics();
     }
+
+    purpose(): string { return this._purpose; }
 
     _schedule(
         query: string,
@@ -272,7 +277,7 @@ class RequestScheduler {
             this._recordSingleCompletion();
         };
         req.timeout = 20000;  // 20 seconds
-        req.ontimeout = (evt: any): void => {
+        req.ontimeout = (_evt: any): void => {
             this.running_count -= 1;
             this.error_count += 1;
             if (this.live) {
@@ -287,7 +292,7 @@ class RequestScheduler {
     }
 
     _executeSomeIfPossible() {
-        console.log(
+        console.debug(
             '_executeSomeIfPossible: size: ' + this.queue.size() +
             ', running: ' + this.running_count
         );
@@ -307,7 +312,7 @@ class RequestScheduler {
     }
 
     _checkDone() {
-        console.log(
+        console.debug(
             '_checkDone: size: ' + this.queue.size() +
             ', running: ' + this.running_count +
             ', completed: ' + this.completed_count
@@ -323,6 +328,6 @@ class RequestScheduler {
     }
 }
 
-export function create(): IRequestScheduler {
-    return new RequestScheduler();
+export function create(purpose: string): IRequestScheduler {
+    return new RequestScheduler(purpose);
 };

@@ -13,10 +13,10 @@ function string_or_null(s: string | null | undefined) {
     return '';
 }
 
-export function download(
+export async function download(
     table: HTMLTableElement,
     sums_for_spreadsheet: boolean,
-) {
+): Promise<void> {
     const tableToArrayOfArrays
             = function(table: HTMLTableElement): (string[])[] {
         const rows: HTMLTableRowElement[]
@@ -87,5 +87,5 @@ export function download(
     const cell_strings: string[][] = tableToArrayOfArrays(table);
     const row_strings = cell_strings.map(processRow);
     const csvFile = '\ufeff' + row_strings.join('\n');
-    save_file.save(csvFile, 'amazon_order_history.csv');
+    await save_file.save(csvFile, 'amazon_order_history.csv');
 }

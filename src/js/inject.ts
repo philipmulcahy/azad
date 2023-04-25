@@ -3,10 +3,12 @@
 'use strict';
 
 import * as azad_order from './order';
+import * as csv from './csv';
 import * as azad_table from './table';
 import * as notice from './notice';
 import * as request_scheduler from './request_scheduler';
 import * as signin from './signin';
+import * as settings from './settings';
 import * as stats from './statistics';
 import * as urls from './url';
 import * as util from './util';
@@ -20,7 +22,7 @@ const SITE: string = urls.getSite();
 
 function getScheduler(): request_scheduler.IRequestScheduler {
     if (!scheduler) {
-        resetScheduler();
+        resetScheduler('unknown');
     }
     return scheduler!;
 }
@@ -33,7 +35,7 @@ function setStatsTimeout() {
     const sendStatsMsg = () => {
         const bg_port = getBackgroundPort();
         if (bg_port) {
-            stats.publish(bg_port, years);
+            stats.publish(bg_port, getScheduler().purpose());
             azad_table.updateProgressBar();
         }
     }
@@ -49,11 +51,11 @@ function setStatsTimeout() {
     );
 }
 
-function resetScheduler(): void {
+function resetScheduler(purpose: string): void {
     if (scheduler) {
         scheduler.abort();
     }
-    scheduler = request_scheduler.create();
+    scheduler = request_scheduler.create(purpose);
     setStatsTimeout();
 }
 
@@ -74,16 +76,17 @@ function getYears(): Promise<number[]> {
                 doc.documentElement
             );
             const years = snapshot
-             .filter( elem => elem )
-             .filter( elem => elem.textContent )
-             .map(
-                elem => elem!.textContent!
-                             .replace('en', '')  // amazon.fr
-                             .replace('nel', '')  // amazon.it
-                             .trim()
-            ).filter( element => (/^\d+$/).test(element) )
-             .map( (year_string: string) => Number(year_string) )
-             .filter( year => (year >= 2004) );
+                .filter( elem => elem )
+                .filter( elem => elem.textContent )
+                .map(
+                    elem => elem!.textContent!
+                                 .replace('en', '')  // amazon.fr
+                                 .replace('nel', '')  // amazon.it
+                                 .trim())
+                .filter( element => (/^\d+$/).test(element) )
+                .map( (year_string: string) => Number(year_string) )
+                .filter( year => (year >= 2004) )
+                .sort();
             return years;
         });
     }
@@ -95,53 +98,119 @@ function getYears(): Promise<number[]> {
     return cached_years;
 }
 
-function fetchAndShowOrders(years: number[]): void {
+async function latestYear(): Promise<number> {
+  const all_years = await getYears();
+  return all_years[0];
+}
+
+async function showOrdersOrItems(
+  order_promises: Promise<azad_order.IOrder>[],
+  beautiful_table: boolean
+): Promise<HTMLTableElement> {
+    if (order_promises.length >= 500 && beautiful_table) {
+        beautiful_table = false;
+        notice.showNotificationBar(
+            '500 or more orders found. That\'s a lot!\n' +
+            'We\'ll start you off with a plain table to make display faster.\n' +
+            'You can click the blue "datatable" button to restore sorting, filtering etc.',
+            document
+        );
+    }
+
+    const items_not_orders = await settings.getBoolean('show_items_not_orders');
+
+    // TODO: remove the third param from this call, and chase the removal
+    // all the way down the call tree below it.
+    return azad_table.display(order_promises, beautiful_table, items_not_orders);
+}
+
+async function fetchAndShowOrdersByYears(
+  years: number[]
+): Promise<HTMLTableElement|undefined> {
     if ( document.visibilityState != 'visible' ) {
         console.log(
-            'fetchAndShowOrders() returning without doing anything: ' +
+            'fetchAndShowOrdersByYears() returning without doing anything: ' +
             'tab is not visible'
         );
         return;
     }
-    resetScheduler();
-    getYears().then(
-        all_years => azad_order.getOrdersByYear(
-            years,
-            getScheduler(),
-            all_years[0]
-        )
-    ).then(
-        orderPromises => {
-            let beautiful = true;
-            if (orderPromises.length >= 500) {
-                beautiful = false;
-                notice.showNotificationBar(
-                    '500 or more orders found. That\'s a lot!\n' +
-                    'We\'ll start you off with a plain table to make display faster.\n' +
-                    'You can click the blue "datatable" button to restore sorting, filtering etc.',
-                    document
-                );
-            }
-            azad_table.display(orderPromises, beautiful, false);
-            return document.querySelector('[id="azad_order_table"]');
-        }
+    const purpose: string = years.join(', ');
+    resetScheduler(purpose);
+    const latest_year: number = await latestYear();
+    const order_promises = await azad_order.getOrdersByYear(
+        years,
+        getScheduler(),
+        latest_year, 
     );
+    return showOrdersOrItems(order_promises, true);
 }
 
-function advertiseYears() {
-    getYears().then( years => {
-        console.log('advertising years', years);
-        const bg_port = getBackgroundPort();
-        if (bg_port) {
-            bg_port.postMessage({
-                action: 'advertise_years',
-                years: years
-            });
-        }
-    });
+async function fetchAndShowOrdersByRange(
+  start_date: Date, end_date: Date,
+  beautiful_table: boolean
+): Promise<HTMLTableElement|undefined> {
+    console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);                   
+    if ( document.visibilityState != 'visible' ) {
+        console.log(
+            'fetchAndShowOrdersByRange() returning without doing anything: ' +
+            'tab is not visible'
+        );
+        return;
+    }
+    const purpose: string
+      = util.dateToDateIsoString(start_date)
+      + ' -> '
+      + util.dateToDateIsoString(end_date);
+    resetScheduler(purpose);
+    const latest_year: number = await latestYear();
+    const order_promises = await azad_order.getOrdersByRange(
+      start_date,
+      end_date,
+      getScheduler(),
+      latest_year,
+    );
+    return showOrdersOrItems(order_promises, beautiful_table);
 }
 
-function registerContentScript() {
+async function fetchShowAndDumpItemsByRange(
+  start_date: Date, end_date: Date
+): Promise<void> {
+  await settings.storeBoolean('ezp_mode', true);
+  const original_items_setting = await settings.getBoolean('show_items_not_orders');
+  await settings.storeBoolean('show_items_not_orders', true);
+  const table: (HTMLTableElement|undefined) = await fetchAndShowOrdersByRange(
+    start_date,
+    end_date,
+    false
+  );
+  await settings.storeBoolean('show_items_not_orders', original_items_setting);
+
+  // EZP, the primary consumers of this file are processing file with code:
+  // They don't need the file polluted by aggregation rows.
+  const show_totals = false; 
+
+  if (typeof(table) != 'undefined') {
+    await csv.download(table, show_totals)
+    await settings.storeBoolean('ezp_mode', false);
+    return;
+  }
+  else return undefined;
+}
+
+async function advertisePeriods() {
+    const years = await getYears();
+    console.log('advertising years', years);
+    const bg_port = getBackgroundPort();
+    const periods = [1, 2, 3].concat(years);
+    if (bg_port) {
+        bg_port.postMessage({
+            action: 'advertise_periods',
+            periods: periods
+        });
+    }
+}
+
+async function registerContentScript() {
     // @ts-ignore null IS allowed as first arg to connect.
     background_port = chrome.runtime.connect(null, {name: 'azad_inject'});
 
@@ -156,8 +225,22 @@ function registerContentScript() {
                     case 'scrape_years':
                         years = msg.years;
                         if (years) {
-                            fetchAndShowOrders(years);
+                            fetchAndShowOrdersByYears(years);
                         }
+                        break;
+                    case 'scrape_range':
+                        {
+                          const start_date: Date = new Date(msg.start_date);
+                          const end_date: Date = new Date(msg.end_date);
+                          fetchAndShowOrdersByRange(start_date, end_date, true);
+                        }
+                        break;
+                    case 'scrape_range_and_dump_items':
+                        {
+                          const start_date: Date = new Date(msg.start_date);
+                          const end_date: Date = new Date(msg.end_date);
+                          fetchShowAndDumpItemsByRange(start_date, end_date);
+                        };
                         break;
                     case 'clear_cache':
                         getScheduler().clearCache();
@@ -172,7 +255,7 @@ function registerContentScript() {
                         signin.forceLogOut('https://' + SITE);
                         break;
                     case 'abort':
-                        resetScheduler();
+                        resetScheduler('aborted');
                         break;
                     default:
                         console.warn('unknown action: ' + msg.action);
@@ -188,4 +271,4 @@ function registerContentScript() {
 
 console.log('Amazon Order History Reporter starting');
 registerContentScript();
-advertiseYears();
+advertisePeriods();

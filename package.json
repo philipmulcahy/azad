@@ -9,7 +9,7 @@
         "clean": "rm -rf azad*.zip build/* build-node/* doc",
         "build": "node utils/build.js",
         "doc": " typedoc --out ./doc/ ./src/js/",
-        "lint": "tsc --strict --alwaysStrict --noEmit",
+        "lint": "tsc --strict --alwaysStrict --noEmit --noUnusedParameters",
         "package": "utils/package.sh",
         "private_package": "npm run package; cp azad.zip azad_$(git log -1 | grep commit | sed 's/^commit //' | cut -c 1-8).zip",
         "test": "node build-node/order_tests.bundle.js",
@@ -30,7 +30,7 @@
         "style-loader": "^1.2.1",
         "ts-loader": "^9.0.0",
         "typedoc": "^0.22.11",
-        "typescript": "^4.0.0",
+        "typescript": "^4.9.5",
         "webpack": "^5.58.2",
         "webpack-cli": "^4.9.1",
         "write-file-webpack-plugin": "^4.5.1"
@@ -51,7 +51,7 @@
         "serialize-javascript": "^3.1.0",
         "sprintf-js": "^1.1.2",
         "sprintf.js": "^0.1.4",
-        "typescript": "^4.0.0",
+        "tsc": "^2.0.4",
         "xpath": "0.0.27"
     }
 }
