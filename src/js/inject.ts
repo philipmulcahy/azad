@@ -175,6 +175,7 @@ async function fetchAndShowOrdersByRange(
 async function fetchShowAndDumpItemsByRange(
   start_date: Date, end_date: Date
 ): Promise<void> {
+  await settings.storeBoolean('ezp_mode', true);
   const original_items_setting = await settings.getBoolean('show_items_not_orders');
   await settings.storeBoolean('show_items_not_orders', true);
   const table: (HTMLTableElement|undefined) = await fetchAndShowOrdersByRange(
@@ -189,7 +190,9 @@ async function fetchShowAndDumpItemsByRange(
   const show_totals = false; 
 
   if (typeof(table) != 'undefined') {
-    return csv.download(table, show_totals)
+    await csv.download(table, show_totals)
+    await settings.storeBoolean('ezp_mode', false);
+    return;
   }
   else return undefined;
 }
