@@ -15,31 +15,35 @@
     },
     "host_permissions": [
         "https://www.amazon.ca/",
-        "https://www.amazon.com/",
         "https://www.amazon.co.jp/",
         "https://www.amazon.co.uk/",
+        "https://www.amazon.com.au/",
+        "https://www.amazon.com.be/",
+        "https://www.amazon.com.mx/",
+        "https://www.amazon.com/",
         "https://www.amazon.de/",
         "https://www.amazon.es/",
         "https://www.amazon.fr/",
         "https://www.amazon.in/",
         "https://www.amazon.it/",
-        "https://www.amazon.com.mx/",
-        "https://www.amazon.com.au/"
+        "https://www.amazon.nl/"
     ],
     "content_scripts": [
         {
             "matches": [
                 "https://www.amazon.ca/*",
-                "https://www.amazon.com/*",
                 "https://www.amazon.co.jp/*",
                 "https://www.amazon.co.uk/*",
+                "https://www.amazon.com.au/*",
+                "https://www.amazon.com.be/*",
+                "https://www.amazon.com.mx/*",
+                "https://www.amazon.com/*",
                 "https://www.amazon.de/*",
                 "https://www.amazon.es/*",
                 "https://www.amazon.fr/*",
                 "https://www.amazon.in/*",
                 "https://www.amazon.it/*",
-                "https://www.amazon.com.au/*",
-                "https://www.amazon.com.mx/*"
+                "https://www.amazon.nl/*"
             ],
             "css": [
                 "jquery.dataTables.min.css",
