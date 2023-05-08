@@ -1,4 +1,4 @@
-/* Copyright(c) 2016-2020 Philip Mulcahy. */
+/* Copyright(c) 2016-2023 Philip Mulcahy. */
 
 'use strict';
 
@@ -79,7 +79,7 @@ class RequestScheduler {
         nocache: boolean
     ): Promise<IResponse<T>> {
         query = url.normalizeUrl(query);
-        return new Promise<any>(
+        return new Promise<IResponse<T>>(
             (resolve, reject) => {
                 try {
                     this._schedule(
@@ -96,7 +96,6 @@ class RequestScheduler {
                 }
             }
         );
-
     }
 
     abort() {
