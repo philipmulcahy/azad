@@ -3,6 +3,10 @@ Item ASIN, Item Quantity and scraping only the most recent 1, 2 or 3 months are 
 
 I will release these features when https://www.justgiving.com/fundraising/azad-pah reaches £5000.
 
+UPDATE 2023-05-23
+Because the climb to £5000 is going slowly (thank you to everyone who has kindly donated!), I am exploring building a paid-for preview version.
+The money paid will still go to the same Princess Alice charity campaign (less a handling fee to whichever platform I select) - e.g. I am still working for free.
+When the £5000 goal is reached, everyone gets the held back features above.
 
 ## Rationale
 
