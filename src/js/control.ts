@@ -7,25 +7,38 @@ const $ = require('jquery');
 import * as settings from './settings';
 import * as util from './util';
 
-function activateIdle() {
+function activateIdle(): void {
     console.log('activateIdle');
-    showOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
+    actionsShowOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
 }
 
-function activateScraping(years: number[]) {
+function activateScraping(years: number[]): void {
     console.log('activateScraping');
-    showOnly(['azad_stop', 'azad_hide_controls']);
+    actionsShowOnly(['azad_stop', 'azad_hide_controls']);
     $('#azad_state').text('scraping ' + years.join(','));
 }
 
-function activateDone(periods: number) {
+function activateDone(periods: number): void {
     console.log('activateDone');
-    showOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
+    actionsShowOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
     $('#azad_state').text(periods);
 }
 
-function showOnly(button_ids: any[]) {
+function actionsShowOnly(button_ids: string[]): void {
     $('.azad_action').addClass('hidden');
+    button_ids.forEach( id => $('#' + id).removeClass('hidden') );
+}
+
+function showNormalPage(): void {
+  pagesShowOnly(['azad_page_actions', 'azad_page_default']);
+}
+
+function showExtensionPay(): void {
+    pagesShowOnly(['azad_page_actions', 'azad_page_extensionpay']);
+}
+
+function pagesShowOnly(button_ids: string[]): void {
+    $('.azad_control_page').addClass('hidden');
     button_ids.forEach( id => $('#' + id).removeClass('hidden') );
 }
 
@@ -91,6 +104,17 @@ function registerActionButtons() {
     $('#azad_hide_controls').on('click', () => {
         console.log('closing popup');
         window.close();
+    });
+}
+
+function registerPageButtons(): void {
+    showNormalPage();
+    $('#azad_switch_extensionpay').on('click', () => {
+      showExtensionPay();
+    });
+
+    $('#azad_switch_default').on('click', () => {
+      showNormalPage();
     });
 }
 
@@ -162,6 +186,7 @@ function init() {
     activateIdle();
     connectToBackground();
     registerActionButtons();
+    registerPageButtons();
 }
 
 $(document).ready( () => init() );

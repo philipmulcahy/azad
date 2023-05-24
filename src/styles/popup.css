@@ -96,7 +96,7 @@ div#azad_settings input {
     margin: 5px;
 }
 
-input.hidden {
+.hidden {
     display: none;
 }
 

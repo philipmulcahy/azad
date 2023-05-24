@@ -5,82 +5,116 @@
     <link rel="stylesheet" type="text/css" href="./popup.css" />
   </head>
   <body>
-    <div id="azad_page_default">
+    <div id="azad_page_actions" class="azad_control_page">
       <div id="azad_actions">
-          <table width="100%">
-              <tr>
-                  <td>
-                      <input type="button" class="azad_action" id="azad_clear_cache"
-                             value="clear cache" title="empty the query cache"/>
-                      <input type="button" class="azad_action" id="azad_force_logout"
-                             value="force logout" title="force Amazon logout"/>
-                      <input type="button" class="azad_action" id="azad_stop"
-                             value="stop" title="stop scraping"/>
-                  </td>
-                  <td align="right">
-                      <input type="button" class="azad_action" id="azad_hide_controls"
-                             value="&#x2716" title="hide this popup"/>
-                  </td>
-              <tr>
-          </table>
-      </div>
+        <table width="100%">
+          <tr>
+            <td>
+              <input type="button" class="azad_action" id="azad_clear_cache"
+                     value="clear cache" title="empty the query cache"/>
+              <input type="button" class="azad_action" id="azad_force_logout"
+                     value="force logout" title="force Amazon logout"/>
+              <input type="button" class="azad_action" id="azad_stop"
+                     value="stop" title="stop scraping"/>
+            </td>
+            <td align="right">
+              <input type="button" class="azad_action" id="azad_hide_controls"
+                     value="&#x2716" title="hide this popup"/>
+            </td>
+          <tr>
+        </table>
       <div class="azad_separator"></div>
+    </div>
+    <div id="azad_page_default" class="azad_control_page">
       <div id="azad_year_list"></div>
       <div class="azad_separator"></div>
       <div id="azad_info">
-          <table>
-              <tr>
-                  <td>
-                      <div id="azad_state">idle</div>
-                  </td>
-                  <td>
-                      <div id="azad_statistics" />
-                  </td>
-              </tr>
-          </table>
+        <table>
+          <tr>
+            <td>
+              <div id="azad_state">idle</div>
+            </td>
+            <td>
+              <div id="azad_statistics"></div>
+            </td>
+          </tr>
+        </table>
       </div>
       <div class="azad_separator"></div>
       <div id="azad_help">
-          <a href="https://github.com/philipmulcahy/azad/blob/master/README.md"
-             target="_blank" class="azad_help" id="azad_help">
-              CLICK HERE if you get incorrect results!
-          </a>
+        <a href="https://github.com/philipmulcahy/azad/blob/master/README.md"
+           target="_blank" class="azad_help" id="azad_help">
+            CLICK HERE if you get incorrect results!
+        </a>
       </div>
       <div class="azad_separator"></div>
       <table id="azad_settings">
-          <tr><td>
-              <input type="checkbox" id="show_totals_in_csv">
-              <label for="show_totals_in_csv">Show totals in csv downloads</label>
-          </td></tr>
-          <tr><td>
-              <input type="checkbox" id="show_invoice_links">
-              <label for="show_invoice_links">Show invoice links</label>
-          </td></tr>
-          <tr><td>
-              <input type="checkbox" id="show_items_not_orders">
-              <label for="show_items_not_orders">Show items not orders</label>
-          </td></tr>
+        <tr><td>
+          <input type="checkbox" id="show_totals_in_csv">
+          <label for="show_totals_in_csv">Show totals in csv downloads</label>
+        </td></tr>
+        <tr><td>
+          <input type="checkbox" id="show_invoice_links">
+          <label for="show_invoice_links">Show invoice links</label>
+        </td></tr>
+        <tr><td>
+          <input type="checkbox" id="show_items_not_orders">
+          <label for="show_items_not_orders">Show items not orders</label>
+        </td></tr>
       </table>
       <div class="azad_separator"></div>
-      <div id="footer">
-          <a href='http://www.justgiving.com/azad-pah'
-             title='JustGiving - Sponsor me now!'
-             target='_blank' >
-             <table>
-                 <tr>
-                     <td class="azad_thanks">
-                         Thank you!
-                     </td>
-                     <td>
-                         <img src='http://www.justgiving.com/App_Themes/JustGiving/images/badges/badge9.gif'
-                              width='120'
-                              height='90'
-                              alt='JustGiving - Sponsor me now!' />
-                     </td>
-                 </tr>
-             </table>
-          </a>
+      <div>
+        <table width="100%">
+          <tr>
+            <td>
+              <input type="button" class="azad_always_button" id="azad_switch_extensionpay"
+                     value="preview features" title="explore paid preview features"/>
+            </td>
+          <tr>
+        </table>
       </div>
+      <div class="azad_separator"></div>
       <script src="control.bundle.js"></script>
+    </div>
+    <div id="azad_page_extensionpay" class="azad_control_page">
+      <div id="azad_extensionpay_status">
+        Placeholder where preview features' enablement status is shown.
+      </div>
+      <div class="azad_separator"></div>
+      <div id="azad_extensionpay_buy">
+        Placeholder for how to buy feature enablement.
+      </div>
+      <div>
+        <table width="100%">
+          <tr>
+            <td>
+              <input type="button" class="azad_always_button"
+                     id="azad_switch_default"
+                     value="back to default page"
+                     title="back to default page"/>
+            </td>
+          <tr>
+        </table>
+      </div>
+    </div>
+    <div id="footer">
+      <a href='http://www.justgiving.com/azad-pah'
+         title='JustGiving - Sponsor me now!'
+         target='_blank' >
+         <table>
+           <tr>
+             <td class="azad_thanks">
+                 Thank you!
+             </td>
+             <td>
+               <img src='http://www.justgiving.com/App_Themes/JustGiving/images/badges/badge9.gif'
+                    width='120'
+                    height='90'
+                    alt='JustGiving - Sponsor me now!' />
+             </td>
+           </tr>
+         </table>
+      </a>
+    </div>
   </body>
 </html>
