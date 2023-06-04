@@ -7,6 +7,17 @@ const $ = require('jquery');
 import * as settings from './settings';
 import * as util from './util';
 
+$(document).ready(function() {
+  $('body').on(
+    'click',
+    'a',
+    function(event: Event) {
+		  chrome.tabs.create({url: $(event.target).attr('href')});
+		  return false;
+	  }
+  );
+});
+
 function activateIdle(): void {
     console.log('activateIdle');
     actionsShowOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
@@ -72,38 +83,60 @@ function connectToBackground() {
                     }
                 }
                 break;
+            case 'authorisation_status':
+                console.info('control got authorisation_status message');
+                const authorised = msg.authorisation_status;
+                handleAuthorisationMessage(authorised);
+                break;
             default:
                 console.warn('unknown action: ' + msg.action);
         }
     });
+
+    background_port.postMessage(
+      {action: 'check_feature_authorized', feature_id: 'premium_preview'})
+}
+
+function handleAuthorisationMessage(authorised: boolean): void {
+  const authorised_html = authorised ?
+    'Preview/Premium features <b>enabled</b>' :
+    'Preview/Premium features <b>disabled</b>';
+  $('#azad_extensionpay_status').html(authorised_html);
 }
 
 function registerActionButtons() {
     $('#azad_clear_cache').on('click', () => {
-        if (background_port) {
-            console.log('clear cache clicked');
-            background_port.postMessage({action: 'clear_cache'});
-        } else {
-            console.warn('clear cache clicked, but I have no background port');
-        }
+      if (background_port) {
+        console.log('clear cache clicked');
+        background_port.postMessage({action: 'clear_cache'});
+      } else {
+        console.warn('clear cache clicked, but I have no background port');
+      }
     });
     $('#azad_force_logout').on('click', () => {
+      console.log('force logout clicked');
+      if (background_port) {
         console.log('force logout clicked');
-        if (background_port) {
-            console.log('force logout clicked');
-            background_port.postMessage({action: 'force_logout'});
-        } else {
-            console.log('force logout clicked, but I have no background port');
-        }
+        background_port.postMessage({action: 'force_logout'});
+      } else {
+        console.warn('force logout clicked, but I have no background port');
+      }
     });
     $('#azad_stop').on('click', () => {
-        console.log('stop clicked');
-        handleStopClick();
-
+      console.log('stop clicked');
+      handleStopClick();
     });
     $('#azad_hide_controls').on('click', () => {
-        console.log('closing popup');
-        window.close();
+      console.log('closing popup');
+      window.close();
+    });
+    $('#azad_payment_ui_button').on('click', () => {
+      if (background_port) {
+        console.log('show payment UI clicked')
+        background_port.postMessage({action: 'show_payment_ui'});
+      } else {
+        console.warn('show payment UI clicked, but I have no background port');
+      }
     });
 }
 
@@ -132,7 +165,6 @@ function showYearButtons(years: number[]) {
 function showMonthsButtons(month_counts: number[]) {
   console.log('show month buttons', month_counts);
   $('.azad_months_button').remove();
-  return;  // TODO reenable when PAH criterion met.
   month_counts.sort().forEach( month_count => {
     $('#azad_year_list').append(
       '<button class="azad_months_button" value="' + month_count + '" >' + month_count + 'm</button>' 
@@ -156,7 +188,25 @@ function handleYearClick(evt: { target: { value: any; }; }) {
     }
 }
 
-function handleMonthsClick(evt: { target: { value: any; }; }) {
+async function checkFeatureAuthorised(): Promise<boolean> {
+	const authorised = await settings.getBoolean('preview_features_enabled');
+  if (!authorised) {
+		alert(
+			'This capability is part of a preview feature set that will be ' +
+			'released when charity donations reach a target set out in ' +
+			'https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md ' +
+			'but you get early access by subscribing to the preview channel: ' +
+			'click on the "preview features" button to find out more.'
+		);
+	};
+	return authorised;
+}
+
+async function handleMonthsClick(evt: { target: { value: any; }; }) {
+		const authorised = await checkFeatureAuthorised(); 
+	  if (!authorised) {
+			return;
+		}
     const month_count = Number(evt.target.value);
     const end_date = new Date();
     const start_date = util.subtract_months(end_date, month_count);

@@ -275,7 +275,10 @@ const ITEM_COLS: ColSpec[] = [
       field_name: 'ASIN',
       value_promise_func_name: 'asin',
       is_numeric: false,
-      visibility: () => settings.getBoolean('ezp_mode'),
+      visibility: () => Promise.all(
+          ['ezp_mode', 'preview_features_enabled'].map(
+            k => settings.getBoolean(k))
+        ).then(authorisations => authorisations.some(authorised => authorised))
     },
 ];
 
