@@ -88,6 +88,10 @@ function registerConnectionListener() {
                 'got show_payment_ui request');
               extpay.display_payment_ui();
               break;
+            case 'show_extpay_login_ui':
+              console.log('got show_extpay_login_ui request');
+              extpay.display_login_page();
+              break;
             case 'clear_cache':
               broadcast_to_content_pages(msg);
               break;

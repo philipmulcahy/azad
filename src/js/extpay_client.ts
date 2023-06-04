@@ -29,3 +29,7 @@ export async function check_authorised(): Promise<boolean> {
 export async function display_payment_ui() {
   getExtPay().openPaymentPage();
 }
+
+export async function display_login_page() {
+  getExtPay().openLoginPage();
+}
