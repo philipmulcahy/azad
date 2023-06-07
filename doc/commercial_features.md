@@ -3,10 +3,14 @@ Item ASIN, Item Quantity and scraping only the most recent 1, 2 or 3 months are 
 
 I will release these features when https://www.justgiving.com/fundraising/azad-pah reaches £5000.
 
+UPDATE 2023-05-23
+Because the climb to £5000 is going slowly (thank you to everyone who has kindly donated!), I am exploring building a paid-for preview version.
+The money paid will still go to the same Princess Alice charity campaign (less whatever handling fee is charged by the platform I select) - e.g. I am still working for free.
+When the £5000 goal is reached, everyone gets the held back features above.
 
 ## Rationale
 
-These features are primarily of interest to commercial users such as drop shippers and purchasing departments of companies. Such commercial usershave not been reticent in asking for me to add these (and other) capabilities.
+These features are primarily of interest to commercial users such as drop shippers and purchasing departments of companies. Such commercial users have not been reticent in asking for me to add these (and other) capabilities.
 
 Princess Alice Hospice (PAH) is a charity funded end-of-life care facility. I ask users who benefit from AZAD to donate to PAH using [this link](https://www.justgiving.com/fundraising/azad-pah/donate), instead of rewarding me. I have a day job and cannot accept compensation for out-of-hours work.
 
@@ -14,12 +18,10 @@ As I write this note in April 2023, the lifetime total raised by AZAD for PAH is
 
 The value of the time I have invested in AZAD vastly exceeds this amount, and while I cannot be sure, it seems reasonable to suppose the value various businesses have derived from using it also much bigger.
 
-
 ## Survey Results:
 In 2022, I put out a survey asking for commercial users to vote on what features they would find most valuable.
 
 ![voting results](img/azad_feature_voting.png)
-
 
 ## Features Built and Ready to Go
 
