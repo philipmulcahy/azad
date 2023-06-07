@@ -3,7 +3,7 @@
     "name": "Amazon Order History Reporter",
     "content_security_policy": {
         "extension_pages":
-            "script-src 'self'; object-src 'self'"
+            "script-src 'self'; object-src 'self'; connect-src https://extensionpay.com"
     },
     "permissions": [
         "contextMenus",

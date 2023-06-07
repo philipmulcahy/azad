@@ -275,9 +275,16 @@ const ITEM_COLS: ColSpec[] = [
       field_name: 'ASIN',
       value_promise_func_name: 'asin',
       is_numeric: false,
-      visibility: () => settings.getBoolean('ezp_mode'),
+      visibility: asin_enabled 
     },
 ];
+
+async function asin_enabled(): Promise<boolean> {
+  const ezp_mode = await settings.getBoolean('ezp_mode');
+  const show_asin_in_items_view = await settings.getBoolean('show_asin_in_items_view');
+  const preview_features_authorised = await settings.getBoolean('preview_features_enabled');
+  return ezp_mode || (show_asin_in_items_view && preview_features_authorised);
+}
 
 function getCols(
     items_not_orders: boolean

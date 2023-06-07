@@ -57,6 +57,14 @@ button.azad_months_button {
     padding: 2px;
 }
 
+button.azad_disabled {
+  background-color: #FFDD99
+}
+
+td.azad_disabled {
+  color: lightgray;
+}
+
 div.azad_separator {
     height: 10px;
     background-color: white;
@@ -96,7 +104,7 @@ div#azad_settings input {
     margin: 5px;
 }
 
-input.hidden {
+.hidden {
     display: none;
 }
 
