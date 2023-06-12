@@ -4,11 +4,17 @@
 https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi
 
 ## Commercial Features 2023
-I've closed the 2022 survey because a clearish signal has emerged - here are the top two requested features:
+A clear(ish) signal has emerged from the 2022 survey - here are the top two requested features:
 1) Report ASINs, price, and quantity
 2) Scrape specific month/quarter
+I got these working and deployed them behind a preview subscription paywall in v1.9.26 in June 2023.
+When the GBP 5000 charity goal is reached, they will become free.
+Paywall subscription/donations count towards the total (less the fees that stripe and others charge).
+As and when I develop new features, I may choose to put them behind the paywall for a time.
+At the moment, the one I know I want to work on is Tracking Links - lots of users have asked for this.
 
-Check out [commercial_features.md](doc/commercial_features.md) for what happens next...
+Check out [commercial_features.md](doc/commercial_features.md) for more detail.
+
 # Help!
 
 ## Common problems, with some fixes
