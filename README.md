@@ -7,6 +7,7 @@ https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilaj
 A clear(ish) signal has emerged from the 2022 survey - here are the top two requested features:
 1) Report ASINs, price, and quantity
 2) Scrape specific month/quarter
+
 I got these working and deployed them behind a preview subscription paywall in v1.9.26 in June 2023.
 When the GBP 5000 charity goal is reached, they will become free.
 Paywall subscription/donations count towards the total (less the fees that stripe and others charge).
