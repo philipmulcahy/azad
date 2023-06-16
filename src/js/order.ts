@@ -620,6 +620,8 @@ class Order {
     }
 }
 
+type DateFilter = (d: Date|null) => boolean;
+
 class OrderImpl {
     id: string|null;
     site: string|null;
@@ -637,7 +639,8 @@ class OrderImpl {
     constructor(
         ordersPageElem: HTMLElement,
         scheduler: request_scheduler.IRequestScheduler,
-        src_query: string
+        src_query: string,
+        date_filter: DateFilter,
     ) {
         this.id = null;
         this.site = null;
@@ -651,9 +654,9 @@ class OrderImpl {
         this.detail_promise = null;
         this.payments_promise = null;
         this.scheduler = scheduler;
-        this._extractOrder(ordersPageElem);
+        this._extractOrder(ordersPageElem, date_filter);
     }
-    _extractOrder(elem: HTMLElement) {
+    _extractOrder(elem: HTMLElement, date_filter: DateFilter) {
         const doc = elem.ownerDocument;
 
         try {
@@ -700,6 +703,9 @@ class OrderImpl {
             );
         } catch (ex) {
           console.warn('could not get order date for ' + this.id);
+        }
+        if (!date_filter(this.date)) {
+          throw_order_discarded_error(this.id); 
         }
 
         // This field is no longer always available, particularly for .com
@@ -841,7 +847,8 @@ function getOrdersForYearAndQueryTemplate(
     year: number,
     query_template: string,
     scheduler: request_scheduler.IRequestScheduler,
-    nocache_top_level: boolean
+    nocache_top_level: boolean,
+    date_filter: DateFilter,
 ): Promise<Promise<IOrder>[]> {
     const generateQueryString = function(startOrderPos: number) {
         return sprintf.sprintf(
@@ -920,21 +927,30 @@ function getOrdersForYearAndQueryTemplate(
     );
 
     const translateOrdersPageData = function(
-        response: request_scheduler.IResponse<IOrdersPageData>
+        response: request_scheduler.IResponse<IOrdersPageData>,
+        date_filter: DateFilter,
     ): Promise<IOrder>[] {
         const orders_page_data = response.result;
         const order_elems = orders_page_data.order_elems.map(
             (elem: any) => dom2json.toDOM(elem)
         );
-        function makeOrderPromise(elem: HTMLElement): Promise<IOrder> {
-            const order = create(elem, scheduler, response.query);
-            return Promise.resolve(order);
+        function makeOrderPromise(elem: HTMLElement): Promise<IOrder>|null {
+            const order = create(elem, scheduler, response.query, date_filter);
+            if (typeof(order) === 'undefined') {
+              return null;
+            } else {
+              return Promise.resolve(order!);
+            }
         }
-        const promises = order_elems.map(makeOrderPromise);
+        const promises = order_elems
+          .map(makeOrderPromise)
+          .filter((p: Promise<IOrder>|null) => typeof(p) !== 'undefined');
         return promises;
     };
 
-    const getOrderPromises = function(expected_order_count: number): Promise<Promise<IOrder>[]> {
+    const getOrderPromises = function(
+      expected_order_count: number,
+    ): Promise<Promise<IOrder>[]> {
         const page_done_promises: Promise<null>[] = [];
         const order_promises: Promise<IOrder>[] = [];
         for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
@@ -949,7 +965,8 @@ function getOrdersForYearAndQueryTemplate(
                     false
                 ).then(
                     page_data => {
-                        const promises = translateOrdersPageData(page_data);
+                        const promises = translateOrdersPageData(
+                          page_data, date_filter);
                         order_promises.push(...promises);
                     }
                 ).then(
@@ -1085,7 +1102,8 @@ const TEMPLATES_BY_SITE: Record<string, string[]> = {
 function fetchYear(
     year: number,
     scheduler: request_scheduler.IRequestScheduler,
-    nocache_top_level: boolean
+    nocache_top_level: boolean,
+    date_filter: DateFilter,
 ): Promise<Promise<IOrder>[]> {
     let templates = TEMPLATES_BY_SITE[urls.getSite()];
     if ( !templates ) {
@@ -1106,7 +1124,8 @@ function fetchYear(
             year,
             template,
             scheduler,
-            nocache_top_level
+            nocache_top_level,
+            date_filter,
         )
     );
 
@@ -1127,7 +1146,8 @@ function fetchYear(
 export function getOrdersByYear(
     years: number[],
     scheduler: request_scheduler.IRequestScheduler,
-    latest_year: number
+    latest_year: number,
+    date_filter: DateFilter,
 ): Promise<Promise<IOrder>[]> {
     // At return time we may not know how many orders there are, only
     // how many years in which orders have been queried for.
@@ -1135,7 +1155,8 @@ export function getOrdersByYear(
         years.map(
             function(year: number): Promise<Promise<IOrder>[]> {
                 const nocache_top_level = (year == latest_year);
-                return fetchYear(year, scheduler, nocache_top_level);
+                return fetchYear(
+                  year, scheduler, nocache_top_level, date_filter);
             }
         )
     ).then(
@@ -1162,6 +1183,7 @@ export async function getOrdersByRange(
   end_date: Date,
   scheduler: request_scheduler.IRequestScheduler,
   latest_year: number,
+  date_filter: DateFilter,
 ): Promise<Promise<IOrder>[]> {
   console.assert(start_date < end_date);
   const start_year = start_date.getFullYear();
@@ -1175,7 +1197,7 @@ export async function getOrdersByRange(
   const order_years = years.map(
       year => {
         const nocache_top_level = latest_year == year;
-        return fetchYear(year, scheduler, nocache_top_level)
+        return fetchYear(year, scheduler, nocache_top_level, date_filter)
       }
   );
 
@@ -1201,12 +1223,28 @@ export async function getOrdersByRange(
   return filtered_orders.map(o => Promise.resolve(o));
 }
 
+function throw_order_discarded_error(order_id: string|null): void {
+  const ode = new Error('OrderDiscardedError:' + order_id);
+  throw ode;
+}
+
 export function create(
     ordersPageElem: HTMLElement,
     scheduler: request_scheduler.IRequestScheduler,
-    src_query: string
-): IOrder {
-    const impl = new OrderImpl(ordersPageElem, scheduler, src_query);
-    const wrapper = new Order(impl);
-    return wrapper;
+    src_query: string,
+    date_filter: DateFilter,
+): IOrder|null {
+    try {
+      const impl = new OrderImpl(
+        ordersPageElem,
+        scheduler,
+        src_query,
+        date_filter,
+      );
+      const wrapper = new Order(impl);
+      return wrapper;
+    } catch(err) {
+      console.log('order.create caught: ' + err + '; returning null')
+      return null;
+    }
 }

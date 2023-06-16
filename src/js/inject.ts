@@ -140,7 +140,8 @@ async function fetchAndShowOrdersByYears(
     const order_promises = await azad_order.getOrdersByYear(
         years,
         getScheduler(),
-        latest_year, 
+        latest_year,
+        (_date: Date|null) => true,  // DateFilter predicate
     );
     return showOrdersOrItems(order_promises, true);
 }
@@ -168,6 +169,12 @@ async function fetchAndShowOrdersByRange(
       end_date,
       getScheduler(),
       latest_year,
+      function (d: Date|null): boolean {
+        if (typeof(d) === 'undefined') {
+          return false;
+        }
+        return d! >= start_date && d! <= end_date  // DateFilter
+      },
     );
     return showOrdersOrItems(order_promises, beautiful_table);
 }
