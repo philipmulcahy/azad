@@ -857,7 +857,7 @@ interface IOrdersPageData {
     order_elems: dom2json.IJsonObject;
 };
 
-function getOrdersForYearAndQueryTemplate(
+async function getOrdersForYearAndQueryTemplate(
     year: number,
     query_template: string,
     scheduler: request_scheduler.IRequestScheduler,
@@ -931,18 +931,14 @@ function getOrdersForYearAndQueryTemplate(
         return converted;
     };
 
-    const expected_order_count_promise: Promise<number> = scheduler.scheduleToPromise<IOrdersPageData>(
+
+    const orders_page_data = await scheduler.scheduleToPromise<IOrdersPageData>(
         generateQueryString(0),
         convertOrdersPage,
         '00000',
         nocache_top_level
-    ).then(
-        response => response.result.expected_order_count,
-        rejected_url => {
-          const msg = 'failed to query expected order_count using: ' + rejected_url;
-          console.error(msg);
-        },
     );
+    const expected_order_count = orders_page_data.result.expected_order_count;
 
     const translateOrdersPageData = function(
         response: request_scheduler.IResponse<IOrdersPageData>,
@@ -1009,7 +1005,7 @@ function getOrdersForYearAndQueryTemplate(
        );
     }
 
-    return expected_order_count_promise.then( getOrderPromises );
+    return getOrderPromises(expected_order_count);
 }
 
 const TEMPLATES_BY_SITE: Record<string, string[]> = {
