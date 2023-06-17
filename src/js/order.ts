@@ -435,10 +435,11 @@ interface IOrderDetailsAndItems {
     items: item.IItem[];
 };
 
-const extractDetailPromise = (
+function extractDetailPromise(
     order: OrderImpl,
     scheduler: request_scheduler.IRequestScheduler
-) => new Promise<IOrderDetailsAndItems>(
+): Promise<IOrderDetailsAndItems> {
+  return new Promise<IOrderDetailsAndItems>(
     (resolve, reject) => {
         const context = 'id:' + order.id;
         const url = order.detail_url;
@@ -469,17 +470,24 @@ const extractDetailPromise = (
                     util.defaulted(order.id, '9999'),
                     false
                 ).then(
-                    (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => resolve(response.result),
-                    url => reject('timeout or other problem when fetching ' + url),
+                    (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => {
+                      resolve(response.result)
+                    },
+                    url => {
+                      const msg = 'scheduler rejected ' + order.id + ' ' + url;
+                      console.error(msg);
+                      reject('timeout or other problem when fetching ' + url)
+                    },
                 );
             } catch (ex) {
-                const msg = 'scheduler rejected ' + order.id + ' ' + url;
+                const msg = 'scheduler upfront rejected ' + order.id + ' ' + url;
                 console.error(msg);
                 reject(msg);
             }
         }
     }
-);
+  );
+}
 
 export interface IOrder extends azad_entity.IEntity {
     id(): Promise<string>;
@@ -781,8 +789,14 @@ class OrderImpl {
                                 util.defaulted(this.id, '9999'), // priority
                                 false  // nocache
                             ).then(
-                                (response: {result: string[]}) => resolve(response.result),
-                                (url: string) => reject( 'timeout or other error while fetching ' + url )
+                                (response: {result: string[]}) => {
+                                  resolve(response.result)
+                                },
+                                (url: string) => {
+                                  const msg = 'timeout or other error while fetching ' + url + ' for ' + this.id;
+                                  console.error(msg);
+                                  reject(msg); 
+                                },
                             );
                         } else {
                             reject('cannot fetch payments without payments_url');
@@ -923,7 +937,11 @@ function getOrdersForYearAndQueryTemplate(
         '00000',
         nocache_top_level
     ).then(
-        response => response.result.expected_order_count
+        response => response.result.expected_order_count,
+        rejected_url => {
+          const msg = 'failed to query expected order_count using: ' + rejected_url;
+          console.error(msg);
+        },
     );
 
     const translateOrdersPageData = function(
@@ -968,10 +986,14 @@ function getOrdersForYearAndQueryTemplate(
                         const promises = translateOrdersPageData(
                           page_data, date_filter);
                         order_promises.push(...promises);
+                    },
+                    msg => {
+                        console.error(msg);
+                        return null;
                     }
                 ).then(
                     () => null,
-                    (msg) => {
+                    msg => {
                         console.error(msg);
                         return null;
                     }
