@@ -275,9 +275,16 @@ const ITEM_COLS: ColSpec[] = [
       field_name: 'ASIN',
       value_promise_func_name: 'asin',
       is_numeric: false,
-      visibility: () => settings.getBoolean('ezp_mode'),
+      visibility: asin_enabled 
     },
 ];
+
+async function asin_enabled(): Promise<boolean> {
+  const ezp_mode = await settings.getBoolean('ezp_mode');
+  const show_asin_in_items_view = await settings.getBoolean('show_asin_in_items_view');
+  const preview_features_authorised = await settings.getBoolean('preview_features_enabled');
+  return ezp_mode || (show_asin_in_items_view && preview_features_authorised);
+}
 
 function getCols(
     items_not_orders: boolean
@@ -543,6 +550,7 @@ async function reallyDisplay(
         );
     });
     util.clearBody();
+    addProgressBar();
     const order_promises = orders.map(
         (order: azad_order.IOrder) => Promise.resolve(order)
     );
@@ -552,86 +560,83 @@ async function reallyDisplay(
             document, orders, cols) :
         addOrderTable(
             document, orders, cols);
-    table_promise.then( _ => {
+    const table = await table_promise;
+    $( () => {
         if (beautiful) {
-            $(document).ready( () => {
-                if (datatable) {
-                    datatable.destroy();
-                }
-                addProgressBar();
-                util.removeButton('data table');
-                util.addButton(
-                    'plain table',
-                    function() { display(order_promises, false, items_not_orders); },
-                    'azad_table_button'
-                );
-                addCsvButton(order_promises, items_not_orders)
-                datatable = (<any>$('#azad_order_table')).DataTable({
-                    'bPaginate': true,
-                    'lengthMenu': [ [10, 25, 50, 100, -1],
-                        [10, 25, 50, 100, 'All'] ],
-                    'footerCallback': function() {
-                        const api = this.api();
-                        // Remove the formatting to get integer data for summation
-                        const floatVal = (v: string | number): number => {
-                            const parse = (i: string | number) => {
-                                try {
-                                    if(typeof i === 'string') {
-                                        return (
-                                            i === 'N/A' ||
-                                            i === '-' ||
-                                            i === 'pending'
-                                        ) ?
-                                            0 :
-                                            parseFloat(
-                                                i.replace(
-                                                    /^([£$]|AUD|CAD|EUR|GBP|USD) */,
-                                                    ''
-                                                ).replace(/,/, '.')
-                                            );
-                                    }
-                                    if(typeof i === 'number') { return i; }
-                                } catch (ex) {
-                                    console.warn(ex);
+            if (datatable) {
+                datatable.destroy();
+            }
+            util.removeButton('data table');
+            util.addButton(
+                'plain table',
+                function() { display(order_promises, false, items_not_orders); },
+                'azad_table_button'
+            );
+            addCsvButton(order_promises, items_not_orders)
+            datatable = (<any>$('#azad_order_table')).DataTable({
+                'bPaginate': true,
+                'lengthMenu': [ [10, 25, 50, 100, -1],
+                                [10, 25, 50, 100, 'All'] ],
+                'footerCallback': function() {
+                    const api = this.api();
+                    // Remove the formatting to get integer data for summation
+                    const floatVal = (v: string | number): number => {
+                        const parse = (i: string | number) => {
+                            try {
+                                if(typeof i === 'string') {
+                                    return (
+                                        i === 'N/A' ||
+                                        i === '-' ||
+                                        i === 'pending'
+                                    ) ?
+                                        0 :
+                                        parseFloat(
+                                            i.replace(
+                                                /^([£$]|AUD|CAD|EUR|GBP|USD) */,
+                                                ''
+                                            ).replace(/,/, '.')
+                                        );
                                 }
-                                return 0;
-                            };
-                            const candidate = parse(v);
-                            if (isNaN(candidate)) {
-                                return 0;
+                                if(typeof i === 'number') { return i; }
+                            } catch (ex) {
+                                console.warn(ex);
                             }
-                            return candidate;
+                            return 0;
                         };
-                        let col_index = 0;
-                        cols.then( cols => cols.forEach( col_spec => {
-                            const sum_col = function(col: any) {
-                                const data = col.data();
-                                if (data) {
-                                    const sum = data
-                                        .map( (v: string | number) => floatVal(v) )
-                                        .reduce( (a: number, b: number) => a + b, 0 );
-                                    return floatVal(sum);
-                                } else {
-                                    return 0;
-                                }
+                        const candidate = parse(v);
+                        if (isNaN(candidate)) {
+                            return 0;
+                        }
+                        return candidate;
+                    };
+                    let col_index = 0;
+                    cols.then( cols => cols.forEach( col_spec => {
+                        const sum_col = function(col: any) {
+                            const data = col.data();
+                            if (data) {
+                                const sum = data
+                                    .map( (v: string | number) => floatVal(v) )
+                                    .reduce( (a: number, b: number) => a + b, 0 );
+                                return floatVal(sum);
+                            } else {
+                                return 0;
                             }
-                            if(col_spec.is_numeric) {
-                                col_spec.sum = sum_col(api.column(col_index));
-                                col_spec.pageSum = sum_col(
-                                    api.column(col_index, { page: 'current' }));
-                                $(api.column(col_index).footer()).html(
-                                    sprintf.sprintf('page=%s; all=%s',
-                                        col_spec.pageSum.toFixed(2),
-                                        col_spec.sum.toFixed(2))
-                                );
-                            }
-                            col_index += 1;
-                        }));
-                    }
-                });
+                        }
+                        if(col_spec.is_numeric) {
+                            col_spec.sum = sum_col(api.column(col_index));
+                            col_spec.pageSum = sum_col(
+                                api.column(col_index, { page: 'current' }));
+                            $(api.column(col_index).footer()).html(
+                                sprintf.sprintf('page=%s; all=%s',
+                                    col_spec.pageSum.toFixed(2),
+                                    col_spec.sum.toFixed(2))
+                            );
+                        }
+                        col_index += 1;
+                    }));
+                }
             });
         } else {
-            addProgressBar();
             util.removeButton('plain table');
             util.addButton(
                 'data table',

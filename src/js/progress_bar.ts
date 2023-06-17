@@ -16,8 +16,11 @@ export function addProgressBar(
     // remove any existing progress bar
     const elem = parent_element.querySelector('[class="azad_progress_bar"]');
     if ( elem !== null ) {
+        console.log('removing existing progress indicator');
         elem.parentNode!.removeChild(elem);
     }
+
+    console.log('Adding progress indicator');
 
     const border_width = 2;
     const inner_width = 250;
