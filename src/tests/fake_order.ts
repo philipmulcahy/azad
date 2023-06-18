@@ -134,11 +134,17 @@ export function orderFromTestData(
             }
         )[0]
     );
-    return azad_order.create(
+    const order = azad_order.create(
         list_elem,
         scheduler,
-        order_dump.list_url
+        order_dump.list_url,
+        (_d: Date|null) => true,  // DateFilter
     );
+    if (typeof(order) === 'undefined') {
+      throw new Error(
+        'null order not expected, but sometimes these things happen');
+    }
+    return order!;
 }
 
 export function expectedFromTestData(
@@ -187,7 +193,8 @@ export function orderFromTestDataB() {
     return azad_order.create(
         list_elem,
         scheduler,
-        list_url
+        list_url,
+        (_d: Date|null) => true,  // DateFilter
     );
 }
 
