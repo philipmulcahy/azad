@@ -21,8 +21,13 @@ try {
 export async function check_authorised(): Promise<boolean> {
   console.log('extpay_client.check_authorised() called');
   const user = await getExtPay().getUser();
+
+  // Sometimes subscriptionStatus is undefined - this seems to be triggered by
+  // the use of more than one version of the extension, and so far I've not
+  // found a way of un-doing the damage.
   const status = user.subscriptionStatus;
-  const authorised = status == 'active';
+
+  const authorised = status == 'active' || user.paid; 
   return authorised;
 }
 
