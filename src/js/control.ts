@@ -13,7 +13,11 @@ $(document).ready(function() {
     'click',
     'a',
     function(event: Event) {
-		  chrome.tabs.create({url: $(event.target).attr('href')});
+      const a: HTMLAnchorElement = event.currentTarget as HTMLAnchorElement;
+      const href: string|null = a.getAttribute('href');
+      if (typeof(href) != 'undefined') {
+        chrome.tabs.create({url: href!});
+      }
 		  return false;
 	  }
   );
