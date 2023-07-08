@@ -61,7 +61,6 @@ function testOneTarget(
 }
 
 function main() {
-    // const single_test_order = order_data.orderFromTestDataB();
     const test_targets = order_data.discoverTestData();
     const test_results_promise = Promise.all(
         test_targets

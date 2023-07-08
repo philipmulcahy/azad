@@ -19,9 +19,6 @@ import * as request_scheduler from '../js/request_scheduler';
 //    json file containing expected order fields:
 //      ${SITE}/expected/${ORDER_ID}_${DATETIME}.json
 //
-// B) Build order from order_list folder
-//
-//
 ////////////////////////////////////////////////////////////////////////////////
 
 const DATA_ROOT_PATH = './src/tests/azad_test_data/data';
@@ -88,13 +85,6 @@ function getASites(): string[] {
     return sites;
 }
 
-function getBSites(): string[] {
-    const sites: string[] = getSiteDirs()
-        .filter((de: fs.Dirent) => dirHasDirs(de, ['order_list']))
-        .map((de: fs.Dirent) => de.name)
-    return sites;
-}
-
 function sitePath(site: string): string {
     return  DATA_ROOT_PATH + '/' + site;
 }
@@ -157,48 +147,8 @@ export function expectedFromTestData(
     return JSON.parse(json);
 }
 
-export function orderFromTestDataB() {
-    const order_id = 'D01-9486382-0309461';
-    const site = 'amazon.de';
-    const path = '/Users/philip/dev/azad/src/tests/azad_test_data/data/amazon.de/order_list/Gu108_A.html';
-    const list_url = 'https://unknown_list_url.com';
-    const list_html: string = fs.readFileSync(path, 'utf8');
-    const url_map: Record<string, string> = {};
-    url_map[list_url] = list_html;
-    const scheduler = new FakeRequestScheduler( url_map );
-    const list_doc = new jsdom.JSDOM(list_html).window.document;
-    const order_elems: HTMLElement[] = util.findMultipleNodeValues(
-        './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
-        list_doc.body
-    ) as HTMLElement[];
-    const list_elems = (
-        order_elems.filter(
-            (el: HTMLElement) => (
-                Array<HTMLElement>(...el.getElementsByTagName('a')) as HTMLElement[]
-            )
-                .filter( el => el.hasAttribute('href') )
-                .map( el => el.getAttribute('href') )
-                // "https://www.amazon.de:443/gp/redirect.html/ref=ppx_yo_dt_b_amzn_o04?_encoding=UTF8&amp;location=https%3A%2F%2Fwww.audible.de%2Forder-detail%3ForderNumber%3DD01-6816308-9691801%26orderType%3DREGULAR&amp;source=standards&amp;token=3DE81B8D696294E017D9EAE857EBCE90E128789D"
-                // "/-/en/gp/your-account/order-details/ref=ppx_yo_dt_b_order_details_o03?ie=UTF8&amp;orderID=303-6405422-4189967"
-                .map( href => href?.match(/.*(?:orderID=|orderNumber%3D)([A-Z0-9-]*).*/) )
-                .filter(
-                    match => {
-                        const candidate_id = match![1] ?? '';
-                        return candidate_id == order_id;
-                    }
-                )
-        )
-    ) as HTMLElement[];
-    const list_elem: HTMLElement = list_elems[0];
-    return azad_order.create(
-        list_elem,
-        scheduler,
-        list_url,
-        (_d: Date|null) => true,  // DateFilter
-    );
-}
-
-
+// This is the data we want: site name to list of filenames.
+// The filenames each encode an order id and a scrape datetime.
 export interface ITestTarget {
     site: string;
     order_id: string;
@@ -208,8 +158,6 @@ export interface ITestTarget {
 }
 
 export function discoverTestData(): ITestTarget[] {
-    // This is the data we want: site name to list of filenames.
-    // The filenames each encode an order id and a scrape datetime.
     const site_to_expecteds: Record<string,string[]> = {}
     getASites()
         .forEach( (site: string) => {
