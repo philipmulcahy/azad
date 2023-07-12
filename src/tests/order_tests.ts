@@ -3,6 +3,7 @@
 import * as order_data from './fake_order';
 import * as azad_order from '../js/order';
 import * as util from '../js/util';
+import * as shipment from '../js/shipment';
 
 const assert = require('assert');
 
@@ -60,7 +61,14 @@ function testOneTarget(
     });
 }
 
+function test_shipments() {
+  const doc = order_data.docFromFilePath(
+    '/Users/philip/dev/azad/src/tests/azad_test_data/shipping/html/multiple_shipments_delivered.html');
+  const shipments = shipment.parse_detail_page(doc);
+}
+
 function main() {
+    // const single_test_order = order_data.orderFromTestDataB();
     const test_targets = order_data.discoverTestData();
     const test_results_promise = Promise.all(
         test_targets

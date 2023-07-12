@@ -13,6 +13,7 @@ import * as request_scheduler from './request_scheduler';
 import * as urls from './url';
 import * as util from './util';
 import * as item from './item';
+import * as shipment from './shipment';
 
 function getField(
     xpath: string,
@@ -433,6 +434,7 @@ function extractDetailFromDoc(
 interface IOrderDetailsAndItems {
     details: IOrderDetails;
     items: item.IItem[];
+    shipments?: shipment.IShipment[];
 };
 
 function extractDetailPromise(

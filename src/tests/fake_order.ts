@@ -137,6 +137,12 @@ export function orderFromTestData(
     return order!;
 }
 
+export function docFromFilePath(path: string): HTMLDocument {
+   const html: string = fs.readFileSync(path, 'utf8');
+   const doc: HTMLDocument = new jsdom.JSDOM(html).window.document;
+   return doc;
+}
+
 export function expectedFromTestData(
     order_id: string,
     collection_date: string,
