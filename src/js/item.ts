@@ -2,25 +2,24 @@
 
 import * as azad_entity from './entity';
 import * as util from './util';
+import * as azad_order from './order';
 
 export interface IItem extends azad_entity.IEntity {
     description: string;
-    order_date: Date|null;
     order_detail_url: string;
     order_id: string;
     price: string;
     quantity: number;
     url: string;
     asin: string;
+    parent_order: Promise<azad_order.IOrder>;
 };
 
 export type Items = Record<string, string>;
 
 type ItemsExtractor = (
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
     order_elem: HTMLElement,
+    parent_order: Promise<azad_order.IOrder>,
     context: string,
 ) => IItem[];
 
@@ -40,10 +39,8 @@ function extract_asin_from_url(url: string): string {
 }
 
 export function extractItems(
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
     order_elem: HTMLElement,
+    parent_order: Promise<azad_order.IOrder>,
     context: string,
 ): IItem[] {
     const strategies: ItemsExtractor[] = [
@@ -56,10 +53,8 @@ export function extractItems(
         const strategy: ItemsExtractor = strategies[i];
         try {
             const items = strategy(
-                order_id,
-                order_date,
-                order_detail_url,
                 order_elem,
+                parent_order,
                 context + ';extractItems:strategy:' + i,
             );
             if (items.length) {
@@ -73,10 +68,8 @@ export function extractItems(
 }
 
 function strategy0(
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
     order_elem: HTMLElement,
+    parent_order: Promise<azad_order.IOrder>,
     context: string
 ): IItem[] {
     const item_xpath = '//div[' +
@@ -129,9 +122,7 @@ function strategy0(
         const asin = extract_asin_from_url(url);
         return {
             description: description,
-            order_date: order_date,
-            order_detail_url: order_detail_url,
-            order_id: order_id,
+            parent_order: parent_order,
             price: price,
             quantity: qty,
             url: url,
@@ -143,10 +134,8 @@ function strategy0(
 
 // Digital orders.
 function strategy1(
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
     order_elem: HTMLElement,
+    parent_order: Promise<azad_order.IOrder>,
     context: string,
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
@@ -177,9 +166,7 @@ function strategy1(
         const asin = extract_asin_from_url(url);
         return {
             description: description,
-            order_date: order_date,
-            order_detail_url: order_detail_url,
-            order_id: order_id,
+            parent_order: parent_order,
             price: price,
             quantity: qty,
             url: url,
@@ -194,10 +181,8 @@ function strategy1(
 
 // Amazon.com 2016
 function strategy2(
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
     order_elem: HTMLElement,
+    parent_order: Promise<azad_order.IOrder>,
     context: string,
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
@@ -228,9 +213,7 @@ function strategy2(
         const asin = extract_asin_from_url(url);
         return {
             description: description,
-            order_date: order_date,
-            order_detail_url: order_detail_url,
-            order_id: order_id,
+            parent_order: parent_order,
             price: price,
             quantity: qty,
             url: url,
@@ -242,10 +225,8 @@ function strategy2(
 
 // This strategy works for Amazon.com grocery orders in 2021.
 function strategy3(
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
     order_elem: HTMLElement,
+    parent_order: Promise<azad_order.IOrder>,
     context: string,
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
@@ -276,9 +257,7 @@ function strategy3(
         const asin = extract_asin_from_url(url);
         return {
             description: description,
-            order_date: order_date,
-            order_detail_url: order_detail_url,
-            order_id: order_id,
+            parent_order: parent_order,
             price: price,
             quantity: qty,
             url: url,

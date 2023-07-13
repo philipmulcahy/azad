@@ -437,7 +437,8 @@ interface IOrderDetailsAndItems {
 
 function extractDetailPromise(
     order: OrderImpl,
-    scheduler: request_scheduler.IRequestScheduler
+    scheduler: request_scheduler.IRequestScheduler,
+    wrapper: Promise<IOrder>,
 ): Promise<IOrderDetailsAndItems> {
   return new Promise<IOrderDetailsAndItems>(
     (resolve, reject) => {
@@ -455,10 +456,8 @@ function extractDetailPromise(
                 return {
                     details: extractDetailFromDoc(order, doc),
                     items: item.extractItems(
-                        util.defaulted(order.id, ''),
-                        order.date,
-                        util.defaulted(order.detail_url, ''),
                         doc.documentElement,
+                        wrapper,
                         context,
                     ),
                 };
@@ -649,6 +648,7 @@ class OrderImpl {
         scheduler: request_scheduler.IRequestScheduler,
         src_query: string,
         date_filter: DateFilter,
+        wrapper: Promise<IOrder>,
     ) {
         this.id = null;
         this.site = null;
@@ -662,9 +662,13 @@ class OrderImpl {
         this.detail_promise = null;
         this.payments_promise = null;
         this.scheduler = scheduler;
-        this._extractOrder(ordersPageElem, date_filter);
+        this._extractOrder(ordersPageElem, date_filter, wrapper);
     }
-    _extractOrder(elem: HTMLElement, date_filter: DateFilter) {
+    _extractOrder(
+      elem: HTMLElement,
+      date_filter: DateFilter,
+      wrapper: Promise<IOrder>
+    ) {
         const doc = elem.ownerDocument;
 
         try {
@@ -759,7 +763,7 @@ class OrderImpl {
             );
             this.payments_url = urls.getOrderPaymentUrl(this.id, this.site);
         }
-        this.detail_promise = extractDetailPromise(this, this.scheduler);
+        this.detail_promise = extractDetailPromise(this, this.scheduler, wrapper);
         this.payments_promise = new Promise<string[]>(
             (
                 (
@@ -1252,17 +1256,38 @@ export function create(
     src_query: string,
     date_filter: DateFilter,
 ): IOrder|null {
+    type OrderResolver = (order: IOrder)=>void;
+    type Rejector = (reason?: any)=>void;
+    var resolve_order: OrderResolver|undefined = undefined;
+    var reject_order: Rejector|undefined = undefined;
+    const wrapper_promise = new Promise<IOrder>(
+      (
+        resolve: (order: IOrder)=>void | null,
+        reject: (reason?: any)=>void | null,
+      ) => {
+        resolve_order = resolve;
+        reject_order = reject;
+      }
+    );
     try {
       const impl = new OrderImpl(
         ordersPageElem,
         scheduler,
         src_query,
         date_filter,
+        wrapper_promise,
       );
       const wrapper = new Order(impl);
+      if (typeof resolve_order != 'undefined') {
+        (resolve_order as OrderResolver)(wrapper);
+      }
       return wrapper;
     } catch(err) {
-      console.log('order.create caught: ' + err + '; returning null')
+      const msg = 'order.create caught: ' + err + '; returning null';
+      console.warn(msg);
+      if (typeof reject_order != 'undefined') {
+        (reject_order as Rejector)(msg);
+      }
       return null;
     }
 }
