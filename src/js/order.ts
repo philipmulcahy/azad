@@ -797,7 +797,7 @@ class OrderImpl {
                             return payments;
                         }.bind(this);
                         if (this.payments_url) {
-                            this.scheduler.scheduleToPromise<string[]>(
+                            scheduler.scheduleToPromise<string[]>(
                                 this.payments_url,
                                 event_converter,
                                 util.defaulted(this.id, '9999'), // priority
