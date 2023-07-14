@@ -6,7 +6,7 @@
 const $ = require('jquery');
 
 interface ITest {
-    (): boolean;
+    (): (boolean | Promise<boolean>);
 }
 
 interface ITestSuite {
@@ -22,18 +22,18 @@ export function register(name: string, test_suite: ITestSuite) {
     test_suites[name] = test_suite;
 }
 
-export function runAll(doc: HTMLDocument) {
+export async function runAll(doc: HTMLDocument) {
     const table = $(doc.body).find('#results_table')[0];
     Object.keys(test_suites).forEach( suite_name => {
         console.log('found test suite: ' + suite_name);
         const suite = test_suites[suite_name];
         Object.keys(suite)
             .filter( key => key.endsWith('_test') )
-            .forEach( key => {
+            .forEach( async function(key) {
                 const test = suite[key];
                 let passed: boolean = false;
                 try {
-                    passed = test();
+                    passed = await test();
                 } catch(ex) {
                     console.warn(ex);
                 }

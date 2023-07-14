@@ -32,6 +32,9 @@ export function field_from_entity(
     field_name: string
 ): Field {
     function is_order(value: any): boolean {
+			if (typeof value != 'object') {
+				return false;
+			}
       return 'item_list' in value;  // You may well sniff at this: type erasure
     }                               // has its moments.
     const value = is_order(entity) ?

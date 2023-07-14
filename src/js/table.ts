@@ -237,17 +237,26 @@ const ITEM_COLS: ColSpec[] = [
     {
         field_name: 'order id',
         render_func:
-            (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
+            async function(
+                entity: azad_entity.IEntity,
+                td: HTMLElement
+            ): Promise<null> {
                 const item = entity as azad_item.IItem;
-                td.innerHTML = '<a href="' + item.order_detail_url +
-                               '">' + item.order_id + '</a>';
+                const parent = await item.parent_order;
+                const order_id = await parent.id();
+                const order_detail_url = await parent.detail_url;
+                td.innerHTML = '<a href="' + order_detail_url +
+                               '">' + order_id + '</a>';
                 return Promise.resolve(null);
             },
         is_numeric: false,
     }, {
         field_name: 'order date',
         render_func:
-            async function(entity: azad_entity.IEntity, td: HTMLElement): Promise<null> {
+            async function(
+                entity: azad_entity.IEntity,
+                td: HTMLElement
+            ): Promise<null> {
                 const item = entity as azad_item.IItem;
                 const order = await item.parent_order;
                 const date = await order.date();

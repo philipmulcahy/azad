@@ -512,13 +512,19 @@ export interface IOrder extends azad_entity.IEntity {
     assembleDiagnostics(): Promise<Record<string,any>>;
 };
 
-
 class Order {
     impl: OrderImpl;
 
     constructor(impl: OrderImpl) {
-        this.impl = impl
+        this.impl = impl;
     }
+
+    // serialize(): string {
+    //   return JSON.stringify(this.impl);
+    // }
+
+    // deserialize() {
+    // }
 
     id(): Promise<string> {
         return Promise.resolve(util.defaulted(this.impl.id, ''));
@@ -641,7 +647,6 @@ class OrderImpl {
     who: string|null;
     detail_promise: Promise<IOrderDetailsAndItems>|null;
     payments_promise: Promise<string[]>|null;
-    scheduler: request_scheduler.IRequestScheduler;
 
     constructor(
         ordersPageElem: HTMLElement,
@@ -661,13 +666,18 @@ class OrderImpl {
         this.who = null;
         this.detail_promise = null;
         this.payments_promise = null;
-        this.scheduler = scheduler;
-        this._extractOrder(ordersPageElem, date_filter, wrapper);
+        this._extractOrder(ordersPageElem, date_filter, wrapper, scheduler);
     }
+
+    serialize(): string {
+       
+    }
+
     _extractOrder(
       elem: HTMLElement,
       date_filter: DateFilter,
-      wrapper: Promise<IOrder>
+      wrapper: Promise<IOrder>,
+      scheduler: request_scheduler.IRequestScheduler,
     ) {
         const doc = elem.ownerDocument;
 
@@ -763,7 +773,7 @@ class OrderImpl {
             );
             this.payments_url = urls.getOrderPaymentUrl(this.id, this.site);
         }
-        this.detail_promise = extractDetailPromise(this, this.scheduler, wrapper);
+        this.detail_promise = extractDetailPromise(this, scheduler, wrapper);
         this.payments_promise = new Promise<string[]>(
             (
                 (

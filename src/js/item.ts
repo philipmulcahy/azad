@@ -6,8 +6,6 @@ import * as azad_order from './order';
 
 export interface IItem extends azad_entity.IEntity {
     description: string;
-    order_detail_url: string;
-    order_id: string;
     price: string;
     quantity: number;
     url: string;
