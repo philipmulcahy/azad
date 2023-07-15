@@ -934,13 +934,15 @@ async function getOrdersForYearAndQueryTemplate(
     };
 
 
-    const orders_page_data = await scheduler.scheduleToPromise<IOrdersPageData>(
-        generateQueryString(0),
-        convertOrdersPage,
-        '00000',
-        nocache_top_level
-    );
-    const expected_order_count = orders_page_data.result.expected_order_count;
+    const expected_order_count = await async function() {
+        const orders_page_data = await scheduler.scheduleToPromise<IOrdersPageData>(
+            generateQueryString(0),
+            convertOrdersPage,
+            '00000',
+            nocache_top_level
+        );
+        return orders_page_data.result.expected_order_count;
+    }();
 
     const translateOrdersPageData = function(
         response: request_scheduler.IResponse<IOrdersPageData>,
