@@ -642,7 +642,6 @@ class OrderImpl {
     who: string|null;
     detail_promise: Promise<IOrderDetailsAndItems>|null;
     payments_promise: Promise<string[]>|null;
-    scheduler: request_scheduler.IRequestScheduler;
 
     constructor(
         ordersPageElem: HTMLElement,
@@ -661,10 +660,13 @@ class OrderImpl {
         this.who = null;
         this.detail_promise = null;
         this.payments_promise = null;
-        this.scheduler = scheduler;
-        this._extractOrder(ordersPageElem, date_filter);
+        this._extractOrder(ordersPageElem, date_filter, scheduler);
     }
-    _extractOrder(elem: HTMLElement, date_filter: DateFilter) {
+    _extractOrder(
+      elem: HTMLElement,
+      date_filter: DateFilter,
+      scheduler: request_scheduler.IRequestScheduler
+    ) {
         const doc = elem.ownerDocument;
 
         try {
@@ -759,7 +761,7 @@ class OrderImpl {
             );
             this.payments_url = urls.getOrderPaymentUrl(this.id, this.site);
         }
-        this.detail_promise = extractDetailPromise(this, this.scheduler);
+        this.detail_promise = extractDetailPromise(this, scheduler);
         this.payments_promise = new Promise<string[]>(
             (
                 (
@@ -783,7 +785,7 @@ class OrderImpl {
                             return payments;
                         }.bind(this);
                         if (this.payments_url) {
-                            this.scheduler.scheduleToPromise<string[]>(
+                            scheduler.scheduleToPromise<string[]>(
                                 this.payments_url,
                                 event_converter,
                                 util.defaulted(this.id, '9999'), // priority
