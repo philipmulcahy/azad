@@ -14,8 +14,6 @@ export interface IItem extends azad_entity.IEntity {
     asin: string;
 };
 
-export type Items = Record<string, string>;
-
 type ItemsExtractor = (
     order_id: string,
     order_date: Date|null,

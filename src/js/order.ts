@@ -493,13 +493,15 @@ export interface IOrder extends azad_entity.IEntity {
     id(): Promise<string>;
     detail_url(): Promise<string>;
     invoice_url(): Promise<string>;
+    list_url(): Promise<string>;
+    payments_url(): Promise<string>;
+
 
     date(): Promise<Date|null>;
     gift(): Promise<string>;
     gst(): Promise<string>;
     item_list(): Promise<item.IItem[]>;
-    items(): Promise<item.Items>;
-    payments(): Promise<any>;
+    payments(): Promise<string[]>;
     postage(): Promise<string>;
     postage_refund(): Promise<string>;
     pst(): Promise<string>;
@@ -509,10 +511,29 @@ export interface IOrder extends azad_entity.IEntity {
     us_tax(): Promise<string>;
     vat(): Promise<string>;
     who(): Promise<string>;
-
-    assembleDiagnostics(): Promise<Record<string,any>>;
 };
 
+interface ISyncOrder extends azad_entity.IEntity {
+    id: string;
+    detail_url: string;
+    invoice_url: string;
+    list_url: string;
+    payments_url: string;
+    date: Date|null;
+    gift: string;
+    gst: string;
+    item_list: item.IItem[];
+    payments: string[];
+    postage: string;
+    postage_refund: string;
+    pst: string;
+    refund: string;
+    site: string;
+    total: string;
+    us_tax: string;
+    vat: string;
+    who: string;
+}
 
 class Order {
     impl: OrderImpl;
@@ -544,23 +565,6 @@ class Order {
     }
     who(): Promise<string> {
         return Promise.resolve(util.defaulted(this.impl.who, ''));
-    }
-    items(): Promise<item.Items> {
-        const items: item.Items = {};
-        if (this.impl.detail_promise) {
-            return this.impl.detail_promise.then( details => {
-                details.items.forEach(item => {
-                    try {
-                        items[item.description] = item.url;
-                    } catch (ex) {
-                        console.error(ex);
-                    }
-                });
-                return items;
-            });
-        } else {
-            return Promise.resolve(items);
-        }
     }
     item_list(): Promise<item.IItem[]> {
         const items: item.IItem[] = [];
@@ -622,9 +626,49 @@ class Order {
     invoice_url(): Promise<string> {
         return this._detail_dependent_promise( detail => detail.invoice_url )
     }
+}
 
-    assembleDiagnostics(): Promise<Record<string,any>> {
-        return this.impl.assembleDiagnostics();
+async function sync(order: IOrder): Promise<ISyncOrder> {
+    const id = await order.id();
+    const detail_url = await order.detail_url();
+    const invoice_url = await order.invoice_url();
+    const list_url = await order.list_url();
+    const payments_url = await order.payments_url();
+    const date = await order.date();
+    const gift = await order.gift();
+    const gst = await order.gst();
+    const item_list = await order.item_list();
+    const payments = await order.payments();
+    const postage = await order.postage();
+    const postage_refund = await order.postage_refund();
+    const pst = await order.pst();
+    const refund = await order.refund();
+    const site = await order.site();
+    const total = await order.total();
+    const us_tax = await order.us_tax();
+    const vat = await order.vat();
+    const who = await order.who();
+
+    return {
+        id: id,
+        detail_url: detail_url,
+        invoice_url: invoice_url,
+        list_url: list_url,
+        payments_url: payments_url,
+        date: date,
+        gift: gift,
+        gst: gst,
+        item_list: item_list,
+        payments: payments,
+        postage: postage,
+        postage_refund: postage_refund,
+        pst: pst,
+        refund: refund,
+        site: site,
+        total: total,
+        us_tax: us_tax,
+        vat: vat,
+        who: who,
     }
 }
 
@@ -809,49 +853,6 @@ class OrderImpl {
         );
     }
 
-    assembleDiagnostics(): Promise<Record<string,any>> {
-        const diagnostics: Record<string, any> = {};
-        const field_names: (keyof OrderImpl)[] = [
-            'id',
-            'list_url',
-            'detail_url',
-            'payments_url',
-            'date',
-            'total',
-            'who',
-        ];
-        field_names.forEach(
-            ((field_name: keyof OrderImpl) => {
-                const value: any = this[field_name];
-                diagnostics[<string>(field_name)] = value;
-            })
-        );
-
-        const order = new Order(this);
-        const items_promise = order.items();
-        items_promise.then( items => {
-            diagnostics['items'] = items;
-        });
-
-        return Promise.all([
-            items_promise,
-            signin.checkedFetch( util.defaulted(this.list_url, '') )
-                .then( response => response.text())
-                .then( text => { diagnostics['list_html'] = text; } ),
-            signin.checkedFetch( util.defaulted(this.detail_url, '') )
-                .then( response => response.text() )
-                .then( text => { diagnostics['detail_html'] = text; } ),
-            signin.checkedFetch(util.defaulted(this.payments_url, ''))
-                .then( response => response.text() )
-                .then( text => { diagnostics['invoice_html'] = text; } )
-        ]).then(
-            () => diagnostics,
-            error_msg => {
-                notice.showNotificationBar(error_msg, document);
-                return diagnostics;
-            }
-        );
-    }
 }
 
 interface IOrdersPageData {
@@ -1248,6 +1249,56 @@ export async function getOrdersByRange(
 function throw_order_discarded_error(order_id: string|null): void {
   const ode = new Error('OrderDiscardedError:' + order_id);
   throw ode;
+}
+
+export async function get_legacy_items(order: IOrder): Promise<Record<string, string>> {
+  const result: Record<string, string> = {};
+  const item_list: item.IItem[] = await order.item_list();
+  item_list.forEach(item => {
+    result[item.description] = item.url;
+  });
+  return result;
+};
+
+export async function assembleDiagnostics(order: IOrder): Promise<Record<string,any>> {
+    const diagnostics: Record<string, any> = {};
+    const field_names: (keyof IOrder)[] = [
+        'id',
+        'list_url',
+        'detail_url',
+        'payments_url',
+        'date',
+        'total',
+        'who',
+    ];
+    field_names.forEach(
+        ((field_name: keyof IOrder) => {
+            const value: any = order[field_name];
+            diagnostics[<string>(field_name)] = value;
+        })
+    );
+
+    const sync_order: ISyncOrder = await sync(order);
+
+    diagnostics['items'] = await get_legacy_items(order);
+
+    return Promise.all([
+        signin.checkedFetch( util.defaulted(sync_order.list_url, '') )
+            .then( response => response.text())
+            .then( text => { diagnostics['list_html'] = text; } ),
+        signin.checkedFetch( util.defaulted(sync_order.detail_url, '') )
+            .then( response => response.text() )
+            .then( text => { diagnostics['detail_html'] = text; } ),
+        signin.checkedFetch(util.defaulted(sync_order.payments_url, ''))
+            .then( response => response.text() )
+            .then( text => { diagnostics['invoice_html'] = text; } )
+    ]).then(
+        () => diagnostics,
+        error_msg => {
+            notice.showNotificationBar(error_msg, document);
+            return diagnostics;
+        }
+    );
 }
 
 export function create(

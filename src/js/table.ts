@@ -91,7 +91,7 @@ const ORDER_COLS: ColSpec[] = [
     {
         field_name: 'items',
         render_func: (order: azad_entity.IEntity, td: HTMLElement) =>
-            (order as azad_order.IOrder).items().then( items => {
+            azad_order.get_legacy_items(order as azad_order.IOrder).then( items => {
                 const ul = td.ownerDocument!.createElement('ul');
                 for(let title in items) {
                     if (Object.prototype.hasOwnProperty.call(items, title)) {
@@ -322,16 +322,6 @@ function maybe_promise_to_promise(
     } else {
         return Promise.resolve(called);
     }
-}
-
-function extract_value(
-    entity: azad_entity.IEntity,
-    field_name: string
-): Promise<azad_entity.Value> {
-    const field: azad_entity.Field = 'id' in entity ?
-        (entity as azad_order.IOrder)[field_name as keyof azad_order.IOrder] :
-        (entity as azad_item.IItem)[field_name as keyof azad_item.IItem]
-    return maybe_promise_to_promise(field);
 }
 
 function appendCell(
@@ -702,24 +692,23 @@ export function dumpOrderDiagnostics(order_id: string) {
     if (order) {
         const utc_today = new Date().toISOString().substr(0,10);
         const file_name = order_id + '_' + utc_today + '.json';
-        order.assembleDiagnostics()
-            .then(
-                diagnostics => diagnostic_download.save_json_to_file(
-                    diagnostics,
-                    file_name
-                )
-            ).then(
-                () => notice.showNotificationBar(
-                    'Debug file ' + file_name + ' saved.',
-                    document
-                ),
-                err => {
-                    const msg = 'Failed to create debug file: ' + file_name +
-                                ' ' + err;
-                    console.warn(msg);
-                    notice.showNotificationBar(msg, document);
-                }
-            );
+        azad_order.assembleDiagnostics(order).then(
+            diagnostics => diagnostic_download.save_json_to_file(
+                diagnostics,
+                file_name
+            )
+        ).then(
+            () => notice.showNotificationBar(
+                'Debug file ' + file_name + ' saved.',
+                document
+            ),
+            err => {
+                const msg = 'Failed to create debug file: ' + file_name +
+                            ' ' + err;
+                console.warn(msg);
+                notice.showNotificationBar(msg, document);
+            }
+        );
     }
 }
 
