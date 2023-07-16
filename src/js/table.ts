@@ -275,7 +275,7 @@ const ITEM_COLS: ColSpec[] = [
       field_name: 'ASIN',
       value_promise_func_name: 'asin',
       is_numeric: false,
-      visibility: asin_enabled 
+      visibility: asin_enabled
     },
 ];
 

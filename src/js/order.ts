@@ -706,6 +706,7 @@ class OrderImpl {
         this.payments_promise = null;
         this._extractOrder(ordersPageElem, date_filter, scheduler);
     }
+
     _extractOrder(
       elem: HTMLElement,
       date_filter: DateFilter,
@@ -759,7 +760,7 @@ class OrderImpl {
           console.warn('could not get order date for ' + this.id);
         }
         if (!date_filter(this.date)) {
-          throw_order_discarded_error(this.id); 
+          throw_order_discarded_error(this.id);
         }
 
         // This field is no longer always available, particularly for .com
@@ -841,7 +842,7 @@ class OrderImpl {
                                 (url: string) => {
                                   const msg = 'timeout or other error while fetching ' + url + ' for ' + this.id;
                                   console.error(msg);
-                                  reject(msg); 
+                                  reject(msg);
                                 },
                             );
                         } else {

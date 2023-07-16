@@ -14,4 +14,4 @@ export type ControlPortMessage = ControlPortMessagePeriods | ControlPortMessageA
 
 export interface ControlPort {
     postMessage: (msg: ControlPortMessage) => void;
-} 
+}

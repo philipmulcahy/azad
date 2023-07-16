@@ -150,7 +150,7 @@ async function fetchAndShowOrdersByRange(
   start_date: Date, end_date: Date,
   beautiful_table: boolean
 ): Promise<HTMLTableElement|undefined> {
-    console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);                   
+    console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);
     if ( document.visibilityState != 'visible' ) {
         console.log(
             'fetchAndShowOrdersByRange() returning without doing anything: ' +
@@ -194,7 +194,7 @@ async function fetchShowAndDumpItemsByRange(
 
   // EZP, the primary consumers of this file are processing file with code:
   // They don't need the file polluted by aggregation rows.
-  const show_totals = false; 
+  const show_totals = false;
 
   if (typeof(table) != 'undefined') {
     await csv.download(table, show_totals)
