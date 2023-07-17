@@ -29,6 +29,10 @@ function testOneTarget(
         target.scrape_date,
         target.site
     );
+
+    // 2023-07 reinstate legacy items property.
+    (order as any)['items'] = () => azad_order.get_legacy_items(order);
+
     const expected = order_data.expectedFromTestData(
         target.order_id,
         target.scrape_date,
@@ -36,6 +40,7 @@ function testOneTarget(
     );
     const keys = Object.keys(expected);
     const key_validation_promises = keys.map( key => {
+      try {
         const expected_value = util.defaulted(expected[key], '');
         const actual_value_promise = (order as Record<string, any>)[key]();
         return actual_value_promise.then( (actual_value: string|Date) => {
@@ -50,7 +55,10 @@ function testOneTarget(
                     ' but we got ' + actual_string;
                 result.defects.push(msg);
             }
-        })
+        });
+      } catch(ex) {
+        console.error(ex);
+      }
     });
     return Promise.all(key_validation_promises).then( () => {
         if (result.defects.length == 0) {

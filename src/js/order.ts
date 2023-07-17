@@ -496,7 +496,6 @@ export interface IOrder extends azad_entity.IEntity {
     list_url(): Promise<string>;
     payments_url(): Promise<string>;
 
-
     date(): Promise<Date|null>;
     gift(): Promise<string>;
     gst(): Promise<string>;
@@ -535,11 +534,105 @@ interface ISyncOrder extends azad_entity.IEntity {
     who: string;
 }
 
-class Order {
+class SyncOrder implements ISyncOrder {
+    id: string = '';
+    detail_url: string = '';
+    invoice_url: string = '';
+    list_url: string = '';
+    payments_url: string = '';
+    date: Date|null = null;
+    gift: string = '';
+    gst: string = '';
+    item_list: item.IItem[] = [];
+    payments: string[] = [];
+    postage: string = '';
+    postage_refund: string = '';
+    pst: string = '';
+    refund: string = '';
+    site: string = '';
+    total: string = '';
+    us_tax: string = '';
+    vat: string = '';
+    who: string = '';
+
+    constructor(rhs: ISyncOrder) {
+        Object.assign(this, rhs);
+    }
+
+    unsync(): IOrder {
+      return {
+        id: ()=>Promise.resolve(this.id),
+        detail_url: ()=>Promise.resolve(this.detail_url),
+        invoice_url: ()=>Promise.resolve(this.invoice_url),
+        list_url: ()=>Promise.resolve(this.list_url),
+        payments_url: ()=>Promise.resolve(this.payments_url),
+        date: ()=>Promise.resolve(this.date),
+        gift: ()=>Promise.resolve(this.gift),
+        gst: ()=>Promise.resolve(this.gst),
+        item_list: ()=>Promise.resolve(this.item_list),
+        payments: ()=>Promise.resolve(this.payments),
+        postage: ()=>Promise.resolve(this.postage),
+        postage_refund: ()=>Promise.resolve(this.postage_refund),
+        pst: ()=>Promise.resolve(this.pst),
+        refund: ()=>Promise.resolve(this.refund),
+        site: ()=>Promise.resolve(this.site),
+        total: ()=>Promise.resolve(this.total),
+        us_tax: ()=>Promise.resolve(this.us_tax),
+        vat: ()=>Promise.resolve(this.vat),
+        who: ()=>Promise.resolve(this.who),
+      }
+    }
+}
+
+class Order implements IOrder{
     impl: OrderImpl;
 
     constructor(impl: OrderImpl) {
         this.impl = impl
+    }
+
+    async sync(): Promise<ISyncOrder> {
+        const id = await this.id();
+        const detail_url = await this.detail_url();
+        const invoice_url = await this.invoice_url();
+        const list_url = await this.list_url();
+        const payments_url = await this.payments_url();
+        const date = await this.date();
+        const gift = await this.gift();
+        const gst = await this.gst();
+        const item_list = await this.item_list();
+        const payments = await this.payments();
+        const postage = await this.postage();
+        const postage_refund = await this.postage_refund();
+        const pst = await this.pst();
+        const refund = await this.refund();
+        const site = await this.site();
+        const total = await this.total();
+        const us_tax = await this.us_tax();
+        const vat = await this.vat();
+        const who = await this.who();
+
+        return {
+            id: id,
+            detail_url: detail_url,
+            invoice_url: invoice_url,
+            list_url: list_url,
+            payments_url: payments_url,
+            date: date,
+            gift: gift,
+            gst: gst,
+            item_list: item_list,
+            payments: payments,
+            postage: postage,
+            postage_refund: postage_refund,
+            pst: pst,
+            refund: refund,
+            site: site,
+            total: total,
+            us_tax: us_tax,
+            vat: vat,
+            who: who,
+        }
     }
 
     id(): Promise<string> {
@@ -625,50 +718,6 @@ class Order {
     }
     invoice_url(): Promise<string> {
         return this._detail_dependent_promise( detail => detail.invoice_url )
-    }
-}
-
-async function sync(order: IOrder): Promise<ISyncOrder> {
-    const id = await order.id();
-    const detail_url = await order.detail_url();
-    const invoice_url = await order.invoice_url();
-    const list_url = await order.list_url();
-    const payments_url = await order.payments_url();
-    const date = await order.date();
-    const gift = await order.gift();
-    const gst = await order.gst();
-    const item_list = await order.item_list();
-    const payments = await order.payments();
-    const postage = await order.postage();
-    const postage_refund = await order.postage_refund();
-    const pst = await order.pst();
-    const refund = await order.refund();
-    const site = await order.site();
-    const total = await order.total();
-    const us_tax = await order.us_tax();
-    const vat = await order.vat();
-    const who = await order.who();
-
-    return {
-        id: id,
-        detail_url: detail_url,
-        invoice_url: invoice_url,
-        list_url: list_url,
-        payments_url: payments_url,
-        date: date,
-        gift: gift,
-        gst: gst,
-        item_list: item_list,
-        payments: payments,
-        postage: postage,
-        postage_refund: postage_refund,
-        pst: pst,
-        refund: refund,
-        site: site,
-        total: total,
-        us_tax: us_tax,
-        vat: vat,
-        who: who,
     }
 }
 
@@ -1279,7 +1328,7 @@ export async function assembleDiagnostics(order: IOrder): Promise<Record<string,
         })
     );
 
-    const sync_order: ISyncOrder = await sync(order);
+    const sync_order: ISyncOrder = await (order as Order).sync();
 
     diagnostics['items'] = await get_legacy_items(order);
 
