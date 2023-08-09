@@ -1,6 +1,28 @@
 /* Copyright(c) 2018 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
+///////////////////////////////////////////////////////////////////////////////
+// SOME AZAD CACHEING PRINCIPLES
+///////////////////////////////////////////////////////////////////////////////
+// These words are not intended to be general axioms of good cacheing practise,
+// instead they are thoughts on how to structure Azad's use of cache in a
+// consistent manner.
+//
+// 1) Cache entries are at the same cardinality as URLs - one cache entry
+//    replaces one fetch. One reason to favour this approach is that fetches
+//    are the activity that consumes most time in Azad's use.
+// 2) Cache entries don't have to contain raw HTML - instead it's better if
+//    they contain serialized business objects that are the desired result of
+//    a fetch, and subsequent post-processing. This means less wasted space
+//    and repeated computation.
+// 3) Avoid cache the same data twice: if a composite object contains results
+//    from multiple fetches, either store the composite in the cache, or the
+//    components, but not both.
+// 4) Sometimes a fetch contributes to multiple business objects - for example
+//    a order list page can contain 10 orders. We need to decide how to satisfy
+//    rule 3.
+///////////////////////////////////////////////////////////////////////////////
+
 "use strict";
 
 const lzjs = require('lzjs');
