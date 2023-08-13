@@ -24,7 +24,6 @@
 //
 // As of 2023-08-13, in this code branch, there are three use patterns:
 // i)   IOrdersPageData: represents a group of typically 10 order "headers"
-//      includes html representation - wasteful?).
 // ii)  IOrderDetailsAndItems: properly parsed - no extraneous data.
 // iii) string[]: payments, one per string - stronger typing needed here.
 ///////////////////////////////////////////////////////////////////////////////
