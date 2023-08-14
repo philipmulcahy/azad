@@ -6,6 +6,7 @@ import * as date from './date';
 import * as azad_entity from './entity';
 import * as notice from './notice';
 import * as extraction from './extraction';
+import * as order_header from './order_header';
 import * as signin from './signin';
 import * as sprintf from 'sprintf-js';
 import * as dom2json from './dom2json';
@@ -13,19 +14,6 @@ import * as request_scheduler from './request_scheduler';
 import * as urls from './url';
 import * as util from './util';
 import * as item from './item';
-
-function getField(
-    xpath: string,
-    elem: HTMLElement,
-    context: string
-): string|null {
-    try {
-        const valueElem = util.findSingleNodeValue(xpath, elem, context);
-        return valueElem!.textContent!.trim();
-    } catch (_) {
-        return null;
-    }
-}
 
 function getAttribute(
     xpath: string,
@@ -69,15 +57,15 @@ interface IOrderDetails {
 function extractDetailFromDoc(
     order: OrderImpl, doc: HTMLDocument
 ): IOrderDetails {
-    const context = 'id:' + order.id;
+    const context = 'id:' + order.header.id;
     const who = function(){
-        if(order.who) {
-            return order.who;
+        if(order.header.who) {
+            return order.header.who;
         }
 
         const doc_elem = doc.documentElement;
 
-        let x = getField(
+        let x = util.getField(
             // TODO: this seems brittle, depending on the precise path of the element.
             '//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
             doc_elem,
@@ -85,18 +73,18 @@ function extractDetailFromDoc(
         ); // US Digital
         if(x) return x;
 
-        x = getField('.//div[contains(@class,"recipient")]' +
+        x = util.getField('.//div[contains(@class,"recipient")]' +
             '//span[@class="trigger-text"]', doc_elem, context);
         if(x) return x;
 
-        x = getField(
+        x = util.getField(
             './/div[contains(text(),"Recipient")]',
             doc_elem,
             context
         );
         if(x) return x;
 
-        x = getField(
+        x = util.getField(
             '//li[contains(@class,"displayAddressFullName")]/text()',
             doc_elem,
             context,
@@ -110,8 +98,8 @@ function extractDetailFromDoc(
     };
 
     const order_date = function(): Date|null {
-        const def_string = order.date ?
-            util.dateToDateIsoString(order.date):
+        const def_string = order.header.date ?
+            util.dateToDateIsoString(order.header.date):
             null;
         const d = extraction.by_regex(
             [
@@ -126,7 +114,7 @@ function extractDetailFromDoc(
         if (d) {
             return new Date(date.normalizeDateString(d));
         }
-        return util.defaulted(order.date, null);
+        return util.defaulted(order.header.date, null);
     };
 
     const total = function(): string {
@@ -168,7 +156,7 @@ function extractDetailFromDoc(
 
             ],
             null,
-            order.total,
+            order.header.total,
             doc.documentElement,
             context,
         );
@@ -305,7 +293,7 @@ function extractDetailFromDoc(
             context,
         );
         if ( !a ) {
-            a = getField(
+            a = util.getField(
                 './/tr[contains(td,"Tax Collected:")]',
                 doc.documentElement,
                 context,
@@ -384,7 +372,7 @@ function extractDetailFromDoc(
     };
 
     const refund = function (): string {
-        let a = getField(
+        let a = util.getField(
             ['Refund', 'Totale rimborso'].map( //TODO other field names?
                 label => sprintf.sprintf(
                     '//div[contains(@id,"od-subtotals")]//' +
@@ -441,8 +429,8 @@ function extractDetailPromise(
 ): Promise<IOrderDetailsAndItems> {
   return new Promise<IOrderDetailsAndItems>(
     (resolve, reject) => {
-        const context = 'id:' + order.id;
-        const url = order.detail_url;
+        const context = 'id:' + order.header.id;
+        const url = order.header.detail_url;
         if(!url) {
             const msg = 'null order detail query: cannot schedule';
             console.error(msg);
@@ -455,9 +443,9 @@ function extractDetailPromise(
                 return {
                     details: extractDetailFromDoc(order, doc),
                     items: item.extractItems(
-                        util.defaulted(order.id, ''),
-                        order.date,
-                        util.defaulted(order.detail_url, ''),
+                        util.defaulted(order.header.id, ''),
+                        order.header.date,
+                        util.defaulted(order.header.detail_url, ''),
                         doc.documentElement,
                         context,
                     ),
@@ -467,20 +455,20 @@ function extractDetailPromise(
                 scheduler.scheduleToPromise<IOrderDetailsAndItems>(
                     url,
                     event_converter,
-                    util.defaulted(order.id, '9999'),
+                    util.defaulted(order.header.id, '9999'),
                     false
                 ).then(
                     (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => {
                       resolve(response.result)
                     },
                     url => {
-                      const msg = 'scheduler rejected ' + order.id + ' ' + url;
+                      const msg = 'scheduler rejected ' + order.header.id + ' ' + url;
                       console.error(msg);
                       reject('timeout or other problem when fetching ' + url)
                     },
                 );
             } catch (ex) {
-                const msg = 'scheduler upfront rejected ' + order.id + ' ' + url;
+                const msg = 'scheduler upfront rejected ' + order.header.id + ' ' + url;
                 console.error(msg);
                 reject(msg);
             }
@@ -636,28 +624,28 @@ class Order implements IOrder{
     }
 
     id(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.id, ''));
+        return Promise.resolve(util.defaulted(this.impl.header.id, ''));
     }
     list_url(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.list_url, ''));
+        return Promise.resolve(util.defaulted(this.impl.header.list_url, ''));
     }
     detail_url(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.detail_url, ''));
+        return Promise.resolve(util.defaulted(this.impl.header.detail_url, ''));
     }
     payments_url(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.payments_url, ''));
+        return Promise.resolve(util.defaulted(this.impl.header.payments_url, ''));
     }
     site(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.site, ''));
+        return Promise.resolve(util.defaulted(this.impl.header.site, ''));
     }
     date(): Promise<Date|null> {
-        return Promise.resolve(this.impl.date);
+        return Promise.resolve(this.impl.header.date);
     }
     total(): Promise<string> {
         return this._detail_dependent_promise(detail => detail.total);
     }
     who(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.who, ''));
+        return Promise.resolve(util.defaulted(this.impl.header.who, ''));
     }
     item_list(): Promise<item.IItem[]> {
         const items: item.IItem[] = [];
@@ -724,137 +712,32 @@ class Order implements IOrder{
 type DateFilter = (d: Date|null) => boolean;
 
 class OrderImpl {
-    id: string|null;
-    site: string|null;
-    list_url: string|null;
-    detail_url: string|null;
-    payments_url: string|null;
+    header: order_header.IOrderHeader;
     invoice_url: string|null;
-    date: Date|null;
-    total: string|null;
-    who: string|null;
     detail_promise: Promise<IOrderDetailsAndItems>|null;
     payments_promise: Promise<string[]>|null;
 
     constructor(
-        ordersPageElem: HTMLElement,
+        header: order_header.IOrderHeader,
         scheduler: request_scheduler.IRequestScheduler,
-        src_query: string,
         date_filter: DateFilter,
     ) {
-        this.id = null;
-        this.site = null;
-        this.list_url = src_query;
-        this.detail_url = null;
-        this.payments_url = null;
+        this.header = header;
         this.invoice_url = null;
-        this.date = null;
-        this.total = null;
-        this.who = null;
         this.detail_promise = null;
         this.payments_promise = null;
-        this._extractOrder(ordersPageElem, date_filter, scheduler);
+        this._extractOrder(date_filter, scheduler);
     }
 
     _extractOrder(
-      elem: HTMLElement,
       date_filter: DateFilter,
       scheduler: request_scheduler.IRequestScheduler
     ) {
-        const doc = elem.ownerDocument;
-
-        try {
-            this.id = [
-                ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
-            ].filter( el => el.hasAttribute('href') )
-             .map( el => el.getAttribute('href') )
-             .map( href => href.match(/.*(?:orderID=|orderNumber%3D)([A-Z0-9-]*).*/) )
-             .filter( match => match )[0][1];
-        } catch (error) {
-            console.warn(
-                'could not parse order id from order list page ' + this.list_url
-            );
-            this.id = 'UNKNOWN_ORDER_ID';
-            throw error;
+        const context = 'id:' + this.header.id;
+        if (!date_filter(this.header.date)) {
+          throw_order_discarded_error(this.header.id);
         }
 
-        const context = 'id:' + this.id;
-
-        this.date = null;
-        try {
-            this.date = new Date(
-                date.normalizeDateString(
-                    util.defaulted(
-                        getField(
-                            [
-                                'Commande effectuée',
-                                'Order placed',
-                                'Ordine effettuato',
-                                'Pedido realizado'
-                            ].map(
-                                label => sprintf.sprintf(
-                                    './/div[contains(span,"%s")]' +
-                                    '/../div/span[contains(@class,"value")]',
-                                    label
-                                )
-                            ).join('|'),
-                            elem,
-                            context,
-                        ),
-                        ''
-                    )
-                )
-            );
-        } catch (ex) {
-          console.warn('could not get order date for ' + this.id);
-        }
-        if (!date_filter(this.date)) {
-          throw_order_discarded_error(this.id);
-        }
-
-        // This field is no longer always available, particularly for .com
-        // We replace it (where we know the search pattern for the country)
-        // with information from the order detail page.
-        this.total = getField('.//div[contains(span,"Total")]' +
-            '/../div/span[contains(@class,"value")]', elem, context);
-        console.log('total direct:', this.total);
-
-        this.who = getField('.//div[contains(@class,"recipient")]' +
-            '//span[@class="trigger-text"]', elem, context);
-
-        this.site = function(o: OrderImpl) {
-            if (o.list_url) {
-                const list_url_match = o.list_url.match(
-                    RegExp('.*\/\/([^/]*)'));
-                if (list_url_match) {
-                    return util.defaulted(list_url_match[1], '');
-                }
-            }
-            return '';
-        }(this);
-
-        if (!this.id) {
-            const id_node: Node = util.findSingleNodeValue(
-                '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
-                elem,
-                context,
-            );
-            const id_elem: HTMLElement = <HTMLElement>id_node;
-            const more_than_id: string|null = id_elem.getAttribute('href');
-            if (more_than_id) {
-                const match = more_than_id.match(/.*orderID=([^?]*)/);
-                if (match && match.length > 1) {
-                    this.id = match[1];
-                }
-            }
-        }
-
-        if (this.id && this.site) {
-            this.detail_url = urls.orderDetailUrlFromListElement(
-                elem, this.id, this.site
-            );
-            this.payments_url = urls.getOrderPaymentUrl(this.id, this.site);
-        }
         this.detail_promise = extractDetailPromise(this, scheduler);
         this.payments_promise = new Promise<string[]>(
             (
@@ -862,13 +745,13 @@ class OrderImpl {
                     resolve: (payments: string[]) => void,
                     reject: (msg: string) => void
                 ) => {
-                    if (this.id?.startsWith('D')) {
-                        const date = this.date ?
-                            util.dateToDateIsoString(this.date) :
+                    if (this.header.id?.startsWith('D')) {
+                        const date = this.header.date ?
+                            util.dateToDateIsoString(this.header.date) :
                             '';
                         resolve([
-                            this.total ?
-                                date + ': ' + this.total :
+                            this.header.total ?
+                                date + ': ' + this.header.total :
                                 date
                         ]);
                     } else {
@@ -878,18 +761,18 @@ class OrderImpl {
                             // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
                             return payments;
                         }.bind(this);
-                        if (this.payments_url) {
+                        if (this.header.payments_url) {
                             scheduler.scheduleToPromise<string[]>(
-                                this.payments_url,
+                                this.header.payments_url,
                                 event_converter,
-                                util.defaulted(this.id, '9999'), // priority
+                                util.defaulted(this.header.id, '9999'), // priority
                                 false  // nocache
                             ).then(
                                 (response: {result: string[]}) => {
                                   resolve(response.result)
                                 },
                                 (url: string) => {
-                                  const msg = 'timeout or other error while fetching ' + url + ' for ' + this.id;
+                                  const msg = 'timeout or other error while fetching ' + url + ' for ' + this.header.id;
                                   console.error(msg);
                                   reject(msg);
                                 },
@@ -907,7 +790,8 @@ class OrderImpl {
 
 interface IOrdersPageData {
     expected_order_count: number;
-    order_elems: dom2json.IJsonObject;
+    // order_elems: dom2json.IJsonObject;
+    order_headers: order_header.IOrderHeader[];
 };
 
 async function getOrdersForYearAndQueryTemplate(
@@ -916,7 +800,8 @@ async function getOrdersForYearAndQueryTemplate(
     scheduler: request_scheduler.IRequestScheduler,
     nocache_top_level: boolean,
     date_filter: DateFilter,
-): Promise<Promise<IOrder>[]> {
+): Promise<Promise<IOrder>[]>
+{
     const generateQueryString = function(startOrderPos: number) {
         return sprintf.sprintf(
             query_template,
@@ -929,92 +814,92 @@ async function getOrdersForYearAndQueryTemplate(
     };
 
     const convertOrdersPage = function(evt: any): IOrdersPageData {
-        const d = util.parseStringToDOM(evt.target.responseText);
-        const context = 'Converting orders page';
-        const countSpan = util.findSingleNodeValue(
-            './/span[@class="num-orders"]', d.documentElement, context);
-        if ( !countSpan ) {
-            const msg = 'Error: cannot find order count elem in: ' + evt.target.responseText
-            console.error(msg);
-            throw(msg);
-        }
-        const textContent = countSpan.textContent;
-        const splits = textContent!.split(' ');
-        if (splits.length == 0) {
-            const msg = 'Error: not enough parts';
-            console.error(msg);
-            throw(msg);
-        }
-        const expected_order_count: number = parseInt( splits[0], 10 );
-        console.log(
-            'Found ' + expected_order_count + ' orders for ' + year
-        );
-        if(isNaN(expected_order_count)) {
-            console.warn(
-                'Error: cannot find order count in ' + countSpan.textContent
-            );
-        }
-        let ordersElem;
-        try {
-            ordersElem = d.getElementById('ordersContainer');
-        } catch(err) {
-            const msg = 'Error: maybe you\'re not logged into ' +
-                        'https://' + urls.getSite() + '/gp/css/order-history ' +
-                        err;
-            console.warn(msg)
-            throw msg;
-        }
-        const order_elems: HTMLElement[] = util.findMultipleNodeValues(
-            './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
-            ordersElem
-        ).map( node => <HTMLElement>node );
-        const serialized_order_elems = order_elems.map(
-            elem => dom2json.toJSON(elem, getCachedAttributeNames())
-        );
-        if ( !serialized_order_elems.length ) {
-            console.error(
-                'no order elements in converted order list page: ' +
-                evt.target.responseURL
-            );
-        }
-        const converted = {
-            expected_order_count: expected_order_count,
-            order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
-        }
-        return converted;
+      const d = util.parseStringToDOM(evt.target.responseText);
+      const context = 'Converting orders page';
+      const countSpan = util.findSingleNodeValue(
+          './/span[@class="num-orders"]', d.documentElement, context);
+      if ( !countSpan ) {
+          const msg = 'Error: cannot find order count elem in: ' + evt.target.responseText
+          console.error(msg);
+          throw(msg);
+      }
+      const textContent = countSpan.textContent;
+      const splits = textContent!.split(' ');
+      if (splits.length == 0) {
+          const msg = 'Error: not enough parts';
+          console.error(msg);
+          throw(msg);
+      }
+      const expected_order_count: number = parseInt( splits[0], 10 );
+      console.log(
+          'Found ' + expected_order_count + ' orders for ' + year
+      );
+      if(isNaN(expected_order_count)) {
+          console.warn(
+              'Error: cannot find order count in ' + countSpan.textContent
+          );
+      }
+      let ordersElem;
+      try {
+          ordersElem = d.getElementById('ordersContainer');
+      } catch(err) {
+          const msg = 'Error: maybe you\'re not logged into ' +
+                      'https://' + urls.getSite() + '/gp/css/order-history ' +
+                      err;
+          console.warn(msg)
+          throw msg;
+      }
+      const order_elems: HTMLElement[] = util.findMultipleNodeValues(
+        './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
+        ordersElem
+      ).map( node => <HTMLElement>node );
+      const serialized_order_elems = order_elems.map(
+          elem => dom2json.toJSON(elem, getCachedAttributeNames())
+      );
+      if ( !serialized_order_elems.length ) {
+          console.error(
+              'no order elements in converted order list page: ' +
+              evt.target.responseURL
+          );
+      }
+      const converted = {
+        expected_order_count: expected_order_count,
+        order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
+        order_headers: order_elems.map(
+          elem => order_header.extractOrderHeader(elem, evt.target.responseURL)
+        ),
+      }
+      return converted;
     };
 
 
     const expected_order_count = await async function() {
-        const orders_page_data = await scheduler.scheduleToPromise<IOrdersPageData>(
-            generateQueryString(0),
-            convertOrdersPage,
-            '00000',
-            nocache_top_level
-        );
-        return orders_page_data.result.expected_order_count;
+      const orders_page_data = await scheduler.scheduleToPromise<IOrdersPageData>(
+          generateQueryString(0),
+          convertOrdersPage,
+          '00000',
+          nocache_top_level
+      );
+      return orders_page_data.result.expected_order_count;
     }();
 
-    const translateOrdersPageData = function(
+    const orderHeaderDataToOrders = function(
         response: request_scheduler.IResponse<IOrdersPageData>,
         date_filter: DateFilter,
     ): Promise<IOrder>[] {
-        const orders_page_data = response.result;
-        const order_elems = orders_page_data.order_elems.map(
-            (elem: any) => dom2json.toDOM(elem)
-        );
-        function makeOrderPromise(elem: HTMLElement): Promise<IOrder>|null {
-            const order = create(elem, scheduler, response.query, date_filter);
-            if (typeof(order) === 'undefined') {
-              return null;
-            } else {
-              return Promise.resolve(order!);
-            }
-        }
-        const promises = order_elems
-          .map(makeOrderPromise)
-          .filter((p: Promise<IOrder>|null) => typeof(p) !== 'undefined');
-        return promises;
+      const orders_page_data = response.result;
+      function makeOrderPromise(header: order_header.IOrderHeader)
+        : Promise<IOrder>|null
+      {
+          const order = create(header, scheduler, date_filter);
+          if (typeof(order) === 'undefined') {
+            return null;
+          } else {
+            return Promise.resolve(order!);
+          }
+      }
+      const order_promises = orders_page_data.order_headers.map(makeOrderPromise).filter(o => o);
+      return order_promises as Promise<IOrder>[];
     };
 
     const getOrderPromises = function(
@@ -1034,7 +919,7 @@ async function getOrdersForYearAndQueryTemplate(
                     false
                 ).then(
                     page_data => {
-                        const promises = translateOrdersPageData(
+                        const promises = orderHeaderDataToOrders(
                           page_data, date_filter);
                         order_promises.push(...promises);
                     },
@@ -1057,7 +942,7 @@ async function getOrdersForYearAndQueryTemplate(
                 console.log('returning all order promises');
                 return order_promises;
             }
-       );
+        );
     }
 
     return getOrderPromises(expected_order_count);
@@ -1301,7 +1186,9 @@ function throw_order_discarded_error(order_id: string|null): void {
   throw ode;
 }
 
-export async function get_legacy_items(order: IOrder): Promise<Record<string, string>> {
+export async function get_legacy_items(order: IOrder)
+  : Promise<Record<string, string>>
+{
   const result: Record<string, string> = {};
   const item_list: item.IItem[] = await order.item_list();
   item_list.forEach(item => {
@@ -1310,7 +1197,9 @@ export async function get_legacy_items(order: IOrder): Promise<Record<string, st
   return result;
 };
 
-export async function assembleDiagnostics(order: IOrder): Promise<Record<string,any>> {
+export async function assembleDiagnostics(order: IOrder)
+  : Promise<Record<string,any>>
+{
     const diagnostics: Record<string, any> = {};
     const field_names: (keyof IOrder)[] = [
         'id',
@@ -1352,16 +1241,14 @@ export async function assembleDiagnostics(order: IOrder): Promise<Record<string,
 }
 
 export function create(
-    ordersPageElem: HTMLElement,
+    header: order_header.IOrderHeader,
     scheduler: request_scheduler.IRequestScheduler,
-    src_query: string,
     date_filter: DateFilter,
 ): IOrder|null {
     try {
       const impl = new OrderImpl(
-        ordersPageElem,
+        header,
         scheduler,
-        src_query,
         date_filter,
       );
       const wrapper = new Order(impl);

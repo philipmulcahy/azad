@@ -7,6 +7,7 @@ import * as util from '../js/util';
 const jsdom = require('jsdom');
 const xpath = require('xpath');
 import * as azad_order from '../js/order';
+import * as order_header from '../js/order_header';
 import * as request_scheduler from '../js/request_scheduler';
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -134,10 +135,13 @@ export function orderFromTestData(
             }
         )[0]
     );
+    const header: order_header.IOrderHeader = order_header.extractOrderHeader(
+      list_elem,
+      order_dump.list_url, 
+    );
     const order = azad_order.create(
-        list_elem,
+        header, 
         scheduler,
-        order_dump.list_url,
         (_d: Date|null) => true,  // DateFilter
     );
     if (typeof(order) === 'undefined') {
@@ -190,14 +194,16 @@ export function orderFromTestDataB() {
         )
     ) as HTMLElement[];
     const list_elem: HTMLElement = list_elems[0];
+    const header: order_header.IOrderHeader = order_header.extractOrderHeader(
+      list_elem,
+      'dummy_order_list_url'
+    );
     return azad_order.create(
-        list_elem,
+        header,
         scheduler,
-        list_url,
         (_d: Date|null) => true,  // DateFilter
     );
 }
-
 
 export interface ITestTarget {
     site: string;
