@@ -1,5 +1,4 @@
 /* Copyright(c) 2019-2023 Philip Mulcahy. */
-/* jshint strict: true, esversion: 6 */
 
 ///////////////////////////////////////////////////////////////////////////////
 // SOME AZAD CACHEING PRINCIPLES
@@ -30,7 +29,6 @@
 // ii)  IOrderDetailsAndItems: properly parsed - no extraneous data.
 // iii) string[]: payments, one per string - stronger typing needed here.
 ///////////////////////////////////////////////////////////////////////////////
-
 
 "use strict";
 
@@ -104,7 +102,8 @@ class LocalCacheImpl {
                     'couldn\'t save ' + key + ' to cache on second attempt'
                 );
             }
-            console.log('set ' + key + ' on second attempt after trimming cache');
+            console.log(
+              'set ' + key + ' on second attempt after trimming cache');
         }
     }
 
@@ -174,7 +173,8 @@ class LocalCacheImpl {
         });
         const timestamps = Object.values(timestamps_by_key);
         timestamps.sort();
-        const cutoff_timestamp = timestamps[Math.floor(real_keys.length * 0.25)];
+        const cutoff_timestamp = timestamps[
+          Math.floor(real_keys.length * 0.25)];
         let removed_count = 0;
         Object.keys(timestamps_by_key).forEach( key => {
             if (timestamps_by_key[key] <= cutoff_timestamp) {
