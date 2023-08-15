@@ -2,85 +2,24 @@
 
 'use strict';
 
-import * as date from './date';
 import * as azad_entity from './entity';
-import * as notice from './notice';
+import * as date from './date';
+import * as dom2json from './dom2json';
 import * as extraction from './extraction';
+import * as item from './item';
+import * as notice from './notice';
 import * as order_details from './order_details';
 import * as order_header from './order_header';
+import * as olp from './order_list_page';
+import * as order_impl from './order_impl';
 import * as signin from './signin';
 import * as sprintf from 'sprintf-js';
-import * as dom2json from './dom2json';
 import * as request_scheduler from './request_scheduler';
 import * as urls from './url';
 import * as util from './util';
-import * as item from './item';
-
-function getCachedAttributeNames() {
-    return new Set<string>(['class', 'href', 'id', 'style']);
-}
 
 function getCacheExcludedElementTypes() {
     return new Set<string>(['img']);
-}
-
-interface IOrderDetailsAndItems {
-    details: order_details.IOrderDetails;
-    items: item.IItem[];
-};
-
-function extractDetailPromise(
-    header: order_header.IOrderHeader,
-    scheduler: request_scheduler.IRequestScheduler
-): Promise<IOrderDetailsAndItems> {
-  return new Promise<IOrderDetailsAndItems>(
-    (resolve, reject) => {
-        const context = 'id:' + header.id;
-        const url = header.detail_url;
-        if(!url) {
-            const msg = 'null order detail query: cannot schedule';
-            console.error(msg);
-            reject(msg);
-        } else {
-            const event_converter = function(
-                evt: { target: { responseText: string; }; }
-            ): IOrderDetailsAndItems {
-                const doc = util.parseStringToDOM( evt.target.responseText );
-                return {
-                    details: order_details.extractDetailFromDoc(header, doc),
-                    items: item.extractItems(
-                        util.defaulted(header.id, ''),
-                        header.date,
-                        util.defaulted(header.detail_url, ''),
-                        doc.documentElement,
-                        context,
-                    ),
-                };
-            };
-            try {
-                scheduler.scheduleToPromise<IOrderDetailsAndItems>(
-                    url,
-                    event_converter,
-                    util.defaulted(header.id, '9999'),
-                    false
-                ).then(
-                    (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => {
-                      resolve(response.result)
-                    },
-                    url => {
-                      const msg = 'scheduler rejected ' + header.id + ' ' + url;
-                      console.error(msg);
-                      reject('timeout or other problem when fetching ' + url)
-                    },
-                );
-            } catch (ex) {
-                const msg = 'scheduler upfront rejected ' + header.id + ' ' + url;
-                console.error(msg);
-                reject(msg);
-            }
-        }
-    }
-  );
 }
 
 export interface IOrder extends azad_entity.IEntity {
@@ -179,9 +118,9 @@ class SyncOrder implements ISyncOrder {
 }
 
 class Order implements IOrder{
-    impl: OrderImpl;
+    impl: order_impl.OrderImpl;
 
-    constructor(impl: OrderImpl) {
+    constructor(impl: order_impl.OrderImpl) {
         this.impl = impl
     }
 
@@ -315,429 +254,38 @@ class Order implements IOrder{
     }
 }
 
-type DateFilter = (d: Date|null) => boolean;
-
-class OrderImpl {
-    header: order_header.IOrderHeader;
-    detail_promise: Promise<IOrderDetailsAndItems>|null;
-    payments_promise: Promise<string[]>|null;
-
-    constructor(
-        header: order_header.IOrderHeader,
-        scheduler: request_scheduler.IRequestScheduler,
-        date_filter: DateFilter,
-    ) {
-        this.header = header;
-        this.detail_promise = null;
-        this.payments_promise = null;
-        this._extractOrder(date_filter, scheduler);
-    }
-
-    _extractOrder(
-      date_filter: DateFilter,
-      scheduler: request_scheduler.IRequestScheduler
-    ) {
-        const context = 'id:' + this.header.id;
-        if (!date_filter(this.header.date)) {
-          throw_order_discarded_error(this.header.id);
-        }
-
-        this.detail_promise = extractDetailPromise(this.header, scheduler);
-        this.payments_promise = new Promise<string[]>(
-            (
-                (
-                    resolve: (payments: string[]) => void,
-                    reject: (msg: string) => void
-                ) => {
-                    if (this.header.id?.startsWith('D')) {
-                        const date = this.header.date ?
-                            util.dateToDateIsoString(this.header.date) :
-                            '';
-                        resolve([
-                            this.header.total ?
-                                date + ': ' + this.header.total :
-                                date
-                        ]);
-                    } else {
-                        const event_converter = function(evt: any) {
-                            const doc = util.parseStringToDOM( evt.target.responseText );
-                            const payments = extraction.payments_from_invoice(doc);
-                            // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
-                            return payments;
-                        }.bind(this);
-                        if (this.header.payments_url) {
-                            scheduler.scheduleToPromise<string[]>(
-                                this.header.payments_url,
-                                event_converter,
-                                util.defaulted(this.header.id, '9999'), // priority
-                                false  // nocache
-                            ).then(
-                                (response: {result: string[]}) => {
-                                  resolve(response.result)
-                                },
-                                (url: string) => {
-                                  const msg = 'timeout or other error while fetching ' + url + ' for ' + this.header.id;
-                                  console.error(msg);
-                                  reject(msg);
-                                },
-                            );
-                        } else {
-                            reject('cannot fetch payments without payments_url');
-                        }
-                    }
-                }
-            ).bind(this)
-        );
-    }
-
-}
-
-interface IOrdersPageData {
-    expected_order_count: number;
-    order_headers: order_header.IOrderHeader[];
-};
-
-async function getOrdersForYearAndQueryTemplate(
-    year: number,
-    query_template: string,
-    scheduler: request_scheduler.IRequestScheduler,
-    nocache_top_level: boolean,
-    date_filter: DateFilter,
-): Promise<Promise<IOrder>[]>
-{
-    const generateQueryString = function(startOrderPos: number) {
-        return sprintf.sprintf(
-            query_template,
-            {
-                site: urls.getSite(),
-                year: year,
-                startOrderPos: startOrderPos
-            }
-        );
-    };
-
-    const convertOrdersPage = function(evt: any): IOrdersPageData {
-      const d = util.parseStringToDOM(evt.target.responseText);
-      const context = 'Converting orders page';
-      const countSpan = util.findSingleNodeValue(
-          './/span[@class="num-orders"]', d.documentElement, context);
-      if ( !countSpan ) {
-          const msg = 'Error: cannot find order count elem in: ' + evt.target.responseText
-          console.error(msg);
-          throw(msg);
-      }
-      const textContent = countSpan.textContent;
-      const splits = textContent!.split(' ');
-      if (splits.length == 0) {
-          const msg = 'Error: not enough parts';
-          console.error(msg);
-          throw(msg);
-      }
-      const expected_order_count: number = parseInt( splits[0], 10 );
-      console.log(
-          'Found ' + expected_order_count + ' orders for ' + year
-      );
-      if(isNaN(expected_order_count)) {
-          console.warn(
-              'Error: cannot find order count in ' + countSpan.textContent
-          );
-      }
-      let ordersElem;
-      try {
-          ordersElem = d.getElementById('ordersContainer');
-      } catch(err) {
-          const msg = 'Error: maybe you\'re not logged into ' +
-                      'https://' + urls.getSite() + '/gp/css/order-history ' +
-                      err;
-          console.warn(msg)
-          throw msg;
-      }
-      const order_elems: HTMLElement[] = util.findMultipleNodeValues(
-        './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
-        ordersElem
-      ).map( node => <HTMLElement>node );
-      const serialized_order_elems = order_elems.map(
-          elem => dom2json.toJSON(elem, getCachedAttributeNames())
-      );
-      if ( !serialized_order_elems.length ) {
-          console.error(
-              'no order elements in converted order list page: ' +
-              evt.target.responseURL
-          );
-      }
-      const converted = {
-        expected_order_count: expected_order_count,
-        order_headers: order_elems.map(
-          elem => order_header.extractOrderHeader(elem, evt.target.responseURL)
-        ),
-      }
-      return converted;
-    };
-
-    const expected_order_count = await async function() {
-      const orders_page_data = await scheduler.scheduleToPromise<IOrdersPageData>(
-          generateQueryString(0),
-          convertOrdersPage,
-          '00000',
-          nocache_top_level
-      );
-      return orders_page_data.result.expected_order_count;
-    }();
-
-    const orderHeaderDataToOrders = function(
-        response: request_scheduler.IResponse<IOrdersPageData>,
-        date_filter: DateFilter,
-    ): Promise<IOrder>[] {
-      const orders_page_data = response.result;
-      function makeOrderPromise(header: order_header.IOrderHeader)
-        : Promise<IOrder>|null
-      {
-          const order = create(header, scheduler, date_filter);
-          if (typeof(order) === 'undefined') {
-            return null;
-          } else {
-            return Promise.resolve(order!);
-          }
-      }
-      const order_promises = orders_page_data
-        .order_headers
-        .map(makeOrderPromise)
-        .filter(o => o);
-      return order_promises as Promise<IOrder>[];
-    };
-
-    const getOrderPromises = function(
-      expected_order_count: number,
-    ): Promise<Promise<IOrder>[]> {
-        const page_done_promises: Promise<null>[] = [];
-        const order_promises: Promise<IOrder>[] = [];
-        for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
-            console.log(
-                'sending request for order: ' + iorder + ' onwards'
-            );
-            page_done_promises.push(
-                scheduler.scheduleToPromise<IOrdersPageData>(
-                    generateQueryString(iorder),
-                    convertOrdersPage,
-                    '2',
-                    false
-                ).then(
-                    page_data => {
-                        const promises = orderHeaderDataToOrders(
-                          page_data, date_filter);
-                        order_promises.push(...promises);
-                    },
-                    msg => {
-                        console.error(msg);
-                        return null;
-                    }
-                ).then(
-                    () => null,
-                    msg => {
-                        console.error(msg);
-                        return null;
-                    }
-                )
-            );
-        }
-        console.log('finished sending order list page requests');
-        return Promise.all(page_done_promises).then(
-            () => {
-                console.log('returning all order promises');
-                return order_promises;
-            }
-        );
-    }
-
-    return getOrderPromises(expected_order_count);
-}
-
-const TEMPLATES_BY_SITE: Record<string, string[]> = {
-    'www.amazon.co.jp': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
-    'www.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
-   'www.amazon.com.au': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
-    'www.amazon.de': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB'],
-    'www.amazon.es': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB'],
-    'www.amazon.in': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB'],
-    'www.amazon.it': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB'],
-    'www.amazon.ca': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
-    'www.amazon.fr': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
-    'www.amazon.com': [
-        'https://%(site)s/gp/css/order-history' +
-        '?opt=ab' +
-        '&ie=UTF8' +
-        '&digitalOrders=1' +
-        '&unifiedOrders=0' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_US',
-
-        'https://%(site)s/gp/css/order-history' +
-        '?opt=ab' +
-        '&ie=UTF8' +
-        '&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_US'],
-    'www.amazon.com.mx': [
-        'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_date' +
-        '?ie=UTF8' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s',
-
-        'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_yo_new_digital' +
-        '?ie=UTF8' +
-        '&digitalOrders=1' +
-        '&orderFilter=year-%(year)s' +
-        '&unifiedOrders=0' +
-        '&startIndex=%(startOrderPos)s'],
-    'other': [
-        'https://%(site)s/gp/css/order-history' +
-        '?opt=ab' +
-        '&ie=UTF8' +
-        '&digitalOrders=1' +
-        '&unifiedOrders=0' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB',
-
-        'https://%(site)s/gp/css/order-history' +
-        '?opt=ab' +
-        '&ie=UTF8' +
-        '&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB'],
-}
-
-function fetchYear(
+async function fetchYear(
     year: number,
     scheduler: request_scheduler.IRequestScheduler,
     nocache_top_level: boolean,
-    date_filter: DateFilter,
-): Promise<Promise<IOrder>[]> {
-    let templates = TEMPLATES_BY_SITE[urls.getSite()];
-    if ( !templates ) {
-        templates = TEMPLATES_BY_SITE['other'];
-        notice.showNotificationBar(
-            'Your site is not fully supported.\n' +
-            'For better support, click on the popup where it says\n' +
-            '"CLICK HERE if you get incorrect results!",\n' +
-            'provide diagnostic information, and help me help you.',
-            document
-        );
-    }
-
-    const promises_to_promises: Promise<Promise<IOrder>[]>[] = templates.map(
-        template => template + '&disableCsd=no-js'
-    ).map(
-        template => getOrdersForYearAndQueryTemplate(
-            year,
-            template,
-            scheduler,
-            nocache_top_level,
-            date_filter,
-        )
-    );
-
-    return Promise.all( promises_to_promises )
-    .then( array2_of_promise => {
-        // We can now know how many orders there are, although we may only
-        // have a promise to each order not the order itself.
-        const order_promises: Promise<IOrder>[] = [];
-        array2_of_promise.forEach( promises => {
-            promises.forEach( (promise: Promise<IOrder>) => {
-                order_promises.push(promise);
-            });
-        });
-        return order_promises;
-    });
+    date_filter: date.DateFilter,
+): Promise<IOrder[]> {
+  const headers: order_header.IOrderHeader[] = await olp.get_headers(
+    urls.getSite(),
+    year,
+    scheduler,
+    nocache_top_level,
+  );
+  return headers.map(h => create(h, scheduler, date_filter))
+                .filter(o => o) as IOrder[];
 }
 
-export function getOrdersByYear(
+export async function getOrdersByYear(
     years: number[],
     scheduler: request_scheduler.IRequestScheduler,
     latest_year: number,
-    date_filter: DateFilter,
-): Promise<Promise<IOrder>[]> {
-    // At return time we may not know how many orders there are, only
-    // how many years in which orders have been queried for.
-    return Promise.all(
-        years.map(
-            function(year: number): Promise<Promise<IOrder>[]> {
-                const nocache_top_level = (year == latest_year);
-                return fetchYear(
-                  year, scheduler, nocache_top_level, date_filter);
-            }
-        )
-    ).then(
-        (a2_of_o_promise: Promise<IOrder>[][]) => {
-            // Flatten the array of arrays of Promise<Order> into
-            // an array of Promise<Order>.
-            const order_promises: Promise<IOrder>[] = [];
-            a2_of_o_promise.forEach(
-                (year_order_promises: Promise<IOrder>[]) => {
-                    year_order_promises.forEach(
-                        (order_promise: Promise<IOrder>) => {
-                            order_promises.push(order_promise);
-                        }
-                    );
-                }
-            );
-            return order_promises;
-        }
-    );
+    date_filter: date.DateFilter,
+): Promise<IOrder[]> {
+  const orderss = await Promise.all(
+    years.map(
+      function(year: number): Promise<IOrder[]> {
+        const nocache_top_level = (year == latest_year);
+        return fetchYear(
+          year, scheduler, nocache_top_level, date_filter);
+      }
+    )
+  );
+  return orderss.flat();
 }
 
 export async function getOrdersByRange(
@@ -745,8 +293,8 @@ export async function getOrdersByRange(
   end_date: Date,
   scheduler: request_scheduler.IRequestScheduler,
   latest_year: number,
-  date_filter: DateFilter,
-): Promise<Promise<IOrder>[]> {
+  date_filter: date.DateFilter,
+): Promise<IOrder[]> {
   console.assert(start_date < end_date);
   const start_year = start_date.getFullYear();
   const end_year = end_date.getFullYear();
@@ -757,15 +305,14 @@ export async function getOrdersByRange(
   }
 
   const order_years = years.map(
-      year => {
-        const nocache_top_level = latest_year == year;
-        return fetchYear(year, scheduler, nocache_top_level, date_filter)
-      }
+    year => {
+      const nocache_top_level = latest_year == year;
+      return fetchYear(year, scheduler, nocache_top_level, date_filter)
+    }
   );
 
-  const unflattened = await util.get_settled_and_discard_rejects(order_years);
-  const flattened_promises: Promise<IOrder>[] = unflattened.flat();
-  const settled: IOrder[] = await util.get_settled_and_discard_rejects(flattened_promises);
+  const orderss = await util.get_settled_and_discard_rejects(order_years);
+  const orders: IOrder[] = orderss.flat();
 
   const f_in_date_window = async function(order: IOrder): Promise<boolean> {
     const order_date = await order.date();
@@ -776,18 +323,12 @@ export async function getOrdersByRange(
     }
   }
 
-  const filtered_orders: IOrder[] = await util.filter_by_async_predicate(
-    settled,
+  const filtered_orders = await util.filter_by_async_predicate(
+    orders,
     f_in_date_window,
   );
 
-  // Wrap each order in a promise to match getOrdersByYear return signature.
-  return filtered_orders.map(o => Promise.resolve(o));
-}
-
-function throw_order_discarded_error(order_id: string|null): void {
-  const ode = new Error('OrderDiscardedError:' + order_id);
-  throw ode;
+  return filtered_orders;
 }
 
 export async function get_legacy_items(order: IOrder)
@@ -847,10 +388,10 @@ export async function assembleDiagnostics(order: IOrder)
 export function create(
     header: order_header.IOrderHeader,
     scheduler: request_scheduler.IRequestScheduler,
-    date_filter: DateFilter,
+    date_filter: date.DateFilter,
 ): IOrder|null {
     try {
-      const impl = new OrderImpl(
+      const impl = new order_impl.OrderImpl(
         header,
         scheduler,
         date_filter,

@@ -69,3 +69,6 @@ export function normalizeDateString(ds: string): string {
     }
     return localDateFromMoment(mom);
 }
+
+export type DateFilter = (d: Date|null) => boolean;
+

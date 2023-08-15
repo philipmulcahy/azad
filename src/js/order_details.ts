@@ -2,7 +2,9 @@
 
 import * as date from './date';
 import * as extraction from './extraction';
+import * as item from './item';
 import * as order_header from './order_header';
+import * as request_scheduler from './request_scheduler';
 import * as sprintf from 'sprintf-js';
 import * as urls from './url';
 import * as util from './util';
@@ -20,11 +22,68 @@ export interface IOrderDetails {
     refund: string;
     who: string;
     invoice_url: string;
-
-    [index: string]: string|Date|null;
 };
 
-export function extractDetailFromDoc(
+export interface IOrderDetailsAndItems {
+    details: IOrderDetails;
+    items: item.IItem[];
+};
+
+export function extractDetailPromise(
+    header: order_header.IOrderHeader,
+    scheduler: request_scheduler.IRequestScheduler
+): Promise<IOrderDetailsAndItems> {
+  return new Promise<IOrderDetailsAndItems>(
+    (resolve, reject) => {
+        const context = 'id:' + header.id;
+        const url = header.detail_url;
+        if(!url) {
+            const msg = 'null order detail query: cannot schedule';
+            console.error(msg);
+            reject(msg);
+        } else {
+            const event_converter = function(
+                evt: { target: { responseText: string; }; }
+            ): IOrderDetailsAndItems {
+                const doc = util.parseStringToDOM( evt.target.responseText );
+                return {
+                    details: extractDetailFromDoc(header, doc),
+                    items: item.extractItems(
+                        util.defaulted(header.id, ''),
+                        header.date,
+                        util.defaulted(header.detail_url, ''),
+                        doc.documentElement,
+                        context,
+                    ),
+                };
+            };
+            try {
+                scheduler.scheduleToPromise<IOrderDetailsAndItems>(
+                    url,
+                    event_converter,
+                    util.defaulted(header.id, '9999'),
+                    false
+                ).then(
+                    (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => {
+                      resolve(response.result)
+                    },
+                    url => {
+                      const msg = 'scheduler rejected ' + header.id + ' ' + url;
+                      console.error(msg);
+                      reject('timeout or other problem when fetching ' + url)
+                    },
+                );
+            } catch (ex) {
+                const msg = 'scheduler upfront rejected ' + header.id + ' ' + url;
+                console.error(msg);
+                reject(msg);
+            }
+        }
+    }
+  );
+}
+
+function extractDetailFromDoc(
     header: order_header.IOrderHeader,
     doc: HTMLDocument,
 ): IOrderDetails {
