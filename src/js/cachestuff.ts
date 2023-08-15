@@ -21,6 +21,9 @@
 // 4) Sometimes a fetch contributes to multiple business objects - for example
 //    a order list page can contain 10 orders. We need to decide how to satisfy
 //    rule 3.
+// 5) There should not be more than one scheduleToPromise call in a file: if
+//    you are fetching more than one kind of query in your file, you should
+//    split it.
 //
 // As of 2023-08-13, in this code branch, there are three use patterns:
 // i)   IOrdersPageData: represents a group of typically 10 order "headers"
