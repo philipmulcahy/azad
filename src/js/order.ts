@@ -467,7 +467,6 @@ async function getOrdersForYearAndQueryTemplate(
       }
       const converted = {
         expected_order_count: expected_order_count,
-        order_elems: order_elems.map( elem => dom2json.toJSON(elem) ),
         order_headers: order_elems.map(
           elem => order_header.extractOrderHeader(elem, evt.target.responseURL)
         ),
@@ -500,7 +499,10 @@ async function getOrdersForYearAndQueryTemplate(
             return Promise.resolve(order!);
           }
       }
-      const order_promises = orders_page_data.order_headers.map(makeOrderPromise).filter(o => o);
+      const order_promises = orders_page_data
+        .order_headers
+        .map(makeOrderPromise)
+        .filter(o => o);
       return order_promises as Promise<IOrder>[];
     };
 
