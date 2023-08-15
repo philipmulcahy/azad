@@ -142,47 +142,46 @@ class LocalCacheImpl {
     }
 
     hitCount(): number {
-        return this.hit_count;
+      return this.hit_count;
     }
 
     getRealKeys(): string[] {
-        return Object.keys(window.localStorage).filter(
-            key => key.startsWith(this.key_stem)
-        );
+      return Object.keys(window.localStorage).filter(
+        key => key.startsWith(this.key_stem)
+      );
     }
 
     trim(): void {
-        console.log('trimming cache');
-        const real_keys: string[] = this.getRealKeys();
-        const timestamps_by_key: Record<string, number> = {};
-        real_keys.forEach( key => {
-            try {
-                const encoded = window.localStorage.getItem(key);
-                try {
-                    const decoded = JSON.parse(encoded!);
-                    timestamps_by_key[key] = decoded.timestamp;
-                } catch(ex) {
-                    console.error(
-                        'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
-                        encoded
-                    );
-                }
-            } catch(error) {
-                console.debug('couldn\'t get timestamp for key: ' + key);
-            }
-        });
-        const timestamps = Object.values(timestamps_by_key);
-        timestamps.sort();
-        const cutoff_timestamp = timestamps[
-          Math.floor(real_keys.length * 0.25)];
-        let removed_count = 0;
-        Object.keys(timestamps_by_key).forEach( key => {
-            if (timestamps_by_key[key] <= cutoff_timestamp) {
-                window.localStorage.removeItem(key);
-                ++removed_count;
-            }
-        });
-        console.log('removed ' + removed_count + ' entries');
+      console.log('trimming cache');
+      const real_keys: string[] = this.getRealKeys();
+      const timestamps_by_key: Record<string, number> = {};
+      real_keys.forEach( key => {
+        try {
+          const encoded = window.localStorage.getItem(key);
+          try {
+            const decoded = JSON.parse(encoded!);
+            timestamps_by_key[key] = decoded.timestamp;
+          } catch(ex) {
+            console.error(
+              'JSON.parse blew up with: ' + ex + ' while unpacking: ' + encoded
+            );
+          }
+        } catch(error) {
+          console.debug('couldn\'t get timestamp for key: ' + key);
+        }
+      });
+      const timestamps = Object.values(timestamps_by_key);
+      timestamps.sort();
+      const cutoff_timestamp = timestamps[
+        Math.floor(real_keys.length * 0.25)];
+      let removed_count = 0;
+      Object.keys(timestamps_by_key).forEach( key => {
+        if (timestamps_by_key[key] <= cutoff_timestamp) {
+          window.localStorage.removeItem(key);
+          ++removed_count;
+        }
+      });
+      console.log('removed ' + removed_count + ' entries');
     }
 
     clear() {
