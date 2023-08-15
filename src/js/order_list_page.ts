@@ -107,125 +107,125 @@ export async function get_headers(
 }
 
 const TEMPLATES_BY_SITE: Record<string, string[]> = {
-    'www.amazon.co.jp': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
-    'www.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
-   'www.amazon.com.au': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
-    'www.amazon.de': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB'],
-    'www.amazon.es': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB'],
-    'www.amazon.in': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB'],
-    'www.amazon.it': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB'],
-    'www.amazon.ca': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
-    'www.amazon.fr': ['https://%(site)s/gp/css/order-history' +
-        '?opt=ab&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&returnTo=' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s'],
-    'www.amazon.com': [
-        'https://%(site)s/gp/css/order-history' +
-        '?opt=ab' +
-        '&ie=UTF8' +
-        '&digitalOrders=1' +
-        '&unifiedOrders=0' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_US',
+  'www.amazon.co.jp': ['https://%(site)s/gp/css/order-history' +
+      '?opt=ab&digitalOrders=1' +
+      '&unifiedOrders=1' +
+      '&returnTo=' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s'],
+  'www.amazon.co.uk': ['https://%(site)s/gp/css/order-history' +
+      '?opt=ab&digitalOrders=1' +
+      '&unifiedOrders=1' +
+      '&returnTo=' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s'],
+ 'www.amazon.com.au': ['https://%(site)s/gp/css/order-history' +
+      '?opt=ab&digitalOrders=1' +
+      '&unifiedOrders=1' +
+      '&returnTo=' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s'],
+  'www.amazon.de': ['https://%(site)s/gp/css/order-history' +
+      '?opt=ab&digitalOrders=1' +
+      '&unifiedOrders=1' +
+      '&returnTo=' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s' +
+      '&language=en_GB'],
+  'www.amazon.es': ['https://%(site)s/gp/css/order-history' +
+      '?opt=ab&digitalOrders=1' +
+      '&unifiedOrders=1' +
+      '&returnTo=' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s' +
+      '&language=en_GB'],
+  'www.amazon.in': ['https://%(site)s/gp/css/order-history' +
+      '?opt=ab&digitalOrders=1' +
+      '&unifiedOrders=1' +
+      '&returnTo=' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s' +
+      '&language=en_GB'],
+  'www.amazon.it': ['https://%(site)s/gp/css/order-history' +
+      '?opt=ab&digitalOrders=1' +
+      '&unifiedOrders=1' +
+      '&returnTo=' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s' +
+      '&language=en_GB'],
+  'www.amazon.ca': ['https://%(site)s/gp/css/order-history' +
+      '?opt=ab&digitalOrders=1' +
+      '&unifiedOrders=1' +
+      '&returnTo=' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s'],
+  'www.amazon.fr': ['https://%(site)s/gp/css/order-history' +
+      '?opt=ab&digitalOrders=1' +
+      '&unifiedOrders=1' +
+      '&returnTo=' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s'],
+  'www.amazon.com': [
+      'https://%(site)s/gp/css/order-history' +
+      '?opt=ab' +
+      '&ie=UTF8' +
+      '&digitalOrders=1' +
+      '&unifiedOrders=0' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s' +
+      '&language=en_US',
 
-        'https://%(site)s/gp/css/order-history' +
-        '?opt=ab' +
-        '&ie=UTF8' +
-        '&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_US'],
-    'www.amazon.com.mx': [
-        'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_date' +
-        '?ie=UTF8' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s',
+      'https://%(site)s/gp/css/order-history' +
+      '?opt=ab' +
+      '&ie=UTF8' +
+      '&digitalOrders=1' +
+      '&unifiedOrders=1' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s' +
+      '&language=en_US'],
+  'www.amazon.com.mx': [
+      'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_date' +
+      '?ie=UTF8' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s',
 
-        'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_yo_new_digital' +
-        '?ie=UTF8' +
-        '&digitalOrders=1' +
-        '&orderFilter=year-%(year)s' +
-        '&unifiedOrders=0' +
-        '&startIndex=%(startOrderPos)s'],
-    'other': [
-        'https://%(site)s/gp/css/order-history' +
-        '?opt=ab' +
-        '&ie=UTF8' +
-        '&digitalOrders=1' +
-        '&unifiedOrders=0' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB',
+      'https://%(site)s/gp/your-account/order-history/ref=oh_aui_menu_yo_new_digital' +
+      '?ie=UTF8' +
+      '&digitalOrders=1' +
+      '&orderFilter=year-%(year)s' +
+      '&unifiedOrders=0' +
+      '&startIndex=%(startOrderPos)s'],
+  'other': [
+      'https://%(site)s/gp/css/order-history' +
+      '?opt=ab' +
+      '&ie=UTF8' +
+      '&digitalOrders=1' +
+      '&unifiedOrders=0' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s' +
+      '&language=en_GB',
 
-        'https://%(site)s/gp/css/order-history' +
-        '?opt=ab' +
-        '&ie=UTF8' +
-        '&digitalOrders=1' +
-        '&unifiedOrders=1' +
-        '&orderFilter=year-%(year)s' +
-        '&startIndex=%(startOrderPos)s' +
-        '&language=en_GB'],
+      'https://%(site)s/gp/css/order-history' +
+      '?opt=ab' +
+      '&ie=UTF8' +
+      '&digitalOrders=1' +
+      '&unifiedOrders=1' +
+      '&orderFilter=year-%(year)s' +
+      '&startIndex=%(startOrderPos)s' +
+      '&language=en_GB'],
 };
 
 function selectTemplates(site: string): string[] {
   let templates: string[] = TEMPLATES_BY_SITE[site];
   if ( !templates ) {
-      templates = TEMPLATES_BY_SITE['other'];
-      notice.showNotificationBar(
-          'Your site is not fully supported.\n' +
-          'For better support, click on the popup where it says\n' +
-          '"CLICK HERE if you get incorrect results!",\n' +
-          'provide diagnostic information, and help me help you.',
-          document
-      );
+    templates = TEMPLATES_BY_SITE['other'];
+    notice.showNotificationBar(
+      'Your site is not fully supported.\n' +
+      'For better support, click on the popup where it says\n' +
+      '"CLICK HERE if you get incorrect results!",\n' +
+      'provide diagnostic information, and help me help you.',
+      document
+    );
   }
   return templates.map(t => t + '&disableCsd=no-js');
 }
@@ -253,37 +253,38 @@ function translateOrdersPage(
   const d = util.parseStringToDOM(evt.target.responseText);
   const context = 'Converting orders page';
   const countSpan = util.findSingleNodeValue(
-      './/span[@class="num-orders"]', d.documentElement, context);
+    './/span[@class="num-orders"]', d.documentElement, context);
   if ( !countSpan ) {
-      const msg = 'Error: cannot find order count elem in: ' + evt.target.responseText
-      console.error(msg);
-      throw(msg);
+    const msg = 'Error: cannot find order count elem in: '
+    + evt.target.responseText;
+    console.error(msg);
+    throw(msg);
   }
   const textContent = countSpan.textContent;
   const splits = textContent!.split(' ');
   if (splits.length == 0) {
-      const msg = 'Error: not enough parts';
-      console.error(msg);
-      throw(msg);
+    const msg = 'Error: not enough parts';
+    console.error(msg);
+    throw(msg);
   }
   const expected_order_count: number = parseInt( splits[0], 10 );
   console.log(
-      'Found ' + expected_order_count + ' orders for ' + period
+    'Found ' + expected_order_count + ' orders for ' + period
   );
   if(isNaN(expected_order_count)) {
-      console.warn(
-          'Error: cannot find order count in ' + countSpan.textContent
-      );
+    console.warn(
+      'Error: cannot find order count in ' + countSpan.textContent
+    );
   }
   let ordersElem;
   try {
       ordersElem = d.getElementById('ordersContainer');
   } catch(err) {
-      const msg = 'Error: maybe you\'re not logged into ' +
-                  'https://' + urls.getSite() + '/gp/css/order-history ' +
-                  err;
-      console.warn(msg)
-      throw msg;
+    const msg = 'Error: maybe you\'re not logged into ' +
+                'https://' + urls.getSite() + '/gp/css/order-history ' +
+                err;
+    console.warn(msg)
+    throw msg;
   }
   const order_elems: HTMLElement[] = util.findMultipleNodeValues(
     './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
@@ -293,10 +294,10 @@ function translateOrdersPage(
       elem => dom2json.toJSON(elem, getCachedAttributeNames())
   );
   if ( !serialized_order_elems.length ) {
-      console.error(
-          'no order elements in converted order list page: ' +
-          evt.target.responseURL
-      );
+    console.error(
+      'no order elements in converted order list page: ' +
+      evt.target.responseURL
+    );
   }
   const converted = {
     expected_order_count: expected_order_count,
