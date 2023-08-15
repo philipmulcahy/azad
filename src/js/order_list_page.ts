@@ -23,11 +23,12 @@ async function get_page_data(
   nocache_top_level: boolean,
 ): Promise<IOrdersPageData>
 {
+    const nocache: boolean = (start_order_number==0) ? true : nocache_top_level;
     const response = await scheduler.scheduleToPromise<IOrdersPageData>(
         generateQueryString(site, year, start_order_number, template),
         evt => translateOrdersPage(evt, year.toString()),
         scheduling_priority,
-        nocache_top_level
+        nocache,
     );
     return response.result;
 }

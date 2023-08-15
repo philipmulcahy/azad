@@ -41,7 +41,7 @@ function millisNow() {
 // Why? Because JSON.stringify and then JSON.parse
 // causes Date objects to be converted to strings.
 function restoreDates(obj: any) {
-    if (typeof(obj) == 'object') {
+    if (typeof(obj) == 'object' && obj != null) {
         // restore any immediate child date values
         Object.keys(obj)
             .filter(key => key.endsWith('date'))
@@ -124,7 +124,7 @@ class LocalCacheImpl {
             ++this.hit_count;
             const decompressed = lzjs.decompress(packed.value);
             try {
-                const result: string = JSON.parse(decompressed);
+                const result: object = JSON.parse(decompressed);
                 restoreDates(result);
                 return result;
             } catch(ex) {
