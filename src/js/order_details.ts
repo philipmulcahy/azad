@@ -49,11 +49,9 @@ export function extractDetailPromise(
                 return {
                     details: extractDetailFromDoc(header, doc),
                     items: item.extractItems(
-                        util.defaulted(header.id, ''),
-                        header.date,
-                        util.defaulted(header.detail_url, ''),
                         doc.documentElement,
-                        context,
+                        header,
+                        context
                     ),
                 };
             };

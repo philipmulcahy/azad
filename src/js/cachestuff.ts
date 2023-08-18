@@ -62,6 +62,31 @@ function restoreDates(obj: any) {
     }
 }
 
+// Find broken parent promises and fix 'em.
+// Why? Because JSON.stringify/JSON.parse causes
+// Promises to be replaced with empty objects.
+function restoreParentPromises(obj: any) {
+
+  function recursivelyRestore(obj: object, parent: object|null) {
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value == 'object') {
+        if (Object.keys(value).length == 0) {  // don't zap actual data
+          if (parent && key.startsWith('parent_') ) {
+            const parent_promise = Promise.resolve(parent);
+            (obj as {[key:string]:any})[key] = parent_promise;
+          }
+        } else if (Array.isArray(value)) {  // non empty object
+          value.forEach( child => recursivelyRestore(child, obj) );
+        } else {
+          recursivelyRestore(value, obj);
+        }
+      }
+    }
+  }
+
+  recursivelyRestore(obj, null);
+}
+
 class LocalCacheImpl {
 
     cache_name: string;
@@ -128,6 +153,7 @@ class LocalCacheImpl {
             try {
                 const result: object = JSON.parse(decompressed);
                 restoreDates(result);
+                restoreParentPromises(result);
                 return result;
             } catch(ex) {
                 console.error(

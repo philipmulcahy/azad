@@ -237,19 +237,27 @@ const ITEM_COLS: ColSpec[] = [
     {
         field_name: 'order id',
         render_func:
-            (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
+            async function(
+                entity: azad_entity.IEntity,
+                td: HTMLElement
+            ): Promise<null> {
                 const item = entity as azad_item.IItem;
-                td.innerHTML = '<a href="' + item.order_detail_url +
-                               '">' + item.order_id + '</a>';
+                const order_id = item.order_header.id;
+                const order_detail_url = item.order_header.detail_url;
+                td.innerHTML = '<a href="' + order_detail_url +
+                               '">' + order_id + '</a>';
                 return Promise.resolve(null);
             },
         is_numeric: false,
     }, {
         field_name: 'order date',
         render_func:
-            (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
+            async function(
+                entity: azad_entity.IEntity,
+                td: HTMLElement
+            ): Promise<null> {
                 const item = entity as azad_item.IItem;
-                const date = item.order_date;
+                const date = item.order_header.date;
                 td.innerHTML = date ? util.dateToDateIsoString(date): '?';
                 return Promise.resolve(null);
             },
@@ -354,19 +362,18 @@ function appendCell(
         col_spec.render_func ?
             col_spec?.render_func(entity, td) :
             (() => {
-                const field_name = col_spec.value_promise_func_name;
-                const callable_or_value: azad_entity.Field = ('id' in entity) ?
-                    (entity as azad_order.IOrder)[
-                        field_name as keyof azad_order.IOrder
-                    ]:
-                    (entity as azad_item.IItem)[
-                        field_name as keyof azad_item.IItem
-                    ];
+                const field_name: string | undefined = col_spec.value_promise_func_name;
+                if (typeof(field_name) == 'undefined') {
+                  const msg = 'empty field name not expected';
+                  console.error(msg);
+                  throw(msg);
+                }
+                const field: azad_entity.Field = azad_entity.field_from_entity(entity, <string>field_name);
                 const value_promise: Promise<azad_entity.Value> = (
-                    typeof(callable_or_value) === 'function'
+                    typeof(field) === 'function'
                 ) ?
-                    callable_or_value.bind(entity)() :
-                    Promise.resolve(callable_or_value)
+                    field.bind(entity)() :
+                    Promise.resolve(field)
                 return value_promise
                     .then(null_converter)
                     .then(
