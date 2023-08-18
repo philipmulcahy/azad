@@ -3,7 +3,7 @@
 'use strict';
 
 import * as util from './util';
-import * as extpay from './extpay_client'; 
+import * as extpay from './extpay_client';
 import * as msg from './message_types';
 import * as settings from './settings';
 
@@ -117,7 +117,7 @@ function registerConnectionListener() {
 function registerExternalConnectionListener() {
   const ALLOWED_EXTENSION_IDS: (string|undefined)[] = [
     'lanjobgdpfchcekdbfelnkhcbppkpldm',  // azad_test dev Philip@ball.local
-    'jjegocddaijoaiooabldmkcmlfdahkoe',  // EZP Regular Release 
+    'jjegocddaijoaiooabldmkcmlfdahkoe',  // EZP Regular Release
     'ccffmpedppmmccbelbkmembkkggbmnce',  // EZP Early testers Release
     'ciklnhigjmbmehniheaolibcchfmabfp'  // EZP Alpha Tester Release
   ];

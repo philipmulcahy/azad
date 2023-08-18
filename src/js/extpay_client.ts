@@ -27,7 +27,7 @@ export async function check_authorised(): Promise<boolean> {
   // found a way of un-doing the damage.
   const status = user.subscriptionStatus;
 
-  const authorised = status == 'active' || user.paid; 
+  const authorised = status == 'active' || user.paid;
   return authorised;
 }
 

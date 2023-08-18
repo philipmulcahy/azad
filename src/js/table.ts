@@ -91,7 +91,7 @@ const ORDER_COLS: ColSpec[] = [
     {
         field_name: 'items',
         render_func: (order: azad_entity.IEntity, td: HTMLElement) =>
-            (order as azad_order.IOrder).items().then( items => {
+            azad_order.get_legacy_items(order as azad_order.IOrder).then( items => {
                 const ul = td.ownerDocument!.createElement('ul');
                 for(let title in items) {
                     if (Object.prototype.hasOwnProperty.call(items, title)) {
@@ -275,7 +275,7 @@ const ITEM_COLS: ColSpec[] = [
       field_name: 'ASIN',
       value_promise_func_name: 'asin',
       is_numeric: false,
-      visibility: asin_enabled 
+      visibility: asin_enabled
     },
 ];
 
@@ -322,16 +322,6 @@ function maybe_promise_to_promise(
     } else {
         return Promise.resolve(called);
     }
-}
-
-function extract_value(
-    entity: azad_entity.IEntity,
-    field_name: string
-): Promise<azad_entity.Value> {
-    const field: azad_entity.Field = 'id' in entity ?
-        (entity as azad_order.IOrder)[field_name as keyof azad_order.IOrder] :
-        (entity as azad_item.IItem)[field_name as keyof azad_item.IItem]
-    return maybe_promise_to_promise(field);
 }
 
 function appendCell(
@@ -569,10 +559,10 @@ async function reallyDisplay(
             util.removeButton('data table');
             util.addButton(
                 'plain table',
-                function() { display(order_promises, false, items_not_orders); },
+                function() { display(orders, false, items_not_orders); },
                 'azad_table_button'
             );
-            addCsvButton(order_promises, items_not_orders)
+            addCsvButton(orders, items_not_orders)
             datatable = (<any>$('#azad_order_table')).DataTable({
                 'bPaginate': true,
                 'lengthMenu': [ [10, 25, 50, 100, -1],
@@ -640,10 +630,10 @@ async function reallyDisplay(
             util.removeButton('plain table');
             util.addButton(
                 'data table',
-                function() { display(order_promises, true, items_not_orders); },
+                function() { display(orders, true, items_not_orders); },
                 'azad_table_button'
             );
-            addCsvButton(order_promises, items_not_orders)
+            addCsvButton(orders, items_not_orders)
         }
     });
 
@@ -655,7 +645,7 @@ function addProgressBar(): void {
     progress_indicator = progress_bar.addProgressBar(document.body)
 }
 
-function addCsvButton(orders: Promise<azad_order.IOrder>[], items_not_orders: boolean): void {
+function addCsvButton(orders: azad_order.IOrder[], items_not_orders: boolean): void {
     const title = "download spreadsheet ('.csv')";
     util.addButton(	
        title,
@@ -669,20 +659,11 @@ function addCsvButton(orders: Promise<azad_order.IOrder>[], items_not_orders: bo
 }
 
 export async function display(
-    orderPromises: Promise<azad_order.IOrder>[],
+    orders: azad_order.IOrder[],
     beautiful: boolean,
     items_not_orders: boolean,
 ): Promise<HTMLTableElement> {
     console.log('amazon_order_history_table.display starting');
-    const settled = await Promise.allSettled(orderPromises);
-    const orders: azad_order.IOrder[] = settled
-        .filter(s => s.status == 'fulfilled')
-        .map(s => (s as PromiseFulfilledResult<azad_order.IOrder>).value);
-    const problems: any[] = settled
-        .filter(s => s.status == 'rejected')
-        .map(s => (s as PromiseRejectedResult).reason);
-    problems.forEach(p => console.warn('Bad order: ' + JSON.stringify(p)));
-    console.log('amazon_order_history_table.display then func starting');
     const table_promise: Promise<HTMLTableElement> = reallyDisplay(
         orders,
         beautiful,
@@ -702,24 +683,23 @@ export function dumpOrderDiagnostics(order_id: string) {
     if (order) {
         const utc_today = new Date().toISOString().substr(0,10);
         const file_name = order_id + '_' + utc_today + '.json';
-        order.assembleDiagnostics()
-            .then(
-                diagnostics => diagnostic_download.save_json_to_file(
-                    diagnostics,
-                    file_name
-                )
-            ).then(
-                () => notice.showNotificationBar(
-                    'Debug file ' + file_name + ' saved.',
-                    document
-                ),
-                err => {
-                    const msg = 'Failed to create debug file: ' + file_name +
-                                ' ' + err;
-                    console.warn(msg);
-                    notice.showNotificationBar(msg, document);
-                }
-            );
+        azad_order.assembleDiagnostics(order).then(
+            diagnostics => diagnostic_download.save_json_to_file(
+                diagnostics,
+                file_name
+            )
+        ).then(
+            () => notice.showNotificationBar(
+                'Debug file ' + file_name + ' saved.',
+                document
+            ),
+            err => {
+                const msg = 'Failed to create debug file: ' + file_name +
+                            ' ' + err;
+                console.warn(msg);
+                notice.showNotificationBar(msg, document);
+            }
+        );
     }
 }
 

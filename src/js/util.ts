@@ -220,3 +220,16 @@ export function subtract_months(date: Date, months: number): Date {
   }
   return result;
 }
+
+export function getField(
+    xpath: string,
+    elem: HTMLElement,
+    context: string
+): string|null {
+    try {
+        const valueElem = findSingleNodeValue(xpath, elem, context);
+        return valueElem!.textContent!.trim();
+    } catch (_) {
+        return null;
+    }
+}

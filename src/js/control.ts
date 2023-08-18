@@ -190,7 +190,7 @@ async function showMonthsButtons(month_counts: number[]): Promise<void> {
   month_counts.sort().forEach( month_count => {
     $('#azad_year_list').append(
       '<button class="' + classes + '" value="' + month_count + '" >' +
-      month_count + 'm</button>' 
+      month_count + 'm</button>'
     );
   });
   console.log('showMonthButtons(...) buttons placed');
@@ -227,7 +227,7 @@ async function checkFeatureAuthorised(): Promise<boolean> {
 }
 
 async function handleMonthsClick(evt: { target: { value: any; }; }) {
-  const authorised = await checkFeatureAuthorised(); 
+  const authorised = await checkFeatureAuthorised();
   if (!authorised) {
     return;
   }
