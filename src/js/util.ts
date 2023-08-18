@@ -14,6 +14,24 @@ export function defaulted<T>(
     return def_value;
 }
 
+// Returns def_value if callable throws or returns null/undefined,
+// else returns the result of callable.
+export function defaulted_call<T>(
+    callable: ()=>(T | null | undefined),
+    def_value: T
+): T {
+    try {
+      const value = callable();
+      if (value != null && typeof(value) !== 'undefined') {
+          return value;
+      }
+    }
+    catch (ex) {
+      console.log('util.defaulted_call caught ', ex);
+    }
+    return def_value;
+}
+
 export function parseStringToDOM(html: string) {
     if ( typeof(DOMParser) !== 'undefined' ) {
         // We're in a browser:

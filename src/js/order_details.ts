@@ -5,6 +5,7 @@ import * as extraction from './extraction';
 import * as item from './item';
 import * as order_header from './order_header';
 import * as request_scheduler from './request_scheduler';
+import * as shipment from './shipment';
 import * as sprintf from 'sprintf-js';
 import * as urls from './url';
 import * as util from './util';
@@ -46,6 +47,9 @@ export function extractDetailPromise(
                 evt: { target: { responseText: string; }; }
             ): IOrderDetailsAndItems {
                 const doc = util.parseStringToDOM( evt.target.responseText );
+                const shipments = shipment.getShipments(doc);
+                shipments.forEach(
+                  s => console.log('shipment: ' + s.toString()));
                 return {
                     details: extractDetailFromDoc(header, doc),
                     items: item.extractItems(
