@@ -69,7 +69,7 @@ function restoreParentPromises(obj: any) {
 
   function recursivelyRestore(obj: object, parent: object|null) {
     for (const [key, value] of Object.entries(obj)) {
-      if (typeof value == 'object') {
+      if (typeof value == 'object' && value != null) {
         if (Object.keys(value).length == 0) {  // don't zap actual data
           if (parent && key.startsWith('parent_') ) {
             const parent_promise = Promise.resolve(parent);
