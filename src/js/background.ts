@@ -244,6 +244,25 @@ async function handleAuthorisationRequest(
 	});
 }
 
+function registerVersionUpdateListener()
+{
+  chrome.runtime.onInstalled.addListener(() => {
+    console.log(
+      "Chrome has told me that either a new version of this extension or a" +
+      " new version of Chrome has been installed. This might make existing" +
+      " AZAD cache entries incompatible with the new version: let's clear" +
+      " them out.");
+    // The (big) problem with this implementation is that the cache is in the
+    // Amazon sites' cache areas, which means we can only get to them when
+    // we've got an injected tab open. I think this problem means we need to
+    // get going on https://github.com/philipmulcahy/azad/issues/231
+    // until that's fixed, users will sometimes need to manually clear their
+    // caches.
+    broadcast_to_content_pages({action: 'clear_cache'});
+  });
+}
+
+registerVersionUpdateListener();
 registerConnectionListener();
 registerRightClickActions();
 registerMessageListener();
