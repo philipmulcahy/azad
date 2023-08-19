@@ -7,7 +7,7 @@ import * as util from './util';
 
 const EXAMPLE_FULL_ITEM_LINK_PATH = "//div[contains(@class, 'a-box shipment')]//a[@class='a-link-normal' and contains(@href, '/gp/product/') and normalize-space(text())]";
 
-const FULL_SHIPMENT_PATH = "//div[contains(@class, ' shipment ')]";
+const FULL_SHIPMENT_PATH = "//div[contains(@class, 'shipment')]";
 
 const ITEM_LINK_FROM_SHIPMENT = "//a[@class='a-link-normal' and contains(@href, '/gp/product/') and normalize-space(text())]";
 const PRICE_SPAN_FROM_ITEM_LINK = "/../../div[@class='a-row']/span[contains(@class,'a-color-price')]/nobr/text()";
@@ -20,9 +20,28 @@ export interface IShipment {
 };
 
 export function getShipments(order_detail_doc: HTMLDocument): IShipment[] {
+  if (order_detail_doc.URL.includes('205-9714306-6543524')) {
+    console.log('shipment.getShipments processing 205-9714306-6543524')
+  }
   const doc_elem = order_detail_doc.documentElement;
-  const shipment_elems = util.findMultipleNodeValues(FULL_SHIPMENT_PATH, doc_elem);
-  const shipments = shipment_elems.map(e => shipmentFromElem(e as HTMLElement));
+
+  const candidates = util.findMultipleNodeValues(
+		"//div[contains(@class, 'shipment')]",
+		doc_elem);
+
+  // We want elem to have 'shipment' as one of its classes
+  // not just have one of its classes _contain_ 'shipment' in its name.
+  // There may be a way to do this in xpath, but it wouldn't be very
+  // readable, and I am also a bit short on sleep.
+  const elems = candidates.filter(
+		  elem => {
+				const cs: string = util.defaulted(
+					(elem as HTMLElement)!.getAttribute('class'), '');
+				const classes: string[] = cs.split(' ');
+				return classes.includes('shipment');
+			});
+
+  const shipments = elems.map(e => shipmentFromElem(e as HTMLElement));
   return shipments;
 }
 

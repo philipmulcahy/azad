@@ -25,7 +25,7 @@ export function by_regex(
                 context,
             );
         } catch ( ex ) {
-            console.log('Caught ' + JSON.stringify(ex));
+            console.debug('Caught ' + JSON.stringify(ex));
         }
         if ( a ) {
             if ( regex ) {

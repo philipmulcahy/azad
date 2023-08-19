@@ -11,9 +11,13 @@ export function get(name: string): number {
 }
 
 export function publish(port: chrome.runtime.Port, purpose: string) {
+  try {
     port.postMessage({
         action: 'statistics_update',
         statistics: stats,
         purpose: purpose,
     });
+  } catch(ex) {
+    console.debug('statistics.publish threw ', ex);
+  }
 }
