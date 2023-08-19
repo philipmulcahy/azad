@@ -29,26 +29,18 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.9.30
+---------------
+Item ASIN and last 1/2/3 months' orders features are free to all users.
+Partial implementation of automatic cache clearance when a new version is installed.
+
 Changes 1.9.28
 ---------------
 Fix broken links on control popup.
 
-Changes 1.9.27
----------------
-Performance improvement for 1, 2 & 3 months fetch feature.
-Fetch progress bar displayed as soon as the number of orders is known.
-
-Changes 1.9.26
----------------
-ExtPay/Stripe preview charity donation/subscription integration
-Preview of item ASIN column
-Preview of most recent 1, 2, 3 months instead of whole years
-Security patches
-Misc fixes (thanks iloveitaly)
-Removed smile URLs: Programme was shut down earlier in 2023
-Support for English version of .co.jp
-Support for .nl and .be (thanks doegox)
-Better payment scraping (but far from perfect)
+Planned / Coming Soon
+----------------
+Shipments, deliveries, tracking links.
 
 Source Code
 -------------
@@ -59,4 +51,4 @@ Donations
 ---------------
 I have a day job, and cannot accept personal donations.
 Don't worry: just redirect your gratitude here instead: https://www.justgiving.com/fundraising/azad-pah
-If you seek commercial features, please read https://github.com/philipmulcahy/azad#commercial-features-20212022 before even thinking about contacting me directly. I am bored of reading proposals from malware distributors.
+If you seek commercial features, please read https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md before even thinking about contacting me directly. I am bored of reading proposals from malware distributors.
