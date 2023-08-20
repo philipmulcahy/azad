@@ -28,6 +28,7 @@ export interface IOrderDetails {
 export interface IOrderDetailsAndItems {
     details: IOrderDetails;
     items: item.IItem[];
+    shipments: shipment.IShipment[];
 };
 
 export function extractDetailPromise(
@@ -47,7 +48,7 @@ export function extractDetailPromise(
                 evt: { target: { responseText: string; }; }
             ): IOrderDetailsAndItems {
                 const doc = util.parseStringToDOM( evt.target.responseText );
-                const shipments = shipment.getShipments(doc);
+                const shipments = shipment.get_shipments(doc);
                 shipments.forEach(
                   s => console.log('shipment: ' + s.toString()));
                 return {
@@ -57,6 +58,7 @@ export function extractDetailPromise(
                         header,
                         context
                     ),
+                    shipments: shipments,
                 };
             };
             try {

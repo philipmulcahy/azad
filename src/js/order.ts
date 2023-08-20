@@ -13,6 +13,7 @@ import * as order_header from './order_header';
 import * as olp from './order_list_page';
 import * as order_impl from './order_impl';
 import * as signin from './signin';
+import * as shipment from './shipment';
 import * as sprintf from 'sprintf-js';
 import * as request_scheduler from './request_scheduler';
 import * as urls from './url';
@@ -33,6 +34,7 @@ export interface IOrder extends azad_entity.IEntity {
     gift(): Promise<string>;
     gst(): Promise<string>;
     item_list(): Promise<item.IItem[]>;
+    shipments(): Promise<shipment.IShipment[]>;
     payments(): Promise<string[]>;
     postage(): Promise<string>;
     postage_refund(): Promise<string>;
@@ -55,6 +57,7 @@ interface ISyncOrder extends azad_entity.IEntity {
     gift: string;
     gst: string;
     item_list: item.IItem[];
+    shipments: shipment.IShipment[];
     payments: string[];
     postage: string;
     postage_refund: string;
@@ -76,6 +79,7 @@ class SyncOrder implements ISyncOrder {
     date: Date|null = null;
     gift: string = '';
     gst: string = '';
+    shipments: shipment.IShipment[] = [];
     item_list: item.IItem[] = [];
     payments: string[] = [];
     postage: string = '';
@@ -102,6 +106,7 @@ class SyncOrder implements ISyncOrder {
         date: ()=>Promise.resolve(this.date),
         gift: ()=>Promise.resolve(this.gift),
         gst: ()=>Promise.resolve(this.gst),
+        shipments: ()=>Promise.resolve(this.shipments),
         item_list: ()=>Promise.resolve(this.item_list),
         payments: ()=>Promise.resolve(this.payments),
         postage: ()=>Promise.resolve(this.postage),
@@ -133,6 +138,7 @@ class Order implements IOrder{
         const date = await this.date();
         const gift = await this.gift();
         const gst = await this.gst();
+        const shipments = await this.shipments();
         const item_list = await this.item_list();
         const payments = await this.payments();
         const postage = await this.postage();
@@ -154,6 +160,7 @@ class Order implements IOrder{
             date: date,
             gift: gift,
             gst: gst,
+            shipments: shipments,
             item_list: item_list,
             payments: payments,
             postage: postage,
@@ -191,6 +198,12 @@ class Order implements IOrder{
     }
     who(): Promise<string> {
         return Promise.resolve(util.defaulted(this.impl.header.who, ''));
+    }
+    shipments(): Promise<shipment.IShipment[]> {
+      if (this.impl.detail_promise) {
+        return this.impl.detail_promise.then( details => details.shipments );
+      }
+      return Promise.resolve([]);
     }
     item_list(): Promise<item.IItem[]> {
         const items: item.IItem[] = [];

@@ -12,17 +12,45 @@ const FULL_SHIPMENT_PATH = "//div[contains(@class, 'shipment')]";
 const ITEM_LINK_FROM_SHIPMENT = "//a[@class='a-link-normal' and contains(@href, '/gp/product/') and normalize-space(text())]";
 const PRICE_SPAN_FROM_ITEM_LINK = "/../../div[@class='a-row']/span[contains(@class,'a-color-price')]/nobr/text()";
 
+export interface ITransaction {
+  payment_amount: string;
+  info_string: string;
+}
+
 export interface IShipment {
   // items: item.IItem[],
-  delivered: boolean,
-  status: string,
-  tracking_link: string,
+  delivered: boolean;
+  status: string;
+  tracking_link: string;
+  transaction: ITransaction|null
 };
 
-export function getShipments(order_detail_doc: HTMLDocument): IShipment[] {
+function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
+  const transaction_elems = util.findMultipleNodeValues(
+    "//span[normalize-space(text())= 'Transactions']/../../div[contains(@class, 'expander')]/div[contains(@class, 'a-row')]/span/nobr/..",
+    order_detail_doc.documentElement);
+  const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
+  return transactions;
+}
+
+function transaction_from_elem(elem: HTMLElement): ITransaction {
+  function enthusiastically_strip(e: Node): string {
+    return util.defaulted(e.textContent, '').replace(/\s\s+/g, ' ').trim();
+  }
+  const info_string = enthusiastically_strip(elem.childNodes[0]);
+  const payment_amount = enthusiastically_strip(elem.childNodes[1]);
+  return {
+    payment_amount: payment_amount,
+    info_string: info_string,
+  }
+}
+
+export function get_shipments(order_detail_doc: HTMLDocument): IShipment[] {
   if (order_detail_doc.URL.includes('205-9714306-6543524')) {
     console.log('shipment.getShipments processing 205-9714306-6543524')
   }
+  const transactions = get_transactions(order_detail_doc);
+
   const doc_elem = order_detail_doc.documentElement;
 
   const candidates = util.findMultipleNodeValues(
@@ -41,15 +69,22 @@ export function getShipments(order_detail_doc: HTMLDocument): IShipment[] {
 				return classes.includes('shipment');
 			});
 
-  const shipments = elems.map(e => shipmentFromElem(e as HTMLElement));
+  const shipments = elems.map(e => shipment_from_elem(e as HTMLElement));
+
+  if (shipments.length == transactions.length) {
+    for (let i=0; i!=shipments.length; ++i) {
+      shipments[i].transaction = transactions[i];
+    }
+  }
   return shipments;
 }
 
-function shipmentFromElem(shipment_elem: HTMLElement): IShipment {
+function shipment_from_elem(shipment_elem: HTMLElement): IShipment {
   return {
     delivered: is_delivered(shipment_elem),
-    status: status(shipment_elem),
+    status: get_status(shipment_elem),
     tracking_link: tracking_link(shipment_elem),
+    transaction: null,
   };
 }
 
@@ -59,10 +94,10 @@ function is_delivered(shipment_elem: HTMLElement): boolean {
     (attr as string).includes('shipment-is-delivered'), false);
 }
 
-function status(shipment_elem: HTMLElement): string {
+function get_status(shipment_elem: HTMLElement): string {
   try {
     const elem = util.findSingleNodeValue(
-      "/div/div[contains(@class, 'shipment-info-container')]//div[@class='a-row']/span",
+      "//div[contains(@class, 'shipment-info-container')]//div[@class='a-row']/span",
       shipment_elem,
       'shipment.status'
     );
