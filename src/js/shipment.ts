@@ -2,6 +2,7 @@
 
 import * as item from './item';
 import * as extraction from './extraction';
+import * as order_header from './order_header';
 import * as util from './util';
 
 
@@ -18,12 +19,53 @@ export interface ITransaction {
 }
 
 export interface IShipment {
-  // items: item.IItem[],
+  items: item.IItem[],
   delivered: boolean;
   status: string;
   tracking_link: string;
   transaction: ITransaction|null
 };
+
+export function get_shipments(
+  order_detail_doc: HTMLDocument,
+  order_header: order_header.IOrderHeader,
+  context: string,
+): IShipment[] {
+  if (order_detail_doc.URL.includes('205-9714306-6543524')) {
+    console.log('shipment.getShipments processing 205-9714306-6543524')
+  }
+  const doc_elem = order_detail_doc.documentElement;
+  const transactions = get_transactions(order_detail_doc);
+
+  const candidates = util.findMultipleNodeValues(
+		"//div[contains(@class, 'shipment')]",
+		doc_elem);
+
+  // We want elem to have 'shipment' as one of its classes
+  // not just have one of its classes _contain_ 'shipment' in its name.
+  // There may be a way to do this in xpath, but it wouldn't be very
+  // readable, and I am also a bit short on sleep.
+  const elems = candidates.filter(
+		  elem => {
+				const cs: string = util.defaulted(
+					(elem as HTMLElement)!.getAttribute('class'), '');
+				const classes: string[] = cs.split(' ');
+				return classes.includes('shipment');
+			});
+
+  const shipments = elems.map(e => shipment_from_elem(
+    e as HTMLElement,
+    order_header,
+    context,
+  ));
+
+  if (shipments.length == transactions.length) {
+    for (let i=0; i!=shipments.length; ++i) {
+      shipments[i].transaction = transactions[i];
+    }
+  }
+  return shipments;
+}
 
 function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
   const transaction_elems = util.findMultipleNodeValues(
@@ -45,42 +87,13 @@ function transaction_from_elem(elem: HTMLElement): ITransaction {
   }
 }
 
-export function get_shipments(order_detail_doc: HTMLDocument): IShipment[] {
-  if (order_detail_doc.URL.includes('205-9714306-6543524')) {
-    console.log('shipment.getShipments processing 205-9714306-6543524')
-  }
-  const transactions = get_transactions(order_detail_doc);
-
-  const doc_elem = order_detail_doc.documentElement;
-
-  const candidates = util.findMultipleNodeValues(
-		"//div[contains(@class, 'shipment')]",
-		doc_elem);
-
-  // We want elem to have 'shipment' as one of its classes
-  // not just have one of its classes _contain_ 'shipment' in its name.
-  // There may be a way to do this in xpath, but it wouldn't be very
-  // readable, and I am also a bit short on sleep.
-  const elems = candidates.filter(
-		  elem => {
-				const cs: string = util.defaulted(
-					(elem as HTMLElement)!.getAttribute('class'), '');
-				const classes: string[] = cs.split(' ');
-				return classes.includes('shipment');
-			});
-
-  const shipments = elems.map(e => shipment_from_elem(e as HTMLElement));
-
-  if (shipments.length == transactions.length) {
-    for (let i=0; i!=shipments.length; ++i) {
-      shipments[i].transaction = transactions[i];
-    }
-  }
-  return shipments;
-}
-
-function shipment_from_elem(shipment_elem: HTMLElement): IShipment {
+function shipment_from_elem(
+  shipment_elem: HTMLElement,
+  order_header: order_header.IOrderHeader,
+  context: string
+): IShipment {
   return {
+    items: item.extractItems(shipment_elem, order_header, context),
     delivered: is_delivered(shipment_elem),
     status: get_status(shipment_elem),
     tracking_link: tracking_link(shipment_elem),

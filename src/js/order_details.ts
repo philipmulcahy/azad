@@ -48,7 +48,7 @@ export function extractDetailPromise(
                 evt: { target: { responseText: string; }; }
             ): IOrderDetailsAndItems {
                 const doc = util.parseStringToDOM( evt.target.responseText );
-                const shipments = shipment.get_shipments(doc);
+                const shipments = shipment.get_shipments(doc, header, context);
                 shipments.forEach(
                   s => console.log('shipment: ' + s.toString()));
                 return {
