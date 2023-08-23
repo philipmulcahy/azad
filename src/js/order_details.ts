@@ -53,11 +53,13 @@ export function extractDetailPromise(
                   s => console.log('shipment: ' + s.toString()));
                 return {
                     details: extractDetailFromDoc(header, doc),
-                    items: item.extractItems(
+                    items: header.id.startsWith('D') ?
+                      item.extractItems(
                         doc.documentElement,
                         header,
-                        context
-                    ),
+                        context,
+                      ):
+                      shipments.map(s => s.items).flat(),
                     shipments: shipments,
                 };
             };
