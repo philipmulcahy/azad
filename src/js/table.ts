@@ -110,6 +110,27 @@ const ORDER_COLS: ColSpec[] = [
         is_numeric: false,
     },
     {
+        field_name: 'shipment_derived_items',
+        render_func: async function(
+          order: azad_entity.IEntity,
+          td: HTMLElement
+        ) {
+          const shipments = await (order as azad_order.IOrder).shipments();
+          const items = shipments.map(s => s.items).flat();
+          const ul = td.ownerDocument!.createElement('ul');
+          td.textContent = '';
+          td.appendChild(ul);
+          items.forEach(items => {
+            const li = td.ownerDocument!.createElement('li');
+            ul.appendChild(li);
+            const item_string = JSON.stringify(items);
+            li.textContent = item_string;
+          });
+          return null;
+        },
+        is_numeric: false,
+    },
+    {
         field_name: 'shipments',
         render_func: async function(order: azad_entity.IEntity, td: HTMLElement) {
           const shipments = await (order as azad_order.IOrder).shipments();
