@@ -53,13 +53,11 @@ export function extractDetailPromise(
                   s => console.log('shipment: ' + s.toString()));
                 return {
                     details: extractDetailFromDoc(header, doc),
-                    items: header.id.startsWith('D') ?
-                      item.extractItems(
-                        doc.documentElement,
-                        header,
-                        context,
-                      ):
-                      shipments.map(s => s.items).flat(),
+                    items: get_items(
+											header,
+											doc.documentElement,
+											shipments,
+											context),
                     shipments: shipments,
                 };
             };
@@ -87,6 +85,29 @@ export function extractDetailPromise(
         }
     }
   );
+}
+
+function get_items(
+	header: order_header.IOrderHeader,
+  order_detail_page_elem: HTMLElement,
+	shipments: shipment.IShipment[],
+	context: string,
+): item.IItem[] {
+	let items: item.IItem[] = [];
+  if ( shipments.length == 0 ) {
+		// We know we are doomed with fishing items out of shipments
+    // for a digital order or where we've failed to scrape any shipments.
+		items = shipments.map(s => s.items).flat();
+	}
+	if ( items.length == 0 ) {
+    // Try the "legacy" item extraction strategy.
+		items = item.extractItems(
+			order_detail_page_elem,
+			header,
+			context,
+		);
+	}
+	return items;
 }
 
 function extractDetailFromDoc(
