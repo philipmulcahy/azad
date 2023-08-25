@@ -7,6 +7,7 @@ import * as azad_item from './item';
 import * as azad_order from './order';
 import * as csv from './csv';
 import * as diagnostic_download from './diagnostic_download';
+import * as item from './item';
 import * as notice from './notice';
 import * as progress_bar from './progress_bar';
 import * as settings from './settings';
@@ -129,6 +130,54 @@ const ORDER_COLS: ColSpec[] = [
           return null;
         },
         is_numeric: false,
+				visibility: ()=>Promise.resolve(false),
+    },
+    {
+        field_name: 'item_reconciliation',
+        render_func: async function(
+          order: azad_entity.IEntity,
+          td: HTMLElement
+        ) {
+					const normalise_items = function(items: azad_item.IItem[]): Set<string> {
+						return new Set(items.sort(
+							(a: item.IItem,
+							 b: item.IItem) => a.description.localeCompare(b.description)
+						).map(item => item.description));
+					}
+          const shipments = await (order as azad_order.IOrder).shipments();
+          const merged_items = normalise_items(await (order as azad_order.IOrder).item_list());
+					const shipment_items = normalise_items(shipments.map(s => s.items).flat());
+
+					const missing_in_merged = Array.from(shipment_items).filter( i => !merged_items.has(i) );
+					const missing_in_shipments = Array.from(merged_items).filter( i => !shipment_items.has(i) );
+
+          td.textContent = '';
+					const doc = td.ownerDocument;
+					const table = doc!.createElement('table');
+					const row = doc!.createElement('row');
+					td.appendChild(table);
+					table.appendChild(row);
+					function populate_list(row: HTMLElement, items: string[], header: string) {
+					  const td = doc!.createElement('td');
+						row.appendChild(td);
+						const ul = doc!.createElement('ul');
+						td.appendChild(ul);
+						function append_item(s: string) {
+							const li = doc!.createElement('li');
+							li.textContent = s;
+							ul.appendChild(li);
+						}
+						append_item(header);
+						items.forEach(item => {
+							append_item(item);	
+						});
+					}
+					populate_list(row, missing_in_merged, 'missing from merged');
+					populate_list(row, missing_in_shipments, 'missing from shipments');
+          return null;
+        },
+        is_numeric: false,
+				visibility: ()=>Promise.resolve(false),
     },
     {
         field_name: 'shipments',

@@ -94,9 +94,7 @@ function get_items(
 	context: string,
 ): item.IItem[] {
 	let items: item.IItem[] = [];
-  if ( shipments.length == 0 ) {
-		// We know we are doomed with fishing items out of shipments
-    // for a digital order or where we've failed to scrape any shipments.
+  if ( shipments.length != 0 ) {
 		items = shipments.map(s => s.items).flat();
 	}
 	if ( items.length == 0 ) {
