@@ -11,6 +11,7 @@ import * as item from './item';
 import * as notice from './notice';
 import * as progress_bar from './progress_bar';
 import * as settings from './settings';
+import * as shipment from './shipment';
 import * as sprintf from 'sprintf-js';
 import * as stats from './statistics';
 import * as urls from './url';
@@ -186,11 +187,24 @@ const ORDER_COLS: ColSpec[] = [
           const ul = td.ownerDocument!.createElement('ul');
           td.textContent = '';
           td.appendChild(ul);
-          shipments.forEach(shipment => {
+          shipments.forEach(s => {
             const li = td.ownerDocument!.createElement('li');
             ul.appendChild(li);
-            const shipment_string = JSON.stringify(shipment);
-            li.textContent = shipment_string;
+						// {
+						// 	"delivered": false,
+						// 	"status": "UNKNOWN",
+						// 	"tracking_link": "",
+						// 	"transaction": {
+						// 		"payment_amount": "£8.39",
+						// 		"info_string": "9 January 2023 - AmericanExpress ending in 1013:"
+						// 	}
+						// }
+						const t = s.transaction;
+						let html = 'delivered: ' + shipment.Delivered[s.delivered] +
+                       '; status: ' + s.status +
+                       (s.tracking_link != '' ? '; <a href="' + s.tracking_link + '">tracking link</a>' : '') +
+											 (t ? ('; transaction: ' + t.payment_amount + ' ' + t.info_string) : '')
+            li.innerHTML = html;
           });
           return null;
         },

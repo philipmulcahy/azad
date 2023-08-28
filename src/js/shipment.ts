@@ -18,9 +18,15 @@ export interface ITransaction {
   info_string: string;
 }
 
+export enum Delivered {
+  YES = 1,
+  NO,
+  UNKNOWN,
+}
+
 export interface IShipment {
   items: item.IItem[],
-  delivered: boolean;
+  delivered: Delivered;
   status: string;
   tracking_link: string;
   transaction: ITransaction|null
@@ -101,10 +107,12 @@ function shipment_from_elem(
   };
 }
 
-function is_delivered(shipment_elem: HTMLElement): boolean {
+function is_delivered(shipment_elem: HTMLElement): Delivered {
   const attr = shipment_elem.getAttribute('class');
-  return util.defaulted(
-    (attr as string).includes('shipment-is-delivered'), false);
+	if ((attr as string).includes('shipment-is-delivered')) {
+		return Delivered.YES;
+  }
+	return Delivered.UNKNOWN;
 }
 
 function get_status(shipment_elem: HTMLElement): string {
