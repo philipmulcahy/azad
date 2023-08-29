@@ -91,19 +91,21 @@ async function updateElements(
 
 async function setElemClickHandlers(key_to_elem: Record<string, HTMLElement>): Promise<void> {
   console.info('settings.setElemClickHandlers() starting');
-  const preview_authorised = await getBoolean('preview_features_enabled');
   for( let key of Object.keys(key_to_elem) ) {
     const elem = key_to_elem[key];
     if (elem) {
       elem.onclick = async function() {
         let value: boolean = await getBoolean(key);
         value = value ? false : true;
+        const preview_authorised = await getBoolean(
+          'preview_features_enabled');
+        if (!preview_authorised) {
+          alert(ui_messages.preview_feature_disabled);
+          value = false;
+        }
         storeBoolean(key, value);
         if (elem) {
           updateElement(elem, value);
-        }
-        if (!preview_authorised) {
-          alert(ui_messages.preview_feature_disabled);
         }
       };
     }

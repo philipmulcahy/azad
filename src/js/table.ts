@@ -190,15 +190,6 @@ const ORDER_COLS: ColSpec[] = [
           shipments.forEach(s => {
             const li = td.ownerDocument!.createElement('li');
             ul.appendChild(li);
-						// {
-						// 	"delivered": false,
-						// 	"status": "UNKNOWN",
-						// 	"tracking_link": "",
-						// 	"transaction": {
-						// 		"payment_amount": "£8.39",
-						// 		"info_string": "9 January 2023 - AmericanExpress ending in 1013:"
-						// 	}
-						// }
 						const t = s.transaction;
 						let html = 'delivered: ' + shipment.Delivered[s.delivered] +
                        '; status: ' + s.status +
@@ -209,6 +200,7 @@ const ORDER_COLS: ColSpec[] = [
           return null;
         },
         is_numeric: false,
+				visibility: shipment_info_enabled,
     },
     {
         field_name: 'to',
@@ -392,6 +384,12 @@ async function asin_enabled(): Promise<boolean> {
   const ezp_mode = await settings.getBoolean('ezp_mode');
   const show_asin_in_items_view = await settings.getBoolean('show_asin_in_items_view');
   return ezp_mode || show_asin_in_items_view;
+}
+
+async function shipment_info_enabled(): Promise<boolean> {
+  const show_shipment_info = await settings.getBoolean('show_shipment_info');
+  const preview_features_authorised = await settings.getBoolean('preview_features_enabled');
+	return show_shipment_info && preview_features_authorised;
 }
 
 function getCols(

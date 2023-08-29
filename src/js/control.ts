@@ -183,9 +183,7 @@ function showYearButtons(years: number[]) {
 async function showMonthsButtons(month_counts: number[]): Promise<void> {
   console.log('show month buttons', month_counts);
   $('.azad_months_button').remove();
-  // const authorised = await settings.getBoolean('preview_features_enabled');
-  // console.log('showMonthButtons(...) authorised = ' + authorised);
-  const classes = 'azad_months_button'; // + (authorised ? '' : ' azad_disabled');
+  const classes = 'azad_months_button';
   console.log('showMonthButtons(...) classes = ' + classes);
   month_counts.sort().forEach( month_count => {
     $('#azad_year_list').append(
