@@ -116,9 +116,23 @@ function registerExternalConnectionListener() {
     sender: chrome.runtime.MessageSender,
     sendResponse: (response?: any) => void
   ) {
-    if (!ALLOWED_EXTENSION_IDS.includes(sender.id))
+    const DEBUG_extMessaging = true;
+
+    if (DEBUG_extMessaging)
+      console.log(
+        `Rcvd Ext Msg: (Prior to Whitlist Filter) From:${sender.id} Msg:`,
+        message
+      );
+
+    if (!ALLOWED_EXTENSION_IDS.includes(sender.id)) {
+      if (DEBUG_extMessaging)
+        console.log(
+          `  Message Ignored: Sender (${sender.id}) is not Whitlisted..`,
+          message
+        );
+
       return; // don't allow access
-    else if (message.action == "get_items_3m") {
+    } else if (message.action == "get_items_3m") {
       const month_count = 3;
       const end_date = new Date();
       const start_date = util.subtract_months(end_date, month_count);
