@@ -5,6 +5,7 @@ import 'datatables';
 import * as azad_entity from './entity';
 import * as azad_item from './item';
 import * as azad_order from './order';
+import * as order_util from './order_util';
 import * as csv from './csv';
 import * as diagnostic_download from './diagnostic_download';
 import * as item from './item';
@@ -111,96 +112,96 @@ const ORDER_COLS: ColSpec[] = [
             }),
         is_numeric: false,
     },
-    {
-        field_name: 'shipment_derived_items',
-        render_func: async function(
-          order: azad_entity.IEntity,
-          td: HTMLElement
-        ) {
-          const shipments = await (order as azad_order.IOrder).shipments();
-          const items = shipments.map(s => s.items).flat();
-          const ul = td.ownerDocument!.createElement('ul');
-          td.textContent = '';
-          td.appendChild(ul);
-          items.forEach(items => {
-            const li = td.ownerDocument!.createElement('li');
-            ul.appendChild(li);
-            const item_string = JSON.stringify(items);
-            li.textContent = item_string;
-          });
-          return null;
-        },
-        is_numeric: false,
-				visibility: ()=>Promise.resolve(false),
-    },
+    // {
+    //     field_name: 'shipment_derived_items',
+    //     render_func: async function(
+    //       order: azad_entity.IEntity,
+    //       td: HTMLElement
+    //     ) {
+    //       const shipments = await (order as azad_order.IOrder).shipments();
+    //       const items = shipments.map(s => s.items).flat();
+    //       const ul = td.ownerDocument!.createElement('ul');
+    //       td.textContent = '';
+    //       td.appendChild(ul);
+    //       items.forEach(items => {
+    //         const li = td.ownerDocument!.createElement('li');
+    //         ul.appendChild(li);
+    //         const item_string = JSON.stringify(items);
+    //         li.textContent = item_string;
+    //       });
+    //       return null;
+    //     },
+    //     is_numeric: false,
+    // visibility: ()=>Promise.resolve(false),
+    // },
     {
         field_name: 'item_reconciliation',
         render_func: async function(
           order: azad_entity.IEntity,
           td: HTMLElement
         ) {
-					const normalise_items = function(items: azad_item.IItem[]): Set<string> {
-						return new Set(items.sort(
-							(a: item.IItem,
-							 b: item.IItem) => a.description.localeCompare(b.description)
-						).map(item => item.description));
-					}
+          const normalise_items = function(items: azad_item.IItem[]): Set<string> {
+            return new Set(items.sort(
+              (a: item.IItem,
+               b: item.IItem) => a.description.localeCompare(b.description)
+            ).map(item => item.description));
+          }
           const shipments = await (order as azad_order.IOrder).shipments();
           const merged_items = normalise_items(await (order as azad_order.IOrder).item_list());
-					const shipment_items = normalise_items(shipments.map(s => s.items).flat());
+          const shipment_items = normalise_items(shipments.map(s => s.items).flat());
 
-					const missing_in_merged = Array.from(shipment_items).filter( i => !merged_items.has(i) );
-					const missing_in_shipments = Array.from(merged_items).filter( i => !shipment_items.has(i) );
+          const missing_in_merged = Array.from(shipment_items).filter( i => !merged_items.has(i) );
+          const missing_in_shipments = Array.from(merged_items).filter( i => !shipment_items.has(i) );
 
           td.textContent = '';
-					const doc = td.ownerDocument;
-					const table = doc!.createElement('table');
-					const row = doc!.createElement('row');
-					td.appendChild(table);
-					table.appendChild(row);
-					function populate_list(row: HTMLElement, items: string[], header: string) {
-					  const td = doc!.createElement('td');
-						row.appendChild(td);
-						const ul = doc!.createElement('ul');
-						td.appendChild(ul);
-						function append_item(s: string) {
-							const li = doc!.createElement('li');
-							li.textContent = s;
-							ul.appendChild(li);
-						}
-						append_item(header);
-						items.forEach(item => {
-							append_item(item);	
-						});
-					}
-					populate_list(row, missing_in_merged, 'missing from merged');
-					populate_list(row, missing_in_shipments, 'missing from shipments');
+          const doc = td.ownerDocument;
+          const table = doc!.createElement('table');
+          const row = doc!.createElement('row');
+          td.appendChild(table);
+          table.appendChild(row);
+          function populate_list(row: HTMLElement, items: string[], header: string) {
+            const td = doc!.createElement('td');
+            row.appendChild(td);
+            const ul = doc!.createElement('ul');
+            td.appendChild(ul);
+            function append_item(s: string) {
+              const li = doc!.createElement('li');
+              li.textContent = s;
+              ul.appendChild(li);
+            }
+            append_item(header);
+            items.forEach(item => {
+              append_item(item);
+            });
+          }
+          populate_list(row, missing_in_merged, 'missing from merged');
+          populate_list(row, missing_in_shipments, 'missing from shipments');
           return null;
         },
         is_numeric: false,
-				visibility: ()=>Promise.resolve(false),
+        visibility: ()=>Promise.resolve(false),
     },
-    {
-        field_name: 'shipments',
-        render_func: async function(order: azad_entity.IEntity, td: HTMLElement) {
-          const shipments = await (order as azad_order.IOrder).shipments();
-          const ul = td.ownerDocument!.createElement('ul');
-          td.textContent = '';
-          td.appendChild(ul);
-          shipments.forEach(s => {
-            const li = td.ownerDocument!.createElement('li');
-            ul.appendChild(li);
-						const t = s.transaction;
-						let html = 'delivered: ' + shipment.Delivered[s.delivered] +
-                       '; status: ' + s.status +
-                       (s.tracking_link != '' ? '; <a href="' + s.tracking_link + '">tracking link</a>' : '') +
-											 (t ? ('; transaction: ' + t.payment_amount + ' ' + t.info_string) : '')
-            li.innerHTML = html;
-          });
-          return null;
-        },
-        is_numeric: false,
-				visibility: shipment_info_enabled,
+        {
+          field_name: 'shipments',
+          render_func: async function(order: azad_entity.IEntity, td: HTMLElement) {
+            const shipments = await (order as azad_order.IOrder).shipments();
+            const ul = td.ownerDocument!.createElement('ul');
+            td.textContent = '';
+            td.appendChild(ul);
+            shipments.forEach(s => {
+              const li = td.ownerDocument!.createElement('li');
+              ul.appendChild(li);
+              const t = s.transaction;
+              let html = 'delivered: ' + shipment.Delivered[s.delivered] +
+                '; status: ' + s.status +
+                (s.tracking_link != '' ? '; <a href="' + s.tracking_link + '">tracking link</a>' : '') +
+                (t ? ('; transaction: ' + t.payment_amount + ' ' + t.info_string) : '')
+              li.innerHTML = html;
+            });
+            return null;
+          },
+          is_numeric: false,
+          visibility: shipment_info_enabled,
     },
     {
         field_name: 'to',
@@ -378,6 +379,38 @@ const ITEM_COLS: ColSpec[] = [
       is_numeric: false,
       visibility: asin_enabled
     },
+    {
+      field_name: 'delivered',
+      render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
+        const ei = await (item as order_util.IEnrichedItem);
+        const s = ei.shipment;
+        td.textContent = shipment.Delivered[s.delivered];
+        return null;
+      },
+      is_numeric: false,
+      visibility: shipment_info_enabled,
+    },
+    // {
+    //     field_name: 'shipping status',
+    //     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
+    //     },
+    //     is_numeric: false,
+    //     visibility: shipment_info_enabled,
+    // },
+    // {
+    //     field_name: 'transaction',
+    //     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
+    //     },
+    //     is_numeric: false,
+    //     visibility: shipment_info_enabled,
+    // },
+    // {
+    //     field_name: 'tracking link',
+    //     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
+    //     },
+    //     is_numeric: false,
+    //     visibility: shipment_info_enabled,
+    // },
 ];
 
 async function asin_enabled(): Promise<boolean> {
@@ -389,7 +422,7 @@ async function asin_enabled(): Promise<boolean> {
 async function shipment_info_enabled(): Promise<boolean> {
   const show_shipment_info = await settings.getBoolean('show_shipment_info');
   const preview_features_authorised = await settings.getBoolean('preview_features_enabled');
-	return show_shipment_info && preview_features_authorised;
+  return show_shipment_info && preview_features_authorised;
 }
 
 function getCols(
@@ -528,7 +561,7 @@ async function addItemTable(
     orders: azad_order.IOrder[],
     cols: Promise<ColSpec[]>
 ): Promise<HTMLTableElement> {
-    const items = await ordersToItems(orders);
+    const items = await order_util.enriched_items_from_orders(orders);
     return addTable(doc, items, cols);
 }
 
@@ -617,17 +650,6 @@ async function addTable(
       }
       return table;
     });
-}
-
-function ordersToItems(orders: azad_order.IOrder[]): Promise<azad_item.IItem[]>
-{
-    return Promise.all(orders.map(order => order.item_list())).then(
-        itemss => {
-            const items: azad_item.IItem[] = [];
-            itemss.forEach( order_items => items.push(...order_items) );
-            return items;
-        }
-    );
 }
 
 async function reallyDisplay(
@@ -752,14 +774,14 @@ function addProgressBar(): void {
 
 function addCsvButton(orders: azad_order.IOrder[], items_not_orders: boolean): void {
     const title = "download spreadsheet ('.csv')";
-    util.addButton(	
+    util.addButton(
        title,
-       async function() {	
+       async function() {
            const table: HTMLTableElement = await display(orders, false, items_not_orders);
            const show_totals: boolean = await settings.getBoolean('show_totals_in_csv');
            csv.download(table, show_totals)
        },
-       'azad_table_button'	
+       'azad_table_button'
     );
 }
 

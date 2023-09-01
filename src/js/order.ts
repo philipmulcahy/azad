@@ -45,9 +45,11 @@ export interface IOrder extends azad_entity.IEntity {
     us_tax(): Promise<string>;
     vat(): Promise<string>;
     who(): Promise<string>;
+
+    sync(): Promise<ISyncOrder>;
 };
 
-interface ISyncOrder extends azad_entity.IEntity {
+export interface ISyncOrder extends azad_entity.IEntity {
     id: string;
     detail_url: string;
     invoice_url: string;
@@ -98,6 +100,7 @@ class SyncOrder implements ISyncOrder {
 
     unsync(): IOrder {
       return {
+        sync: ()=>Promise.resolve(this),
         id: ()=>Promise.resolve(this.id),
         detail_url: ()=>Promise.resolve(this.detail_url),
         invoice_url: ()=>Promise.resolve(this.invoice_url),
@@ -123,155 +126,155 @@ class SyncOrder implements ISyncOrder {
 }
 
 class Order implements IOrder{
-    impl: order_impl.OrderImpl;
+  impl: order_impl.OrderImpl;
 
-    constructor(impl: order_impl.OrderImpl) {
-        this.impl = impl
-    }
+  constructor(impl: order_impl.OrderImpl) {
+    this.impl = impl
+  }
 
-    async sync(): Promise<ISyncOrder> {
-        const id = await this.id();
-        const detail_url = await this.detail_url();
-        const invoice_url = await this.invoice_url();
-        const list_url = await this.list_url();
-        const payments_url = await this.payments_url();
-        const date = await this.date();
-        const gift = await this.gift();
-        const gst = await this.gst();
-        const shipments = await this.shipments();
-        const item_list = await this.item_list();
-        const payments = await this.payments();
-        const postage = await this.postage();
-        const postage_refund = await this.postage_refund();
-        const pst = await this.pst();
-        const refund = await this.refund();
-        const site = await this.site();
-        const total = await this.total();
-        const us_tax = await this.us_tax();
-        const vat = await this.vat();
-        const who = await this.who();
+  async sync(): Promise<ISyncOrder> {
+    const id = await this.id();
+    const detail_url = await this.detail_url();
+    const invoice_url = await this.invoice_url();
+    const list_url = await this.list_url();
+    const payments_url = await this.payments_url();
+    const date = await this.date();
+    const gift = await this.gift();
+    const gst = await this.gst();
+    const shipments = await this.shipments();
+    const item_list = await this.item_list();
+    const payments = await this.payments();
+    const postage = await this.postage();
+    const postage_refund = await this.postage_refund();
+    const pst = await this.pst();
+    const refund = await this.refund();
+    const site = await this.site();
+    const total = await this.total();
+    const us_tax = await this.us_tax();
+    const vat = await this.vat();
+    const who = await this.who();
 
-        return {
-            id: id,
-            detail_url: detail_url,
-            invoice_url: invoice_url,
-            list_url: list_url,
-            payments_url: payments_url,
-            date: date,
-            gift: gift,
-            gst: gst,
-            shipments: shipments,
-            item_list: item_list,
-            payments: payments,
-            postage: postage,
-            postage_refund: postage_refund,
-            pst: pst,
-            refund: refund,
-            site: site,
-            total: total,
-            us_tax: us_tax,
-            vat: vat,
-            who: who,
-        }
+    return {
+      id: id,
+      detail_url: detail_url,
+      invoice_url: invoice_url,
+      list_url: list_url,
+      payments_url: payments_url,
+      date: date,
+      gift: gift,
+      gst: gst,
+      shipments: shipments,
+      item_list: item_list,
+      payments: payments,
+      postage: postage,
+      postage_refund: postage_refund,
+      pst: pst,
+      refund: refund,
+      site: site,
+      total: total,
+      us_tax: us_tax,
+      vat: vat,
+      who: who,
     }
+  }
 
-    id(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.header.id, ''));
+  id(): Promise<string> {
+    return Promise.resolve(util.defaulted(this.impl.header.id, ''));
+  }
+  list_url(): Promise<string> {
+    return Promise.resolve(util.defaulted(this.impl.header.list_url, ''));
+  }
+  detail_url(): Promise<string> {
+    return Promise.resolve(util.defaulted(this.impl.header.detail_url, ''));
+  }
+  payments_url(): Promise<string> {
+    return Promise.resolve(util.defaulted(this.impl.header.payments_url, ''));
+  }
+  site(): Promise<string> {
+    return Promise.resolve(util.defaulted(this.impl.header.site, ''));
+  }
+  date(): Promise<Date|null> {
+    return Promise.resolve(this.impl.header.date);
+  }
+  total(): Promise<string> {
+    return this._detail_dependent_promise(detail => detail.total);
+  }
+  who(): Promise<string> {
+    return Promise.resolve(util.defaulted(this.impl.header.who, ''));
+  }
+  shipments(): Promise<shipment.IShipment[]> {
+    if (this.impl.detail_promise) {
+      return this.impl.detail_promise.then( details => details.shipments );
     }
-    list_url(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.header.list_url, ''));
+    return Promise.resolve([]);
+  }
+  item_list(): Promise<item.IItem[]> {
+    const items: item.IItem[] = [];
+    if (this.impl.detail_promise) {
+      return this.impl.detail_promise.then( details => {
+        details.items.forEach(item => {
+          items.push(item);
+        });
+        return items;
+      });
+    } else {
+      return Promise.resolve(items);
     }
-    detail_url(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.header.detail_url, ''));
-    }
-    payments_url(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.header.payments_url, ''));
-    }
-    site(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.header.site, ''));
-    }
-    date(): Promise<Date|null> {
-        return Promise.resolve(this.impl.header.date);
-    }
-    total(): Promise<string> {
-        return this._detail_dependent_promise(detail => detail.total);
-    }
-    who(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.header.who, ''));
-    }
-    shipments(): Promise<shipment.IShipment[]> {
-      if (this.impl.detail_promise) {
-        return this.impl.detail_promise.then( details => details.shipments );
-      }
-      return Promise.resolve([]);
-    }
-    item_list(): Promise<item.IItem[]> {
-        const items: item.IItem[] = [];
-        if (this.impl.detail_promise) {
-            return this.impl.detail_promise.then( details => {
-                details.items.forEach(item => {
-                    items.push(item);
-                });
-                return items;
-            });
-        } else {
-            return Promise.resolve(items);
-        }
-    }
-    payments(): Promise<string[]> {
-        return util.defaulted(
-            this.impl.payments_promise,
-            Promise.resolve([])
-        );
-    }
+  }
+  payments(): Promise<string[]> {
+    return util.defaulted(
+      this.impl.payments_promise,
+      Promise.resolve([])
+    );
+  }
 
-    _detail_dependent_promise(
-        detail_lambda: (d: order_details.IOrderDetails) => string
-    ): Promise<string> {
-        if (this.impl.detail_promise) {
-            return this.impl.detail_promise.then(
-                details => detail_lambda(details.details)
-            );
-        }
-        return Promise.resolve('');
+  _detail_dependent_promise(
+      detail_lambda: (d: order_details.IOrderDetails) => string
+  ): Promise<string> {
+    if (this.impl.detail_promise) {
+      return this.impl.detail_promise.then(
+        details => detail_lambda(details.details)
+      );
     }
+    return Promise.resolve('');
+  }
 
-    postage(): Promise<string> {
-        return this._detail_dependent_promise( detail => detail.postage );
-    }
-    postage_refund(): Promise<string> {
-        return this._detail_dependent_promise(
-            detail => detail.postage_refund
-        );
-    }
-    gift(): Promise<string> {
-        return this._detail_dependent_promise( detail => detail.gift );
-    };
-    us_tax(): Promise<string> {
-        return this._detail_dependent_promise( detail => detail.us_tax )
-    }
-    vat(): Promise<string> {
-        return this._detail_dependent_promise( detail => detail.vat )
-    }
-    gst(): Promise<string> {
-        return this._detail_dependent_promise( detail => detail.gst )
-    }
-    pst(): Promise<string> {
-        return this._detail_dependent_promise( detail => detail.pst )
-    }
-    refund(): Promise<string> {
-        return this._detail_dependent_promise( detail => detail.refund )
-    }
-    invoice_url(): Promise<string> {
-        return this._detail_dependent_promise( detail => detail.invoice_url )
-    }
+  postage(): Promise<string> {
+    return this._detail_dependent_promise( detail => detail.postage );
+  }
+  postage_refund(): Promise<string> {
+    return this._detail_dependent_promise(
+      detail => detail.postage_refund
+    );
+  }
+  gift(): Promise<string> {
+    return this._detail_dependent_promise( detail => detail.gift );
+  };
+  us_tax(): Promise<string> {
+    return this._detail_dependent_promise( detail => detail.us_tax )
+  }
+  vat(): Promise<string> {
+    return this._detail_dependent_promise( detail => detail.vat )
+  }
+  gst(): Promise<string> {
+    return this._detail_dependent_promise( detail => detail.gst )
+  }
+  pst(): Promise<string> {
+    return this._detail_dependent_promise( detail => detail.pst )
+  }
+  refund(): Promise<string> {
+    return this._detail_dependent_promise( detail => detail.refund )
+  }
+  invoice_url(): Promise<string> {
+    return this._detail_dependent_promise( detail => detail.invoice_url )
+  }
 }
 
 async function fetchYear(
-    year: number,
-    scheduler: request_scheduler.IRequestScheduler,
-    nocache_top_level: boolean,
-    date_filter: date.DateFilter,
+  year: number,
+  scheduler: request_scheduler.IRequestScheduler,
+  nocache_top_level: boolean,
+  date_filter: date.DateFilter,
 ): Promise<IOrder[]> {
   const headers: order_header.IOrderHeader[] = await olp.get_headers(
     urls.getSite(),
@@ -284,10 +287,10 @@ async function fetchYear(
 }
 
 export async function getOrdersByYear(
-    years: number[],
-    scheduler: request_scheduler.IRequestScheduler,
-    latest_year: number,
-    date_filter: date.DateFilter,
+  years: number[],
+  scheduler: request_scheduler.IRequestScheduler,
+  latest_year: number,
+  date_filter: date.DateFilter,
 ): Promise<IOrder[]> {
   const orderss = await Promise.all(
     years.map(
@@ -358,81 +361,81 @@ export async function get_legacy_items(order: IOrder)
 export async function assembleDiagnostics(order: IOrder)
   : Promise<Record<string,any>>
 {
-    const diagnostics: Record<string, any> = {};
-    const field_names: (keyof IOrder)[] = [
-        'id',
-        'list_url',
-        'detail_url',
-        'payments_url',
-        'date',
-        'total',
-        'who',
-    ];
-    field_names.forEach(
-        ((field_name: keyof IOrder) => {
-            const value: any = order[field_name];
-            diagnostics[<string>(field_name)] = value;
-        })
-    );
+  const diagnostics: Record<string, any> = {};
+  const field_names: (keyof IOrder)[] = [
+    'id',
+    'list_url',
+    'detail_url',
+    'payments_url',
+    'date',
+    'total',
+    'who',
+  ];
+  field_names.forEach(
+    ((field_name: keyof IOrder) => {
+      const value: any = order[field_name];
+      diagnostics[<string>(field_name)] = value;
+    })
+  );
 
-    const sync_order: ISyncOrder = await (order as Order).sync();
+  const sync_order: ISyncOrder = await (order as Order).sync();
 
-    diagnostics['items'] = await get_legacy_items(order);
+  diagnostics['items'] = await get_legacy_items(order);
 
-    return Promise.all([
-        signin.checkedFetch( util.defaulted(sync_order.list_url, '') )
-            .then( response => response.text())
-            .then( text => { diagnostics['list_html'] = text; } ),
-        signin.checkedFetch( util.defaulted(sync_order.detail_url, '') )
-            .then( response => response.text() )
-            .then( text => { diagnostics['detail_html'] = text; } ),
-        signin.checkedFetch(util.defaulted(sync_order.payments_url, ''))
-            .then( response => response.text() )
-            .then( text => { diagnostics['invoice_html'] = text; } )
-    ]).then(
-        () => diagnostics,
-        error_msg => {
-            notice.showNotificationBar(error_msg, document);
-            return diagnostics;
-        }
-    );
+  return Promise.all([
+    signin.checkedFetch( util.defaulted(sync_order.list_url, '') )
+      .then( response => response.text())
+      .then( text => { diagnostics['list_html'] = text; } ),
+    signin.checkedFetch( util.defaulted(sync_order.detail_url, '') )
+      .then( response => response.text() )
+      .then( text => { diagnostics['detail_html'] = text; } ),
+    signin.checkedFetch(util.defaulted(sync_order.payments_url, ''))
+      .then( response => response.text() )
+      .then( text => { diagnostics['invoice_html'] = text; } )
+  ]).then(
+  () => diagnostics,
+    error_msg => {
+    notice.showNotificationBar(error_msg, document);
+    return diagnostics;
+  }
+  );
 }
 
 export function create(
-    header: order_header.IOrderHeader,
-    scheduler: request_scheduler.IRequestScheduler,
-    date_filter: date.DateFilter,
+  header: order_header.IOrderHeader,
+  scheduler: request_scheduler.IRequestScheduler,
+  date_filter: date.DateFilter,
 ): IOrder|null {
-    type OrderResolver = (order: IOrder)=>void;
-    type Rejector = (reason?: any)=>void;
-    var resolve_order: OrderResolver|undefined = undefined;
-    var reject_order: Rejector|undefined = undefined;
-    const wrapper_promise = new Promise<IOrder>(
-      (
-        resolve: (order: IOrder)=>void | null,
-        reject: (reason?: any)=>void | null,
-      ) => {
-        resolve_order = resolve;
-        reject_order = reject;
-      }
-    );
-    try {
-      const impl = new order_impl.OrderImpl(
-        header,
-        scheduler,
-        date_filter,
-      );
-      const wrapper = new Order(impl);
-      if (typeof resolve_order != 'undefined') {
-        (resolve_order as OrderResolver)(wrapper);
-      }
-      return wrapper;
-    } catch(err) {
-      const msg = 'order.create caught: ' + err + '; returning null';
-      console.warn(msg);
-      if (typeof reject_order != 'undefined') {
-        (reject_order as Rejector)(msg);
-      }
-      return null;
+  type OrderResolver = (order: IOrder)=>void;
+  type Rejector = (reason?: any)=>void;
+  var resolve_order: OrderResolver|undefined = undefined;
+  var reject_order: Rejector|undefined = undefined;
+  const wrapper_promise = new Promise<IOrder>(
+    (
+      resolve: (order: IOrder)=>void | null,
+      reject: (reason?: any)=>void | null,
+    ) => {
+      resolve_order = resolve;
+      reject_order = reject;
     }
+  );
+  try {
+    const impl = new order_impl.OrderImpl(
+      header,
+      scheduler,
+      date_filter,
+    );
+    const wrapper = new Order(impl);
+    if (typeof resolve_order != 'undefined') {
+      (resolve_order as OrderResolver)(wrapper);
+    }
+    return wrapper;
+  } catch(err) {
+    const msg = 'order.create caught: ' + err + '; returning null';
+    console.warn(msg);
+    if (typeof reject_order != 'undefined') {
+      (reject_order as Rejector)(msg);
+    }
+    return null;
+  }
 }
