@@ -390,27 +390,53 @@ const ITEM_COLS: ColSpec[] = [
       is_numeric: false,
       visibility: shipment_info_enabled,
     },
-    // {
-    //     field_name: 'shipping status',
-    //     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
-    //     },
-    //     is_numeric: false,
-    //     visibility: shipment_info_enabled,
-    // },
-    // {
-    //     field_name: 'transaction',
-    //     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
-    //     },
-    //     is_numeric: false,
-    //     visibility: shipment_info_enabled,
-    // },
-    // {
-    //     field_name: 'tracking link',
-    //     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
-    //     },
-    //     is_numeric: false,
-    //     visibility: shipment_info_enabled,
-    // },
+    {
+      field_name: 'shipping status',
+      render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
+        const ei = await (item as order_util.IEnrichedItem);
+        const s = ei.shipment;
+        td.textContent = s.status;
+        return null;
+      },
+      is_numeric: false,
+      visibility: shipment_info_enabled,
+    },
+    {
+      field_name: 'transaction',
+      render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
+        const ei = await (item as order_util.IEnrichedItem);
+        const s = ei.shipment;
+        const t = s.transaction;
+        if (t != null) {
+          const ts = t.info_string + ': ' + t.payment_amount;
+          td.textContent = ts;
+        } else {
+          td.textContent = '';
+        }
+        return null;
+      },
+      is_numeric: false,
+      visibility: shipment_info_enabled,
+    },
+    {
+      field_name: 'tracking link',
+      render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
+        const ei = await (item as order_util.IEnrichedItem);
+        const s = ei.shipment;
+        const l = s.tracking_link;
+        if (l != null && l != '') {
+          const a = td.ownerDocument.createElement('a');
+          a.setAttribute('href', s.tracking_link);
+          td.appendChild(a);
+          a.textContent = s.tracking_link;
+        } else {
+          td.textContent = '';
+        }
+        return null;
+      },
+      is_numeric: false,
+      visibility: shipment_info_enabled,
+    },
 ];
 
 async function asin_enabled(): Promise<boolean> {
