@@ -10,6 +10,7 @@
         "build": "node utils/build.js",
         "doc": " typedoc --out ./doc/ ./src/js/",
         "lint": "tsc --strict --alwaysStrict --noEmit --noUnusedParameters --noImplicitReturns --noImplicitOverride --noImplicitThis --noFallthroughCasesInSwitch",
+        "eslint": "eslint --ignore-path .gitignore --ext .js,.ts .",
         "package": "utils/package.sh",
         "private_package": "npm run package; cp azad.zip azad_$(git log -1 | grep commit | sed 's/^commit //' | cut -c 1-8).zip",
         "test": "node build-node/order_tests.bundle.js",
@@ -21,9 +22,12 @@
         "url": "git@github.com:philipmulcahy/azad.git"
     },
     "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^6.5.0",
+        "@typescript-eslint/parser": "^6.5.0",
         "clean-webpack-plugin": "^4.0.0",
         "copy-webpack-plugin": "^11.0.0",
         "css-loader": "^6.7.3",
+        "eslint": "^8.48.0",
         "file-loader": "^6.2.0",
         "html-loader": "^4.2.0",
         "html-webpack-plugin": "^5.5.1",
