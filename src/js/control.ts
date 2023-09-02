@@ -183,14 +183,12 @@ function showYearButtons(years: number[]) {
 async function showMonthsButtons(month_counts: number[]): Promise<void> {
   console.log('show month buttons', month_counts);
   $('.azad_months_button').remove();
-  // const authorised = await settings.getBoolean('preview_features_enabled');
-  // console.log('showMonthButtons(...) authorised = ' + authorised);
-  const classes = 'azad_months_button'; // + (authorised ? '' : ' azad_disabled');
+  const classes = 'azad_months_button';
   console.log('showMonthButtons(...) classes = ' + classes);
   month_counts.sort().forEach( month_count => {
     $('#azad_year_list').append(
       '<button class="' + classes + '" value="' + month_count + '" >' +
-      month_count + 'm</button>' 
+      month_count + 'm</button>'
     );
   });
   console.log('showMonthButtons(...) buttons placed');
@@ -227,10 +225,6 @@ async function checkFeatureAuthorised(): Promise<boolean> {
 }
 
 async function handleMonthsClick(evt: { target: { value: any; }; }) {
-  // const authorised = await checkFeatureAuthorised(); 
-  // if (!authorised) {
-  //   return;
-  // }
   const month_count = Number(evt.target.value);
   const end_date = new Date();
   const start_date = util.subtract_months(end_date, month_count);

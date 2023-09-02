@@ -14,6 +14,24 @@ export function defaulted<T>(
     return def_value;
 }
 
+// Returns def_value if callable throws or returns null/undefined,
+// else returns the result of callable.
+export function defaulted_call<T>(
+    callable: ()=>(T | null | undefined),
+    def_value: T
+): T {
+    try {
+      const value = callable();
+      if (value != null && typeof(value) !== 'undefined') {
+          return value;
+      }
+    }
+    catch (ex) {
+      console.log('util.defaulted_call caught ', ex);
+    }
+    return def_value;
+}
+
 export function parseStringToDOM(html: string) {
     if ( typeof(DOMParser) !== 'undefined' ) {
         // We're in a browser:
@@ -219,4 +237,17 @@ export function subtract_months(date: Date, months: number): Date {
     result = subtract_one_month(result);
   }
   return result;
+}
+
+export function getField(
+    xpath: string,
+    elem: HTMLElement,
+    context: string
+): string|null {
+    try {
+        const valueElem = findSingleNodeValue(xpath, elem, context);
+        return valueElem!.textContent!.trim();
+    } catch (_) {
+        return null;
+    }
 }

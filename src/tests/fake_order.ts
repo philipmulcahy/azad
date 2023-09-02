@@ -7,6 +7,7 @@ import * as util from '../js/util';
 const jsdom = require('jsdom');
 const xpath = require('xpath');
 import * as azad_order from '../js/order';
+import * as order_header from '../js/order_header';
 import * as request_scheduler from '../js/request_scheduler';
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -124,10 +125,13 @@ export function orderFromTestData(
             }
         )[0]
     );
+    const header: order_header.IOrderHeader = order_header.extractOrderHeader(
+      list_elem,
+      order_dump.list_url, 
+    );
     const order = azad_order.create(
-        list_elem,
+        header, 
         scheduler,
-        order_dump.list_url,
         (_d: Date|null) => true,  // DateFilter
     );
     if (typeof(order) === 'undefined') {
@@ -147,8 +151,6 @@ export function expectedFromTestData(
     return JSON.parse(json);
 }
 
-// This is the data we want: site name to list of filenames.
-// The filenames each encode an order id and a scrape datetime.
 export interface ITestTarget {
     site: string;
     order_id: string;

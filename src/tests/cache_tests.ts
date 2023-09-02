@@ -41,10 +41,30 @@ const deepSerializationTest = () => {
     return retrieved.a.b.c.d.e;
 }
 
+async function restoreParentTest(): Promise<boolean> {
+    const order: any = {
+      a: 'A',
+      items: [{parent_order: null}],
+      child_thing: {parent_order: null}
+    }
+    const parent = Promise.resolve(order);
+    order.items[0].parent_order = parent;
+    order.child_thing.parent_order = parent;
+
+    const cache = cachestuff.createLocalCache('TESTRESTOREPARENT');
+    cache.clear();
+    cache.set('my_order', order);
+    const retrieved = cache.get('my_order');
+    const item_parent = await retrieved.items[0].parent_order;
+    const other_child_parent = await retrieved.child_thing.parent_order;
+    return item_parent.a == 'A' && other_child_parent.a == 'A';
+}
+
 const cache_tests = {
     endtoend_test: endtoendTest,
     fill_test: fillTest,
     deep_serialization_test: deepSerializationTest,
+    restore_parent_test: restoreParentTest,
 };
 
 tests.register('cache_tests', cache_tests);

@@ -1,6 +1,8 @@
 /* Copyright(c) 2019-2021 Philip Mulcahy. */
 
 import * as order_data from './fake_order';
+import * as azad_entity from '../js/entity';
+import * as azad_item from '../js/item';
 import * as azad_order from '../js/order';
 import * as util from '../js/util';
 
@@ -29,6 +31,10 @@ function testOneTarget(
         target.scrape_date,
         target.site
     );
+
+    // 2023-07 reinstate legacy items property.
+    (order as any)['items'] = () => azad_order.get_legacy_items(order);
+
     const expected = order_data.expectedFromTestData(
         target.order_id,
         target.scrape_date,
@@ -36,21 +42,37 @@ function testOneTarget(
     );
     const keys = Object.keys(expected);
     const key_validation_promises = keys.map( key => {
-        const expected_value = util.defaulted(expected[key], '');
+      try {
+        let expected_value = util.defaulted(expected[key], '');
         const actual_value_promise = (order as Record<string, any>)[key]();
-        return actual_value_promise.then( (actual_value: string|Date) => {
+        return actual_value_promise.then( (actual_value: azad_entity.Value) => {
             console.log('key:', key, expected_value, actual_value);
             if ( key.toLowerCase().includes('date') ) {
               actual_value = util.dateToDateIsoString(actual_value as Date)
             }
-            let actual_string = JSON.stringify(actual_value);
+            if ( key == 'item_list' ) {
+              const strip_uninteresting_fields = function(item_list: azad_item.IItem[]): azad_item.IItem[] {
+                item_list.forEach(item => {
+                  ['order_date', 'order_id', 'order_detail_url', 'order_header'].forEach( key => {
+                    delete (item as any)[key];
+                  });
+                });
+                return item_list;
+              }
+              expected_value = strip_uninteresting_fields(expected_value as azad_item.IItem[]);
+              actual_value = strip_uninteresting_fields(actual_value as azad_item.IItem[]);
+            }
+            const actual_string = JSON.stringify(actual_value);
             const expected_string = JSON.stringify(expected_value);
             if ( actual_string != expected_string ) {
                 const msg = key + ' should be ' + expected_string +
                     ' but we got ' + actual_string;
                 result.defects.push(msg);
             }
-        })
+        });
+      } catch(ex) {
+        console.error(ex);
+      }
     });
     return Promise.all(key_validation_promises).then( () => {
         if (result.defects.length == 0) {

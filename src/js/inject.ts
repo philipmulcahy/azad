@@ -104,10 +104,10 @@ async function latestYear(): Promise<number> {
 }
 
 async function showOrdersOrItems(
-  order_promises: Promise<azad_order.IOrder>[],
+  orders: azad_order.IOrder[],
   beautiful_table: boolean
 ): Promise<HTMLTableElement> {
-    if (order_promises.length >= 500 && beautiful_table) {
+    if (orders.length >= 500 && beautiful_table) {
         beautiful_table = false;
         notice.showNotificationBar(
             '500 or more orders found. That\'s a lot!\n' +
@@ -121,7 +121,7 @@ async function showOrdersOrItems(
 
     // TODO: remove the third param from this call, and chase the removal
     // all the way down the call tree below it.
-    return azad_table.display(order_promises, beautiful_table, items_not_orders);
+    return azad_table.display(orders, beautiful_table, items_not_orders);
 }
 
 async function fetchAndShowOrdersByYears(
@@ -150,7 +150,7 @@ async function fetchAndShowOrdersByRange(
   start_date: Date, end_date: Date,
   beautiful_table: boolean
 ): Promise<HTMLTableElement|undefined> {
-    console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);                   
+    console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);
     if ( document.visibilityState != 'visible' ) {
         console.log(
             'fetchAndShowOrdersByRange() returning without doing anything: ' +
@@ -164,7 +164,7 @@ async function fetchAndShowOrdersByRange(
       + util.dateToDateIsoString(end_date);
     resetScheduler(purpose);
     const latest_year: number = await latestYear();
-    const order_promises = await azad_order.getOrdersByRange(
+    const orders = await azad_order.getOrdersByRange(
       start_date,
       end_date,
       getScheduler(),
@@ -176,7 +176,7 @@ async function fetchAndShowOrdersByRange(
         return d! >= start_date && d! <= end_date  // DateFilter
       },
     );
-    return showOrdersOrItems(order_promises, beautiful_table);
+    return showOrdersOrItems(orders, beautiful_table);
 }
 
 async function fetchShowAndDumpItemsByRange(
@@ -194,7 +194,7 @@ async function fetchShowAndDumpItemsByRange(
 
   // EZP, the primary consumers of this file are processing file with code:
   // They don't need the file polluted by aggregation rows.
-  const show_totals = false; 
+  const show_totals = false;
 
   if (typeof(table) != 'undefined') {
     await csv.download(table, show_totals)
