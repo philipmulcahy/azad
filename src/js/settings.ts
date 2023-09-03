@@ -107,7 +107,7 @@ async function setElemClickHandlers(
       elem.onclick = async function() {
         let value: boolean = await getBoolean(key);
         value = value ? false : true;
-        if (elem.parentElement!.getAttribute('class')!.includes('azad_disabled'))
+        if (elem.parentElement?.getAttribute('class')?.includes('azad_disabled'))
         {
           const preview_authorised = await getBoolean(
             'preview_features_enabled');
