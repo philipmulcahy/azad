@@ -152,40 +152,46 @@ function registerExternalConnectionListener() {
 }
 
 function registerRightClickActions() {
-  chrome.contextMenus.create( {
-    id: 'save_order_debug_info',
-    title: 'save order debug info',
-    contexts: ['link']
-  } );
-  chrome.contextMenus.onClicked.addListener( info => {
-    console.log('context menu item: ' + info.menuItemId + ' clicked;');
-    if (info.menuItemId == 'save_order_debug_info') {
-      if ( /orderID=/.test(info.linkUrl!) ) {
-        const match =info?.linkUrl?.match(/.*orderID=([0-9A-Z-]*)$/);
-        const order_id = match![1];
-        if (match) {
-          Object.values(content_ports).forEach( port => {
-            port.postMessage({
-              action: 'dump_order_detail',
-              order_id: order_id
-            });
-          });
+  try {
+    chrome.contextMenus.removeAll(() => {
+      chrome.contextMenus.create( {
+        id: 'save_order_debug_info',
+        title: 'save order debug info',
+        contexts: ['link']
+      } );
+      chrome.contextMenus.onClicked.addListener( info => {
+        console.log('context menu item: ' + info.menuItemId + ' clicked;');
+        if (info.menuItemId == 'save_order_debug_info') {
+          if ( /orderID=/.test(info.linkUrl!) ) {
+            const match =info?.linkUrl?.match(/.*orderID=([0-9A-Z-]*)$/);
+            const order_id = match![1];
+            if (match) {
+              Object.values(content_ports).forEach( port => {
+                port.postMessage({
+                  action: 'dump_order_detail',
+                  order_id: order_id
+                });
+              });
+            }
+          }
+          else if ( /search=/.test(info.linkUrl!) ) {
+            const match =info?.linkUrl?.match(/.*search=([0-9A-Z-]*)$/);
+            const order_id = match![1];
+            if (match) {
+              Object.values(content_ports).forEach( port => {
+                port.postMessage({
+                  action: 'dump_order_detail',
+                  order_id: order_id
+                });
+              });
+            }
+          }
         }
-      }
-      else if ( /search=/.test(info.linkUrl!) ) {
-        const match =info?.linkUrl?.match(/.*search=([0-9A-Z-]*)$/);
-        const order_id = match![1];
-        if (match) {
-          Object.values(content_ports).forEach( port => {
-            port.postMessage({
-              action: 'dump_order_detail',
-              order_id: order_id
-            });
-          });
-        }
-      }
-    }
-  } );
+      });
+    });
+  } catch (ex) {
+    console.warn('registerRightClickActions caught: ' + ex);
+  }
 }
 
 function registerMessageListener() {

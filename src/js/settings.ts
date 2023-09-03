@@ -40,6 +40,13 @@ function getElementsByKey(): Record<string, HTMLElement> {
   return key_to_elem;
 }
 
+function reflow(elem: HTMLElement) {
+  // force reflow and redraw
+  void(elem.offsetHeight);
+  // second attempt
+  location.reload();
+}
+
 function updateElement(elem: HTMLElement, value: boolean) {
   console.info('settings.updateElem(...)');
   if (value) {
@@ -47,6 +54,7 @@ function updateElement(elem: HTMLElement, value: boolean) {
   } else {
     elem.removeAttribute('checked');
   }
+  reflow(elem);
 }
 
 async function updateElements(
@@ -89,7 +97,9 @@ async function updateElements(
   return;
 }
 
-async function setElemClickHandlers(key_to_elem: Record<string, HTMLElement>): Promise<void> {
+async function setElemClickHandlers(
+  key_to_elem: Record<string, HTMLElement>
+): Promise<void> {
   console.info('settings.setElemClickHandlers() starting');
   for( let key of Object.keys(key_to_elem) ) {
     const elem = key_to_elem[key];
@@ -97,11 +107,14 @@ async function setElemClickHandlers(key_to_elem: Record<string, HTMLElement>): P
       elem.onclick = async function() {
         let value: boolean = await getBoolean(key);
         value = value ? false : true;
-        const preview_authorised = await getBoolean(
-          'preview_features_enabled');
-        if (!preview_authorised) {
-          alert(ui_messages.preview_feature_disabled);
-          value = false;
+        if (elem.parentElement!.getAttribute('class')!.includes('azad_disabled'))
+        {
+          const preview_authorised = await getBoolean(
+            'preview_features_enabled');
+          if (!preview_authorised) {
+            alert(ui_messages.preview_feature_disabled);
+            value = false;
+          }
         }
         storeBoolean(key, value);
         if (elem) {
