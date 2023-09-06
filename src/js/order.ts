@@ -202,8 +202,12 @@ class Order implements IOrder{
   who(): Promise<string> {
     return Promise.resolve(util.defaulted(this.impl.header.who, ''));
   }
-  shipments(): Promise<shipment.IShipment[]> {
+  async shipments(): Promise<shipment.IShipment[]> {
     if (this.impl.detail_promise) {
+      const id = await this.id();
+      if (id == '204-1674798-1861151') {
+        console.log('extracting shipments from 204-1674798-1861151');
+      }
       return this.impl.detail_promise.then( details => details.shipments );
     }
     return Promise.resolve([]);

@@ -73,8 +73,7 @@ function strategy0(
         './/a[contains(@href, "/gp/product/")] and ' +
         './/*[contains(@class, "price")]' +
     ']';
-    const findMultipleNodeValues = util.findMultipleNodeValues;
-    const itemElems: Node[] = findMultipleNodeValues(
+    const itemElems: Node[] = util.findMultipleNodeValues(
         item_xpath,
         order_elem
     );

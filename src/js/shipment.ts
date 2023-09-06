@@ -34,11 +34,12 @@ export interface IShipment {
 
 export function get_shipments(
   order_detail_doc: HTMLDocument,
+  url: string,
   order_header: order_header.IOrderHeader,
   context: string,
 ): IShipment[] {
-  if (order_detail_doc.URL.includes('205-9714306-6543524')) {
-    console.log('shipment.getShipments processing 205-9714306-6543524')
+  if (url.includes('204-1674798-1861151')) {
+    console.log('shipment.getShipments processing 204-1674798-1861151')
   }
   const doc_elem = order_detail_doc.documentElement;
   const transactions = get_transactions(order_detail_doc);
@@ -142,6 +143,3 @@ function tracking_link(shipment_elem: HTMLElement): string {
     ''
   );
 }
-
-// function items(shipment_elem: HTMLElement): item.IItem[] {
-// }
