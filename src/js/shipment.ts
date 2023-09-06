@@ -34,7 +34,7 @@ export interface IShipment {
 
 export function get_shipments(
   order_detail_doc: HTMLDocument,
-  url: string,
+  _url: string,  // for debugging
   order_header: order_header.IOrderHeader,
   context: string,
 ): IShipment[] {

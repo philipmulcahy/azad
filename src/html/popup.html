@@ -56,19 +56,27 @@
           <label for="show_totals_in_csv">Show totals in csv downloads</label>
         </td></tr>
         <tr><td>
-          <input type="checkbox" id="show_invoice_links">
+          <input type="checkbox"
+                 id="show_invoice_links"
+                 title="This feature can be quite unreliable because Amazon puts the links in inconsistent places in their order pages, and quite often even if they're present, they are broken.">
           <label for="show_invoice_links">Show invoice links</label>
         </td></tr>
         <tr><td>
-          <input type="checkbox" id="show_items_not_orders">
+          <input type="checkbox"
+                 id="show_items_not_orders"
+                 title="Causes generated table to show a row per item, not per order, but duplicate items are coalesced and the quantity displayed.">
           <label for="show_items_not_orders">Show items not orders</label>
         </td></tr>
         <tr><td>
-          <input type="checkbox" id="show_asin_in_items_view">
+          <input type="checkbox"
+                 id="show_asin_in_items_view"
+                 title="formerly behind the paywall, but now free for everyone">
           <label for="show_asin_in_items_view">Show ASIN in items view</label>
         </td></tr>
         <tr><td class="azad_disabled">
-          <input type="checkbox" id="show_shipment_info">
+          <input type="checkbox"
+                 id="show_shipment_info"
+                 title="While this feature is behind the paywall you should reload your amazon pages after you log into the extensionpay dialog: if the text for this checkbox is still faded then it is not settable.">
           <label for="show_shipment_info">Show shipment/tracking</label>
         </td></tr>
       </table>
@@ -77,8 +85,11 @@
         <table width="100%">
           <tr>
             <td>
-              <input type="button" class="azad_always_button" id="azad_switch_extensionpay"
-                     value="preview features" title="explore paid preview features"/>
+              <input type="button"
+                     class="azad_always_button"
+                     id="azad_switch_extensionpay"
+                     value="preview features"
+                     title="explore paid preview features"/>
             </td>
           <tr>
         </table>
