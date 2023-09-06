@@ -38,9 +38,6 @@ export function get_shipments(
   order_header: order_header.IOrderHeader,
   context: string,
 ): IShipment[] {
-  if (url.includes('204-1674798-1861151')) {
-    console.log('shipment.getShipments processing 204-1674798-1861151')
-  }
   const doc_elem = order_detail_doc.documentElement;
   const transactions = get_transactions(order_detail_doc);
 

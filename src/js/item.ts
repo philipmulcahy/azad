@@ -68,7 +68,7 @@ function strategy0(
     order_header: order_header.IOrderHeader,
     context: string
 ): IItem[] {
-    const item_xpath = '//div[' +
+    const item_xpath = './/div[' +
         'contains(@class, "fixed-left-grid-inner") and ' +
         './/a[contains(@href, "/gp/product/")] and ' +
         './/*[contains(@class, "price")]' +
