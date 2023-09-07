@@ -3,10 +3,13 @@ Item ASIN, Item Quantity and scraping only the most recent 1, 2 or 3 months are
 now free to use for all, as the £5000 charity target has been reached:
 see https://www.justgiving.com/fundraising/azad-pah
 
-I am working on commercial features batch 2 (shipments, delivery status etc),
-which will go behind the subscription paywall.
-Existing subscribers will have access to these features without further payment
-(for the duration of their subscription).
+Commercial features batch 2 (shipments, delivery status etc),
+is behind the subscription paywall.
+Existing subscribers have access to these features without further payment
+(for remainder of their subscription period).
+
+UPDATE 2023-09-07
+v1.9.31 went live today, including shipment/tracking information. 
 
 UPDATE 2023-08-19
 Commercial features batch 1 (ASIN, 1/2/3 months) is about to be unrestricted.
@@ -52,4 +55,4 @@ features they would find most valuable.
 |-------|-------|--------------------------|------|
 |Fetch only the first 1, 2 or 3 months.|<table><tr><td>Here's a screenshot of the upgraded control popup:</td></tr><tr><td><img src="img/azad_123_months.png" width="50%" height="50%"/></td></tr></table>|£5000|Released v1.9.29|
 |Fetch and display ASIN, Quantity and Price in the items table.| |£5000|Released v1.9.29|
-|Shipments, delivery status and tracking links|not all orders have this info, but luckily most of the "interesting" ones seem to|TBD|In development|
+|Shipments, delivery status and tracking links|not all orders have this info, but luckily most of the "interesting" ones seem to|TBD|Released v1.9.31|
