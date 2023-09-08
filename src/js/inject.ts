@@ -71,13 +71,13 @@ function getYears(): Promise<number[]> {
             const doc = parser.parseFromString(
                 text, 'text/html'
             );
-            const snapshot = util.findMultipleNodeValues(
+            const snapshot: Node[] = util.findMultipleNodeValues(
                 '//select[@name="orderFilter"]/option[@value]',
                 doc.documentElement
             );
             const years = snapshot
-                .filter( elem => elem )
-                .filter( elem => elem.textContent )
+                .filter( elem => elem )  // not null or undefined
+                .filter( elem => elem.textContent )  // text content not null or empty
                 .map(
                     elem => elem!.textContent!
                                  .replace('en', '')  // amazon.fr
