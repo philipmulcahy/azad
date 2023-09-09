@@ -101,11 +101,19 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
         const payment_amounts = map_payment_field(
             'Grand Total: (.*) Payment Method'
         );
-        const count = Math.min( ...[card_names, card_number_suffixes, payment_amounts].map( l => l.length ) );
+        const count = Math.min(
+          ...[card_names, card_number_suffixes, payment_amounts].map(
+            l => l.length
+          )
+        );
         const payments = [];
         let i = 0;
         for ( i = 0; i < count; i++ ) {
-            payments.push( card_names[i] + ' ending in ' + card_number_suffixes[i] + ': ' + payment_amounts[i] );
+            payments.push(
+              card_names[i] +
+              ' ending in ' + card_number_suffixes[i] + ': '
+              + payment_amounts[i]
+            );
         }
         return payments;
     };
