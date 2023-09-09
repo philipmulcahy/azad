@@ -135,7 +135,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
 
 export function get_years(orders_page_doc: HTMLDocument): number[] {
   const snapshot: Node[] = util.findMultipleNodeValues(
-    '//select[@name="orderFilter"]/option[@value]',
+    '//select[@name="orderFilter" or @name="timeFilter"]/option[@value]',
     orders_page_doc.documentElement
   );
   const years = snapshot
