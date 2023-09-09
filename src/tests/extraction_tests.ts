@@ -12,14 +12,6 @@ const detailExtractionTest = function(): boolean {
     const context = 'detail_extraction_test';
     const parser = new DOMParser();
     const doc = parser.parseFromString( order_detail_html, 'text/html' );
-//        const order = {
-//            id: 'D01-9960417-3589456',
-//            total: 0,
-//        };
-//        const extracted = amazon_order_history_order.extractDetailFromDoc(
-//            order,
-//            doc
-//        );
     const basic = extraction.by_regex(
         [
             '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "VAT: ")]]'

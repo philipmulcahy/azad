@@ -124,3 +124,24 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
     }
     return ['UNKNOWN'];
 }
+
+export function get_years(orders_page_doc: HTMLDocument): number[] {
+  const snapshot: Node[] = util.findMultipleNodeValues(
+    '//select[@name="orderFilter"]/option[@value]',
+    orders_page_doc.documentElement
+  );
+  const years = snapshot
+    .filter( elem => elem )  // not null or undefined
+    .filter( elem => elem.textContent )  // text content not null or empty
+    .map(
+      elem => elem!.textContent!
+      .replace('en', '')  // amazon.fr
+      .replace('nel', '')  // amazon.it
+      .trim())
+      .filter( element => (/^\d+$/).test(element) )
+      .map( (year_string: string) => Number(year_string) )
+      .filter( year => (year >= 2004) )
+      // TODO remove duplicates
+      .sort();
+  return years;
+}
