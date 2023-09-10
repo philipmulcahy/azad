@@ -3,12 +3,13 @@
 'use strict';
 
 import * as azad_order from './order';
-import * as csv from './csv';
 import * as azad_table from './table';
+import * as csv from './csv';
+import * as extraction from './extraction';
 import * as notice from './notice';
 import * as request_scheduler from './request_scheduler';
-import * as signin from './signin';
 import * as settings from './settings';
+import * as signin from './signin';
 import * as stats from './statistics';
 import * as urls from './url';
 import * as util from './util';
@@ -61,41 +62,22 @@ function resetScheduler(purpose: string): void {
 
 let cached_years: Promise<number[]> | null = null;
 
-function getYears(): Promise<number[]> {
-    const getPromise = function(): Promise<number[]> {
+async function getYears(): Promise<number[]> {
+    async function getPromise(): Promise<number[]> {
         const url = 'https://' + SITE + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
-        return signin.checkedFetch(url)
-        .then( response => response.text() )
-        .then( text => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(
-                text, 'text/html'
-            );
-            const snapshot: Node[] = util.findMultipleNodeValues(
-                '//select[@name="orderFilter"]/option[@value]',
-                doc.documentElement
-            );
-            const years = snapshot
-                .filter( elem => elem )  // not null or undefined
-                .filter( elem => elem.textContent )  // text content not null or empty
-                .map(
-                    elem => elem!.textContent!
-                                 .replace('en', '')  // amazon.fr
-                                 .replace('nel', '')  // amazon.it
-                                 .trim())
-                .filter( element => (/^\d+$/).test(element) )
-                .map( (year_string: string) => Number(year_string) )
-                .filter( year => (year >= 2004) )
-                .sort();
-            return years;
-        });
+        const response = await signin.checkedFetch(url);
+        const html_text = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString( html_text, 'text/html');
+        return extraction.get_years(doc);
     }
-    if(!cached_years) {
+    let years = cached_years;
+    if(!years) {
         console.log('getYears() needs to do something');
-        cached_years = getPromise();
+        years = getPromise();
     }
-    console.log('getYears() returning ', cached_years);
-    return cached_years;
+    console.log('getYears() returning ', years);
+    return years;
 }
 
 async function latestYear(): Promise<number> {

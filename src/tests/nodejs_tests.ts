@@ -1,9 +1,12 @@
 /* Copyright(c) 2019-2021 Philip Mulcahy. */
 
-import * as order_data from './fake_order';
 import * as azad_entity from '../js/entity';
 import * as azad_item from '../js/item';
 import * as azad_order from '../js/order';
+import * as extraction from '../js/extraction';
+import * as fs from 'fs';
+const jsdom = require('jsdom');
+import * as order_data from './fake_order';
 import * as util from '../js/util';
 
 const assert = require('assert');
@@ -14,7 +17,30 @@ interface ITestResult {
     defects: string[];
 }
 
-function testOneTarget(
+function testOneGetYearsTarget(html_file_path: string): ITestResult {
+  const html_text = fs.readFileSync(html_file_path, 'utf8');
+  const doc = new jsdom.JSDOM(html_text).window.document;
+  const years: number[] = extraction.get_years(doc);
+  return {
+    test_id: 'GET_YEAR_NUMBERS_' + html_file_path,
+    passed: years.length > 5 && years.length < 25,
+    defects: []
+  }
+}
+
+function testAllGetYearsTargets(): ITestResult[] {
+  return [
+    'NathanChristie_2023-09-08',
+    'PhilipMulcahy_2023-09-09',
+    'shood_2023-09-08',
+  ].map(
+    s => testOneGetYearsTarget(
+      './src/tests/azad_test_data/get_years/' + s + '.html'
+    )
+  );
+}
+
+function testOneOrderTarget(
     target: order_data.ITestTarget
 ): Promise<ITestResult> {
     const result: ITestResult = {
@@ -82,21 +108,25 @@ function testOneTarget(
     });
 }
 
-function main() {
-    const test_targets = order_data.discoverTestData();
-    const test_results_promise = Promise.all(
-        test_targets
-            // .filter(target => target.order_id == '002-9651082-1715432')
-            // .filter(target => target.order_id == '112-1097135-4205023')
-            // .filter(target => target.order_id == '114-0199479-3410664')
-            // .filter(target => target.order_id == '114-2140650-5679427')
-            // .filter(target => target.order_id == '203-5043319-1160320')
-            // .filter(target => target.order_id == '206-1563844-4321133')
-            // .filter(target => target.order_id == 'D01-8755888-0539825')
-            .map(target => testOneTarget(target)));
-    test_results_promise.then(
-        (results: ITestResult[]) => console.log(results)
-    );
+function runAllOrderTests():  Promise<ITestResult[]> {
+  const order_test_targets = order_data.discoverTestData();
+  const order_test_results_promise = Promise.all(
+      order_test_targets
+          // .filter(target => target.order_id == '002-9651082-1715432')
+          // .filter(target => target.order_id == '112-1097135-4205023')
+          // .filter(target => target.order_id == '114-0199479-3410664')
+          // .filter(target => target.order_id == '114-2140650-5679427')
+          // .filter(target => target.order_id == '203-5043319-1160320')
+          // .filter(target => target.order_id == '206-1563844-4321133')
+          // .filter(target => target.order_id == 'D01-8755888-0539825')
+          .map(target => testOneOrderTarget(target)));
+  return order_test_results_promise;
+}
+
+async function main() {
+  const order_results = await runAllOrderTests();
+  const get_years_results = await testAllGetYearsTargets();
+  console.log(order_results, get_years_results);
 }
 
 main();

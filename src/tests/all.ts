@@ -9,5 +9,3 @@ import './extraction_tests'
 import { runAll } from './tests'
 
 window.onload = () => runAll(document);
-
-export default {};
