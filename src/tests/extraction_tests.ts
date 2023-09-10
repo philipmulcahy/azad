@@ -30,3 +30,5 @@ const detailExtractionTest = function(): boolean {
 const extraction_tests = {
     detail_extraction_test: detailExtractionTest,
 };
+
+tests.register('detail_extraction_tests', extraction_tests);
