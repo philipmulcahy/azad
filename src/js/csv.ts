@@ -7,6 +7,8 @@
 import * as save_file from './save_file';
 import * as send_file from './send_file';
 import * as settings from './settings';
+import { ALLOWED_EXTENSION_IDS } from './background';
+import { ALL } from 'dns';
 
 function string_or_null(s: string | null | undefined) {
   if (s) {
@@ -92,18 +94,28 @@ export async function download(
       const requestingEzpExt = await getRequestingEzpExt();
 
       if (requestingEzpExt !== null) {
-        await send_file.send(csvFile, requestingEzpExt);
+        //Added to asure that no other script modified the destination
+        if (ALLOWED_EXTENSION_IDS.includes(requestingEzpExt))
+          send_file.send(csvFile, requestingEzpExt);
+        else
+          console.warn(
+            `Data Not Sent, Destination Extension ID, '${requestingEzpExt}' has been mofified, not on Whitelist.`
+          );
       } else {
-        console.warn('Did not get Requesting EZP Extension ID, brodcasting...');
-        await send_file.send(csvFile, 'jjegocddaijoaiooabldmkcmlfdahkoe'); // EZP Regular Release
-        await send_file.send(csvFile, 'ccffmpedppmmccbelbkmembkkggbmnce'); // EZP Early testers Release
-        await send_file.send(csvFile, 'hldaogmccopioopclfmolfpcacadelco'); // EZP_Ext Dev Ricardo
+        // or is it prefered to just not send the data if data is not found?
+        // console.error('No EZP Destination Extension ID Found, Data not sent.');
+
+        console.warn(
+          'Did not get Requesting EZP Extension ID, brodcasting to Whitelist...'
+        );
+        ALLOWED_EXTENSION_IDS.forEach((extID) => {
+          if (extID !== undefined) {
+            send_file.send(csvFile, extID as string);
+          }
+        });
       }
     } catch (error) {
-      console.error(
-        'Error retrieving requestingEzpExt or Sending Data to EZP Ext:',
-        error
-      );
+      console.error('Error Sending Data to EZP Ext:', error);
     }
   } else {
     await save_file.save(csvFile, 'amazon_order_history.csv');

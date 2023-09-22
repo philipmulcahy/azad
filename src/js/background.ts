@@ -7,6 +7,15 @@ import * as extpay from './extpay_client';
 import * as msg from './message_types';
 import * as settings from './settings';
 
+export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
+  'lanjobgdpfchcekdbfelnkhcbppkpldm', // azad_test dev Philip@ball.local
+  'ofddmcjihdeahnjehbpaaopghkkncndh', // azad_test dev Ricardo's
+  'hldaogmccopioopclfmolfpcacadelco', // EZP_Ext Dev Ricardo
+  'jjegocddaijoaiooabldmkcmlfdahkoe', // EZP Regular Release
+  'ccffmpedppmmccbelbkmembkkggbmnce', // EZP Early testers Release
+  'ciklnhigjmbmehniheaolibcchfmabfp', // EZP Alpha Tester Release
+];
+
 const content_ports: Record<number, any> = {};
 
 function broadcast_to_content_pages(msg: any) {
@@ -102,15 +111,6 @@ function registerConnectionListener() {
 }
 
 function registerExternalConnectionListener() {
-  const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
-    'lanjobgdpfchcekdbfelnkhcbppkpldm', // azad_test dev Philip@ball.local
-    'ofddmcjihdeahnjehbpaaopghkkncndh', // azad_test dev Ricardo's
-    'hldaogmccopioopclfmolfpcacadelco', // EZP_Ext Dev Ricardo
-    'jjegocddaijoaiooabldmkcmlfdahkoe', // EZP Regular Release
-    'ccffmpedppmmccbelbkmembkkggbmnce', // EZP Early testers Release
-    'ciklnhigjmbmehniheaolibcchfmabfp', // EZP Alpha Tester Release
-  ];
-
   chrome.runtime.onMessageExternal.addListener(function (
     message: any,
     sender: chrome.runtime.MessageSender,
