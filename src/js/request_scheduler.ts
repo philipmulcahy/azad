@@ -246,6 +246,7 @@ class RequestScheduler {
             this._recordSingleCompletion();
         };
         req.onload = (evt: any): void => {
+            console.log('got response for ', url); 
             this.running_count -= 1;
             if (!this.live) {
                 this.error_count += 1;

@@ -136,12 +136,12 @@ class LocalCacheImpl {
     try {
       const entry = await chrome.storage.local.get(real_key)!;
       if (Object.keys(entry).length == 0) {
-        console.trace('cachestuff.get did not find ', key);
-        throw key + 'not found';
+        console.debug('cachestuff.get did not find ', key);
+        throw key + ' not found';
       }
       const encoded: string = entry[real_key];
       if (!encoded) {
-        throw key + 'not found';
+        throw key + ' not found';
       }
       let packed: any = null;
       try {
@@ -153,7 +153,7 @@ class LocalCacheImpl {
         throw ex;
       }
       if (!packed) {
-        throw key + 'not found';
+        throw key + ' not found';
       }
       ++this.hit_count;
       const decompressed = lzjs.decompress(packed.value);
@@ -171,7 +171,7 @@ class LocalCacheImpl {
       }
       return null;
     } catch(err) {
-      console.warn('cachestuff.get caught ', err, ' for ', key);
+      console.debug('cachestuff.get caught ', err, ' for ', key);
       return undefined;
     }
   }

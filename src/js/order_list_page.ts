@@ -91,11 +91,10 @@ export async function get_headers(
       console.log(
         'sending request for order: ' + iorder + ' onwards'
       );
-      header_promises.push(
-        get_page_of_headers(
-          site, year, template, iorder, scheduler, nocache_top_level
-        )
+      const page_of_headers = get_page_of_headers(
+        site, year, template, iorder, scheduler, nocache_top_level
       );
+      header_promises.push(page_of_headers);
     }
     const pages_of_headers = await util.get_settled_and_discard_rejects(header_promises);
     const headers = pages_of_headers.flat();
@@ -103,7 +102,8 @@ export async function get_headers(
   };
   const templates = selectTemplates(site);
   const headerss = await util.get_settled_and_discard_rejects(await templates.map(fetch_headers_for_template));
-  return headerss.flat();
+  const headers = headerss.flat();
+  return headers;
 }
 
 const TEMPLATES_BY_SITE: Record<string, string[]> = {
@@ -299,11 +299,19 @@ function translateOrdersPage(
       evt.target.responseURL
     );
   }
+  const headers = order_elems.map(
+    elem => order_header.extractOrderHeader(elem, evt.target.responseURL));
   const converted = {
     expected_order_count: expected_order_count,
-    order_headers: order_elems.map(
-      elem => order_header.extractOrderHeader(elem, evt.target.responseURL)
-    ),
+    order_headers: headers, 
+  }
+  if (typeof(converted) == 'undefined') {
+    console.error('we got a blank one!');
+  }
+  if (converted.order_headers.length != converted.expected_order_count) {
+    console.error(
+      'expected ', converted.expected_order_count, ' orders, but only found ',
+      converted.order_headers.length);
   }
   return converted;
 };

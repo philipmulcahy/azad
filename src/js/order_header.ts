@@ -16,7 +16,23 @@ export interface IOrderHeader {
   who: string|null;
 };
 
-export function extractOrderHeader(elem: HTMLElement, list_url: string) {
+export function extractOrderHeader(
+  elem: HTMLElement,
+  list_url: string
+): IOrderHeader {
+  try {
+    const header = reallyExtractOrderHeader(elem, list_url);
+    return header;
+  } catch (ex) {
+    console.error('extractOrderHeader caught ', ex);
+    throw ex;
+  }
+}
+
+function reallyExtractOrderHeader(
+  elem: HTMLElement,
+  list_url: string
+): IOrderHeader {
   const doc = elem.ownerDocument;
   let id: string = 'UNKNOWN_ORDER_ID';
   try {
@@ -102,7 +118,7 @@ export function extractOrderHeader(elem: HTMLElement, list_url: string) {
   // with information from the order detail page.
   const total = util.getField('.//div[contains(span,"Total")]' +
       '/../div/span[contains(@class,"value")]', elem, context);
-  console.log('total direct:', total);
+  console.debug('total direct:', total);
 
   const who = util.getField('.//div[contains(@class,"recipient")]' +
       '//span[@class="trigger-text"]', elem, context);
