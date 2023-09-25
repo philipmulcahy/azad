@@ -114,7 +114,7 @@ function runAllOrderTests():  Promise<ITestResult[]> {
       order_test_targets
           // .filter(target => target.order_id == '002-9651082-1715432')
           // .filter(target => target.order_id == '112-1097135-4205023')
-          // .filter(target => target.order_id == '114-0199479-3410664')
+          .filter(target => target.order_id == '114-0199479-3410664')
           // .filter(target => target.order_id == '114-2140650-5679427')
           // .filter(target => target.order_id == '203-5043319-1160320')
           // .filter(target => target.order_id == '206-1563844-4321133')

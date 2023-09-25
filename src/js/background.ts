@@ -227,10 +227,16 @@ function registerMessageListener() {
 function advertisePeriods() {
   if (control_port) {
     console.log('advertising periods', advertised_periods);
-    control_port.postMessage({
-      action: 'advertise_periods',
-      periods: advertised_periods,
-    });
+    try {
+      control_port.postMessage({
+        action: 'advertise_periods',
+        periods: advertised_periods,
+      });
+    } catch (ex) {
+      console.warn(
+        'background.advertisePeriods caught: ', ex,
+        ', perhaps caused by trying to post to a disconnected control_port?');
+    }
   } else {
     console.log('Cannot advertise periods yet: no control port is set.');
   }

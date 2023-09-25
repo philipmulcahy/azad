@@ -48,7 +48,8 @@ export function alertPartiallyLoggedOutAndOpenLoginTab(url: string): void {
         'and then retry your chosen orange button.',
         document
     );
-    url = urls.normalizeUrl(url);
+    const site = urls.getSite();
+    url = urls.normalizeUrl(url, site);
     chrome.runtime.sendMessage(
         {
             action: 'open_tab',

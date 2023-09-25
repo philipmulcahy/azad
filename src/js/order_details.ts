@@ -31,61 +31,50 @@ export interface IOrderDetailsAndItems {
   shipments: shipment.IShipment[];
 };
 
-export function extractDetailPromise(
+export async function extractDetailPromise(
   header: order_header.IOrderHeader,
   scheduler: request_scheduler.IRequestScheduler
 ): Promise<IOrderDetailsAndItems> {
-  return new Promise<IOrderDetailsAndItems>(
-    (resolve, reject) => {
-      const context = 'id:' + header.id;
-      const url = header.detail_url;
-      if(!url) {
-        const msg = 'null order detail query: cannot schedule';
-        console.error(msg);
-        reject(msg);
-      } else {
-        function event_converter(
-          evt: request_scheduler.Event
-        ): IOrderDetailsAndItems {
-          const doc = util.parseStringToDOM( evt.target.responseText );
-          const url = evt.target.responseURL;
-          const shipments = shipment.get_shipments(doc, url, header, context);
-          shipments.forEach(
-            s => console.log('shipment: ' + s.toString()));
-          return {
-            details: extractDetailFromDoc(header, doc),
-            items: get_items(
-							header,
-							doc.documentElement,
-							shipments,
-							context),
-            shipments: shipments,
-          };
-        };
-        try {
-          scheduler.scheduleToPromise<IOrderDetailsAndItems>(
-            url,
-            event_converter,
-            util.defaulted(header.id, '9999'),
-            false
-          ).then(
-            (response: request_scheduler.IResponse<IOrderDetailsAndItems>) => {
-              resolve(response.result)
-            },
-            url => {
-              const msg = 'scheduler rejected ' + header.id + ' ' + url;
-              console.error(msg);
-              reject('timeout or other problem when fetching ' + url)
-            },
-          );
-        } catch (ex) {
-          const msg = 'scheduler upfront rejected ' + header.id + ' ' + url;
-          console.error(msg);
-          reject(msg);
-        }
-      }
-    }
-  );
+  const context = 'id:' + header.id;
+  const url = header.detail_url;
+  if(!url) {
+    const msg = 'null order detail query: cannot schedule';
+    console.error(msg);
+    throw(msg);
+  }
+
+  async function event_converter(
+    evt: request_scheduler.Event
+  ): Promise<IOrderDetailsAndItems> {
+    const doc = util.parseStringToDOM( evt.target.responseText );
+    const url = evt.target.responseURL;
+    const shipments = shipment.get_shipments(doc, url, header, context);
+    shipments.forEach(
+      s => console.log('shipment: ' + s.toString()));
+    return {
+      details: extractDetailFromDoc(header, doc),
+      items: get_items(
+        header,
+        doc.documentElement,
+        shipments,
+        context),
+      shipments: shipments,
+    };
+  }
+
+  try {
+    const response = await scheduler.scheduleToPromise<IOrderDetailsAndItems>(
+      url,
+      event_converter,
+      util.defaulted(header.id, '9999'),
+      false
+    );
+    return response.result;
+  } catch (url) {
+    const msg = 'scheduler rejected ' + header.id + ' ' + url;
+    console.error(msg);
+    throw('timeout or other problem when fetching ' + url);
+  }
 }
 
 function get_items(

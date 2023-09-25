@@ -87,7 +87,7 @@ class RequestScheduler {
         priority: string,
         nocache: boolean
     ): Promise<IResponse<T>> {
-        query = url.normalizeUrl(query);
+        query = url.normalizeUrl(query, url.getSite());
         return new Promise<IResponse<T>>(
             (resolve, reject) => {
                 try {

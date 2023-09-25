@@ -89,148 +89,167 @@ function restoreParentPromises(obj: any) {
 
 class LocalCacheImpl {
 
-    cache_name: string;
-    key_stem: string;
-    hit_count: number;
+  cache_name: string;
+  key_stem: string;
+  hit_count: number;
 
-    constructor(cache_name: string) {
-        this.cache_name = cache_name;
-        this.key_stem = 'AZAD_' + this.cache_name + '_';
-        this.hit_count = 0;
-    }
+  constructor(cache_name: string) {
+    this.cache_name = cache_name;
+    this.key_stem = 'AZAD_' + this.cache_name + '_';
+    this.hit_count = 0;
+  }
 
-    buildRealKey(key: string) {
-        return this.key_stem + key;
-    }
+  buildRealKey(key: string) {
+    return this.key_stem + key;
+  }
 
-    reallySet(real_key: string, value: any) {
-        window.localStorage.setItem(
-            real_key,
-            JSON.stringify({
-                timestamp: millisNow(),
-                value: lzjs.compress(JSON.stringify(value)),
-            })
+  reallySet(real_key: string, value: any) {
+    const entry: {[key: string]: any;}  = {};
+    entry[real_key] = JSON.stringify({
+      timestamp: millisNow(),
+      value: lzjs.compress(JSON.stringify(value)),
+    });
+    chrome.storage.local.set(entry);
+  }
+
+  set(key: string, value: any): void {
+    const real_key: string = this.buildRealKey(key);
+    try {
+      this.reallySet(real_key, value);
+    } catch(error) {
+      console.log('failed to set ' + key + ': ' + error);
+      this.trim();
+      try {
+        this.reallySet(real_key, value);
+      } catch (second_error) {
+        console.warn(
+          'couldn\'t save ' + key + ' to cache on second attempt'
         );
+      }
+      console.log(
+        'set ' + key + ' on second attempt after trimming cache');
     }
+  }
 
-    set(key: string, value: any): void {
-        const real_key: string = this.buildRealKey(key);
-        try {
-            this.reallySet(real_key, value);
-        } catch(error) {
-            console.log('failed to set ' + key + ': ' + error);
-            this.trim();
-            try {
-                this.reallySet(real_key, value);
-            } catch (second_error) {
-                console.warn(
-                    'couldn\'t save ' + key + ' to cache on second attempt'
-                );
-            }
-            console.log(
-              'set ' + key + ' on second attempt after trimming cache');
-        }
+  async get(key: string): Promise<any> {
+    const real_key: string = this.buildRealKey(key);
+    try {
+      const entry = await chrome.storage.local.get(real_key)!;
+      if (Object.keys(entry).length == 0) {
+        console.trace('cachestuff.get did not find ', key);
+        throw key + 'not found';
+      }
+      const encoded: string = entry[real_key];
+      if (!encoded) {
+        throw key + 'not found';
+      }
+      let packed: any = null;
+      try {
+        packed = JSON.parse(encoded);
+      } catch (ex) {
+        console.error(
+          'JSON.parse blew up with: ' + ex + ' while unpacking: ' + encoded
+        );
+        throw ex;
+      }
+      if (!packed) {
+        throw key + 'not found';
+      }
+      ++this.hit_count;
+      const decompressed = lzjs.decompress(packed.value);
+      try {
+        const result: object = JSON.parse(decompressed);
+        restoreDates(result);
+        restoreParentPromises(result);
+        return result;
+      } catch(ex) {
+        console.error(
+          'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
+            decompressed
+        );
+        throw ex;
+      }
+      return null;
+    } catch(err) {
+      console.warn('cachestuff.get caught ', err, ' for ', key);
+      return undefined;
     }
+  }
 
-    get(key: string): any {
-        const real_key: string = this.buildRealKey(key);
-        try {
-            const encoded: string = window.localStorage.getItem(real_key)!;
-            let packed: any = null;
-            try {
-                packed = JSON.parse(encoded);
-            } catch (ex) {
-                console.error(
-                    'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
-                    encoded
-                );
-            }
-            if (!packed) {
-                throw "not found";
-            }
-            ++this.hit_count;
-            const decompressed = lzjs.decompress(packed.value);
-            try {
-                const result: object = JSON.parse(decompressed);
-                restoreDates(result);
-                restoreParentPromises(result);
-                return result;
-            } catch(ex) {
-                console.error(
-                    'JSON.parse blew up with: ' + ex + ' while unpacking: ' +
-                    decompressed
-                );
-            }
-            return null;
-        } catch(err) {
-            return undefined;
-        }
-    }
+  hitCount(): number {
+    return this.hit_count;
+  }
 
-    hitCount(): number {
-      return this.hit_count;
-    }
-
-    getRealKeys(): string[] {
-      return Object.keys(window.localStorage).filter(
-        key => key.startsWith(this.key_stem)
-      );
-    }
-
-    trim(): void {
-      console.log('trimming cache');
-      const real_keys: string[] = this.getRealKeys();
-      const timestamps_by_key: Record<string, number> = {};
-      real_keys.forEach( key => {
-        try {
-          const encoded = window.localStorage.getItem(key);
-          try {
-            const decoded = JSON.parse(encoded!);
-            timestamps_by_key[key] = decoded.timestamp;
-          } catch(ex) {
-            console.error(
-              'JSON.parse blew up with: ' + ex + ' while unpacking: ' + encoded
-            );
-          }
-        } catch(error) {
-          console.debug('couldn\'t get timestamp for key: ' + key);
-        }
+  getRealKeys(): Promise<string[]> {
+    // Q: Why this yucky callback and explicit promise filth in 2023? I
+    //    I thought you knew better by now.
+    // A: chrome.storage.local.get(null) claims to return void instead of an
+    //    object that contains all the entries. I think this might be a
+    //    typescript annotations problem, but my life is too short to dig
+    //    further.
+    return new Promise<string[]>(resolve => {
+      chrome.storage.local.get(null, entries => {
+        resolve(Object.keys(entries).filter(key => key.startsWith(this.key_stem)));
       });
-      const timestamps = Object.values(timestamps_by_key);
-      timestamps.sort();
-      const cutoff_timestamp = timestamps[
-        Math.floor(real_keys.length * 0.25)];
+    });
+  }
+
+  async trim(): Promise<void> {
+    console.log('trimming cache');
+    const real_keys: string[] = await this.getRealKeys();
+    const timestamps_by_key: Record<string, number> = {};
+    real_keys.forEach( async function(key) {
+      try {
+        const entry = await chrome.storage.local.get(key);
+        const encoded = entry[key]; 
+        try {
+          const decoded = JSON.parse(encoded!);
+          timestamps_by_key[key] = decoded.timestamp;
+        } catch(ex) {
+          console.error(
+            'JSON.parse blew up with: ' + ex + ' while unpacking: ' + encoded
+          );
+        }
+      } catch(error) {
+        console.debug('couldn\'t get timestamp for key: ' + key);
+      }
+    });
+    const timestamps = Object.values(timestamps_by_key);
+    timestamps.sort();
+    const cutoff_timestamp = timestamps[
+      Math.floor(real_keys.length * 0.25)];
       let removed_count = 0;
       Object.keys(timestamps_by_key).forEach( key => {
         if (timestamps_by_key[key] <= cutoff_timestamp) {
-          window.localStorage.removeItem(key);
+          chrome.storage.local.remove(key);
           ++removed_count;
         }
       });
       console.log('removed ' + removed_count + ' entries');
-    }
+  }
 
-    clear() {
-        console.log('clearing cache');
-        this.getRealKeys().forEach( key => {
-            window.localStorage.removeItem(key);
-        });
-    }
+  async clear(): Promise<void> {
+    console.log('clearing cache');
+    const keys = await this.getRealKeys();
+    keys.forEach( key => {
+      chrome.storage.local.remove(key);
+    });
+  }
 }
 
 export interface Cache {
-    set: (key: string, value: any) => void;
-    get: (key: string) => any;
-    clear: () => void;
-    hitCount: () => number;
+  set: (key: string, value: any) => void;
+  get: (key: string) => any;
+  clear: () => void;
+  hitCount: () => number;
 }
 
 export function createLocalCache(cache_name: string): Cache {
-    const cache = new LocalCacheImpl(cache_name);
-    return {
-        set: (key: string, value: any) => cache.set(key, value),
-        get: (key: string) => cache.get(key),
-        clear: () => cache.clear(),
-        hitCount: () => cache.hitCount(),
-    };
+  const cache = new LocalCacheImpl(cache_name);
+  return {
+    set: (key: string, value: any) => cache.set(key, value),
+      get: (key: string) => cache.get(key),
+      clear: () => cache.clear(),
+      hitCount: () => cache.hitCount(),
+  };
 }
