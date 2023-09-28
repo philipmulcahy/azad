@@ -239,7 +239,7 @@ class LocalCacheImpl {
 
 export interface Cache {
   set: (key: string, value: any) => void;
-  get: (key: string) => any;
+  get: (key: string) => Promise<any>;
   clear: () => void;
   hitCount: () => number;
 }

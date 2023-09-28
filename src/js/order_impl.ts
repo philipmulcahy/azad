@@ -61,7 +61,8 @@ export class OrderImpl {
                                 this.header.payments_url,
                                 event_converter,
                                 util.defaulted(this.header.id, '9999'), // priority
-                                false  // nocache
+                                false,  // nocache,
+                                'payments for ' + this.header.id,  // debug_context
                             ).then(
                                 (response: {result: string[]}) => {
                                   resolve(response.result)

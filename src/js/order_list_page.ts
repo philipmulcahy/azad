@@ -24,11 +24,13 @@ async function get_page_data(
 ): Promise<IOrdersPageData>
 {
     const nocache: boolean = (start_order_number==0) ? true : nocache_top_level;
+    const url = generateQueryString(site, year, start_order_number, template);
     const response = await scheduler.scheduleToPromise<IOrdersPageData>(
-        generateQueryString(site, year, start_order_number, template),
+        url, 
         evt => translateOrdersPage(evt, year.toString()),
         scheduling_priority,
         nocache,
+        'order_list_page.get_page_data: ' + start_order_number,  // debug_context
     );
     return response.result;
 }
@@ -247,6 +249,19 @@ function generateQueryString(
 };
 
 function translateOrdersPage(
+  evt: any,
+  period: string,  // log description of the period we are fetching orders for.
+): IOrdersPageData {
+  try {
+    const opd = reallyTranslateOrdersPage(evt, period);
+    return opd;
+  } catch (ex) {
+    console.error('translateOrdersPage caught ', ex);
+    throw ex;
+  }
+}
+
+function reallyTranslateOrdersPage(
   evt: any,
   period: string,  // log description of the period we are fetching orders for.
 ): IOrdersPageData {

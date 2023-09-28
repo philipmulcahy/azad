@@ -62,12 +62,15 @@ export async function extractDetailPromise(
     };
   }
 
+  const debug_context = 'order_detail';
+
   try {
     const response = await scheduler.scheduleToPromise<IOrderDetailsAndItems>(
       url,
       event_converter,
       util.defaulted(header.id, '9999'),
-      false
+      false,
+      debug_context,
     );
     return response.result;
   } catch (url) {
