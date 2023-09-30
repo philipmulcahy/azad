@@ -279,7 +279,7 @@ class RequestScheduler {
       failure_callback(url);
       this._recordSingleCompletion();
     };
-    req.onload = (evt: any): void => {
+    req.onload = async (evt: any): Promise<void> => {
       console.log('got response for ', debug_context, url); 
       this.running_count -= 1;
       if (!this.live) {
@@ -309,7 +309,7 @@ class RequestScheduler {
           console.log(
             'Finished ', debug_context, url,
             ' with queue size ', this.queue.size());
-          const converted = event_converter(evt);
+          const converted = await Promise.resolve(event_converter(evt));
           if (!nocache) {
             this.cache.set(url, converted);
           }
