@@ -427,6 +427,7 @@ const ITEM_COLS: ColSpec[] = [
         if (l != null && l != '') {
           const a = td.ownerDocument.createElement('a');
           a.setAttribute('href', s.tracking_link);
+          td.textContent = '';
           td.appendChild(a);
           a.textContent = s.tracking_link;
         } else {
