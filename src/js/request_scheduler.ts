@@ -176,9 +176,6 @@ class RequestScheduler {
       );
       try {
         const result = success_callback(response, query);
-        if (debug_context == 'order_list_page.get_page_data: 30') {
-          console.log('time to break');
-        }
         return result;
       } catch (ex) {
         console.error(
@@ -212,9 +209,6 @@ class RequestScheduler {
     if (typeof(cached_response) !== 'undefined') {
       this._pretendToSendOne(query, protected_callback, cached_response);
     } else {
-      if (debug_context == 'order_detail') {
-        console.log('executing an order_detail request');
-      }
       this._sendOne(
         query,
         protected_converter,
