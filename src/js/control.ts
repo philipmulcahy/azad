@@ -31,7 +31,11 @@ function activateIdle(): void {
 function activateScraping(years: number[]): void {
   console.log('activateScraping');
   actionsShowOnly(['azad_stop', 'azad_hide_controls']);
-  $('#azad_state').text('scraping ' + years.join(','));
+  try {
+    $('#azad_state').text('scraping ' + years.join(','));
+  } catch (ex) {
+    console.log('control.activateScraping blew up with: ', ex);
+  }
 }
 
 function activateDone(periods: number): void {

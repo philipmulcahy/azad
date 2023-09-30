@@ -187,16 +187,22 @@ async function fetchShowAndDumpItemsByRange(
 }
 
 async function advertisePeriods() {
-    const years = await getYears();
-    console.log('advertising years', years);
-    const bg_port = getBackgroundPort();
-    const periods = [1, 2, 3].concat(years);
-    if (bg_port) {
-        bg_port.postMessage({
-            action: 'advertise_periods',
-            periods: periods
-        });
+  const years = await getYears();
+  console.log('advertising years', years);
+  const bg_port = getBackgroundPort();
+  const periods = [1, 2, 3].concat(years);
+  if (bg_port) {
+    try {
+      bg_port.postMessage({
+        action: 'advertise_periods',
+        periods: periods
+      });
+    } catch (ex) {
+      console.warn(
+        'inject.advertisePeriods got: ', ex,
+        ', perhaps caused by disconnected bg_port?');
     }
+  }
 }
 
 async function registerContentScript() {

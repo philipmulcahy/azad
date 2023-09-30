@@ -232,13 +232,14 @@ class Order implements IOrder{
     );
   }
 
-  _detail_dependent_promise(
+  async _detail_dependent_promise(
       detail_lambda: (d: order_details.IOrderDetails) => string
   ): Promise<string> {
     if (this.impl.detail_promise) {
-      return this.impl.detail_promise.then(
-        details => detail_lambda(details.details)
-      );
+      const details_and_items = await this.impl.detail_promise;
+      const details: order_details.IOrderDetails = details_and_items.details;
+      const details_string = detail_lambda(details);
+      return details_string;
     }
     return Promise.resolve('');
   }
