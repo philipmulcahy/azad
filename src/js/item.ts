@@ -35,32 +35,32 @@ function extract_asin_from_url(url: string): string {
 }
 
 export function extractItems(
-    order_elem: HTMLElement,
-    order_header: order_header.IOrderHeader,
-    context: string,
+  order_elem: HTMLElement,
+  order_header: order_header.IOrderHeader,
+  context: string,
 ): IItem[] {
-    const strategies: ItemsExtractor[] = [
-        strategy0,
-        strategy1,
-        strategy2,
-        strategy3,
-    ];
-    for (let i=0; i!=strategies.length; i+=1) {
-        const strategy: ItemsExtractor = strategies[i];
-        try {
-            const items = strategy(
-                order_elem,
-                order_header,
-                context + ';extractItems:strategy:' + i,
-            );
-            if (items.length) {
-                return items;
-            }
-        } catch (ex) {
-            console.error('strategy' + i.toString() + ' ' + ex);
-        }
+  const strategies: ItemsExtractor[] = [
+    strategy0,
+    strategy1,
+    strategy2,
+    strategy3,
+  ];
+  for (let i=0; i!=strategies.length; i+=1) {
+    const strategy: ItemsExtractor = strategies[i];
+    try {
+      const items = strategy(
+        order_elem,
+        order_header,
+        context + ';extractItems:strategy:' + i,
+      );
+      if (items.length) {
+        return items;
+      }
+    } catch (ex) {
+      console.log('strategy', i, 'caught', ex);
     }
-    return [];
+  }
+  return [];
 }
 
 function strategy0(

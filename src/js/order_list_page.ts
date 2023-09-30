@@ -24,11 +24,13 @@ async function get_page_data(
 ): Promise<IOrdersPageData>
 {
     const nocache: boolean = (start_order_number==0) ? true : nocache_top_level;
+    const url = generateQueryString(site, year, start_order_number, template);
     const response = await scheduler.scheduleToPromise<IOrdersPageData>(
-        generateQueryString(site, year, start_order_number, template),
+        url, 
         evt => translateOrdersPage(evt, year.toString()),
         scheduling_priority,
         nocache,
+        'order_list_page.get_page_data: ' + start_order_number,  // debug_context
     );
     return response.result;
 }
@@ -91,19 +93,24 @@ export async function get_headers(
       console.log(
         'sending request for order: ' + iorder + ' onwards'
       );
-      header_promises.push(
-        get_page_of_headers(
-          site, year, template, iorder, scheduler, nocache_top_level
-        )
+      const page_of_headers = get_page_of_headers(
+        site, year, template, iorder, scheduler, nocache_top_level
       );
+      header_promises.push(page_of_headers);
     }
     const pages_of_headers = await util.get_settled_and_discard_rejects(header_promises);
     const headers = pages_of_headers.flat();
+    if (headers.length != expected_order_count) {
+      console.error(
+        'expected ', expected_order_count, ' orders, but only found ',
+        headers.length);
+    }
     return headers;
   };
   const templates = selectTemplates(site);
   const headerss = await util.get_settled_and_discard_rejects(await templates.map(fetch_headers_for_template));
-  return headerss.flat();
+  const headers = headerss.flat();
+  return headers;
 }
 
 const TEMPLATES_BY_SITE: Record<string, string[]> = {
@@ -250,6 +257,19 @@ function translateOrdersPage(
   evt: any,
   period: string,  // log description of the period we are fetching orders for.
 ): IOrdersPageData {
+  try {
+    const opd = reallyTranslateOrdersPage(evt, period);
+    return opd;
+  } catch (ex) {
+    console.error('translateOrdersPage caught ', ex);
+    throw ex;
+  }
+}
+
+function reallyTranslateOrdersPage(
+  evt: any,
+  period: string,  // log description of the period we are fetching orders for.
+): IOrdersPageData {
   const d = util.parseStringToDOM(evt.target.responseText);
   const context = 'Converting orders page';
   const countSpan = util.findSingleNodeValue(
@@ -299,11 +319,14 @@ function translateOrdersPage(
       evt.target.responseURL
     );
   }
+  const headers = order_elems.map(
+    elem => order_header.extractOrderHeader(elem, evt.target.responseURL));
   const converted = {
     expected_order_count: expected_order_count,
-    order_headers: order_elems.map(
-      elem => order_header.extractOrderHeader(elem, evt.target.responseURL)
-    ),
+    order_headers: headers, 
+  }
+  if (typeof(converted) == 'undefined') {
+    console.error('we got a blank one!');
   }
   return converted;
 };

@@ -24,23 +24,25 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 4) using English - you're not paying me and while I can scrape by in French and German, I'm spending more of my spare time on this project than you are, and it's not about learning human languages.
 5) having read the (very brief) instructions - and if English is not your favorite language, you have two choices:
    i) Google translate (don't send it to me!)
-   ii) Sending me a translation (better than Google's) of the instructions.
+   ii) Sending me a translation (better than Google's) of the instructions. 
        I will figure out how to incorporate it and list you in the credits.
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
+
+Changes 1.9.32
+---------------
+Bug fix for .com (and maybe other regions?): site(s) changed sometime in early September 2023, preventing year fetching by 1.9.31 and earlier.
+
+Changes 1.9.31
+---------------
+Lots of bug fixes including removing accidental/inappropriate paywall prompts
+on selection of free features.
+Addition of new shipment information and tracking link feature (behind-paywall: if this proves to be reliable, the annual preview subscription will rise).
 
 Changes 1.9.30
 ---------------
 Item ASIN and last 1/2/3 months' orders features are free to all users.
 Partial implementation of automatic cache clearance when a new version is installed.
-
-Changes 1.9.28
----------------
-Fix broken links on control popup.
-
-Planned / Coming Soon
-----------------
-Shipments, deliveries, tracking links.
 
 Source Code
 -------------
