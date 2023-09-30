@@ -156,9 +156,9 @@ class RequestScheduler {
       return;
     }
     console.log(
-      'Executing ', debug_context, query,
-      ' with queue size ', this.queue.size(),
-      ' and priority ', priority
+      'Executing', debug_context, query,
+      'with queue size', this.queue.size(),
+      'and priority', priority
     );
 
     // Catch any exceptions that the client's callback throws
@@ -203,13 +203,18 @@ class RequestScheduler {
       }
     }
 
-    const cached_response = nocache ?
-      undefined :
-      await this.cache.get(query);
+    const cached_response_promise = nocache ?
+      Promise.resolve(undefined) :
+      this.cache.get(query);
+
+    const cached_response = await cached_response_promise;
 
     if (typeof(cached_response) !== 'undefined') {
       this._pretendToSendOne(query, protected_callback, cached_response);
     } else {
+      if (debug_context == 'order_detail') {
+        console.log('executing an order_detail request');
+      }
       this._sendOne(
         query,
         protected_converter,
@@ -236,7 +241,6 @@ class RequestScheduler {
     // we finish all of the work from the first call before the caller
     // has a chance to tell us about the rest of the work, then the
     // scheduler will shut down by setting this.live to false.
-    this.running_count += 1;
     this._update_statistics();
     setTimeout(
       () => {
@@ -333,7 +337,6 @@ class RequestScheduler {
         console.warn('Timed out while fetching: ', debug_context, url);
       }
     }
-    this.running_count += 1;
     this._update_statistics();
     req.send();
   }
@@ -347,6 +350,7 @@ class RequestScheduler {
       this.queue.size() > 0
     ) {
       const task = this.queue.pop();
+      this.running_count += 1;
       const _one_done = await this._execute(
         task.query,
         task.event_converter,

@@ -69,7 +69,7 @@ export async function extractDetailPromise(
       url,
       event_converter,
       util.defaulted(header.id, '9999'),
-      false,
+      false,  // nocache=false: cached response is acceptable
       debug_context,
     );
     return response.result;

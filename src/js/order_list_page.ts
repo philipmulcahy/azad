@@ -100,6 +100,11 @@ export async function get_headers(
     }
     const pages_of_headers = await util.get_settled_and_discard_rejects(header_promises);
     const headers = pages_of_headers.flat();
+    if (headers.length != expected_order_count) {
+      console.error(
+        'expected ', expected_order_count, ' orders, but only found ',
+        headers.length);
+    }
     return headers;
   };
   const templates = selectTemplates(site);
@@ -322,11 +327,6 @@ function reallyTranslateOrdersPage(
   }
   if (typeof(converted) == 'undefined') {
     console.error('we got a blank one!');
-  }
-  if (converted.order_headers.length != converted.expected_order_count) {
-    console.error(
-      'expected ', converted.expected_order_count, ' orders, but only found ',
-      converted.order_headers.length);
   }
   return converted;
 };
