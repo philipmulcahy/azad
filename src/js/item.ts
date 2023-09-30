@@ -57,7 +57,7 @@ export function extractItems(
                 return items;
             }
         } catch (ex) {
-            console.error('strategy' + i.toString() + ' ' + ex);
+            console.error('strategy', i.toString(), ex);
         }
     }
     return [];
