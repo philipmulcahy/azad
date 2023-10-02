@@ -366,8 +366,9 @@ export async function get_legacy_items(order: IOrder)
 export async function assembleDiagnostics(order: IOrder)
   : Promise<Record<string,any>>
 {
+  const sync_order = await order.sync();
   const diagnostics: Record<string, any> = {};
-  const field_names: (keyof IOrder)[] = [
+  const field_names: (keyof ISyncOrder)[] = [
     'id',
     'list_url',
     'detail_url',
@@ -377,13 +378,11 @@ export async function assembleDiagnostics(order: IOrder)
     'who',
   ];
   field_names.forEach(
-    ((field_name: keyof IOrder) => {
-      const value: any = order[field_name];
+    (field_name: keyof ISyncOrder) => {
+      let value: any = sync_order[field_name];
       diagnostics[<string>(field_name)] = value;
-    })
+    }
   );
-
-  const sync_order: ISyncOrder = await (order as Order).sync();
 
   diagnostics['items'] = await get_legacy_items(order);
 
