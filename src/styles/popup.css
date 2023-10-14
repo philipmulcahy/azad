@@ -37,7 +37,7 @@ div#azad_actions, div#azad_year_list, div#azad_info, div.azad_separator {
     padding: 0px;
 }
 
-input.azad_year_button {
+button.azad_year_button {
     background-color: orange;
     color: white;
     width: 35px;
@@ -45,6 +45,24 @@ input.azad_year_button {
     margin: 1px;
     border: 0px;
     padding: 2px;
+}
+
+button.azad_months_button {
+    background-color: orange;
+    color: white;
+    width: 35px;
+    text-align: center;
+    margin: 1px;
+    border: 0px;
+    padding: 2px;
+}
+
+button.azad_disabled {
+  background-color: #FFDD99
+}
+
+td.azad_disabled {
+  color: lightgray;
 }
 
 div.azad_separator {
@@ -86,7 +104,7 @@ div#azad_settings input {
     margin: 5px;
 }
 
-input.hidden {
+.hidden {
     display: none;
 }
 

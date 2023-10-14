@@ -1,7 +1,6 @@
 # Azad: amazon order history reporter chrome extension
 
 ## Official installation page
-
 https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi
 
 # Summary
@@ -38,11 +37,33 @@ Bug reports are gratefully accepted, with extra points awarded for:
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+## Commercial Features 2023
+A clear(ish) signal has emerged from the 2022 survey - here are the top two requested features:
+1) Report ASINs, price, and quantity
+2) Scrape specific month/quarter
+
+I got these working and deployed them behind a preview subscription paywall in v1.9.26 in June 2023.
+When the GBP 5000 charity goal is reached, they will become free.
+Paywall subscription/donations count towards the total (less the fees that stripe and others charge).
+As and when I develop new features, I may choose to put them behind the paywall for a time.
+At the moment, the one I know I want to work on is Tracking Links - lots of users have asked for this.
+
+Check out [commercial_features.md](doc/commercial_features.md) for more detail.
+
 # Help!
 
 ## Common problems, with some fixes
 
 *If you've not read through this document (and indicated that you've done so in the help request), your help ticket may be closed without further comment.*
+
+### I subscribed but I am not getting premium features
+In order to subscribe, or even know there is a subscription option you probably paged past some text that explained how there are two ways to give to my chosen charity in order to support this extension.  
+The more prominent, older one is purely altruistic in nature, and does not give you access to the premium features, because I'd not figured out how to erect a paywall or even realised that it might be a good idea (commercial users used to contribute almost nothing).  
+The "subscription" option is a bit harder to find - because I wanted folks to read the notes about it (e.g. you get access to the premium features as they are, not necessarily as you would like them to be) before attempting to crucify me for bugs (there are some, and I put time into fixing them, but those motivated commercial users seem to mostly be content).  
+If you are reading this, it is possible that you handed over your money to charity via the first option (thanks), instead of the second.
+Here are some screenshots (taken from v1.9.32, in September 2023) that show how to subscribe:  
+![premium1_2.png](doc/img/premium1_2.png) ![premium2_2.png](doc/img/premium2_2.png)
+
 
 ### No orders shown even though you know there should be some
 
@@ -144,29 +165,4 @@ This may be necessary if you are sent a link to a zip file (probably something l
 9) Remember to uninstall or disable the test version once you've finished playing. It will not automatically update with fixes, unlike the chrome web store version.
 
 
-## Commercial Features 2023...
-I've closed the 2022 survey because a clearish signal has emerged - here are the top two requested features:
-1) Report ASINs, price, and quantity
-2) Scrape specific month/quarter
-I'll do some work in the coming weeks, and depending on how that goes, set some goals for charity donation totals.
 
-<del>
-## Commercial Features 2022
-If you're using Azad commercially (for drop shipping, or helping manage procurement etc.) you are not alone.
-A few ["commercial" features](https://github.com/philipmulcahy/azad/issues?q=is%3Aissue+is%3Aopen+label%3Acommercial_user_feature) are requested frequently.
-There's a reasonably straightforward path to delivering some of them. Significant investment in time might be required for the others.
-
-To make progress, two challenges need to be addressed:
-1) Prioritisation. You can help by filling out this (<1 minute) [anonymous voting form](https://forms.gle/fjbVkBSJZoVEmP3m9) (new and improved - you no longer have to be me to access the form: sorry!)
-2) Motivation. I share and work on this extension for free, but need donations to the [linked hospice charity](https://www.justgiving.com/fundraising/azad-pah) to be more proportional to the value commercial users are receiving. At the moment, the vast majority of donations appear to be from private/family users, not businesses, and the total amount donated is a tiny fraction of both the value of my donated time, and the value business are receiving.
-
-### The plan 
-* Wait for a [clear signal from commercial users](https://forms.gle/LNjkzMoQERSoz1wA9) on which feature proposals are most popular.
-* Build a roadmap and set charity donation targets for the milestones.
-* Donation targets reached => work happens on milestones in my free time.
-* You (probably) get features you want.
-* We all feel virtuous.
-
-_Health warning: I am but a simple developer - Amazon has the power to break this extension any time it likes by changing their websites._
-
-</del>

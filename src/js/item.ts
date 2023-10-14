@@ -2,74 +2,78 @@
 
 import * as azad_entity from './entity';
 import * as util from './util';
+import * as order_header from './order_header';
 
 export interface IItem extends azad_entity.IEntity {
     description: string;
-    order_date: Date|null;
-    order_detail_url: string;
-    order_id: string;
     price: string;
     quantity: number;
     url: string;
+    asin: string;
+    order_header: order_header.IOrderHeader;
 };
 
-export type Items = Record<string, string>;
-
 type ItemsExtractor = (
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
     order_elem: HTMLElement,
+    order_header: order_header.IOrderHeader,
     context: string,
 ) => IItem[];
 
+function extract_asin_from_url(url: string): string {
+  const patterns = [
+    /\/gp\/product\/([A-Za-z0-9]+)/,
+    /\/dp\/([A-Za-z0-9]+)/,
+  ];
+  const results = patterns.map(p => p.exec(url));
+  const filtered_matches = results.filter(r => r);
+  try {
+    return filtered_matches![0]![1];
+  } catch (ex) {
+    console.error(ex);
+  }
+  return '';
+}
+
 export function extractItems(
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
-    order_elem: HTMLElement,
-    context: string,
+  order_elem: HTMLElement,
+  order_header: order_header.IOrderHeader,
+  context: string,
 ): IItem[] {
-    const strategies: ItemsExtractor[] = [
-        strategy0,
-        strategy1,
-        strategy2,
-        strategy3,
-    ];
-    for (let i=0; i!=strategies.length; i+=1) {
-        const strategy: ItemsExtractor = strategies[i];
-        try {
-            const items = strategy(
-                order_id,
-                order_date,
-                order_detail_url,
-                order_elem,
-                context + ';extractItems:strategy:' + i,
-            );
-            if (items.length) {
-                return items;
-            }
-        } catch (ex) {
-            console.error('strategy' + i.toString() + ' ' + ex);
-        }
+  const strategies: ItemsExtractor[] = [
+    strategy0,
+    strategy1,
+    strategy2,
+    strategy3,
+  ];
+  for (let i=0; i!=strategies.length; i+=1) {
+    const strategy: ItemsExtractor = strategies[i];
+    try {
+      const items = strategy(
+        order_elem,
+        order_header,
+        context + ';extractItems:strategy:' + i,
+      );
+      if (items.length) {
+        return items;
+      }
+    } catch (ex) {
+      console.log('strategy', i, 'caught', ex);
     }
-    return [];
+  }
+  return [];
 }
 
 function strategy0(
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
     order_elem: HTMLElement,
+    order_header: order_header.IOrderHeader,
     context: string
 ): IItem[] {
-    const item_xpath = '//div[' +
+    const item_xpath = './/div[' +
         'contains(@class, "fixed-left-grid-inner") and ' +
         './/a[contains(@href, "/gp/product/")] and ' +
         './/*[contains(@class, "price")]' +
     ']';
-    const findMultipleNodeValues = util.findMultipleNodeValues;
-    const itemElems: Node[] = findMultipleNodeValues(
+    const itemElems: Node[] = util.findMultipleNodeValues(
         item_xpath,
         order_elem
     );
@@ -110,14 +114,14 @@ function strategy0(
         } catch(ex) {
             console.warn('could not find price for: ' + description);
         }
+        const asin = extract_asin_from_url(url);
         return {
             description: description,
-            order_date: order_date,
-            order_detail_url: order_detail_url,
-            order_id: order_id,
+            order_header: order_header,
             price: price,
             quantity: qty,
             url: url,
+            asin: asin,
         }
     });
     return items;
@@ -125,10 +129,8 @@ function strategy0(
 
 // Digital orders.
 function strategy1(
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
     order_elem: HTMLElement,
+    order_header: order_header.IOrderHeader,
     context: string,
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
@@ -156,14 +158,14 @@ function strategy1(
                                ?.textContent
                                ?.match(util.moneyRegEx())
         const price = price_match ? price_match[1] : '';
+        const asin = extract_asin_from_url(url);
         return {
             description: description,
-            order_date: order_date,
-            order_detail_url: order_detail_url,
-            order_id: order_id,
+            order_header: order_header,
             price: price,
             quantity: qty,
             url: url,
+            asin: asin,
         }
     });
     return items;
@@ -174,10 +176,8 @@ function strategy1(
 
 // Amazon.com 2016
 function strategy2(
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
     order_elem: HTMLElement,
+    order_header: order_header.IOrderHeader,
     context: string,
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
@@ -205,14 +205,14 @@ function strategy2(
                                ?.textContent
                                ?.match(util.moneyRegEx())
         const price = price_match ? price_match[1] : '';
+        const asin = extract_asin_from_url(url);
         return {
             description: description,
-            order_date: order_date,
-            order_detail_url: order_detail_url,
-            order_id: order_id,
+            order_header: order_header,
             price: price,
             quantity: qty,
             url: url,
+            asin: asin,
         }
     });
     return items.filter( item => item.description != '' );
@@ -220,10 +220,8 @@ function strategy2(
 
 // This strategy works for Amazon.com grocery orders in 2021.
 function strategy3(
-    order_id: string,
-    order_date: Date|null,
-    order_detail_url: string,
     order_elem: HTMLElement,
+    order_header: order_header.IOrderHeader,
     context: string,
 ): IItem[] {
     const itemElems: Node[] = util.findMultipleNodeValues(
@@ -251,14 +249,14 @@ function strategy3(
         } catch(ex) {
             console.warn('could not find price for: ' + description);
         }
+        const asin = extract_asin_from_url(url);
         return {
             description: description,
-            order_date: order_date,
-            order_detail_url: order_detail_url,
-            order_id: order_id,
+            order_header: order_header,
             price: price,
             quantity: qty,
             url: url,
+            asin: asin,
         }
     });
     return items;

@@ -14,6 +14,24 @@ export function defaulted<T>(
     return def_value;
 }
 
+// Returns def_value if callable throws or returns null/undefined,
+// else returns the result of callable.
+export function defaulted_call<T>(
+    callable: ()=>(T | null | undefined),
+    def_value: T
+): T {
+    try {
+      const value = callable();
+      if (value != null && typeof(value) !== 'undefined') {
+          return value;
+      }
+    }
+    catch (ex) {
+      console.log('util.defaulted_call caught ', ex);
+    }
+    return def_value;
+}
+
 export function parseStringToDOM(html: string) {
     if ( typeof(DOMParser) !== 'undefined' ) {
         // We're in a browser:
@@ -150,4 +168,86 @@ export function moneyRegEx(): RegExp {
 
 export function dateToDateIsoString(d: Date): string {
     return d.toISOString().substr(0,10);
+
+}
+
+export async function get_settled_and_discard_rejects<T>(
+  promises: Promise<T>[]
+): Promise<T[]> {
+    const maybes = await Promise.allSettled(promises);
+    const fulfilled = maybes
+      .filter( m => m.status == 'fulfilled' )
+      .map( m => (m as PromiseFulfilledResult<T>).value );
+    return fulfilled;
+}
+
+// Helper for filter_by_async_predicate.
+class MappedPredicate<T> {
+  subject: T;
+  criterion: boolean;
+
+  constructor(subject: T, criterion: boolean) {
+    this.subject = subject;
+    this.criterion = criterion;
+  }
+}
+
+// Helper for filter_by_async_predicate.
+class MappedPromisedPredicate<T> {
+  subject: T;
+  criterion_promise: Promise<boolean>
+
+  constructor(subject: T, criterion_promise: Promise<boolean>) {
+    this.subject = subject;
+    this.criterion_promise = criterion_promise;
+  }
+
+  unified(): Promise<MappedPredicate<T>> {
+    return this.criterion_promise.then(
+      (criterion: boolean) => new MappedPredicate<T>( this.subject, criterion)
+    );
+  }
+}
+
+export async function filter_by_async_predicate<T>(
+  candidates: T[],
+  predicate: (t: T) => Promise<boolean>
+): Promise<T[]> {
+  const promised_mappings: Promise<MappedPredicate<T>>[] = candidates
+    .map(c => new MappedPromisedPredicate<T>(c, predicate(c)).unified() )
+  const mapped_predicates: MappedPredicate<T>[] = await get_settled_and_discard_rejects(promised_mappings);
+  const filtered: T[] = mapped_predicates.filter(mp => mp.criterion).map(mp => mp.subject);
+  return filtered;
+}
+
+function subtract_one_month(date: Date): Date {
+  const result = new Date(date);
+  if (result.getMonth() == 0) {
+    result.setFullYear(result.getFullYear() - 1);
+    result.setMonth(11);
+  } else {
+    result.setMonth(result.getMonth() - 1);
+  }
+  return result;
+}
+
+export function subtract_months(date: Date, months: number): Date {
+  let result = new Date(date);
+  for (let i=months; i>0; --i) {
+    result = subtract_one_month(result);
+  }
+  return result;
+}
+
+export function getField(
+    xpath: string,
+    elem: HTMLElement,
+    context: string
+): string|null {
+    try {
+        const valueElem = findSingleNodeValue(xpath, elem, context);
+        return valueElem!.textContent!.trim();
+    } catch (_) {
+        return null;
+    }
 }

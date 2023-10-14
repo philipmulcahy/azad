@@ -25,9 +25,7 @@ export function by_regex(
                 context,
             );
         } catch ( ex ) {
-            console.log(
-				'Caught ' + JSON.stringify(ex)
-			);
+            console.debug('Caught ' + JSON.stringify(ex));
         }
         if ( a ) {
             if ( regex ) {
@@ -103,11 +101,19 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
         const payment_amounts = map_payment_field(
             'Grand Total: (.*) Payment Method'
         );
-        const count = Math.min( ...[card_names, card_number_suffixes, payment_amounts].map( l => l.length ) );
+        const count = Math.min(
+          ...[card_names, card_number_suffixes, payment_amounts].map(
+            l => l.length
+          )
+        );
         const payments = [];
         let i = 0;
         for ( i = 0; i < count; i++ ) {
-            payments.push( card_names[i] + ' ending in ' + card_number_suffixes[i] + ': ' + payment_amounts[i] );
+            payments.push(
+              card_names[i] +
+              ' ending in ' + card_number_suffixes[i] + ': '
+              + payment_amounts[i]
+            );
         }
         return payments;
     };
@@ -125,4 +131,25 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
         }
     }
     return ['UNKNOWN'];
+}
+
+export function get_years(orders_page_doc: HTMLDocument): number[] {
+  const snapshot: Node[] = util.findMultipleNodeValues(
+    '//select[@name="orderFilter" or @name="timeFilter"]/option[@value]',
+    orders_page_doc.documentElement
+  );
+  const years = snapshot
+    .filter( elem => elem )  // not null or undefined
+    .filter( elem => elem.textContent )  // text content not null or empty
+    .map(
+      elem => elem!.textContent!
+      .replace('en', '')  // amazon.fr
+      .replace('nel', '')  // amazon.it
+      .trim())
+      .filter( element => (/^\d+$/).test(element) )
+      .map( (year_string: string) => Number(year_string) )
+      .filter( year => (year >= 2004) )
+      // TODO remove duplicates
+      .sort();
+  return years;
 }

@@ -48,7 +48,8 @@ export function alertPartiallyLoggedOutAndOpenLoginTab(url: string): void {
         'and then retry your chosen orange button.',
         document
     );
-    url = urls.normalizeUrl(url);
+    const site = urls.getSite();
+    url = urls.normalizeUrl(url, site);
     chrome.runtime.sendMessage(
         {
             action: 'open_tab',
@@ -111,12 +112,12 @@ export function forceLogOut(site_url: string) {
         'csm-hit',
     ].forEach( name => cookie_names.add(name) );
 
-    cookie_names.forEach( (cookie: string) => {
-        [site_url, no_www_site_url].forEach( url =>
+    cookie_names.forEach( (cookie_name: string) => {
+        [site_url, no_www_site_url].forEach( site_url =>
             chrome.runtime.sendMessage(
                 {
                     action: 'remove_cookie',
-                    cookie_name: name,
+                    cookie_name: cookie_name,
                     cookie_url: site_url
                 }
             )

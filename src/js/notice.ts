@@ -28,7 +28,7 @@ export function showNotificationBar(msg: string, doc: HTMLDocument):void {
 // The targetted link keeps climbing on top of the notification bar messages
 // (and doesn't seem indispensable).
 function removeAnnoyingLink(doc: HTMLDocument): void {
-    const targets = document.querySelectorAll('[class="skip-link"]');
+    const targets = doc.querySelectorAll('[class="skip-link"]');
     targets.forEach( target => target!.parentNode!.removeChild(target) );
 }
 
