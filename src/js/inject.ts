@@ -109,12 +109,15 @@ async function showOrdersOrItems(
 async function fetchAndShowOrdersByYears(
   years: number[]
 ): Promise<HTMLTableElement|undefined> {
-    if ( document.visibilityState != 'visible' ) {
-        console.log(
-            'fetchAndShowOrdersByYears() returning without doing anything: ' +
-            'tab is not visible'
-        );
-        return;
+    const ezp_mode: boolean = await settings.getBoolean('ezp_mode');
+    if ( ! ezp_mode ) {
+      if ( document.visibilityState != 'visible' ) {
+          console.log(
+              'fetchAndShowOrdersByYears() returning without doing anything: ' +
+              'tab is not visible'
+          );
+          return;
+      }
     }
     const purpose: string = years.join(', ');
     resetScheduler(purpose);
@@ -161,8 +164,10 @@ async function fetchAndShowOrdersByRange(
     return showOrdersOrItems(orders, beautiful_table);
 }
 
-async function fetchShowAndDumpItemsByRange(
-  start_date: Date, end_date: Date
+async function fetchShowAndSendItemsByRange(
+  start_date: Date,
+  end_date: Date,
+  destination_extension_id: string,
 ): Promise<void> {
   await settings.storeBoolean('ezp_mode', true);
   const original_items_setting = await settings.getBoolean('show_items_not_orders');
@@ -174,12 +179,8 @@ async function fetchShowAndDumpItemsByRange(
   );
   await settings.storeBoolean('show_items_not_orders', original_items_setting);
 
-  // EZP, the primary consumers of this file are processing file with code:
-  // They don't need the file polluted by aggregation rows.
-  const show_totals = false;
-
   if (typeof(table) != 'undefined') {
-    await csv.download(table, show_totals)
+    await csv.send_csv_to_ezp_peer(table, destination_extension_id)
     await settings.storeBoolean('ezp_mode', false);
     return;
   }
@@ -234,7 +235,10 @@ async function registerContentScript() {
                         {
                           const start_date: Date = new Date(msg.start_date);
                           const end_date: Date = new Date(msg.end_date);
-                          fetchShowAndDumpItemsByRange(start_date, end_date);
+                          fetchShowAndSendItemsByRange(
+                            start_date,
+                            end_date,
+                            msg.sender_id);
                         };
                         break;
                     case 'clear_cache':
