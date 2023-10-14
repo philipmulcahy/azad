@@ -13,28 +13,20 @@ export async function send(
       data: file_content_string,
     };
 
-    const send_OrderInfo = new Promise<any>((resolve, reject) => {
-      chrome.runtime.sendMessage(targetExtensionId, msg, (response: any) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve(response);
-        }
-      });
-    });
-
     try {
       console.log(`Sending Msg:"${msg}" to Ext ID: ${targetExtensionId}`);
-
-      send_OrderInfo
-        .then((response) => {
-          console.log(`Data Sent!`, response);
-        })
-        .catch((error) => {
-          console.error("Error:", error);
+      const response = await new Promise<any>((resolve, reject) => {
+        chrome.runtime.sendMessage(targetExtensionId, msg, (response: any) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(response);
+          }
         });
-    } catch (error) {
-      //console.warn(`Error sending message to ${targetExtensionId}:`, error);
+      });
+      console.log(`Data Sent!`, response);
+    } catch(error) {
+      console.error("Error:", error);
     }
   }
 }

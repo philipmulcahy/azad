@@ -8,7 +8,7 @@ import * as msg from './message_types';
 import * as settings from './settings';
 
 export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
-  'lanjobgdpfchcekdbfelnkhcbppkpldm', // azad_test dev Philip@ball.local
+  'apgfmdalhahnnfgmjejmhkeobobobhjd', // azad_test dev Philip@ball.local
   'ofddmcjihdeahnjehbpaaopghkkncndh', // azad_test dev Ricardo's
   'hldaogmccopioopclfmolfpcacadelco', // EZP_Ext Dev Ricardo
   'jjegocddaijoaiooabldmkcmlfdahkoe', // EZP Regular Release
@@ -111,28 +111,25 @@ function registerConnectionListener() {
 }
 
 function registerExternalConnectionListener() {
-  chrome.runtime.onMessageExternal.addListener(function (
+  chrome.runtime.onMessageExternal.addListener( function (
     message: any,
     sender: chrome.runtime.MessageSender,
     sendResponse: (response?: any) => void
   ) {
-    const DEBUG_extMessaging = true;
-
-    if (DEBUG_extMessaging)
-      console.log(
-        `Rcvd Ext Msg: (Prior to Whitlist Filter) From:${sender.id} Msg:`,
-        message
-      );
+    console.log(
+      `Received Ext Msg: (Prior to Whitelist Filter) From:${sender.id} Msg:`,
+      message
+    );
 
     if (!ALLOWED_EXTENSION_IDS.includes(sender.id)) {
-      if (DEBUG_extMessaging)
-        console.log(
-          `  Message Ignored: Sender (${sender.id}) is not Whitlisted..`,
-          message
-        );
-
+      console.log(
+        `  Message Ignored: Sender (${sender.id}) is not Whitlisted..`,
+        message
+      );
       return; // don't allow access
-    } else if (message.action == 'get_items_3m') {
+    }
+
+    if (message.action == 'get_items_3m') {
       const month_count = 3;
       const end_date = new Date();
       const start_date = util.subtract_months(end_date, month_count);
@@ -141,20 +138,17 @@ function registerExternalConnectionListener() {
         action: 'scrape_range_and_dump_items',
         start_date: start_date,
         end_date: end_date,
+        sender_id: sender.id,
       };
       broadcast_to_content_pages(msg);
       sendResponse({ status: 'ack' });
     } else {
       sendResponse({ status: 'unsupported' });
     }
-    // Store the Requesting EZP Extension ID in sessionStorage
-    if (sender.id !== undefined) {
-      const requestingEzpExt = sender.id;
-      sessionStorage.setItem('requestingEzpExt', requestingEzpExt);
-    }
 
-    return true; // Incompletely documented, but seems to be needed to allow
+    // Incompletely documented, but seems to be needed to allow
     // sendResponse calls to succeed.
+    return true;
   });
 }
 
