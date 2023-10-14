@@ -3,6 +3,15 @@
 ## Official installation page
 https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi
 
+## Quick Start Instructions
+1) Install the extension from [here](https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi).
+2) (Optional) pin the extension icon in your browser by clicking on the jigsaw puzzle piece icon (high right in the chrome browser window), and then clicking on the pin next to "Amazon Order History Reporter", making the pin icon blue. This should permanently display the extension's orange A (for amazon) icon in your extension bar.
+3) Navigate to one of the supported amazon sites.
+4) Click on the extension's icon (orange A) bringing up its pop-up/control panel.
+5) Click on one of the year buttons to scrape and display a year's worth of orders. The extension updates scrape query statistics in the pop-up, so you can see how the fetching/scraping is progressing. At some point it will clear the amazon window and place an orange progress bar that grows until scraping is complete. The more orders you have, the longer it takes.
+6) Sometimes, the extension will warn you you're [logged out](https://github.com/philipmulcahy/azad/edit/master/README.md#log-in-message). You may disagree and be able to navigate around your amazon stuff directly, but the warning has been generated because the site has responded in a way that suggests that for at least some queries a log-out and log back in will help.
+7) The popup has various options you can use to control how it behaves.
+
 ## Commercial Features 2023
 A clear(ish) signal has emerged from the 2022 survey - here are the top two requested features:
 1) Report ASINs, price, and quantity
@@ -14,7 +23,7 @@ Paywall subscription/donations count towards the total (less the fees that strip
 As and when I develop new features, I may choose to put them behind the paywall for a time.
 At the moment, the one I know I want to work on is Tracking Links - lots of users have asked for this.
 
-Check out [commercial_features.md](doc/commercial_features.md) for more detail.
+Check out [commercial_features.md](doc/commercial_features.md) for more detail. You need to actually subscribe to get the hidden features - giving directly to the JustGiving page will not work (though it all goes to the same charity destination). I am frequently assailed by folks who have given the minimum donation to the JustGiving page, and are angry that they have not been subscribed - I've put warnings similar to this one in all the places they will have passed on their route to doing the wrong thing.
 
 # Help!
 
