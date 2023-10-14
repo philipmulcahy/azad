@@ -414,19 +414,6 @@ export function create(
   scheduler: request_scheduler.IRequestScheduler,
   date_filter: date.DateFilter,
 ): IOrder|null {
-  type OrderResolver = (order: IOrder)=>void;
-  type Rejector = (reason?: any)=>void;
-  var resolve_order: OrderResolver|undefined = undefined;
-  var reject_order: Rejector|undefined = undefined;
-  const wrapper_promise = new Promise<IOrder>(
-    (
-      resolve: (order: IOrder)=>void | null,
-      reject: (reason?: any)=>void | null,
-    ) => {
-      resolve_order = resolve;
-      reject_order = reject;
-    }
-  );
   try {
     const impl = new order_impl.OrderImpl(
       header,
@@ -434,16 +421,10 @@ export function create(
       date_filter,
     );
     const wrapper = new Order(impl);
-    if (typeof resolve_order != 'undefined') {
-      (resolve_order as OrderResolver)(wrapper);
-    }
     return wrapper;
   } catch(err) {
     const msg = 'order.create caught: ' + err + '; returning null';
     console.warn(msg);
-    if (typeof reject_order != 'undefined') {
-      (reject_order as Rejector)(msg);
-    }
     return null;
   }
 }
