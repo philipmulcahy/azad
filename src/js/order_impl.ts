@@ -7,10 +7,13 @@ import * as order_header from './order_header';
 import * as request_scheduler from './request_scheduler';
 import * as util from './util';
 
+type Payments = string[];
+type PaymentsResponse = {result: Payments};
+
 export class OrderImpl {
   header: order_header.IOrderHeader;
   detail_promise: Promise<order_details.IOrderDetailsAndItems>|null;
-  payments_promise: Promise<string[]>|null;
+  payments_promise: Promise<Payments>|null;
 
   constructor(
     header: order_header.IOrderHeader,
@@ -34,53 +37,54 @@ export class OrderImpl {
 
     this.detail_promise = order_details.extractDetailPromise(
       this.header, scheduler);
-    this.payments_promise = new Promise<string[]>((
-      (
-        resolve: (payments: string[]) => void,
-        reject: (msg: string) => void
-      ) => {
-        if (this.header.id?.startsWith('D')) {
-          const date = this.header.date ?
-            util.dateToDateIsoString(this.header.date) :
-            '';
-          resolve([
-            this.header.total ?
-              date + ': ' + this.header.total :
-              date
-          ]);
-        } else {
-          const event_converter = function(evt: any) {
-            const doc = util.parseStringToDOM( evt.target.responseText );
-            const payments = extraction.payments_from_invoice(doc);
-            // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
-            return payments;
-          }.bind(this);
-          if (this.header.payments_url) {
-            scheduler.scheduleToPromise<string[]>(
-              this.header.payments_url,
-              event_converter,
-              util.defaulted(this.header.id, '9999'), // priority
-              false,  // nocache,
-              'payments for ' + this.header.id,  // debug_context
-            ).then(
-              (response: {result: string[]}) => {
-                resolve(response.result)
-              },
-              (url: string) => {
-                const msg = 'timeout or other error while fetching ' + url +
-                            ' for ' + this.header.id;
-                console.error(msg);
-                reject(msg);
-              },
-            );
-          } else {
-            reject('cannot fetch payments without payments_url');
-          }
-        }
-      }
-    ).bind(this));
+    this.payments_promise = this.fetch_payments(scheduler);
+  }
+
+  async fetch_payments(
+    scheduler: request_scheduler.IRequestScheduler,
+  ): Promise<Payments> {
+    if (this.header.id?.startsWith('D')) {
+      const date = this.header.date ?
+        util.dateToDateIsoString(this.header.date) :
+        '';
+      return Promise.resolve([
+        this.header.total ?
+          date + ': ' + this.header.total :
+          date
+      ]);
+    }
+
+    const event_converter = function(evt: any): Payments{
+      const doc = util.parseStringToDOM( evt.target.responseText );
+      const payments = extraction.payments_from_invoice(doc);
+      // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
+      return payments;
+    }.bind(this);
+
+    const url = this.header.payments_url;
+    if (!url) {
+      throw('cannot fetch payments without payments_url');
+    }
+
+    try {
+      const response: PaymentsResponse = await scheduler.scheduleToPromise<Payments>(
+        url,
+        event_converter,
+        util.defaulted(this.header.id, '9999'), // priority
+        false,  // nocache,
+        'payments for ' + this.header.id,  // debug_context
+      );
+      const payments = response.result;
+      return payments;
+    } catch (ex) {
+      const msg = 'timeout or other error while fetching ' + url +
+                  ' for ' + this.header.id + ': ' + ex;
+      console.error(msg);
+      return [];
+    }
   }
 }
+
 
 function throw_order_discarded_error(order_id: string|null): void {
   const ode = new Error('OrderDiscardedError:' + order_id);

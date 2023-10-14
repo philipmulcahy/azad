@@ -304,8 +304,8 @@ class RequestScheduler {
           this.error_count += 1;
           console.warn('Got HTTP' + req.status + ' fetching ' + url);
           failure_callback(url);
-        } else if (url.includes('202-1231303-0351535')) {
-          throw 'simulating failure on fetch of 202-1231303-0351535';
+        // } else if (url.includes('202-1231303-0351535')) {
+        //   throw 'simulating failure on fetch of 202-1231303-0351535';
         } else {
           this.completed_count += 1;
           console.log(

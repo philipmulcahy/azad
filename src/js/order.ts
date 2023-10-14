@@ -225,13 +225,18 @@ class Order implements IOrder{
       return Promise.resolve(items);
     }
   }
-  payments(): Promise<string[]> {
-    return util.defaulted(
-      this.impl.payments_promise,
-      Promise.resolve([])
-    );
+  async payments(): Promise<string[]> {
+    const default_payments: string[] = [];
+    const payments_promise = util.defaulted(
+      this.impl.payments_promise, Promise.resolve(default_payments));
+    try {
+      const payments = await payments_promise;
+      return payments;
+    } catch (ex) {
+      console.warn('While getting payments we caught: ', ex);
+      return Promise.resolve(default_payments);
+    }
   }
-
   async _detail_dependent_promise(
       detail_lambda: (d: order_details.IOrderDetails) => string
   ): Promise<string> {
@@ -243,7 +248,6 @@ class Order implements IOrder{
     }
     return Promise.resolve('');
   }
-
   postage(): Promise<string> {
     return this._detail_dependent_promise( detail => detail.postage );
   }
