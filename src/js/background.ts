@@ -64,8 +64,10 @@ function registerConnectionListener() {
                 break;
             }
           });
-          const port_key: number = port?.sender?.tab?.id!;
-          content_ports[port_key] = port;
+          const port_key: number|undefined = port?.sender?.tab?.id;
+          if (typeof(port_key) != 'undefined') {
+            content_ports[port_key] = port;
+          }
         }
         break;
       case 'azad_control':
