@@ -4,7 +4,6 @@
 
 const $ = require('jquery');
 
-import * as ui_messages from  './ui_messages';
 import * as settings from './settings';
 import * as util from './util';
 
@@ -18,8 +17,8 @@ $(document).ready(function() {
       if (typeof(href) != 'undefined') {
         chrome.tabs.create({url: href!});
       }
-		  return false;
-	  }
+      return false;
+    }
   );
 });
 
@@ -72,36 +71,40 @@ function connectToBackground() {
   background_port.onMessage.addListener( msg => {
     switch(msg.action) {
       case 'advertise_periods':
-        console.info('control got periods advertisement');
-      const periods = msg.periods;
-      handleAdvertisePeriods(periods);
-      break;
+        {
+          console.info('control got periods advertisement');
+          const periods = msg.periods;
+          handleAdvertisePeriods(periods);
+        }
+        break;
       case 'statistics_update':
         console.info('control got statistics update');
-      {
-        const text = Object.entries(msg.statistics)
-        .map(([k,v]) => {return k + ':' + v;})
-        .join('; ');
-        $('#azad_statistics').text(text);
-        if ((msg.statistics.queued + msg.statistics.running) > 0) {
-          activateScraping(msg.purpose);
-        } else {
-          activateDone(msg.purpose);
+        {
+          const text = Object.entries(msg.statistics)
+          .map(([k,v]) => {return k + ':' + v;})
+          .join('; ');
+          $('#azad_statistics').text(text);
+          if ((msg.statistics.queued + msg.statistics.running) > 0) {
+            activateScraping(msg.purpose);
+          } else {
+            activateDone(msg.purpose);
+          }
         }
-      }
-      break;
+        break;
       case 'authorisation_status':
-        console.info('control got authorisation_status message');
-      const authorised = msg.authorisation_status;
-      handleAuthorisationMessage(authorised);
-      break;
+        {
+          console.info('control got authorisation_status message');
+          const authorised = msg.authorisation_status;
+          handleAuthorisationMessage(authorised);
+        }
+        break;
       default:
         console.warn('unknown action: ' + msg.action);
     }
   });
 
   background_port.postMessage(
-    {action: 'check_feature_authorized', feature_id: 'premium_preview'})
+    {action: 'check_feature_authorized', feature_id: 'premium_preview'});
 }
 
 async function handleAdvertisePeriods(periods: number[]): Promise<void> {
@@ -147,7 +150,7 @@ function registerActionButtons() {
     });
     $('#azad_payment_ui_button').on('click', () => {
       if (background_port) {
-        console.log('show payment UI clicked')
+        console.log('show payment UI clicked');
         background_port.postMessage({action: 'show_payment_ui'});
       } else {
         console.warn('show payment UI clicked, but I have no background port');
@@ -155,7 +158,7 @@ function registerActionButtons() {
     });
     $('#azad_extpay_login_button').on('click', () => {
       if (background_port) {
-        console.log('show payment UI clicked')
+        console.log('show payment UI clicked');
         background_port.postMessage({action: 'show_extpay_login_ui'});
       } else {
         console.warn('show extpay log-in UI clicked, but I have no background port');
@@ -217,19 +220,6 @@ function handleYearClick(evt: { target: { value: any; }; }) {
   } else {
     console.warn('background_port not set');
   }
-}
-
-async function checkFeaturesAuthorisedNoAlert(): Promise<boolean> {
-	const authorised = await settings.getBoolean('preview_features_enabled');
-	return authorised;
-}
-
-async function checkFeatureAuthorised(): Promise<boolean> {
-  const authorised = await checkFeaturesAuthorisedNoAlert();
-  if (!authorised) {
-		alert(ui_messages.preview_feature_disabled);
-	};
-	return authorised;
 }
 
 async function handleMonthsClick(evt: { target: { value: any; }; }) {

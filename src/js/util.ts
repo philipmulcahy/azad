@@ -130,7 +130,7 @@ class MappedPredicate<T> {
 // Helper for filter_by_async_predicate.
 class MappedPromisedPredicate<T> {
   subject: T;
-  criterion_promise: Promise<boolean>
+  criterion_promise: Promise<boolean>;
 
   constructor(subject: T, criterion_promise: Promise<boolean>) {
     this.subject = subject;
@@ -149,7 +149,7 @@ export async function filter_by_async_predicate<T>(
   predicate: (t: T) => Promise<boolean>
 ): Promise<T[]> {
   const promised_mappings: Promise<MappedPredicate<T>>[] = candidates
-    .map(c => new MappedPromisedPredicate<T>(c, predicate(c)).unified() )
+    .map(c => new MappedPromisedPredicate<T>(c, predicate(c)).unified() );
   const mapped_predicates: MappedPredicate<T>[] = await get_settled_and_discard_rejects(promised_mappings);
   const filtered: T[] = mapped_predicates.filter(mp => mp.criterion).map(mp => mp.subject);
   return filtered;

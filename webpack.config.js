@@ -5,7 +5,6 @@ const path = require("path");
 const env = require("./utils/env");
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require("copy-webpack-plugin");
-const WriteFilePlugin = require("write-file-webpack-plugin");
 const imageFileExtensions = ["jpg", "jpeg", "png", "gif", "svg"];
 
 const chrome_extension_options = {
@@ -72,7 +71,7 @@ const chrome_extension_options = {
             patterns: [
                 {
                     from: "src/manifest.json",
-                    transform: function (content, path) {
+                    transform: function (content, _path) {
                         // generates the manifest file using the package.json informations
                         return Buffer.from(
                             JSON.stringify({
@@ -80,7 +79,7 @@ const chrome_extension_options = {
                                 version: process.env.npm_package_version,
                                 ...JSON.parse(content.toString())
                             })
-                        )
+                        );
                     }
                 },
                 { from: "node_modules/datatables/media/css/jquery.dataTables.min.css" },

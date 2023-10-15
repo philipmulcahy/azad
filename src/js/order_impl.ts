@@ -30,7 +30,6 @@ export class OrderImpl {
     date_filter: date.DateFilter,
     scheduler: request_scheduler.IRequestScheduler
   ) {
-    const context = 'id:' + this.header.id;
     if (!date_filter(this.header.date)) {
       throw_order_discarded_error(this.header.id);
     }

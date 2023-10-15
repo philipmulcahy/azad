@@ -3,7 +3,7 @@
 
 export interface IProgressIndicator {
     update_progress: (fraction: number) => void;
-};
+}
 
 
 // Emplace progress bar
@@ -48,10 +48,10 @@ export function addProgressBar(
         const percent_string = '' + Math.trunc(fraction * 100 + 0.005) + '%';
         b.setAttribute('style', 'width:' + width + 'px');
         b.setAttribute('title', percent_string);
-    }
+    };
 
     return {
         update_progress: set_fraction_done
-    }
+    };
 }
 

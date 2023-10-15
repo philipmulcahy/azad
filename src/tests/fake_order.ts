@@ -5,7 +5,6 @@
 import * as fs from 'fs';
 import * as extraction from '../js/extraction';
 const jsdom = require('jsdom');
-const xpath = require('xpath');
 import * as azad_order from '../js/order';
 import * as order_header from '../js/order_header';
 import * as request_scheduler from '../js/request_scheduler';
@@ -76,13 +75,13 @@ function dirHasDirs(dir: fs.Dirent, dirs: string[]): boolean {
 function getSiteDirs(): fs.Dirent[] {
     return fs.readdirSync(DATA_ROOT_PATH, {withFileTypes: true})
              .filter((de: fs.Dirent) => de.isDirectory() &&  // directories only
-                                        de.name[0] != '.')  // ignore hidden
+                                        de.name[0] != '.');  // ignore hidden
 }
 
 function getASites(): string[] {
     const sites: string[] = getSiteDirs()
         .filter((de: fs.Dirent) => dirHasDirs(de, ['expected', 'input']))
-        .map((de: fs.Dirent) => de.name)
+        .map((de: fs.Dirent) => de.name);
     return sites;
 }
 
@@ -117,10 +116,9 @@ export function orderFromTestData(
                         .filter( el => el.hasAttribute('href') )
                         .map( el => el.getAttribute('href') )
                         .map( href => href?.match(/.*orderID=([A-Z0-9-]*).*/) )
-                        .filter( match => match )![0]![1] == order_dump.id
-
+                        .filter( match => match )![0]![1] == order_dump.id;
                 } catch(ex) {
-                    return null
+                    return null;
                 }
             }
         )[0]
@@ -160,14 +158,14 @@ export interface ITestTarget {
 }
 
 export function discoverTestData(): ITestTarget[] {
-    const site_to_expecteds: Record<string,string[]> = {}
+    const site_to_expecteds: Record<string,string[]> = {};
     getASites()
         .forEach( (site: string) => {
             const expecteds: string[] = fs.readdirSync(
                     sitePath(site) + '/expected');
             expecteds.forEach( expected => {
                 console.log('expected order:', site, expected);
-            })
+            });
             site_to_expecteds[site] = expecteds.filter(
                 exp => exp.match(/^[^.].*\.json$/)
             );

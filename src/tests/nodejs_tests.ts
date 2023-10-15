@@ -9,8 +9,6 @@ const jsdom = require('jsdom');
 import * as order_data from './fake_order';
 import * as util from '../js/util';
 
-const assert = require('assert');
-
 interface ITestResult {
     test_id: string;
     passed: boolean;
@@ -25,7 +23,7 @@ function testOneGetYearsTarget(html_file_path: string): ITestResult {
     test_id: 'GET_YEAR_NUMBERS_' + html_file_path,
     passed: years.length > 5 && years.length < 25,
     defects: []
-  }
+  };
 }
 
 function testAllGetYearsTargets(): ITestResult[] {
@@ -74,7 +72,7 @@ function testOneOrderTarget(
         return actual_value_promise.then( (actual_value: azad_entity.Value) => {
             console.log('key:', key, expected_value, actual_value);
             if ( key.toLowerCase().includes('date') ) {
-              actual_value = util.dateToDateIsoString(actual_value as Date)
+              actual_value = util.dateToDateIsoString(actual_value as Date);
             }
             if ( key == 'item_list' ) {
               const strip_uninteresting_fields = function(item_list: azad_item.IItem[]): azad_item.IItem[] {
@@ -84,7 +82,7 @@ function testOneOrderTarget(
                   });
                 });
                 return item_list;
-              }
+              };
               expected_value = strip_uninteresting_fields(expected_value as azad_item.IItem[]);
               actual_value = strip_uninteresting_fields(actual_value as azad_item.IItem[]);
             }

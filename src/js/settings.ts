@@ -64,8 +64,8 @@ async function updateElements(
   console.info('settings.updateElements(...)');
   const preview_authorised = await getBoolean('preview_features_enabled');
   console.info('settings.updateElements(...) preview_authorised', preview_authorised);
-  for ( let key of Object.keys(elements) ) {
-    let value: boolean = (values && key in values)  ?
+  for ( const key of Object.keys(elements) ) {
+    const value: boolean = (values && key in values) ?
       <boolean>values[key] :
       false;
     const elem = elements[key];
@@ -78,7 +78,7 @@ async function updateElements(
       }
       if (preview_authorised) {
         const parent = elem.parentElement;
-        let parent_classes = parent!.getAttribute('class')
+        let parent_classes = parent!.getAttribute('class');
         console.info('settings.updateElements(...) classes for', key, ':', parent_classes);
         if (parent_classes) {
           parent_classes = parent_classes.replace('azad_disabled', '').trim();
@@ -93,7 +93,7 @@ async function updateElements(
         }
       }
     }
-  };
+  }
   return;
 }
 
@@ -101,7 +101,7 @@ async function setElemClickHandlers(
   key_to_elem: Record<string, HTMLElement>
 ): Promise<void> {
   console.info('settings.setElemClickHandlers() starting');
-  for( let key of Object.keys(key_to_elem) ) {
+  for( const key of Object.keys(key_to_elem) ) {
     const elem = key_to_elem[key];
     if (elem) {
       elem.onclick = async function() {
@@ -122,7 +122,7 @@ async function setElemClickHandlers(
         }
       };
     }
-  };
+  }
 }
 
 export function initialiseUi(): Promise<void> {
@@ -149,7 +149,7 @@ export function storeBoolean(key: string, value: boolean): Promise<void> {
         const settings = getSettings(entries);
         settings[key] = value;
         const stringified_settings =  JSON.stringify(settings);
-        const updated_entry: Record<string, string> = {}
+        const updated_entry: Record<string, string> = {};
         updated_entry[EXTENSION_KEY] = stringified_settings;
         chrome.storage.sync.set(
           updated_entry,
@@ -166,7 +166,7 @@ export function storeBoolean(key: string, value: boolean): Promise<void> {
           }
         );
       }
-    )
+    );
   });
 }
 

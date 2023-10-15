@@ -31,35 +31,42 @@ function registerConnectionListener() {
     console.log('new connection from ' + port.name);
     switch (port.name) {
       case 'azad_inject':
-        port.onDisconnect.addListener(() => {
-          delete content_ports[port?.sender?.tab?.id!];
-        });
-        port.onMessage.addListener((msg) => {
-          switch (msg.action) {
-            case 'advertise_periods':
-              console.log('forwarding advertise_periods', msg.period);
-              advertised_periods = [
-                ...Array.from(
-                  new Set<number>(advertised_periods.concat(msg.periods))
-                ),
-              ].sort((a, b) => a - b);
-              advertisePeriods();
-              break;
-            case 'statistics_update':
-              if (control_port) {
-                try {
-                  control_port?.postMessage(msg);
-                } catch (ex) {
-                  console.debug('could not post stats message to control port');
+        {
+          port.onDisconnect.addListener(() => {
+            const key = port?.sender?.tab?.id;
+            if (key != null && typeof(key) != 'undefined') {
+              delete content_ports[key];
+            }
+          });
+          port.onMessage.addListener((msg) => {
+            switch (msg.action) {
+              case 'advertise_periods':
+                console.log('forwarding advertise_periods', msg.period);
+                advertised_periods = [
+                  ...Array.from(
+                    new Set<number>(advertised_periods.concat(msg.periods))
+                  ),
+                ].sort((a, b) => a - b);
+                advertisePeriods();
+                break;
+              case 'statistics_update':
+                if (control_port) {
+                  try {
+                    control_port?.postMessage(msg);
+                  } catch (ex) {
+                    console.debug(
+                      'could not post stats message to control port');
+                  }
                 }
-              }
-              break;
-            default:
-              console.warn('unknown action: ' + msg.action);
-              break;
-          }
-        });
-        content_ports[port?.sender?.tab?.id!] = port;
+                break;
+              default:
+                console.warn('unknown action: ' + msg.action);
+                break;
+            }
+          });
+          const port_key: number = port?.sender?.tab?.id!;
+          content_ports[port_key] = port;
+        }
         break;
       case 'azad_control':
         control_port = port;

@@ -34,7 +34,7 @@ export function toJSON(
   const attrs = node.attributes;
   if (attrs) {
     const arr = [];
-    for (var i = 0; i < attrs.length; i++) {
+    for (let i = 0; i < attrs.length; i++) {
       const attr = attrs[i];
       arr.push([attr.nodeName, attr.nodeValue]);
     }
@@ -48,7 +48,7 @@ export function toJSON(
   if (childNodes) {
     obj.childNodes = Array.from(childNodes)
                           .map( n => toJSON(n, include_attribs) )
-                          .filter( n => n )
+                          .filter( n => n );
   }
   return obj;
 }
@@ -64,7 +64,7 @@ export function toDOM(obj: IJsonObject | string): Node {
       node = document.createElement(obj.tagName);
       {
           const attributes = obj.attributes || [];
-          for (var i = 0, len = attributes.length; i < len; i++) {
+          for (let i = 0, len = attributes.length; i < len; i++) {
             const attr = attributes[i];
             node.setAttribute(attr[0], attr[1]);
           }
@@ -96,7 +96,7 @@ export function toDOM(obj: IJsonObject | string): Node {
   }
   if (nodeType == 1 || nodeType == 11) {
     const childNodes = obj.childNodes || [];
-    for (i = 0, len = childNodes.length; i < len; i++) {
+    for (let i = 0, len = childNodes.length; i < len; i++) {
       node.appendChild(toDOM(childNodes[i]));
     }
   }

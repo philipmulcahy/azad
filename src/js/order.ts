@@ -4,8 +4,6 @@
 
 import * as azad_entity from './entity';
 import * as date from './date';
-import * as dom2json from './dom2json';
-import * as extraction from './extraction';
 import * as item from './item';
 import * as notice from './notice';
 import * as order_details from './order_details';
@@ -14,14 +12,9 @@ import * as olp from './order_list_page';
 import * as order_impl from './order_impl';
 import * as signin from './signin';
 import * as shipment from './shipment';
-import * as sprintf from 'sprintf-js';
 import * as request_scheduler from './request_scheduler';
 import * as urls from './url';
 import * as util from './util';
-
-function getCacheExcludedElementTypes() {
-    return new Set<string>(['img']);
-}
 
 export interface IOrder extends azad_entity.IEntity {
     id(): Promise<string>;
@@ -47,7 +40,7 @@ export interface IOrder extends azad_entity.IEntity {
     who(): Promise<string>;
 
     sync(): Promise<ISyncOrder>;
-};
+}
 
 export interface ISyncOrder extends azad_entity.IEntity {
     id: string;
@@ -121,7 +114,7 @@ class SyncOrder implements ISyncOrder {
         us_tax: ()=>Promise.resolve(this.us_tax),
         vat: ()=>Promise.resolve(this.vat),
         who: ()=>Promise.resolve(this.who),
-      }
+      };
     }
 }
 
@@ -129,7 +122,7 @@ class Order implements IOrder{
   impl: order_impl.OrderImpl;
 
   constructor(impl: order_impl.OrderImpl) {
-    this.impl = impl
+    this.impl = impl;
   }
 
   async sync(): Promise<ISyncOrder> {
@@ -175,7 +168,7 @@ class Order implements IOrder{
       us_tax: us_tax,
       vat: vat,
       who: who,
-    }
+    };
   }
 
   id(): Promise<string> {
@@ -258,24 +251,24 @@ class Order implements IOrder{
   }
   gift(): Promise<string> {
     return this._detail_dependent_promise( detail => detail.gift );
-  };
+  }
   us_tax(): Promise<string> {
-    return this._detail_dependent_promise( detail => detail.us_tax )
+    return this._detail_dependent_promise( detail => detail.us_tax );
   }
   vat(): Promise<string> {
-    return this._detail_dependent_promise( detail => detail.vat )
+    return this._detail_dependent_promise( detail => detail.vat );
   }
   gst(): Promise<string> {
-    return this._detail_dependent_promise( detail => detail.gst )
+    return this._detail_dependent_promise( detail => detail.gst );
   }
   pst(): Promise<string> {
-    return this._detail_dependent_promise( detail => detail.pst )
+    return this._detail_dependent_promise( detail => detail.pst );
   }
   refund(): Promise<string> {
-    return this._detail_dependent_promise( detail => detail.refund )
+    return this._detail_dependent_promise( detail => detail.refund );
   }
   invoice_url(): Promise<string> {
-    return this._detail_dependent_promise( detail => detail.invoice_url )
+    return this._detail_dependent_promise( detail => detail.invoice_url );
   }
 }
 
@@ -324,7 +317,7 @@ export async function getOrdersByRange(
   const start_year = start_date.getFullYear();
   const end_year = end_date.getFullYear();
 
-  let years: number[] = []
+  const years: number[] = [];
   for (let y=start_year; y<=end_year; y++) {
     years.push(y);
   }
@@ -332,7 +325,7 @@ export async function getOrdersByRange(
   const order_years = years.map(
     year => {
       const nocache_top_level = latest_year == year;
-      return fetchYear(year, scheduler, nocache_top_level, date_filter)
+      return fetchYear(year, scheduler, nocache_top_level, date_filter);
     }
   );
 
@@ -346,7 +339,7 @@ export async function getOrdersByRange(
     } else {
       return false;
     }
-  }
+  };
 
   const filtered_orders = await util.filter_by_async_predicate(
     orders,
@@ -365,10 +358,10 @@ export async function get_legacy_items(order: IOrder)
     result[item.description] = item.url;
   });
   return result;
-};
+}
 
 export async function assembleDiagnostics(order: IOrder)
-  : Promise<Record<string,any>>
+  : Promise<Record<string, any>>
 {
   const sync_order = await order.sync();
   const diagnostics: Record<string, any> = {};
@@ -383,7 +376,7 @@ export async function assembleDiagnostics(order: IOrder)
   ];
   field_names.forEach(
     (field_name: keyof ISyncOrder) => {
-      let value: any = sync_order[field_name];
+      const value: any = sync_order[field_name];
       diagnostics[<string>(field_name)] = value;
     }
   );

@@ -45,8 +45,8 @@ function make_csv_string(
     const rows: HTMLTableRowElement[] = Array.prototype.slice.call(table.rows);
     const result: string[][] = [];
     for (let i = 0; i < rows.length + (sums_for_spreadsheet ? -1 : 0); ++i) {
-      let cells = rows[i].cells;
-      let cell_array: string[] = [];
+      const cells = rows[i].cells;
+      const cell_array: string[] = [];
       for (let j = 0; j < cells.length; ++j) {
         let x:
           | HTMLTableDataCellElement
@@ -65,8 +65,8 @@ function make_csv_string(
     }
     if (sums_for_spreadsheet) {
       // replace last row for use in a spreadsheet
-      let cells = rows[2].cells;
-      let cell_array: string[] = [];
+      const cells = rows[2].cells;
+      const cell_array: string[] = [];
       let x: string = '';
       let y = true;
       for (let j = 0; j < cells.length; ++j) {
@@ -89,7 +89,7 @@ function make_csv_string(
       result.push(cell_array);
     }
     return result;
-  };
+  }
   function processRow(row: string[]): string {
     const processCell = function (cell: string): string {
       if (!cell) {
@@ -102,7 +102,7 @@ function make_csv_string(
       return processed;
     };
     return row.map(processCell).join(',');
-  };
+  }
   const cell_strings: string[][] = tableToArrayOfArrays(table);
   const row_strings = cell_strings.map(processRow);
   const csv_string = '\ufeff' + row_strings.join('\n');

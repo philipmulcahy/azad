@@ -1,9 +1,9 @@
-/* Copyright(c) 2019 Philip Mulcahy. */
-/* jshint strict: true, esversion: 6 */
+/* Copyright(c) 2019-2023 Philip Mulcahy. */
+
+/* eslint-disable no-useless-escape */
+/* eslint-disable no-irregular-whitespace */
 
 'use strict';
-
-import * as util from '../js/util';
 
 export function order_D01_9960417_3589456_html(): string {
     return `

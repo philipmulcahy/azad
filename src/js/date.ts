@@ -11,10 +11,6 @@ const moment = require('moment');
 
 import { sprintf } from 'sprintf-js';
 
-interface Moment {
-    toDate: () => Date;
-}
-
 function localDateFromMoment(m: any): string {
     const d = m.toDate();
     return sprintf(

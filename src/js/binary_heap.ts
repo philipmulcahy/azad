@@ -5,7 +5,7 @@
 'use strict';
 
 export class BinaryHeap {
-    content: any[]
+    content: any[];
     scoreFunction: any;
 
     // TODO: This was class written/cribbed before I (Philip) started using npm

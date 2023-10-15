@@ -4,7 +4,7 @@
 
 export function getSite(): string {
   if ( typeof( window ) === 'undefined' ) {
-    return 'www.azadexample.com'
+    return 'www.azadexample.com';
   }
   const href = window.location.href;
   const regex = new RegExp('https:\\/\\/(www\\.amazon\\.[^\\/]+)');

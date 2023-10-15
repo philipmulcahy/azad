@@ -12,7 +12,7 @@ async function endtoendTest() {
     cache.set('test_key', 'the quick brown fox');
     const retrieved = await cache.get('test_key');
     return retrieved == 'the quick brown fox';
-};
+}
 
 const fillTest = () => {
     const cache = cachestuff.createLocalCache('TESTFILL');
@@ -47,7 +47,7 @@ async function restoreParentTest(): Promise<boolean> {
       a: 'A',
       items: [{parent_order: null}],
       child_thing: {parent_order: null}
-    }
+    };
     const parent = Promise.resolve(order);
     order.items[0].parent_order = parent;
     order.child_thing.parent_order = parent;

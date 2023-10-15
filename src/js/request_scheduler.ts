@@ -40,14 +40,14 @@ export interface IRequestScheduler {
 class RequestScheduler {
 
   // chrome allows 6 requests per domain at the same time.
-  CONCURRENCY: number = 6
+  CONCURRENCY: number = 6;
 
   cache: cachestuff.Cache = cachestuff.createLocalCache('REQUESTSCHEDULER');
   queue: binary_heap.BinaryHeap = new binary_heap.BinaryHeap(
     (item: any): number => item.priority
   );
   running_count: number = 0;
-  completed_count: number = 0
+  completed_count: number = 0;
   error_count: number = 0;
   signin_warned: boolean = false;
   live = true;
@@ -182,7 +182,7 @@ class RequestScheduler {
           'callback failed for ', debug_context, query, ex);
         return null;
       }
-    }
+    };
 
     const protected_converter = (evt: any) => {
       try {
@@ -198,7 +198,7 @@ class RequestScheduler {
           'event conversion failed for ', debug_context, query, ex);
         return null;
       }
-    }
+    };
 
     const cached_response_promise = nocache ?
       Promise.resolve(undefined) :
@@ -332,7 +332,7 @@ class RequestScheduler {
         this._recordSingleCompletion();
         console.warn('Timed out while fetching: ', debug_context, url);
       }
-    }
+    };
     this._update_statistics();
     req.send();
   }
@@ -378,4 +378,4 @@ class RequestScheduler {
 
 export function create(purpose: string): IRequestScheduler {
   return new RequestScheduler(purpose);
-};
+}

@@ -24,58 +24,27 @@ import * as util from './util';
 // and instead build a TableSettings class that can be passed around.
 // e.g. less spooky action at a distance.
 
-const CELL_CLASS = 'azad_cellClass ';
-const ELEM_CLASS = 'azad_elemClass ';
-const LINK_CLASS = 'azad_linkClass ';
-const TH_CLASS = 'azad_thClass ';
-
 let datatable: any = null;
 const order_map: Record<string, azad_order.IOrder> = {};
 let progress_indicator: progress_bar.IProgressIndicator|null = null;
 
-/**
- * Add a td to the row tr element, and return the td.
- */
-const addCell = function(row: HTMLTableRowElement, value: string|null) {
-    const td = row.ownerDocument.createElement('td');
-    td.setAttribute('class', CELL_CLASS);
-    row.appendChild(td);
-    td.textContent = value;
-    return td;
-};
-
-/**
- * Add a td to the row tr element, and return the td.
- */
-
-const addElemCell = function(
-        row: HTMLElement,
-        elem: HTMLElement
-): HTMLElement {
-    const td: HTMLTableDataCellElement = row.ownerDocument!.createElement('td');
-    td.setAttribute('class', ELEM_CLASS);
-    row.appendChild(td);
-    td.appendChild(elem);
-    return td;
-};
-
 const TAX_HELP = 'Caution: tax is often missing when not supplied by Amazon, cancelled, or pre-order.';
 
 interface ColSpec {
-    field_name: string;
+  field_name: string;
 
-    // Yes: using IEntity here means a tonne of downcasting in the implementations.
-    // The alternatives seem (to me) worse.
-    render_func?: (entity: azad_entity.IEntity, td: HTMLElement) => Promise<null>;
+  // Yes: using IEntity here means a tonne of downcasting in the implementations.
+  // The alternatives seem (to me) worse.
+  render_func?: (entity: azad_entity.IEntity, td: HTMLElement) => Promise<null>;
 
-    is_numeric: boolean;
-    value_promise_func_name?: string;
-    help?: string;
-    sites?: RegExp;
-    visibility?: () => Promise<boolean>;
-    sum?: number;
-    pageSum?: number;
-};
+  is_numeric: boolean;
+  value_promise_func_name?: string;
+  help?: string;
+  sites?: RegExp;
+  visibility?: () => Promise<boolean>;
+  sum?: number;
+  pageSum?: number;
+}
 
 const ORDER_COLS: ColSpec[] = [
     {
@@ -96,7 +65,7 @@ const ORDER_COLS: ColSpec[] = [
         render_func: (order: azad_entity.IEntity, td: HTMLElement) =>
             azad_order.get_legacy_items(order as azad_order.IOrder).then( items => {
                 const ul = td.ownerDocument!.createElement('ul');
-                for(let title in items) {
+                for(const title in items) {
                     if (Object.prototype.hasOwnProperty.call(items, title)) {
                         const li = td.ownerDocument!.createElement('li');
                         ul.appendChild(li);
@@ -145,7 +114,7 @@ const ORDER_COLS: ColSpec[] = [
               (a: item.IItem,
                b: item.IItem) => a.description.localeCompare(b.description)
             ).map(item => item.description));
-          }
+          };
           const shipments = await (order as azad_order.IOrder).shipments();
           const merged_items = normalise_items(await (order as azad_order.IOrder).item_list());
           const shipment_items = normalise_items(shipments.map(s => s.items).flat());
@@ -181,27 +150,27 @@ const ORDER_COLS: ColSpec[] = [
         is_numeric: false,
         visibility: ()=>Promise.resolve(false),
     },
-        {
-          field_name: 'shipments',
-          render_func: async function(order: azad_entity.IEntity, td: HTMLElement) {
-            const shipments = await (order as azad_order.IOrder).shipments();
-            const ul = td.ownerDocument!.createElement('ul');
-            td.textContent = '';
-            td.appendChild(ul);
-            shipments.forEach(s => {
-              const li = td.ownerDocument!.createElement('li');
-              ul.appendChild(li);
-              const t = s.transaction;
-              let html = 'delivered: ' + shipment.Delivered[s.delivered] +
-                '; status: ' + s.status +
-                (s.tracking_link != '' ? '; <a href="' + s.tracking_link + '">tracking link</a>' : '') +
-                (t ? ('; transaction: ' + t.payment_amount + ' ' + t.info_string) : '')
-              li.innerHTML = html;
-            });
-            return null;
-          },
-          is_numeric: false,
-          visibility: shipment_info_enabled,
+    {
+      field_name: 'shipments',
+      render_func: async function(order: azad_entity.IEntity, td: HTMLElement) {
+        const shipments = await (order as azad_order.IOrder).shipments();
+        const ul = td.ownerDocument!.createElement('ul');
+        td.textContent = '';
+        td.appendChild(ul);
+        shipments.forEach(s => {
+          const li = td.ownerDocument!.createElement('li');
+          ul.appendChild(li);
+          const t = s.transaction;
+          const html = 'delivered: ' + shipment.Delivered[s.delivered] +
+            '; status: ' + s.status +
+            (s.tracking_link != '' ? '; <a href="' + s.tracking_link + '">tracking link</a>' : '') +
+            (t ? ('; transaction: ' + t.payment_amount + ' ' + t.info_string) : '');
+          li.innerHTML = html;
+        });
+        return null;
+      },
+      is_numeric: false,
+      visibility: shipment_info_enabled,
     },
     {
         field_name: 'to',
@@ -288,9 +257,9 @@ const ORDER_COLS: ColSpec[] = [
                     li.appendChild(a);
                     // Replace unknown/none with "-" to make it look uninteresting.
                     if (!payment) {
-                        a.textContent = '-'
+                        a.textContent = '-';
                     } else {
-                        a.textContent = payment + '; '
+                        a.textContent = payment + '; ';
                     }
                    (order as azad_order.IOrder).detail_url().then(
                         detail_url => a.setAttribute( 'href', detail_url)
@@ -471,23 +440,9 @@ function getCols(
             });
         }
     });
+    /* eslint-disable */
     return Promise.all(waits).then( _ => results );
-}
-
-function maybe_promise_to_promise(
-    field: azad_entity.Field
-): Promise<azad_entity.Value> {
-    const called =
-        typeof(field) === 'function' ?
-            (field as ()=>Promise<azad_entity.Value>)() :
-            field;
-    if (called == null) {
-        return Promise.resolve(null);
-    } else if (typeof(called) === 'object' && 'then' in called) {
-        return called;
-    } else {
-        return Promise.resolve(called);
-    }
+    /* eslint-enable */
 }
 
 function appendCell(
@@ -495,7 +450,7 @@ function appendCell(
     entity: azad_entity.IEntity,
     col_spec: ColSpec,
 ): Promise<null> {
-    const td = document.createElement('td')
+    const td = document.createElement('td');
     td.textContent = 'pending';
     tr.appendChild(td);
     const null_converter = function(x: any): any {
@@ -515,7 +470,7 @@ function appendCell(
         } else {
             return '';
         }
-    }
+    };
     const value_written_promise: Promise<null> =
         col_spec.render_func ?
             col_spec?.render_func(entity, td) :
@@ -531,7 +486,7 @@ function appendCell(
                     typeof(field) === 'function'
                 ) ?
                     field.bind(entity)() :
-                    Promise.resolve(field)
+                    Promise.resolve(field);
                 return value_promise
                     .then(null_converter)
                     .then(
@@ -599,7 +554,7 @@ async function addTable(
 ): Promise<HTMLTableElement> {
     const addHeader = function(row: HTMLElement, value: string, help: string) {
         const th = row.ownerDocument!.createElement('th');
-        th.setAttribute('class', TH_CLASS);
+        th.setAttribute('class', 'azad_thClass');
         row.appendChild(th);
         th.textContent = value;
         if( help ) {
@@ -664,7 +619,7 @@ async function addTable(
         cell_done_promises => value_done_promises.push(
             ...cell_done_promises
         )
-    )
+    );
     console.log(
         'value_done_promises.length',
         value_done_promises.length
@@ -685,7 +640,7 @@ async function reallyDisplay(
     items_not_orders: boolean,
 ): Promise<HTMLTableElement> {
     console.log('amazon_order_history_table.reallyDisplay starting');
-    for (let entry in order_map) {
+    for (const entry in order_map) {
         delete order_map[entry];
     }
     orders.forEach( order => {
@@ -695,16 +650,16 @@ async function reallyDisplay(
     });
     util.clearBody();
     addProgressBar();
-    const order_promises = orders.map(
-        (order: azad_order.IOrder) => Promise.resolve(order)
-    );
     const cols = getCols(items_not_orders);
     const table_promise = items_not_orders ?
         addItemTable(
             document, orders, cols) :
         addOrderTable(
             document, orders, cols);
-    const table = await table_promise;
+
+    // Wait for table to be there before doing more html stuff.
+    const _table = await table_promise;
+
     $( () => {
         if (beautiful) {
             if (datatable) {
@@ -716,7 +671,7 @@ async function reallyDisplay(
                 function() { display(orders, false, items_not_orders); },
                 'azad_table_button'
             );
-            addCsvButton(orders, items_not_orders)
+            addCsvButton(orders, items_not_orders);
             datatable = (<any>$('#azad_order_table')).DataTable({
                 'bPaginate': true,
                 'lengthMenu': [ [10, 25, 50, 100, -1],
@@ -765,7 +720,7 @@ async function reallyDisplay(
                             } else {
                                 return 0;
                             }
-                        }
+                        };
                         if(col_spec.is_numeric) {
                             col_spec.sum = sum_col(api.column(col_index));
                             col_spec.pageSum = sum_col(
@@ -787,7 +742,7 @@ async function reallyDisplay(
                 function() { display(orders, true, items_not_orders); },
                 'azad_table_button'
             );
-            addCsvButton(orders, items_not_orders)
+            addCsvButton(orders, items_not_orders);
         }
     });
 
@@ -796,20 +751,24 @@ async function reallyDisplay(
 }
 
 function addProgressBar(): void {
-    progress_indicator = progress_bar.addProgressBar(document.body)
+  progress_indicator = progress_bar.addProgressBar(document.body);
 }
 
-function addCsvButton(orders: azad_order.IOrder[], items_not_orders: boolean): void {
-    const title = "download spreadsheet ('.csv')";
-    util.addButton(
-       title,
-       async function() {
-           const table: HTMLTableElement = await display(orders, false, items_not_orders);
-           const show_totals: boolean = await settings.getBoolean('show_totals_in_csv');
-           csv.download(table, show_totals)
-       },
-       'azad_table_button'
-    );
+function addCsvButton(orders: azad_order.IOrder[],
+                      items_not_orders: boolean): void {
+  const title = "download spreadsheet ('.csv')";
+  util.addButton(
+    title,
+    async function() {
+      const table: HTMLTableElement = await display(orders,
+                                                    false,
+                                                    items_not_orders);
+      const show_totals: boolean = await settings.getBoolean(
+        'show_totals_in_csv');
+      csv.download(table, show_totals);
+    },
+    'azad_table_button'
+  );
 }
 
 export async function display(

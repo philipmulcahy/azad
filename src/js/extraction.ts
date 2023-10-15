@@ -1,4 +1,4 @@
-/* Copyright(c) 2019 Philip Mulcahy. */
+/* Copyright(c) 2019-2023 Philip Mulcahy. */
 
 /* jshint strict: true, esversion: 6 */
 
@@ -92,7 +92,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
                     return y[1].trim();
                 }
             );
-        }
+        };
         const card_names: string[] = map_payment_field(
             'Payment Method: ([A-Za-z0-9 /]*) \\|'
         );
@@ -220,7 +220,7 @@ export function findMultipleNodeValues(
 		if (ex) {
 			throw ex;
 		}
-		throw 'Unknown exception from findMultipleNodeValues.'
+		throw 'Unknown exception from findMultipleNodeValues.';
 	}
 }
 

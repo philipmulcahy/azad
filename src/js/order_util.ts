@@ -13,7 +13,7 @@ export interface IEnrichedShipment extends shipment.IShipment {
 
 export interface IEnrichedItem extends item.IItem {
   shipment: shipment.IShipment;
-};
+}
 
 export async function enriched_items_from_orders(
   orders: order.IOrder[],
@@ -21,7 +21,7 @@ export async function enriched_items_from_orders(
   const oop = orders.map(o => o.sync());
   const oo = await util.get_settled_and_discard_rejects(oop);
   const shipments: IEnrichedShipment[] = oo.flatMap( o => {
-    let ss = o.shipments;
+    const ss = o.shipments;
     if (ss.length == 0) {
       ss.push({
         items: o.item_list,
@@ -29,7 +29,7 @@ export async function enriched_items_from_orders(
         status: 'no shipment',
         tracking_link: '',
         transaction: null,
-      })
+      });
     }
     return ss.map( s => ({
       order: o,

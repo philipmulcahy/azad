@@ -15,7 +15,7 @@ export interface IOrderHeader {
   payments_url: string;
   total: string|null;
   who: string|null;
-};
+}
 
 export function extractOrderHeader(
   elem: HTMLElement,
@@ -34,7 +34,6 @@ function reallyExtractOrderHeader(
   elem: HTMLElement,
   list_url: string
 ): IOrderHeader {
-  const doc = elem.ownerDocument;
   let id: string = 'UNKNOWN_ORDER_ID';
   try {
     id = [

@@ -12,7 +12,7 @@ import * as util from './util';
 export interface IOrdersPageData {
   expected_order_count: number;
   order_headers: order_header.IOrderHeader[];
-};
+}
 
 async function get_page_data(
   site: string,
@@ -54,7 +54,7 @@ async function get_expected_order_count(
     true,
   );
   return page_data.expected_order_count;
-};
+}
 
 async function get_page_of_headers(
   site: string,
@@ -75,7 +75,7 @@ async function get_page_of_headers(
     nocache_top_level,
   );
   return page_data.order_headers;
-};
+}
 
 export async function get_headers(
   site: string,
@@ -107,7 +107,7 @@ export async function get_headers(
         headers.length);
     }
     return headers;
-  };
+  }
   const templates = selectTemplates(site);
   const headerss = await util.get_settled_and_discard_rejects(await templates.map(fetch_headers_for_template));
   const headers = headerss.flat();
@@ -252,7 +252,7 @@ function generateQueryString(
       startOrderPos: startOrderPos
     }
   );
-};
+}
 
 function translateOrdersPage(
   evt: any,
@@ -304,7 +304,7 @@ function reallyTranslateOrdersPage(
     const msg = 'Error: maybe you\'re not logged into ' +
                 'https://' + urls.getSite() + '/gp/css/order-history ' +
                 err;
-    console.warn(msg)
+    console.warn(msg);
     throw msg;
   }
   const order_elems: HTMLElement[] = extraction.findMultipleNodeValues(
@@ -325,14 +325,13 @@ function reallyTranslateOrdersPage(
   const converted = {
     expected_order_count: expected_order_count,
     order_headers: headers, 
-  }
+  };
   if (typeof(converted) == 'undefined') {
     console.error('we got a blank one!');
   }
   return converted;
-};
+}
 
 function getCachedAttributeNames() {
   return new Set<string>(['class', 'href', 'id', 'style']);
 }
-

@@ -39,7 +39,7 @@ function setStatsTimeout() {
             stats.publish(bg_port, getScheduler().purpose());
             azad_table.updateProgressBar();
         }
-    }
+    };
     if (stats_timeout) {
         clearTimeout(stats_timeout);
     }
@@ -60,7 +60,7 @@ function resetScheduler(purpose: string): void {
     setStatsTimeout();
 }
 
-let cached_years: Promise<number[]> | null = null;
+const cached_years: Promise<number[]> | null = null;
 
 async function getYears(): Promise<number[]> {
     async function getPromise(): Promise<number[]> {
@@ -158,7 +158,7 @@ async function fetchAndShowOrdersByRange(
         if (typeof(d) === 'undefined') {
           return false;
         }
-        return d! >= start_date && d! <= end_date  // DateFilter
+        return d! >= start_date && d! <= end_date;  // DateFilter
       },
     );
     return showOrdersOrItems(orders, beautiful_table);
@@ -180,7 +180,7 @@ async function fetchShowAndSendItemsByRange(
   await settings.storeBoolean('show_items_not_orders', original_items_setting);
 
   if (typeof(table) != 'undefined') {
-    await csv.send_csv_to_ezp_peer(table, destination_extension_id)
+    await csv.send_csv_to_ezp_peer(table, destination_extension_id);
     await settings.storeBoolean('ezp_mode', false);
     return;
   }
@@ -216,7 +216,7 @@ async function registerContentScript() {
             try {
                 switch(msg.action) {
                     case 'dump_order_detail':
-                        azad_table.dumpOrderDiagnostics(msg.order_id)
+                        azad_table.dumpOrderDiagnostics(msg.order_id);
                         break;
                     case 'scrape_years':
                         years = msg.years;
@@ -239,7 +239,7 @@ async function registerContentScript() {
                             start_date,
                             end_date,
                             msg.sender_id);
-                        };
+                        }
                         break;
                     case 'clear_cache':
                         getScheduler().clearCache();

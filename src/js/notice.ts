@@ -35,14 +35,13 @@ function removeAnnoyingLink(doc: HTMLDocument): void {
 function fadeAndDisappear(elem: HTMLElement) {
     let timeout: NodeJS.Timeout|null = null;
 
-    const getT = function(){ return timeout; };
     const setT = function(t: NodeJS.Timeout|null){ timeout = t; };
 
     const clearT = function() {
         if(timeout) {
-            clearTimeout(<NodeJS.Timeout>timeout); timeout = null
+            clearTimeout(<NodeJS.Timeout>timeout); timeout = null;
         }
-    }
+    };
 
     const scheduleFadeAndDie = function(){
         setT(setTimeout( () => {

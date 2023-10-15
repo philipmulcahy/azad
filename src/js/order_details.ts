@@ -23,13 +23,13 @@ export interface IOrderDetails {
   refund: string;
   who: string;
   invoice_url: string;
-};
+}
 
 export interface IOrderDetailsAndItems {
   details: IOrderDetails;
   items: item.IItem[];
   shipments: shipment.IShipment[];
-};
+}
 
 export async function extractDetailPromise(
   header: order_header.IOrderHeader,
@@ -208,7 +208,6 @@ function extractDetailFromDoc(
       context,
     );
     if (a) {
-      const whitespace = /[\n\t ]/g;
       return a.replace(/^.*:/, '')
               .replace(/[\n\t ]/g, '')  // whitespace
               .replace('-', '');
@@ -419,7 +418,7 @@ function extractDetailFromDoc(
   };
 
   const refund = function (): string {
-    let a = extraction.getField(
+    const a = extraction.getField(
       ['Refund', 'Totale rimborso'].map( //TODO other field names?
         label => sprintf.sprintf(
           '//div[contains(@id,"od-subtotals")]//' +

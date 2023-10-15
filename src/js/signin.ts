@@ -3,10 +3,6 @@
 import * as notice from './notice';
 import * as urls from './url';
 
-const MIN_ALERT_REPEAT_INTERVAL_S = 30;
-
-let alerts_enabled: boolean = true;
-
 function checkSigninRedirect(
     response: Response,
     original_url: string
@@ -121,7 +117,7 @@ export function forceLogOut(site_url: string) {
                     cookie_url: site_url
                 }
             )
-        )
+        );
     });
 
     // Amazon stores some non-cookie state that appears to be used to

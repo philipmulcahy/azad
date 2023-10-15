@@ -5,14 +5,6 @@ import * as extraction from './extraction';
 import * as order_header from './order_header';
 import * as util from './util';
 
-
-const EXAMPLE_FULL_ITEM_LINK_PATH = "//div[contains(@class, 'a-box shipment')]//a[@class='a-link-normal' and contains(@href, '/gp/product/') and normalize-space(text())]";
-
-const FULL_SHIPMENT_PATH = "//div[contains(@class, 'shipment')]";
-
-const ITEM_LINK_FROM_SHIPMENT = "//a[@class='a-link-normal' and contains(@href, '/gp/product/') and normalize-space(text())]";
-const PRICE_SPAN_FROM_ITEM_LINK = "/../../div[@class='a-row']/span[contains(@class,'a-color-price')]/nobr/text()";
-
 export interface ITransaction {
   payment_amount: string;
   info_string: string;
@@ -30,7 +22,7 @@ export interface IShipment {
   status: string;
   tracking_link: string;
   transaction: ITransaction|null
-};
+}
 
 export function get_shipments(
   order_detail_doc: HTMLDocument,
@@ -50,12 +42,12 @@ export function get_shipments(
   // There may be a way to do this in xpath, but it wouldn't be very
   // readable, and I am also a bit short on sleep.
   const elems = candidates.filter(
-		  elem => {
-				const cs: string = util.defaulted(
-					(elem as HTMLElement)!.getAttribute('class'), '');
-				const classes: string[] = cs.split(' ');
-				return classes.includes('shipment');
-			});
+    elem => {
+      const cs: string = util.defaulted(
+        (elem as HTMLElement)!.getAttribute('class'), '');
+        const classes: string[] = cs.split(' ');
+        return classes.includes('shipment');
+    });
 
   const shipments = elems.map(e => shipment_from_elem(
     e as HTMLElement,
@@ -88,7 +80,7 @@ function transaction_from_elem(elem: HTMLElement): ITransaction {
   return {
     payment_amount: payment_amount,
     info_string: info_string,
-  }
+  };
 }
 
 function shipment_from_elem(

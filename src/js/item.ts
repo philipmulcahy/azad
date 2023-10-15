@@ -12,7 +12,7 @@ export interface IItem extends azad_entity.IEntity {
     url: string;
     asin: string;
     order_header: order_header.IOrderHeader;
-};
+}
 
 type ItemsExtractor = (
     order_elem: HTMLElement,
@@ -123,7 +123,7 @@ function strategy0(
             quantity: qty,
             url: url,
             asin: asin,
-        }
+        };
     });
     return items;
 }
@@ -157,7 +157,7 @@ function strategy1(
                                ?.nextSibling
                                ?.nextSibling
                                ?.textContent
-                               ?.match(util.moneyRegEx())
+                               ?.match(util.moneyRegEx());
         const price = price_match ? price_match[1] : '';
         const asin = extract_asin_from_url(url);
         return {
@@ -167,7 +167,7 @@ function strategy1(
             quantity: qty,
             url: url,
             asin: asin,
-        }
+        };
     });
     return items;
 }
@@ -204,7 +204,7 @@ function strategy2(
                                ?.nextSibling
                                ?.nextSibling
                                ?.textContent
-                               ?.match(util.moneyRegEx())
+                               ?.match(util.moneyRegEx());
         const price = price_match ? price_match[1] : '';
         const asin = extract_asin_from_url(url);
         return {
@@ -214,7 +214,7 @@ function strategy2(
             quantity: qty,
             url: url,
             asin: asin,
-        }
+        };
     });
     return items.filter( item => item.description != '' );
 }
@@ -258,7 +258,7 @@ function strategy3(
             quantity: qty,
             url: url,
             asin: asin,
-        }
+        };
     });
     return items;
 }
