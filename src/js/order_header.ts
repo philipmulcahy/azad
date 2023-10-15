@@ -1,6 +1,7 @@
 /* Copyright(c) 2023 Philip Mulcahy. */
 
 import * as date from './date';
+import * as extraction from './extraction';
 import * as sprintf from 'sprintf-js';
 import * as urls from './url';
 import * as util from './util';
@@ -43,7 +44,7 @@ function reallyExtractOrderHeader(
      .map( href => href.match(/.*(?:orderID=|orderNumber%3D)([A-Z0-9-]*).*/) )
      .filter( match => match )[0][1];
      if (!id) {
-       const id_node: Node = util.findSingleNodeValue(
+       const id_node: Node = extraction.findSingleNodeValue(
          '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
          elem,
          'unknown order id',
@@ -67,7 +68,7 @@ function reallyExtractOrderHeader(
     d = new Date(
       date.normalizeDateString(
         util.defaulted(
-          util.getField(
+          extraction.getField(
               [
                   'Commande effectuée',
                   'Order placed',
@@ -116,11 +117,11 @@ function reallyExtractOrderHeader(
   // This field is no longer always available, particularly for .com
   // We replace it (where we know the search pattern for the country)
   // with information from the order detail page.
-  const total = util.getField('.//div[contains(span,"Total")]' +
+  const total = extraction.getField('.//div[contains(span,"Total")]' +
       '/../div/span[contains(@class,"value")]', elem, context);
   console.debug('total direct:', total);
 
-  const who = util.getField('.//div[contains(@class,"recipient")]' +
+  const who = extraction.getField('.//div[contains(@class,"recipient")]' +
       '//span[@class="trigger-text"]', elem, context);
 
   return {

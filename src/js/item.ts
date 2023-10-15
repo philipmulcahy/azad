@@ -1,6 +1,7 @@
 /* Copyright(c) 2017-2021 Philip Mulcahy. */
 
 import * as azad_entity from './entity';
+import * as extraction from './extraction';
 import * as util from './util';
 import * as order_header from './order_header';
 
@@ -73,12 +74,12 @@ function strategy0(
         './/a[contains(@href, "/gp/product/")] and ' +
         './/*[contains(@class, "price")]' +
     ']';
-    const itemElems: Node[] = util.findMultipleNodeValues(
+    const itemElems: Node[] = extraction.findMultipleNodeValues(
         item_xpath,
         order_elem
     );
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
-        const link = <HTMLElement>util.findSingleNodeValue(
+        const link = <HTMLElement>extraction.findSingleNodeValue(
             './/a[@class="a-link-normal" and contains(@href, "/gp/product/") and not(img)]',
             <HTMLElement>itemElem,
             context,
@@ -89,7 +90,7 @@ function strategy0(
         try {
             qty = parseInt(
                 util.defaulted(
-                    util.findSingleNodeValue(
+                    extraction.findSingleNodeValue(
                         './/span[@class="item-view-qty"]',
                         <HTMLElement>itemElem,
                         context,
@@ -105,7 +106,7 @@ function strategy0(
         }
         let price = '';
         try {
-            const priceElem = <HTMLElement>util.findSingleNodeValue(
+            const priceElem = <HTMLElement>extraction.findSingleNodeValue(
                 './/*[contains(@class, "price")]',
                 <HTMLElement>itemElem,
                 context,
@@ -133,12 +134,12 @@ function strategy1(
     order_header: order_header.IOrderHeader,
     context: string,
 ): IItem[] {
-    const itemElems: Node[] = util.findMultipleNodeValues(
+    const itemElems: Node[] = extraction.findMultipleNodeValues(
         '//*[contains(text(), "Ordered") or contains(text(), "Commandé")]/parent::*/parent::*/parent::*',
         order_elem
     );
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
-        const link = <HTMLElement>util.findSingleNodeValue(
+        const link = <HTMLElement>extraction.findSingleNodeValue(
             './/a[contains(@href, "/dp/")]',
             <HTMLElement>itemElem,
             context,
@@ -180,12 +181,12 @@ function strategy2(
     order_header: order_header.IOrderHeader,
     context: string,
 ): IItem[] {
-    const itemElems: Node[] = util.findMultipleNodeValues(
+    const itemElems: Node[] = extraction.findMultipleNodeValues(
         '//div[contains(@id, "orderDetails")]//a[contains(@href, "/product/")]/parent::*',
         order_elem
     );
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
-        const link = <HTMLElement>util.findSingleNodeValue(
+        const link = <HTMLElement>extraction.findSingleNodeValue(
             './/a[contains(@href, "/product/")]',
             <HTMLElement>itemElem,
             context,
@@ -224,12 +225,12 @@ function strategy3(
     order_header: order_header.IOrderHeader,
     context: string,
 ): IItem[] {
-    const itemElems: Node[] = util.findMultipleNodeValues(
+    const itemElems: Node[] = extraction.findMultipleNodeValues(
         '//div[contains(@class, "a-section")]//span[contains(@id, "item-total-price")]/parent::div/parent::div/parent::div',
         order_elem
     );
     const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
-        const link = <HTMLElement>util.findSingleNodeValue(
+        const link = <HTMLElement>extraction.findSingleNodeValue(
             './/a[contains(@class, "a-link-normal") and contains(@href, "/product/")]',
             <HTMLElement>itemElem,
             context,
@@ -240,7 +241,7 @@ function strategy3(
         const qty = parseInt(sqty);
         let price = '';
         try {
-            const priceElem = <HTMLElement>util.findSingleNodeValue(
+            const priceElem = <HTMLElement>extraction.findSingleNodeValue(
                 './/span[contains(@id, "item-total-price")]',
                 <HTMLElement>itemElem,
                 context,

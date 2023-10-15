@@ -2,6 +2,7 @@
 
 import * as order_header from './order_header';
 import * as dom2json from './dom2json';
+import * as extraction from './extraction';
 import * as notice from './notice';
 import * as request_scheduler from './request_scheduler';
 import * as sprintf from 'sprintf-js';
@@ -272,7 +273,7 @@ function reallyTranslateOrdersPage(
 ): IOrdersPageData {
   const d = util.parseStringToDOM(evt.target.responseText);
   const context = 'Converting orders page';
-  const countSpan = util.findSingleNodeValue(
+  const countSpan = extraction.findSingleNodeValue(
     './/span[@class="num-orders"]', d.documentElement, context);
   if ( !countSpan ) {
     const msg = 'Error: cannot find order count elem in: '
@@ -306,7 +307,7 @@ function reallyTranslateOrdersPage(
     console.warn(msg)
     throw msg;
   }
-  const order_elems: HTMLElement[] = util.findMultipleNodeValues(
+  const order_elems: HTMLElement[] = extraction.findMultipleNodeValues(
     './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
     ordersElem
   ).map( node => <HTMLElement>node );

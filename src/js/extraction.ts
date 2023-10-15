@@ -4,6 +4,7 @@
 
 import * as util from './util';
 import { sprintf } from 'sprintf-js';
+const xpath = require('xpath');
 
 "use strict";
 
@@ -19,7 +20,7 @@ export function by_regex(
         let a = null;
         const xpath = xpaths[i];
         try {
-            a = util.findSingleNodeValue(
+            a = findSingleNodeValue(
                 xpath,
                 elem,
                 context,
@@ -48,7 +49,7 @@ export function by_regex(
 export function payments_from_invoice(doc: HTMLDocument): string[] {
     // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
     const strategy_1 = () => {
-        const payments: string[] = util.findMultipleNodeValues(
+        const payments: string[] = findMultipleNodeValues(
             [
                 'Credit Card transactions',
                 'Transactions de carte de crédit'
@@ -72,7 +73,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
         return payments;
     };
     const strategy_2 = () => {
-        const new_style_payments = util.findMultipleNodeValues(
+        const new_style_payments = findMultipleNodeValues(
             '//*[contains(text(), "Payment Method")]/../self::*',
             doc.documentElement
         ).map(
@@ -134,7 +135,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
 }
 
 export function get_years(orders_page_doc: HTMLDocument): number[] {
-  const snapshot: Node[] = util.findMultipleNodeValues(
+  const snapshot: Node[] = findMultipleNodeValues(
     '//select[@name="orderFilter" or @name="timeFilter"]/option[@value]',
     orders_page_doc.documentElement
   );
@@ -152,4 +153,80 @@ export function get_years(orders_page_doc: HTMLDocument): number[] {
       // TODO remove duplicates
       .sort();
   return years;
+}
+
+export function getField(
+    xpath: string,
+    elem: HTMLElement,
+    context: string
+): string|null {
+    try {
+        const valueElem = findSingleNodeValue(xpath, elem, context);
+        return valueElem!.textContent!.trim();
+    } catch (_) {
+        return null;
+    }
+}
+
+export function findSingleNodeValue(
+    xpath: string, elem: HTMLElement, context: string
+): Node {
+    try {
+        const node = elem.ownerDocument!.evaluate(
+            xpath,
+            elem,
+            null,
+            getXPathResult().FIRST_ORDERED_NODE_TYPE,
+            null
+        ).singleNodeValue;
+        if (!node) {
+            throw 'No node found';
+        }
+        return node;
+    } catch (ex) {
+        const msg = (
+			'findSingleNodeValue didn\'t match: ' + xpath
+		) + (
+			context ?
+				('; Context:' + context) :
+				''
+		) + '; ' + JSON.stringify(ex);
+        throw msg;
+    }
+}
+
+export function findMultipleNodeValues(
+    xpath: string,
+    elem: HTMLElement,
+): Node[] {
+	try {
+		const snapshot = elem.ownerDocument!.evaluate(
+			xpath,
+			elem,
+			null,
+			getXPathResult().ORDERED_NODE_SNAPSHOT_TYPE,
+			null
+		);
+		const values: Node[] = [];
+		let i;
+		for(i = 0; i !== snapshot.snapshotLength; i += 1) {
+			const node: Node|null = snapshot.snapshotItem(i);
+			if (node) {
+				values.push(node);
+			}
+		}
+		return values;
+	} catch( ex ) {
+		if (ex) {
+			throw ex;
+		}
+		throw 'Unknown exception from findMultipleNodeValues.'
+	}
+}
+
+function getXPathResult() {
+    if (typeof(XPathResult) === 'undefined') {
+        return xpath.XPathResult;
+    }
+    return XPathResult;
 }

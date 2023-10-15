@@ -3,7 +3,7 @@
 'use strict';
 
 import * as fs from 'fs';
-import * as util from '../js/util';
+import * as extraction from '../js/extraction';
 const jsdom = require('jsdom');
 const xpath = require('xpath');
 import * as azad_order from '../js/order';
@@ -105,7 +105,7 @@ export function orderFromTestData(
     url_map[order_dump.payments_url] = order_dump.invoice_html;
     const scheduler = new FakeRequestScheduler( url_map );
     const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;
-    const order_elems = util.findMultipleNodeValues(
+    const order_elems = extraction.findMultipleNodeValues(
         './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
         list_doc.body
     );

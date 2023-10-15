@@ -41,7 +41,7 @@ export function get_shipments(
   const doc_elem = order_detail_doc.documentElement;
   const transactions = get_transactions(order_detail_doc);
 
-  const candidates = util.findMultipleNodeValues(
+  const candidates = extraction.findMultipleNodeValues(
 		"//div[contains(@class, 'shipment')]",
 		doc_elem);
 
@@ -72,7 +72,7 @@ export function get_shipments(
 }
 
 function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
-  const transaction_elems = util.findMultipleNodeValues(
+  const transaction_elems = extraction.findMultipleNodeValues(
     "//span[normalize-space(text())= 'Transactions']/../../div[contains(@class, 'expander')]/div[contains(@class, 'a-row')]/span/nobr/..",
     order_detail_doc.documentElement);
   const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
@@ -115,7 +115,7 @@ function is_delivered(shipment_elem: HTMLElement): Delivered {
 
 function get_status(shipment_elem: HTMLElement): string {
   try {
-    const elem = util.findSingleNodeValue(
+    const elem = extraction.findSingleNodeValue(
       "//div[contains(@class, 'shipment-info-container')]//div[@class='a-row']/span",
       shipment_elem,
       'shipment.status'
@@ -130,7 +130,7 @@ function get_status(shipment_elem: HTMLElement): string {
 function tracking_link(shipment_elem: HTMLElement): string {
   return util.defaulted_call(
     () => {
-      const link_elem = util.findSingleNodeValue(
+      const link_elem = extraction.findSingleNodeValue(
         "//a[contains(@href, '/progress-tracker/')]",
         shipment_elem,
         'shipment.tracking_link'

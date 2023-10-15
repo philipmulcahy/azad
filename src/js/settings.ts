@@ -1,6 +1,6 @@
 /* Copyright(c) 2019, 2023 Philip Mulcahy. */
 
-import * as util from './util';
+import * as extraction from './extraction';
 import * as ui_messages from  './ui_messages';
 
 "use strict";
@@ -23,7 +23,7 @@ function getSettings(entries: {[key: string]: any;} ): Record<string, any> {
 function getElementsByKey(): Record<string, HTMLElement> {
   console.info('settings.getElementsByKey()');
   const key_to_elem: Record<string, HTMLElement> = {};
-  const checkboxes = util.findMultipleNodeValues(
+  const checkboxes = extraction.findMultipleNodeValues(
     '//table[@id="azad_settings"]//input',
     document.documentElement
   ).map( node => <HTMLElement>node );

@@ -113,7 +113,7 @@ function extractDetailFromDoc(
 
     const doc_elem = doc.documentElement;
 
-    let x = util.getField(
+    let x = extraction.getField(
       // TODO: this seems brittle, depending on the precise path of the element.
       '//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
       doc_elem,
@@ -121,18 +121,18 @@ function extractDetailFromDoc(
     ); // US Digital
     if(x) return x;
 
-    x = util.getField('.//div[contains(@class,"recipient")]' +
+    x = extraction.getField('.//div[contains(@class,"recipient")]' +
       '//span[@class="trigger-text"]', doc_elem, context);
     if(x) return x;
 
-    x = util.getField(
+    x = extraction.getField(
       './/div[contains(text(),"Recipient")]',
       doc_elem,
       context
     );
     if(x) return x;
 
-    x = util.getField(
+    x = extraction.getField(
       '//li[contains(@class,"displayAddressFullName")]/text()',
       doc_elem,
       context,
@@ -340,7 +340,7 @@ function extractDetailFromDoc(
       context,
     );
     if ( !a ) {
-      a = util.getField(
+      a = extraction.getField(
         './/tr[contains(td,"Tax Collected:")]',
         doc.documentElement,
         context,
@@ -419,7 +419,7 @@ function extractDetailFromDoc(
   };
 
   const refund = function (): string {
-    let a = util.getField(
+    let a = extraction.getField(
       ['Refund', 'Totale rimborso'].map( //TODO other field names?
         label => sprintf.sprintf(
           '//div[contains(@id,"od-subtotals")]//' +
@@ -472,7 +472,7 @@ function getAttribute(
   context: string,
 ): string|null {
   try {
-    const targetElem = util.findSingleNodeValue(xpath, elem, context);
+    const targetElem = extraction.findSingleNodeValue(xpath, elem, context);
     return (<HTMLElement>targetElem)!.getAttribute(attribute_name);
   } catch (_) {
     return null;

@@ -2,8 +2,6 @@
 
 'use strict';
 
-const xpath = require('xpath');
-
 export function defaulted<T>(
     value: T | null | undefined,
     def_value: T
@@ -51,13 +49,6 @@ export function isNumeric(n: any) {
     return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-function getXPathResult() {
-    if (typeof(XPathResult) === 'undefined') {
-        return xpath.XPathResult;
-    }
-    return XPathResult;
-}
-
 export function addButton(name: string, cb: any, button_class: string) {
     removeButton(name);
     const a = document.createElement('button');
@@ -79,62 +70,6 @@ export function removeButton(name: string) {
     if ( elem !== null ) {
         elem.parentNode!.removeChild(elem);
     }
-}
-
-export function findSingleNodeValue(
-    xpath: string, elem: HTMLElement, context: string
-): Node {
-    try {
-        const node = elem.ownerDocument!.evaluate(
-            xpath,
-            elem,
-            null,
-            getXPathResult().FIRST_ORDERED_NODE_TYPE,
-            null
-        ).singleNodeValue;
-        if (!node) {
-            throw 'No node found';
-        }
-        return node;
-    } catch (ex) {
-        const msg = (
-			'findSingleNodeValue didn\'t match: ' + xpath
-		) + (
-			context ?
-				('; Context:' + context) :
-				''
-		) + '; ' + JSON.stringify(ex);
-        throw msg;
-    }
-}
-
-export function findMultipleNodeValues(
-    xpath: string,
-    elem: HTMLElement,
-): Node[] {
-	try {
-		const snapshot = elem.ownerDocument!.evaluate(
-			xpath,
-			elem,
-			null,
-			getXPathResult().ORDERED_NODE_SNAPSHOT_TYPE,
-			null
-		);
-		const values: Node[] = [];
-		let i;
-		for(i = 0; i !== snapshot.snapshotLength; i += 1) {
-			const node: Node|null = snapshot.snapshotItem(i);
-			if (node) {
-				values.push(node);
-			}
-		}
-		return values;
-	} catch( ex ) {
-		if (ex) {
-			throw ex;
-		}
-		throw 'Unknown exception from findMultipleNodeValues.'
-	}
 }
 
 export function clearBody(): void {
@@ -237,17 +172,4 @@ export function subtract_months(date: Date, months: number): Date {
     result = subtract_one_month(result);
   }
   return result;
-}
-
-export function getField(
-    xpath: string,
-    elem: HTMLElement,
-    context: string
-): string|null {
-    try {
-        const valueElem = findSingleNodeValue(xpath, elem, context);
-        return valueElem!.textContent!.trim();
-    } catch (_) {
-        return null;
-    }
 }
