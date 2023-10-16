@@ -108,8 +108,8 @@ function connectToBackground() {
 }
 
 async function handleAdvertisePeriods(periods: number[]): Promise<void> {
-  const months = periods.filter(p => p<=12);
-  const years = periods.filter(p => p>=2000);
+  const months = periods.filter(p => (p <= 12));
+  const years = periods.filter(p => (p >= 2000));
   await showMonthsButtons(months);
   showYearButtons(years);
 }
