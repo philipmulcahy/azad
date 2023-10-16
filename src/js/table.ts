@@ -554,7 +554,7 @@ async function addTable(
 ): Promise<HTMLTableElement> {
     const addHeader = function(row: HTMLElement, value: string, help: string) {
         const th = row.ownerDocument!.createElement('th');
-        th.setAttribute('class', 'azad_thClass');
+        th.setAttribute('class', ' azad_thClass ');
         row.appendChild(th);
         th.textContent = value;
         if( help ) {
