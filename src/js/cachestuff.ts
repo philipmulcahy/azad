@@ -13,7 +13,7 @@
 // 2) Cache entries don't have to contain raw HTML - instead it's better if
 //    they contain serialized business objects that are the desired result of
 //    a fetch, and subsequent post-processing. This means less wasted space
-//    and repeated computation.
+//    and less repeated computation.
 // 3) Avoid cache the same data twice: if a composite object contains results
 //    from multiple fetches, either store the composite in the cache, or the
 //    components, but not both.
@@ -34,9 +34,83 @@
 
 const lzjs = require('lzjs');
 
+interface Store {
+  get(key: string): Promise<any>,
+  keys(): Promise<string[]>,
+  set(key: string, value: any): Promise<void>,
+  remove(key: string): Promise<void>,
+};
+
+// Only intended to allow tests to work outside of a chrome extension,
+// where chrome.storage.local is not available.
+function CreateMockStore(): Store {
+  const _store: any[string] = {};
+  return {
+    get: function(key: string): Promise<any> {
+      const value = _store[key];
+      return Promise.resolve(value);
+    },
+    keys: function(): Promise<string[]> {
+      return Promise.resolve(Object.keys(_store));
+    },
+    set: async function(key: string, value: any): Promise<void> {
+      _store[key] = value;
+    },
+    remove: async function(key: string): Promise<void> {
+      delete _store[key]; 
+    },
+  };
+}
+
+// Store interface compliant wrapper for chrome.storage.local.
+function CreateRealStore(): Store {
+  return {
+    get: async function(key: string): Promise<any> {
+      const entries: any[string][] = await new Promise<any> (
+        resolve => chrome.storage.local.get(key, resolve)
+      );
+      if (entries.length) {
+        return Object.values(entries)[0];
+      }
+      return null;
+    },
+    keys: async function(): Promise<string[]> {
+      const entries: (any[string])[] = await new Promise<any> (
+        resolve => chrome.storage.local.get(null, resolve)
+      );
+      const keys = Object.keys(entries);
+      return keys;
+    },
+    set: function(key: string, value: any): Promise<void> {
+      const entry: any[string] = {};
+      entry[key] = value;
+      return new Promise<void>(
+        resolve => chrome.storage.local.set([entry], resolve));
+    },
+    remove: async function(key: string): Promise<void> {
+      return new Promise<void>(
+        resolve => chrome.storage.local.remove(key, resolve)
+      );
+    },
+  };
+}
+
+function CreateStore(): Store {
+  try {
+    typeof( chrome.storage.local );
+  } catch (_ex) {
+    // We're not in an extension, so we'll have to make do with an in-memory
+    // substitute that we can use to allow tests to proceed.
+    return CreateMockStore();
+  }
+  return CreateMockStore();
+}
+
 function millisNow() {
     return (new Date()).getTime();
 }
+
+const store: Store = CreateStore();
 
 // Replace datey strings with equivalent Dates.
 // Why? Because JSON.stringify and then JSON.parse
@@ -103,13 +177,13 @@ class LocalCacheImpl {
     return this.key_stem + key;
   }
 
-  reallySet(real_key: string, value: any) {
+  reallySet(real_key: string, value: any): Promise<void> {
     const entry: {[key: string]: any;}  = {};
     entry[real_key] = JSON.stringify({
       timestamp: millisNow(),
       value: lzjs.compress(JSON.stringify(value)),
     });
-    chrome.storage.local.set(entry);
+    return store.set(real_key, entry[real_key]);
   }
 
   set(key: string, value: any): void {
@@ -134,13 +208,9 @@ class LocalCacheImpl {
   async get(key: string): Promise<any> {
     const real_key: string = this.buildRealKey(key);
     try {
-      const entry = await chrome.storage.local.get(real_key)!;
-      if (Object.keys(entry).length == 0) {
+      const encoded = await store.get(real_key)!;
+      if (encoded == null) { 
         console.debug('cachestuff.get did not find ', key);
-        throw key + ' not found';
-      }
-      const encoded: string = entry[real_key];
-      if (!encoded) {
         throw key + ' not found';
       }
       let packed: any = null;
@@ -180,18 +250,12 @@ class LocalCacheImpl {
     return this.hit_count;
   }
 
-  getRealKeys(): Promise<string[]> {
-    // Q: Why this yucky callback and explicit promise filth in 2023? I
-    //    I thought you knew better by now.
-    // A: chrome.storage.local.get(null) claims to return void instead of an
-    //    object that contains all the entries. I think this might be a
-    //    typescript annotations problem, but my life is too short to dig
-    //    further.
-    return new Promise<string[]>(resolve => {
-      chrome.storage.local.get(null, entries => {
-        resolve(Object.keys(entries).filter(key => key.startsWith(this.key_stem)));
-      });
-    });
+  async getRealKeys(): Promise<string[]> {
+    const all = await store.keys();
+    const filtered = all.filter(
+      key => key.startsWith(this.key_stem)
+    )
+    return filtered;
   }
 
   async trim(): Promise<void> {
@@ -200,8 +264,7 @@ class LocalCacheImpl {
     const timestamps_by_key: Record<string, number> = {};
     real_keys.forEach( async function(key) {
       try {
-        const entry = await chrome.storage.local.get(key);
-        const encoded = entry[key]; 
+        const encoded = await store.get(key);
         try {
           const decoded = JSON.parse(encoded!);
           timestamps_by_key[key] = decoded.timestamp;
@@ -221,7 +284,7 @@ class LocalCacheImpl {
       let removed_count = 0;
       Object.keys(timestamps_by_key).forEach( key => {
         if (timestamps_by_key[key] <= cutoff_timestamp) {
-          chrome.storage.local.remove(key);
+          store.remove(key);
           ++removed_count;
         }
       });
@@ -232,7 +295,7 @@ class LocalCacheImpl {
     console.log('clearing cache');
     const keys = await this.getRealKeys();
     keys.forEach( key => {
-      chrome.storage.local.remove(key);
+      store.remove(key);
     });
   }
 }
