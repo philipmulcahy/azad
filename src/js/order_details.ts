@@ -4,6 +4,7 @@ import * as date from './date';
 import * as extraction from './extraction';
 import * as item from './item';
 import * as order_header from './order_header';
+import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import * as shipment from './shipment';
 import * as sprintf from 'sprintf-js';
@@ -43,9 +44,9 @@ export async function extractDetailPromise(
     throw(msg);
   }
 
-  async function event_converter(
-    evt: request_scheduler.Event
-  ): Promise<IOrderDetailsAndItems> {
+  function event_converter(
+    evt: req.Event
+  ): IOrderDetailsAndItems {
     const doc = util.parseStringToDOM( evt.target.responseText );
     const url = evt.target.responseURL;
     const shipments = shipment.get_shipments(doc, url, header, context);

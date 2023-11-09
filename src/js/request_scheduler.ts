@@ -4,32 +4,22 @@
 
 import * as binary_heap from './binary_heap';
 import * as cachestuff from './cachestuff';
+import * as req from './request';
 import * as signin from './signin';
 import * as stats from './statistics';
 import * as url from './url';
 
-export interface IResponse<T> {
-  result: T,
-  query: string
-}
-
-export type Event = {
-  target: {
-    responseText: string;
-    responseURL: string;
-  }
-};
-
-export type EventConverter = (evt: Event) => any;
 
 export interface IRequestScheduler {
   scheduleToPromise<T>(
     query: string,
-    event_converter: EventConverter,
+    event_converter: req.EventConverter<T>,
     priority: string,
     nocache: boolean,
     debug_context: string,
-  ): Promise<IResponse<T>>;
+  ): Promise<req.IResponse<T>>;
+
+  schedule<T>(request: req.AzadRequest<T>): void;
 
   abort(): void;
   clearCache(): void;
@@ -61,9 +51,9 @@ class RequestScheduler {
 
   purpose(): string { return this._purpose; }
 
-  _schedule(
+  _schedule<T>(
     query: string,
-    event_converter: EventConverter,
+    event_converter: req.EventConverter<T>,
     success_callback: (results: any, query: string) => void,
     failure_callback: (query: string) => void,
     priority: string,
@@ -88,18 +78,18 @@ class RequestScheduler {
 
   scheduleToPromise<T>(
     query: string,
-    event_converter: EventConverter,
+    event_converter: req.EventConverter<T>,
     priority: string,
     nocache: boolean,
     debug_context: string,
-  ): Promise<IResponse<T>> {
+  ): Promise<req.IResponse<T>> {
     query = url.normalizeUrl(query, url.getSite());
     console.log(
       'Scheduling ', debug_context, query,
       ' with queue size ', this.queue.size(),
       ' and priority ', priority
     );
-    return new Promise<IResponse<T>>(
+    return new Promise<req.IResponse<T>>(
       (resolve, reject) => {
         try {
           this._schedule(
@@ -117,6 +107,10 @@ class RequestScheduler {
         }
       }
     );
+  }
+
+  schedule<T>(request: req.AzadRequest<T>): void {
+    // TODO
   }
 
   abort() {
@@ -143,9 +137,9 @@ class RequestScheduler {
 
   // Process a single de-queued request either by retrieving from the cache
   // or by sending it out.
-  async _execute(
+  async _execute<T>(
     query: string,
-    event_converter: EventConverter,
+    event_converter: req.EventConverter<T>,
     success_callback: (converted_event: any, query: string) => void,
     failure_callback: (query: string) => void,
     priority: number,

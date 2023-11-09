@@ -7,6 +7,7 @@ import * as extraction from '../js/extraction';
 const jsdom = require('jsdom');
 import * as azad_order from '../js/order';
 import * as order_header from '../js/order_header';
+import * as req from '../js/request';
 import * as request_scheduler from '../js/request_scheduler';
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,7 +38,7 @@ class FakeRequestScheduler {
         event_converter: (evt: any) => any,
         _priority: string,
         _nocache: boolean
-    ): Promise<request_scheduler.IResponse<T>> {
+    ): Promise<req.IResponse<T>> {
         return new Promise<any> ( resolve => {
             setTimeout( () => {
                 const html = this.url_html_map[query];
