@@ -10,17 +10,17 @@ import * as order_header from '../js/order_header';
 import * as req from '../js/request';
 import * as request_scheduler from '../js/request_scheduler';
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 // TEST TYPES:
 // -----------
 //
-// A) Build order from json dump file containing urls and html scraped from real
-//    Amazon accounts:
+// A) Build order from json dump file containing urls and html scraped from
+//    real Amazon accounts:
 //    json dump file pattern ${SITE}/input/${ORDER_ID}_${DATETIME}.json
 //    json file containing expected order fields:
 //      ${SITE}/expected/${ORDER_ID}_${DATETIME}.json
 //
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 const DATA_ROOT_PATH = './src/tests/azad_test_data/data';
 

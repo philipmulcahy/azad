@@ -66,13 +66,14 @@ export async function extractDetailPromise(
   const debug_context = 'order_detail';
 
   try {
-    const response = await scheduler.scheduleToPromise<IOrderDetailsAndItems>(
+    const response = await new req.AzadRequest<IOrderDetailsAndItems>(
       url,
       event_converter,
+      scheduler, 
       util.defaulted(header.id, '9999'),
       false,  // nocache=false: cached response is acceptable
       debug_context,
-    );
+    ).response();
     return response.result;
   } catch (url) {
     const msg = 'scheduler rejected ' + header.id + ' ' + url;

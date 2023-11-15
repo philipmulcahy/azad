@@ -1,13 +1,15 @@
 /* Copyright(c) 2023 Philip Mulcahy. */
 
-import * as cachestuff from './cachestuff';
 import * as request_scheduler from './request_scheduler';
+import * as signin from './signin';
+import * as stats from './statistics';
+import * as urls from './url';
 
 'use strict';
 
 /*
 
-  NEW
+  [NEW]
    │
    v A
    │
@@ -18,11 +20,13 @@ import * as request_scheduler from './request_scheduler';
   DEQUEUED
    │
    │─────┐
+   │     │
    v C   v D
    │     │
   SENT  CACHE_HIT────────────────┐
    │                             │
    │─────>────┐──────>────┐      │
+   │          │           │      │
    v E        │ F         │ G    │
    │          │           │      │
   RESPONDED (TIMED_OUT) (FAILED) │
@@ -33,10 +37,12 @@ import * as request_scheduler from './request_scheduler';
    │                             │
    v J                           │
    │                             │
-  CACHED                         │
-   │                             │
-   v  K                          │
-   │                             │
+   │─────┐                       │
+   │     │                       │
+  CACHED │                       │
+   │     │                       │
+   v  K  │                       │
+   │     │                       │
   (SUCCESS)<─────────────────────┘
 
 */
@@ -67,8 +73,24 @@ export type Event = {
   }
 };
 
+// Control
+// TODO move back to request_scheduler
+let live = true;
+let signin_warned = false;
+
+// Statistics
+let completed_count: number = 0;
+let error_count: number = 0;
+let running_count: number = 0;
+function update_statistics(): void {
+  // TODO
+}
+
 export type EventConverter<T> = (evt: Event) => T;
 
+// Embedding this code in AzadRequest.constructor means initialisation order
+// nightmares - at least we keep the mess isolated by doing it in a dedicated
+// function here.
 function make_promise_with_callbacks<T>(): {
   resolve: (t: T)=>void,
   reject: (s: string)=>void,
@@ -91,8 +113,8 @@ export class AzadRequest<T> {
   _state: State = State.NEW;
   _url: string;
   _event_converter: EventConverter<T>;
+  _scheduler: request_scheduler.IRequestScheduler;
   _priority: string;
-  _cache: cachestuff.Cache;
   _nocache: boolean;
   _debug_context: string;
   _resolve_response: (response: IResponse<T>) => void;
@@ -102,15 +124,15 @@ export class AzadRequest<T> {
   constructor(
     url: string,
     event_converter: EventConverter<T>,
+    scheduler: request_scheduler.IRequestScheduler,
     priority: string,
-    cache: cachestuff.Cache,
     nocache: boolean,
     debug_context: string,
   ) {
-    this._url = url;
+    this._url = urls.normalizeUrl(url, urls.getSite());
     this._event_converter = event_converter;
+    this._scheduler = scheduler;
     this._priority = priority;
-    this._cache = cache;
     this._nocache = nocache;
     this._debug_context = debug_context;
     const response_promise_stuff = make_promise_with_callbacks<IResponse<T>>();
@@ -138,57 +160,187 @@ export class AzadRequest<T> {
 
   A_Enqueued() {
     this.check_state(State.NEW);
+    this._scheduler.schedule({
+      task: ()=>{ return this.C_Send(); },
+      priority: this._priority
+    });
     this._state = State.ENQUEUED;
   }
-
 
   async B_Dequeued() {
     this.check_state(State.ENQUEUED);
     try {
-      const cached = await this._cache.get(this._url) as (T | null | undefined);
+      const cached = await this._scheduler
+                               .cache()
+                               .get(this._url) as (T | null | undefined);
     } catch (ex) {
       console.warn(ex);
     }
     this._state = State.DEQUEUED;
   }
 
-  C_Send() {
+  async C_Send(): Promise<void> {
     this.check_state(State.DEQUEUED);
     this._state = State.SENT;
+    const xhr = new XMLHttpRequest();
+    console.log('opening xhr on ' + this._url);
+    xhr.open('GET', this._url, true);
+    return new Promise<void>((resolve, reject)=>{
+      xhr.onerror = (): void => {
+        running_count -= 1;
+        error_count += 1;
+        if (!signin.checkTooManyRedirects(this._url, xhr) ) {
+          console.log('Unknown error fetching ', this._debug_context, this._url);
+        }
+        const msg = 'got error from XMLHttpRequest';
+        setTimeout(() => this.G_Failed(msg));
+        reject(msg);
+      };
+      xhr.onload = (evt: any): void => {
+        console.log('got response for ', this._debug_context, this._url); 
+        if (!this._scheduler.isLive) {
+          reject('scheduler no longer live');
+        }
+        try {
+          if (
+            xhr.responseURL.includes('/signin?') || xhr.status == 404
+          ) {
+            error_count += 1;
+            console.log(
+              'Got sign-in redirect or 404 from: ',
+              this._debug_context, this._url, xhr.status);
+            if ( signin_warned ) {
+              signin.alertPartiallyLoggedOutAndOpenLoginTab(this._url);
+              signin_warned = true;
+            }
+            const msg = 'got sign-in redirect or 404';
+            setTimeout(() => this.G_Failed(msg));
+            reject(msg);
+          } else if ( xhr.status != 200 ) {
+            error_count += 1;
+            const msg = 'Got HTTP' + xhr.status + ' fetching ' + this._url;
+            console.warn(msg);
+            setTimeout(() => this.G_Failed(msg));
+            reject(msg);
+          } else {
+            completed_count += 1;
+            const msg = 'Finished ' + this._debug_context + this._url;
+            console.warn(msg);
+            setTimeout( () => this.E_Response(evt) );
+            reject(msg);
+          }
+        } catch (ex) {
+          const msg = 'req handling caught unexpected: ' + this._debug_context + ex;
+          console.error(msg);
+          setTimeout( () => this.G_Failed(msg) );
+          reject(msg);
+        }
+        resolve();
+      };
+      xhr.timeout = 20000;  // 20 seconds
+      xhr.ontimeout = (_evt: any): void => {
+        if (this._scheduler.isLive()) {
+          const msg = 'Timed out while fetching: '
+                    + this._debug_context
+                    + this._url;
+          console.warn(msg);
+          setTimeout( () => this.F_TimedOut() );
+          reject(msg);
+        }
+      };
+      xhr.send();
+    });
   }
 
   async D_CacheHit(converted: T) {
     this.check_state(State.DEQUEUED);
     this._state = State.CACHE_HIT;
-    setTimeout(() => this.IK_Success(converted), 0);
+    setTimeout(() => this.IJK_Success(converted), 0);
   }
 
-  E_Responded(evt: Event) {
+  E_Response(evt: Event) {
     this.check_state(State.SENT);
     this._state = State.RESPONDED;
-    const t = this._event_converter(evt)
   }
 
-  H_Converted(converted: T) {
+  F_TimedOut() {
+    this.check_state(State.SENT);
+    try {
+      this._reject_response(this._url + ' timed out');
+    } catch(ex) {
+      console.error('rejection rejected for', this._url, 'after a timeout');
+    }
+    this._state = State.TIMED_OUT;
+  }
+
+  G_Failed(reason: string) {
+    this.check_state(State.SENT);
+    try {
+      this._reject_response(reason);
+    } catch(ex) {
+      console.error('rejection rejected for', this._url, 'with', reason);
+    }
+    this._state = State.FAILED;
+  }
+
+  H_Convert(evt: Event) {
     this.check_state(State.RESPONDED);
+    function protected_converter(evt: any): T|null {
+      try {
+        console.log(
+          'protected_converter', this._debug_context, this._url,
+          'priority', this._priority,
+        );
+        return this._event_converter(evt);
+      } catch (ex) {
+        console.error(
+          'event conversion failed for ',
+          this._debug_context,
+          this._url,
+          ex
+        );
+        return null;
+      }
+    };
+    const converted = protected_converter(evt);
+    if (this._nocache) {
+      this._scheduler.cache().set(this._url, converted);
+      setTimeout(() => this.IJK_Success(converted));
+    } else {
+      setTimeout(() => this.J_Cached(converted));
+    }
     this._state = State.CONVERTED;
-    setTimeout(() => this.J_Cached(converted), 0);
   }
 
   J_Cached(converted: T) {
     this.check_state(State.CONVERTED);
-    this._cache.set(this._url, converted);
+    setTimeout(() => this.IJK_Success(converted), 0);
     this._state = State.CACHED;
-    setTimeout(() => this.IK_Success(converted), 0);
   }
 
-  IK_Success(converted: T) {
+  IJK_Success(converted: T) {
     this.check_state([State.CACHED, State.CACHE_HIT]);
     const response: IResponse<T> = {
       query: this._url,
       result: converted,
     };
-    this._resolve_response(response);
+    try {
+      this._resolve_response(response);
+    } catch(ex) {
+      console.warn(
+        'While delivering response to ', this._url, ', caught: ', ex
+      );
+      try {
+        this._reject_response(
+          'resolve func threw, so rejecting instead for:' + this._url
+        );
+      } catch(rex) {
+        console.error(
+          'we are having a bad day - reject func threw after resolve, with:',
+          rex
+        );
+      }
+    }
     this._state = State.SUCCESS;
   }
 }

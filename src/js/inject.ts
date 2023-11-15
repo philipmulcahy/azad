@@ -242,7 +242,7 @@ async function registerContentScript() {
                         }
                         break;
                     case 'clear_cache':
-                        getScheduler().clearCache();
+                        getScheduler().cache().clear();
                         notice.showNotificationBar(
                             'Amazon Order History Reporter Chrome' +
                             ' Extension\n\n' +

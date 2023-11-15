@@ -4,6 +4,7 @@ import * as date from './date';
 import * as extraction from './extraction';
 import * as order_details from './order_details';
 import * as order_header from './order_header';
+import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import * as util from './util';
 
@@ -66,13 +67,14 @@ export class OrderImpl {
     }
 
     try {
-      const response: PaymentsResponse = await scheduler.scheduleToPromise<Payments>(
+      const response: PaymentsResponse = await new req.AzadRequest<Payments>(
         url,
         event_converter,
+        scheduler,
         util.defaulted(this.header.id, '9999'), // priority
         false,  // nocache,
         'payments for ' + this.header.id,  // debug_context
-      );
+      ).response();
       const payments = response.result;
       return payments;
     } catch (ex) {

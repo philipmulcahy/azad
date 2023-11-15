@@ -4,6 +4,7 @@ import * as order_header from './order_header';
 import * as dom2json from './dom2json';
 import * as extraction from './extraction';
 import * as notice from './notice';
+import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import * as sprintf from 'sprintf-js';
 import * as urls from './url';
@@ -26,13 +27,14 @@ async function get_page_data(
 {
     const nocache: boolean = (start_order_number==0) ? true : nocache_top_level;
     const url = generateQueryString(site, year, start_order_number, template);
-    const response = await scheduler.scheduleToPromise<IOrdersPageData>(
+    const response = await new req.AzadRequest<IOrdersPageData>(
         url, 
         evt => translateOrdersPage(evt, year.toString()),
+        scheduler,
         scheduling_priority,
         nocache,
         'order_list_page.get_page_data: ' + start_order_number,  // debug_context
-    );
+    ).response();
     return response.result;
 }
 
