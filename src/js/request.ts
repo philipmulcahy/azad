@@ -1,49 +1,51 @@
 /* Copyright(c) 2023 Philip Mulcahy. */
 
 import * as request_scheduler from './request_scheduler';
-import * as signin from './signin';
 import * as stats from './statistics';
+import * as signin from './signin';
 import * as urls from './url';
 
 'use strict';
 
 /*
 
-  [NEW]
-   │
-   v A
-   │
-  ENQUEUED
-   │
-   v B
-   │
-  DEQUEUED
-   │
-   │─────┐
-   │     │
-   v C   v D
-   │     │
-  SENT  CACHE_HIT────────────────┐
-   │                             │
-   │─────>────┐──────>────┐      │
-   │          │           │      │
-   v E        │ F         │ G    │
-   │          │           │      │
-  RESPONDED (TIMED_OUT) (FAILED) │
-   │                             │
-   v H                           │
-   │                             │ I
-  CONVERTED                      │
-   │                             │
-   v J                           │
-   │                             │
-   │─────┐                       │
-   │     │                       │
-  CACHED │                       │
-   │     │                       │
-   v  K  │                       │
-   │     │                       │
-  (SUCCESS)<─────────────────────┘
+    [NEW]
+     │
+     v A
+     │
+    ENQUEUED
+     │
+     v B
+     │
+    DEQUEUED
+     │
+     │─────┐
+     │     │
+     v C   v D
+     │     │
+    SENT  CACHE_HIT───────>────────┐
+     │                             │
+     │─────>────┐──────>─────┐     │
+     │          │            │     │
+     v E        │ F          │ G   │
+     │          │            │     │
+    RESPONDED (TIMED_OUT) (FAILED) │
+     │                       │     │
+     │──────────>────────────┘     │
+     │                             │
+     v H                           │
+     │                             │
+    CONVERTED                      v I
+     │                             │
+     v J                           │
+     │                             │
+     │─────┐                       │
+     │     │                       │
+    CACHED │                       │
+     │     │                       │
+   K v     v                       │
+     │     │                       │
+    (SUCCESS)─────────<────────────┘
 
 */
 
@@ -72,19 +74,6 @@ export type Event = {
     responseURL: string;
   }
 };
-
-// Control
-// TODO move back to request_scheduler
-let live = true;
-let signin_warned = false;
-
-// Statistics
-let completed_count: number = 0;
-let error_count: number = 0;
-let running_count: number = 0;
-function update_statistics(): void {
-  // TODO
-}
 
 export type EventConverter<T> = (evt: Event) => T;
 
@@ -187,8 +176,6 @@ export class AzadRequest<T> {
     xhr.open('GET', this._url, true);
     return new Promise<void>((resolve, reject)=>{
       xhr.onerror = (): void => {
-        running_count -= 1;
-        error_count += 1;
         if (!signin.checkTooManyRedirects(this._url, xhr) ) {
           console.log('Unknown error fetching ', this._debug_context, this._url);
         }
@@ -205,25 +192,18 @@ export class AzadRequest<T> {
           if (
             xhr.responseURL.includes('/signin?') || xhr.status == 404
           ) {
-            error_count += 1;
             console.log(
               'Got sign-in redirect or 404 from: ',
               this._debug_context, this._url, xhr.status);
-            if ( signin_warned ) {
-              signin.alertPartiallyLoggedOutAndOpenLoginTab(this._url);
-              signin_warned = true;
-            }
             const msg = 'got sign-in redirect or 404';
             setTimeout(() => this.G_Failed(msg));
             reject(msg);
           } else if ( xhr.status != 200 ) {
-            error_count += 1;
             const msg = 'Got HTTP' + xhr.status + ' fetching ' + this._url;
             console.warn(msg);
             setTimeout(() => this.G_Failed(msg));
             reject(msg);
           } else {
-            completed_count += 1;
             const msg = 'Finished ' + this._debug_context + this._url;
             console.warn(msg);
             setTimeout( () => this.E_Response(evt) );
@@ -255,12 +235,14 @@ export class AzadRequest<T> {
   async D_CacheHit(converted: T) {
     this.check_state(State.DEQUEUED);
     this._state = State.CACHE_HIT;
+    this._scheduler.stats().increment('cache_hits');
     setTimeout(() => this.IJK_Success(converted), 0);
   }
 
   E_Response(evt: Event) {
     this.check_state(State.SENT);
     this._state = State.RESPONDED;
+    setTimeout(() => this.H_Convert(evt));
   }
 
   F_TimedOut() {
@@ -273,7 +255,7 @@ export class AzadRequest<T> {
     this._state = State.TIMED_OUT;
   }
 
-  G_Failed(reason: string) {
+  G_Failed(reason: string): void {
     this.check_state(State.SENT);
     try {
       this._reject_response(reason);
@@ -283,9 +265,9 @@ export class AzadRequest<T> {
     this._state = State.FAILED;
   }
 
-  H_Convert(evt: Event) {
+  H_Convert(evt: Event): void {
     this.check_state(State.RESPONDED);
-    function protected_converter(evt: any): T|null {
+    const protected_converter = (evt: any): T|null => {
       try {
         console.log(
           'protected_converter', this._debug_context, this._url,
@@ -302,14 +284,21 @@ export class AzadRequest<T> {
         return null;
       }
     };
+
     const converted = protected_converter(evt);
+    if (converted == null) {
+      this._state = State.FAILED;
+      return;
+    }
+
+    this._state = State.CONVERTED;
+
     if (this._nocache) {
       this._scheduler.cache().set(this._url, converted);
       setTimeout(() => this.IJK_Success(converted));
     } else {
       setTimeout(() => this.J_Cached(converted));
     }
-    this._state = State.CONVERTED;
   }
 
   J_Cached(converted: T) {

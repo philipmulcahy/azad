@@ -2,6 +2,7 @@
 
 'use strict';
 
+import * as cachestuff from '../js/cachestuff';
 import * as fs from 'fs';
 import * as extraction from '../js/extraction';
 const jsdom = require('jsdom');
@@ -26,57 +27,46 @@ const DATA_ROOT_PATH = './src/tests/azad_test_data/data';
 
 class FakeRequestScheduler {
     url_html_map: Record<string, string>;
-
     constructor(url_html_map: Record<string,string>) {
         this.url_html_map = url_html_map;
     }
-
-    purpose(): string { return 'testing'; }
-
-    scheduleToPromise<T>(
-        query: string,
-        event_converter: (evt: any) => any,
-        _priority: string,
-        _nocache: boolean
-    ): Promise<req.IResponse<T>> {
-        return new Promise<any> ( resolve => {
-            setTimeout( () => {
-                const html = this.url_html_map[query];
-                if (!html) {
-                    const msg = 'could not find ' + query +
-                                ' in url_html_map whose keys are: ' +
-                                Object.keys(this.url_html_map);
-                    console.error(msg);
-                }
-                const fake_evt = {
-                    target: {
-                        responseText: html
-                    }
-                };
-                const converted = event_converter(fake_evt);
-                resolve({result:converted, query:query});
-            });
-        });
+    schedule(task: request_scheduler.PrioritisedTask): void {
+      try {
+        task.task();
+      } catch (ex) {
+        console.warn('FakeRequestScheduler caught this from a task:', ex);
+      }
     }
-
-    abort(): void {}
-    clearCache(): void {}
-    statistics(): Record<string, number> { return {}; }
-    isLive(): boolean { return true; }
+    abort(): void {
+      const msg = 'I am a fake scheduler, and do not implement abort()';
+      console.warn(msg);
+      throw msg;
+    }
+    isLive(): boolean {return true;}
+    purpose(): string {return 'testing only';}
+    cache(): cachestuff.Cache {
+      return cachestuff.createLocalCache('testing only');
+    }
+    stats(): request_scheduler.Statistics {
+      const msg = 'I am a fake scheduler, and do not implement stats()';
+      console.warn(msg);
+      throw msg;
+    }
 }
 
 function dirHasDirs(dir: fs.Dirent, dirs: string[]): boolean {
-    return fs.readdirSync(
-        sitePath(dir.name), {withFileTypes: true}
-    ).filter(
-        (de: fs.Dirent) => dirs.includes(de.name) && de.isDirectory()
-    ).length == dirs.length;
+  return fs.readdirSync(
+    sitePath(dir.name),
+    {withFileTypes: true}
+  ).filter(
+    (de: fs.Dirent) => dirs.includes(de.name) && de.isDirectory()
+  ).length == dirs.length;
 }
 
 function getSiteDirs(): fs.Dirent[] {
-    return fs.readdirSync(DATA_ROOT_PATH, {withFileTypes: true})
-             .filter((de: fs.Dirent) => de.isDirectory() &&  // directories only
-                                        de.name[0] != '.');  // ignore hidden
+  return fs.readdirSync(DATA_ROOT_PATH, {withFileTypes: true})
+           .filter((de: fs.Dirent) => de.isDirectory() &&  // directories only
+                                      de.name[0] != '.');  // ignore hidden
 }
 
 function getASites(): string[] {

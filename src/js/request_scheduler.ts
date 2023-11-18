@@ -4,12 +4,13 @@
 
 import * as binary_heap from './binary_heap';
 import * as cachestuff from './cachestuff';
+import * as signin from './signin';
 import * as stats from './statistics';
 
 const cache = cachestuff.createLocalCache('REQUESTSCHEDULER');
 
-type Task = ()=>Promise<void>;
-type PrioritisedTask = {task: Task, priority: string};
+export type Task = ()=>Promise<void>;
+export type PrioritisedTask = {task: Task, priority: string};
 
 export class Statistics {
   _stats: {[key: string]: number} = {};
@@ -40,7 +41,7 @@ export interface IRequestScheduler {
   cache(): cachestuff.Cache;
   isLive(): boolean;
   purpose(): string;
-  stats: Statistics;
+  stats(): Statistics;
 }
 
 class RequestScheduler {
@@ -48,22 +49,23 @@ class RequestScheduler {
   // chrome allows 6 requests per domain at the same time.
   CONCURRENCY: number = 6;
 
-  stats: Statistics = new Statistics();
-  running_count(): number { return this.stats._stats['running_count']; }
-  completed_count(): number { return this.stats._stats['completed_count']; }
+  _stats: Statistics = new Statistics();
+  stats(): Statistics {return this._stats;}
+  running_count(): number { return this._stats._stats['running_count']; }
+  completed_count(): number { return this._stats._stats['completed_count']; }
   queue_size(): number { return this.queue.size(); }
 
   queue: binary_heap.BinaryHeap = new binary_heap.BinaryHeap(
     (item: any): number => item.priority
   );
   signin_warned: boolean = false;
-  live = true;
+  live: boolean = true;
   _purpose: string;
 
   constructor(purpose: string) {
     this._purpose = purpose;
     console.log('constructing new RequestScheduler');
-    this.stats.send();
+    this._stats.send();
   }
 
   purpose(): string { return this._purpose; }
@@ -74,7 +76,7 @@ class RequestScheduler {
       ' and priority ', task.priority
     );
     this.queue.push(task);
-    this.stats.set('queued', this.queue_size());
+    this._stats.set('queued', this.queue_size());
     this._executeSomeIfPossible();
   }
 
@@ -94,7 +96,7 @@ class RequestScheduler {
 
   // Process a single de-queued request either by retrieving from the cache
   // or by sending it out.
-  async _execute<T>(task: ()=>Promise<void>) {
+  async _execute(task: ()=>Promise<void>) {
     if (!this.live) {
       return;
     }
@@ -104,7 +106,13 @@ class RequestScheduler {
 
     try {
       await task();
-    } catch(ex) {
+    } catch( ex ) {
+      if ((ex as string).includes('sign-in')) {
+        if ( !this.signin_warned ) {
+          signin.alertPartiallyLoggedOutAndOpenLoginTab(ex as string);
+          this.signin_warned = true;
+        }
+      }
       console.warn('task threw:', ex);
     }
     this.recordSingleCompletion();
@@ -118,7 +126,7 @@ class RequestScheduler {
     setTimeout(
       () => {
         this._executeSomeIfPossible();
-        this.stats.send();
+        this._stats.send();
         this._checkDone();
       }
     );
@@ -133,8 +141,8 @@ class RequestScheduler {
       this.queue.size() > 0
     ) {
       const task = (this.queue.pop() as PrioritisedTask).task;
-      this.stats.set('queued', this.queue_size());
-      this.stats.increment('running_count');
+      this._stats.set('queued', this.queue_size());
+      this._stats.increment('running_count');
       const _one_done = await this._execute(task);
     }
   }
