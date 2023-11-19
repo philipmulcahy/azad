@@ -128,35 +128,47 @@ export class AzadRequest<T> {
     this._response = response_promise_stuff.promise;
     this._resolve_response = response_promise_stuff.resolve;
     this._reject_response = response_promise_stuff.reject;
+    this._state = State.NEW;
+    setTimeout(() => this.A_Enqueue());
+    console.log('AzadRequest NEW ' + this._url);
+  }
+
+  change_state(new_state: State): void {
+    console.log(
+      'AzadRequest', State[this._state], '->', State[new_state], this._url);
+    this._state = new_state;
   }
 
   check_state(allowable_existing_state: State|State[]): void {
     if (Array.isArray(allowable_existing_state)) {
-      (allowable_existing_state as [State]).forEach(
-        state => this.check_state(state)
-      ); 
+      const allowables = allowable_existing_state as State[];
+      if (!allowables.includes(this._state)) {
+        const msg = 'AzadRequest unexpected state: '
+                  + State[this._state]
+                  + ' but expecting one of ['
+                  + allowables.map(a => State[a]).join(',')
+                  + '] ' + this._url; 
+        console.error(msg);
+        throw msg;
+      }; 
     } else {
-      if (allowable_existing_state != this._state) {
-        throw (
-          'Expected state: ' + allowable_existing_state.toString() +
-          ' but actual state: ' + this._state.toString()
-        );
-      }
+      const allowable = allowable_existing_state as State;
+      this.check_state([allowable]);
     }
   }
 
   response(): Promise<IResponse<T>> { return this._response; }
 
-  A_Enqueued() {
+  A_Enqueue(): void {
     this.check_state(State.NEW);
+    this.change_state(State.ENQUEUED);
     this._scheduler.schedule({
-      task: ()=>{ return this.C_Send(); },
+      task: ()=>{ return this.B_Dequeued(); },
       priority: this._priority
     });
-    this._state = State.ENQUEUED;
   }
 
-  async B_Dequeued() {
+  async B_Dequeued(): Promise<void> {
     this.check_state(State.ENQUEUED);
     try {
       const cached = await this._scheduler
@@ -165,12 +177,13 @@ export class AzadRequest<T> {
     } catch (ex) {
       console.warn(ex);
     }
-    this._state = State.DEQUEUED;
+    this.change_state(State.DEQUEUED);
+    return this.C_Send();
   }
 
   async C_Send(): Promise<void> {
     this.check_state(State.DEQUEUED);
-    this._state = State.SENT;
+    this.change_state(State.SENT);
     const xhr = new XMLHttpRequest();
     console.log('opening xhr on ' + this._url);
     xhr.open('GET', this._url, true);
@@ -204,18 +217,20 @@ export class AzadRequest<T> {
             setTimeout(() => this.G_Failed(msg));
             reject(msg);
           } else {
-            const msg = 'Finished ' + this._debug_context + this._url;
-            console.warn(msg);
+            const msg = 'Finished ' + this._debug_context + ' ' + this._url;
+            console.info(msg);
             setTimeout( () => this.E_Response(evt) );
-            reject(msg);
+            resolve();
+            return;
           }
         } catch (ex) {
           const msg = 'req handling caught unexpected: ' + this._debug_context + ex;
           console.error(msg);
           setTimeout( () => this.G_Failed(msg) );
           reject(msg);
+          return;
         }
-        resolve();
+        reject('I don\'t know how I got here, but I shouldn\'t have');
       };
       xhr.timeout = 20000;  // 20 seconds
       xhr.ontimeout = (_evt: any): void => {
@@ -234,14 +249,14 @@ export class AzadRequest<T> {
 
   async D_CacheHit(converted: T) {
     this.check_state(State.DEQUEUED);
-    this._state = State.CACHE_HIT;
+    this.change_state(State.CACHE_HIT);
     this._scheduler.stats().increment('cache_hits');
     setTimeout(() => this.IJK_Success(converted), 0);
   }
 
   E_Response(evt: Event) {
     this.check_state(State.SENT);
-    this._state = State.RESPONDED;
+    this.change_state(State.RESPONDED);
     setTimeout(() => this.H_Convert(evt));
   }
 
@@ -252,7 +267,7 @@ export class AzadRequest<T> {
     } catch(ex) {
       console.error('rejection rejected for', this._url, 'after a timeout');
     }
-    this._state = State.TIMED_OUT;
+    this.change_state(State.TIMED_OUT);
   }
 
   G_Failed(reason: string): void {
@@ -262,7 +277,7 @@ export class AzadRequest<T> {
     } catch(ex) {
       console.error('rejection rejected for', this._url, 'with', reason);
     }
-    this._state = State.FAILED;
+    this.change_state(State.FAILED);
   }
 
   H_Convert(evt: Event): void {
@@ -287,11 +302,11 @@ export class AzadRequest<T> {
 
     const converted = protected_converter(evt);
     if (converted == null) {
-      this._state = State.FAILED;
+      this.change_state(State.FAILED);
       return;
     }
 
-    this._state = State.CONVERTED;
+    this.change_state(State.CONVERTED);
 
     if (this._nocache) {
       this._scheduler.cache().set(this._url, converted);
@@ -303,12 +318,12 @@ export class AzadRequest<T> {
 
   J_Cached(converted: T) {
     this.check_state(State.CONVERTED);
+    this.change_state(State.CACHED);
     setTimeout(() => this.IJK_Success(converted), 0);
-    this._state = State.CACHED;
   }
 
   IJK_Success(converted: T) {
-    this.check_state([State.CACHED, State.CACHE_HIT]);
+    this.check_state([State.CACHED, State.CACHE_HIT, State.CONVERTED]);
     const response: IResponse<T> = {
       query: this._url,
       result: converted,
@@ -330,6 +345,6 @@ export class AzadRequest<T> {
         );
       }
     }
-    this._state = State.SUCCESS;
+    this.change_state(State.SUCCESS);
   }
 }

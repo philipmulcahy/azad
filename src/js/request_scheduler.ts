@@ -14,6 +14,13 @@ export type PrioritisedTask = {task: Task, priority: string};
 
 export class Statistics {
   _stats: {[key: string]: number} = {};
+
+  constructor() {
+    this._stats['running_count'] = 0;
+    this._stats['queued'] = 0;
+    this._stats['cache_hits'] = 0;
+  }
+
   increment(key: string): void {
     const count: number = Object.keys(this._stats).includes(key)
                         ? this._stats[key]
@@ -105,6 +112,7 @@ class RequestScheduler {
     );
 
     try {
+      this._stats.increment('running_count');
       await task();
     } catch( ex ) {
       if ((ex as string).includes('sign-in')) {
@@ -123,6 +131,7 @@ class RequestScheduler {
     // probably involves a promise chain, and might
     // enqueue more work that might be abandonned if we shut this
     // scheduler down prematurely.
+    this._stats.decrement('running_count');
     setTimeout(
       () => {
         this._executeSomeIfPossible();
