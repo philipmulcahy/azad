@@ -101,6 +101,7 @@ function get_items(
 	return items;
 }
 
+// NOTE this will *not* be run if the order is cached
 function extractDetailFromDoc(
   header: order_header.IOrderHeader,
   doc: HTMLDocument,
@@ -138,7 +139,9 @@ function extractDetailFromDoc(
       context,
     );
 
-    if ( !x ) {
+    // a gift card purchase does not have a name on the order details URL
+    if (!x) {
+      console.log("could not determine recipient name for order " + header.id);
       x = 'null';
     }
 
