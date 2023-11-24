@@ -106,17 +106,18 @@ class MonkeyPatchXmlHttpRequest {
 
     XMLHttpRequest.prototype.send = function() {
       if (Object.keys(_url_map).includes(_url)) {
-        this.onload(
-          {
-            target: {
-              responseText: this._url_map[this._url],
-              responseURL: this._url
-            }
-          }
+        this.onload!(
+          ({
+            target: ({
+              responseText: _url_map[_url],
+              responseURL: _url
+            } as unknown) as EventTarget
+          } as unknown ) as ProgressEvent<EventTarget>
         );
       } else {
-        console.log('patched XMLHttpRequest calling onError for ', this._url);
-        this.onError();
+        const msg = 'patched XMLHttpRequest calling onError for ' + _url;
+        console.log(msg);
+        this.onerror!((msg as unknown) as ProgressEvent);
       }
     }
   }
@@ -166,11 +167,17 @@ export function orderFromTestData(
       list_elem,
       order_dump.list_url, 
     );
-    const order = azad_order.create(
+    let order: azad_order.IOrder;
+    const patch = new MonkeyPatchXmlHttpRequest(url_map);
+    try {
+      order = azad_order.create(
         header, 
         scheduler,
         (_d: Date|null) => true,  // DateFilter
-    );
+      );
+    } finally {
+      patch.unpatch(); 
+    }
     if (typeof(order) === 'undefined') {
       throw new Error(
         'null order not expected, but sometimes these things happen');
@@ -183,7 +190,8 @@ export function expectedFromTestData(
     collection_date: string,
     site: string
 ): Record<string, any> {
-    const path = sitePath(site) + '/expected/' + order_id + '_' + collection_date + '.json';
+    const path = sitePath(site)
+               + '/expected/' + order_id + '_' + collection_date + '.json';
     const json: string = fs.readFileSync(path, 'utf8');
     return JSON.parse(json);
 }

@@ -49,7 +49,7 @@ import * as urls from './url';
 
 */
 
-export enum State {
+enum State {
   NEW = 1,
   ENQUEUED,
   DEQUEUED,
@@ -63,7 +63,7 @@ export enum State {
   SUCCESS,
 }
 
-export interface IResponse<T> {
+interface IResponse<T> {
   result: T,
   query: string
 }
@@ -98,7 +98,7 @@ function make_promise_with_callbacks<T>(): {
   }
 }
 
-export class AzadRequest<T> {
+class AzadRequest<T> {
   _state: State = State.NEW;
   _url: string;
   _event_converter: EventConverter<T>;
@@ -224,7 +224,8 @@ export class AzadRequest<T> {
             return;
           }
         } catch (ex) {
-          const msg = 'req handling caught unexpected: ' + this._debug_context + ex;
+          const msg = 'req handling caught unexpected: '
+                    + this._debug_context + ex;
           console.error(msg);
           setTimeout( () => this.G_Failed(msg) );
           reject(msg);
@@ -347,4 +348,24 @@ export class AzadRequest<T> {
     }
     this.change_state(State.SUCCESS);
   }
+}
+
+export async function makeAsyncRequest<T>(
+    url: string,
+    event_converter: EventConverter<T>,
+    scheduler: request_scheduler.IRequestScheduler,
+    priority: string,
+    nocache: boolean,
+    debug_context: string
+): Promise<T> {
+  const req = new AzadRequest(
+    url,
+    event_converter,
+    scheduler,
+    priority,
+    nocache,
+    debug_context,
+  );
+  const response = await req.response();
+  return response.result;
 }

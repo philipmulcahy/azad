@@ -67,16 +67,14 @@ export class OrderImpl {
     }
 
     try {
-      const response: PaymentsResponse = await new req.AzadRequest<Payments>(
+      return await req.makeAsyncRequest<Payments>(
         url,
         event_converter,
         scheduler,
         util.defaulted(this.header.id, '9999'), // priority
         false,  // nocache,
         'payments for ' + this.header.id,  // debug_context
-      ).response();
-      const payments = response.result;
-      return payments;
+      );
     } catch (ex) {
       const msg = 'timeout or other error while fetching ' + url +
                   ' for ' + this.header.id + ': ' + ex;

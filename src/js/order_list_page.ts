@@ -27,15 +27,14 @@ async function get_page_data(
 {
   const nocache: boolean = (start_order_number==0) ? true : nocache_top_level;
   const url = generateQueryString(site, year, start_order_number, template);
-  const response = await new req.AzadRequest<IOrdersPageData>(
+  return req.makeAsyncRequest<IOrdersPageData>(
     url, 
     evt => translateOrdersPage(evt, year.toString()),
-      scheduler,
+    scheduler,
     scheduling_priority,
     nocache,
     'order_list_page.get_page_data: ' + start_order_number,  // debug_context
-  ).response();
-  return response.result;
+  );
 }
 
 
