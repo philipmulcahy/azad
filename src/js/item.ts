@@ -91,7 +91,8 @@ export function getCategoriesForProduct(scheduler: IRequestScheduler, productUrl
             }
         },
         '00000',
-        false
+        false,
+        "getCategoriesForProduct"
     ).then((response: IResponse<string>) => response.result);
 }
 

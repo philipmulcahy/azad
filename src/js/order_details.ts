@@ -9,6 +9,7 @@ import * as shipment from './shipment';
 import * as sprintf from 'sprintf-js';
 import * as urls from './url';
 import * as util from './util';
+import { getCategoriesForProduct } from './item';
 
 export interface IOrderDetails {
   date: Date|null;
@@ -72,6 +73,13 @@ export async function extractDetailPromise(
       false,  // nocache=false: cached response is acceptable
       debug_context,
     );
+
+    // now that we have the order, let's enhance the item responses with a category
+    for (const item of response.result.items) {
+      const itemCategory = await getCategoriesForProduct(scheduler, item.url)
+      item.category = itemCategory;
+    }
+
     return response.result;
   } catch (url) {
     const msg = 'scheduler rejected ' + header.id + ' ' + url;
