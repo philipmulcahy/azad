@@ -31,7 +31,7 @@ export class OrderImpl {
     scheduler: request_scheduler.IRequestScheduler
   ) {
     if (!date_filter(this.header.date)) {
-      throw_order_discarded_error(this.header.id);
+      throw new Error("Discarding order due to date filter: " + this.header.id);")
     }
 
     this.detail_promise = order_details.extractDetailPromise(
@@ -83,10 +83,3 @@ export class OrderImpl {
     }
   }
 }
-
-
-function throw_order_discarded_error(order_id: string|null): void {
-  const ode = new Error('OrderDiscardedError:' + order_id);
-  throw ode;
-}
-
