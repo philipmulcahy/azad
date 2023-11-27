@@ -13,7 +13,7 @@
         "eslint": "eslint --ignore-path .gitignore --ext .js,.ts .",
         "package": "utils/package.sh",
         "private_package": "npm run package; cp azad.zip azad_$(git log -1 | grep commit | sed 's/^commit //' | cut -c 1-8).zip",
-        "test": "node build-node/nodejs_tests.bundle.js",
+        "test": "node --trace-uncaught build-node/nodejs_tests.bundle.js",
         "debug_tests": "node --inspect-brk build-node/nodejs_tests.bundle.js",
         "winpackage": "utils\\winpackage.cmd"
     },

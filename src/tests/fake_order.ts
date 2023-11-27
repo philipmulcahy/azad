@@ -80,69 +80,21 @@ function sitePath(site: string): string {
     return  DATA_ROOT_PATH + '/' + site;
 }
 
-type string_string_map = {[key: string]: string};
-
-class MonkeyPatchXmlHttpRequest {
-
-  _original_open_method: {
-    (method: string, url: string | URL): void;
-    (method: string, url: string | URL, async: boolean, username?: string, password?: string): void;
-  };
-  _original_send_method: ()=>void;
-
-  constructor (url_map: string_string_map) {
-    this._original_open_method = XMLHttpRequest.prototype.open;
-    this._original_send_method = XMLHttpRequest.prototype.send;
-    const original_open = this._original_open_method;
-    const _url_map = url_map;
-    let _url: string = '';
-
-    XMLHttpRequest.prototype.open = function(
-      method: string, url: string
-    ): void {
-      _url = url;
-      return original_open(method, url, true);
-    };
-
-    XMLHttpRequest.prototype.send = function() {
-      if (Object.keys(_url_map).includes(_url)) {
-        this.onload!(
-          ({
-            target: ({
-              responseText: _url_map[_url],
-              responseURL: _url
-            } as unknown) as EventTarget
-          } as unknown ) as ProgressEvent<EventTarget>
-        );
-      } else {
-        const msg = 'patched XMLHttpRequest calling onError for ' + _url;
-        console.log(msg);
-        this.onerror!((msg as unknown) as ProgressEvent);
-      }
-    }
-  }
-
-  unpatch(): void {
-    XMLHttpRequest.prototype.open = this._original_open_method;
-    XMLHttpRequest.prototype.send = this._original_send_method;
-  }
-}
-
 export function orderFromTestData(
     order_id: string,
     collection_date: string,
     site: string
-): azad_order.IOrder {
+): azad_order.IOrder | null {
     const path = sitePath(site) + '/input/' + order_id + '_' +
                  collection_date + '.json';
     const json: string = fs.readFileSync(path, 'utf8');
     const order_dump = JSON.parse(json);
-    const url_map: Record<string, string> = {};
+    const url_map: request_scheduler.string_string_map = {};
     url_map[order_dump.list_url] = order_dump.list_html;
     url_map[order_dump.detail_url] = order_dump.detail_html;
     url_map[order_dump.payments_url] = order_dump.invoice_html;
     // const scheduler = new FakeRequestScheduler( url_map );
-    const scheduler = request_scheduler.create('testing');
+    const scheduler = request_scheduler.create_overlaid('testing', url_map);
     const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;
     const order_elems = extraction.findMultipleNodeValues(
         './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
@@ -167,22 +119,16 @@ export function orderFromTestData(
       list_elem,
       order_dump.list_url, 
     );
-    let order: azad_order.IOrder;
-    const patch = new MonkeyPatchXmlHttpRequest(url_map);
-    try {
-      order = azad_order.create(
-        header, 
-        scheduler,
-        (_d: Date|null) => true,  // DateFilter
-      );
-    } finally {
-      patch.unpatch(); 
-    }
+    const order: azad_order.IOrder|null = azad_order.create(
+      header, 
+      scheduler,
+      (_d: Date|null) => true,  // DateFilter
+    );
     if (typeof(order) === 'undefined') {
       throw new Error(
         'null order not expected, but sometimes these things happen');
     }
-    return order!;
+    return order;
 }
 
 export function expectedFromTestData(

@@ -7,6 +7,8 @@ import * as cachestuff from './cachestuff';
 import * as signin from './signin';
 import * as stats from './statistics';
 
+export type string_string_map = {[key: string]: string};
+
 const cache = cachestuff.createLocalCache('REQUESTSCHEDULER');
 
 export type Task = ()=>Promise<void>;
@@ -49,6 +51,7 @@ export interface IRequestScheduler {
   isLive(): boolean;
   purpose(): string;
   stats(): Statistics;
+  overlay_url_map(): string_string_map;
 }
 
 class RequestScheduler {
@@ -57,6 +60,8 @@ class RequestScheduler {
   CONCURRENCY: number = 6;
 
   _stats: Statistics = new Statistics();
+  _overlay_url_map: string_string_map = {};
+
   stats(): Statistics {return this._stats;}
   running_count(): number { return this._stats._stats['running_count']; }
   completed_count(): number { return this._stats._stats['completed_count']; }
@@ -69,13 +74,15 @@ class RequestScheduler {
   live: boolean = true;
   _purpose: string;
 
-  constructor(purpose: string) {
+  constructor(purpose: string, overlay_url_map: string_string_map) {
     this._purpose = purpose;
+    this._overlay_url_map = overlay_url_map;
     console.log('constructing new RequestScheduler');
     this._stats.send();
   }
 
   purpose(): string { return this._purpose; }
+  overlay_url_map(): string_string_map { return this._overlay_url_map; }
 
   schedule(task: PrioritisedTask) {
     console.log(
@@ -115,22 +122,29 @@ class RequestScheduler {
       this._stats.increment('running_count');
       await task();
     } catch( ex ) {
-      if ((ex as string).includes('sign-in')) {
+      if (typeof(ex) == 'string' && (ex as string).includes('sign-in')) {
         if ( !this.signin_warned ) {
           signin.alertPartiallyLoggedOutAndOpenLoginTab(ex as string);
           this.signin_warned = true;
         }
       }
-      console.warn('task threw:', ex);
+      const msg = 'task threw: ' + (ex as string).toString();
+      return Promise.reject(msg);
     }
+    this.recordSingleSuccess();
+    return Promise.resolve();
+  }
+
+  recordSingleSuccess() {
+    this.recordSingleCompletion();
+  }
+
+  recordSingleFailure(msg: string) {
+    console.warn(msg);
     this.recordSingleCompletion();
   }
 
   recordSingleCompletion() {
-    // Defer checking if we're done, because success_callback
-    // probably involves a promise chain, and might
-    // enqueue more work that might be abandonned if we shut this
-    // scheduler down prematurely.
     this._stats.decrement('running_count');
     setTimeout(
       () => {
@@ -152,7 +166,11 @@ class RequestScheduler {
       const task = (this.queue.pop() as PrioritisedTask).task;
       this._stats.set('queued', this.queue_size());
       this._stats.increment('running_count');
-      const _one_done = await this._execute(task);
+      try {
+        await this._execute(task);
+      } catch (ex) {
+        console.warn('task execution blew up: ', ex);
+      }
     }
   }
 
@@ -174,5 +192,12 @@ class RequestScheduler {
 }
 
 export function create(purpose: string): IRequestScheduler {
-  return new RequestScheduler(purpose);
+  return new RequestScheduler(purpose, {});
+}
+
+export function create_overlaid(
+  purpose: string,
+  url_map: string_string_map
+): IRequestScheduler {
+  return new RequestScheduler(purpose, url_map);
 }

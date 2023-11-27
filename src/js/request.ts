@@ -9,43 +9,43 @@ import * as urls from './url';
 
 /*
 
-    [NEW]
-     │
-     v A
-     │
+     [NEW]
+       │
+       v A
+       │
     ENQUEUED
-     │
-     v B
-     │
+       │
+       v B
+       │
     DEQUEUED
-     │
-     │─────┐
-     │     │
-     v C   v D
-     │     │
-    SENT  CACHE_HIT───────>────────┐
-     │                             │
-     │─────>────┐──────>─────┐     │
-     │          │            │     │
-     v E        │ F          │ G   │
-     │          │            │     │
-    RESPONDED (TIMED_OUT) (FAILED) │
-     │                       │     │
-     │──────────>────────────┘     │
-     │                             │
-     v H                           │
-     │                             │
-    CONVERTED                      v I
-     │                             │
-     v J                           │
-     │                             │
-     │─────┐                       │
-     │     │                       │
-    CACHED │                       │
-     │     │                       │
-   K v     v                       │
-     │     │                       │
-    (SUCCESS)─────────<────────────┘
+       │
+ ┌─────┼──────┐
+ │     │      │
+ │     v C    v D
+ │     │      │
+ │    SENT  CACHE_HIT────────>───────┐
+ v L   │                             │
+ │     ├─────>────┬──────>─────┐     │
+ │     │          │            │     │
+ │     v E        │ F          │ G   │
+ │     │          │            │     │
+ └─RESPONDED  (TIMED_OUT)   (FAILED) │
+       │                       │     │
+       ├──────────>────────────┘     │
+       │                             │
+       v H                           │
+       │                             │
+   CONVERTED                         v I
+       │                             │
+       v J                           │
+       │                             │
+       ├─────┐                       │
+       │     │                       │
+     CACHED  │                       │
+       │     │                       │
+     K v     v                       │
+       │     │                       │
+   (SUCCESS)─┴──────────<────────────┘
 
 */
 
@@ -181,7 +181,16 @@ class AzadRequest<T> {
     return this.C_Send();
   }
 
-  async C_Send(): Promise<void> {
+  C_Send(): Promise<void> {
+    const url_map = this._scheduler.overlay_url_map();
+    if (Object.keys(url_map).length != 0) {
+      return this.L_Overlaid();
+    } else {
+      return this.C_SendXHR();
+    }
+  }
+
+  async C_SendXHR(): Promise<void> {
     this.check_state(State.DEQUEUED);
     this.change_state(State.SENT);
     const xhr = new XMLHttpRequest();
@@ -248,6 +257,27 @@ class AzadRequest<T> {
     });
   }
 
+  async L_Overlaid(): Promise<void> {
+    this.check_state(State.DEQUEUED);
+    const url_map: request_scheduler.string_string_map
+                   = this._scheduler.overlay_url_map();
+    if (this._url in url_map) {
+      const response_text = url_map[this._url];
+      const fake_event: Event = {
+        target: {
+          responseURL: this._url,
+          responseText: response_text,
+        }
+      } as Event;
+      setTimeout(() => this.E_Response(fake_event));
+      return Promise.resolve();
+    } else {
+      const msg = 'url not found in overlay map: ' + this._url;
+      setTimeout(() => this.G_Failed(msg));
+      return Promise.reject(msg);
+    }
+  }
+
   async D_CacheHit(converted: T) {
     this.check_state(State.DEQUEUED);
     this.change_state(State.CACHE_HIT);
@@ -256,7 +286,7 @@ class AzadRequest<T> {
   }
 
   E_Response(evt: Event) {
-    this.check_state(State.SENT);
+    this.check_state([State.SENT, State.DEQUEUED]);
     this.change_state(State.RESPONDED);
     setTimeout(() => this.H_Convert(evt));
   }
@@ -272,7 +302,7 @@ class AzadRequest<T> {
   }
 
   G_Failed(reason: string): void {
-    this.check_state(State.SENT);
+    this.check_state([State.SENT, State.DEQUEUED]);
     try {
       this._reject_response(reason);
     } catch(ex) {
