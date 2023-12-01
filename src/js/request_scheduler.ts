@@ -14,43 +14,13 @@ const cache = cachestuff.createLocalCache('REQUESTSCHEDULER');
 export type Task = ()=>Promise<void>;
 export type PrioritisedTask = {task: Task, priority: string};
 
-export class Statistics {
-  _stats: {[key: string]: number} = {};
-
-  constructor() {
-    this._stats['running_count'] = 0;
-    this._stats['queued'] = 0;
-    this._stats['cache_hits'] = 0;
-  }
-
-  increment(key: string): void {
-    const count: number = Object.keys(this._stats).includes(key)
-                        ? this._stats[key]
-                        : 0;
-    this._stats[count+1];
-  }
-  decrement(key: string): void {
-    const count: number = Object.keys(this._stats).includes(key)
-                        ? this._stats[key]
-                        : 0;
-    this._stats[count-1];
-  }
-  set(key: string, value: number) {this._stats[key] = value;}
-  clear(): void { this._stats = {}; }
-  send(): void {
-    ['queued', 'running', 'completed', 'errors', 'cache_hits'].forEach(key => {
-      stats.set(key, this._stats[key]);
-    });
-  }
-}
-
 export interface IRequestScheduler {
   schedule(task: PrioritisedTask): void;
   abort(): void;
   cache(): cachestuff.Cache;
   isLive(): boolean;
   purpose(): string;
-  stats(): Statistics;
+  stats(): stats.Statistics;
   overlay_url_map(): string_string_map;
 }
 
@@ -59,12 +29,12 @@ class RequestScheduler {
   // chrome allows 6 requests per domain at the same time.
   CONCURRENCY: number = 6;
 
-  _stats: Statistics = new Statistics();
+  _stats: stats.Statistics = new stats.Statistics();
   _overlay_url_map: string_string_map = {};
 
-  stats(): Statistics {return this._stats;}
-  running_count(): number { return this._stats._stats['running_count']; }
-  completed_count(): number { return this._stats._stats['completed_count']; }
+  stats(): stats.Statistics {return this._stats;}
+  running_count(): number { return this._stats.get(stats.StatsKey.RUNNING_COUNT); }
+  completed_count(): number { return this._stats.get(stats.StatsKey.COMPLETED_COUNT); }
   queue_size(): number { return this.queue.size(); }
 
   queue: binary_heap.BinaryHeap = new binary_heap.BinaryHeap(
@@ -73,12 +43,19 @@ class RequestScheduler {
   signin_warned: boolean = false;
   live: boolean = true;
   _purpose: string;
+  _get_background_port: ()=>(chrome.runtime.Port|null);
 
-  constructor(purpose: string, overlay_url_map: string_string_map) {
+  constructor(
+    purpose: string,
+    overlay_url_map: string_string_map,
+    get_background_port: ()=>(chrome.runtime.Port|null)
+  ) {
     this._purpose = purpose;
     this._overlay_url_map = overlay_url_map;
+    this._get_background_port = get_background_port;
     console.log('constructing new RequestScheduler');
-    this._stats.send();
+    const bp = get_background_port();
+    this._stats.publish(bp, 'initial stats from request_scheduler');
   }
 
   purpose(): string { return this._purpose; }
@@ -90,7 +67,7 @@ class RequestScheduler {
       ' and priority ', task.priority
     );
     this.queue.push(task);
-    this._stats.set('queued', this.queue_size());
+    this._stats.set(stats.StatsKey.QUEUED_COUNT, this.queue_size());
     this._executeSomeIfPossible();
   }
 
@@ -119,7 +96,7 @@ class RequestScheduler {
     );
 
     try {
-      this._stats.increment('running_count');
+      this._stats.increment(stats.StatsKey.RUNNING_COUNT);
       await task();
     } catch( ex ) {
       if (typeof(ex) == 'string' && (ex as string).includes('sign-in')) {
@@ -145,11 +122,12 @@ class RequestScheduler {
   }
 
   recordSingleCompletion() {
-    this._stats.decrement('running_count');
+    this._stats.decrement(stats.StatsKey.RUNNING_COUNT);
     setTimeout(
       () => {
         this._executeSomeIfPossible();
-        this._stats.send();
+        const port = this._get_background_port();
+        this._stats.publish(port, 'task completion update from scheduler');
         this._checkDone();
       }
     );
@@ -164,8 +142,8 @@ class RequestScheduler {
       this.queue.size() > 0
     ) {
       const task = (this.queue.pop() as PrioritisedTask).task;
-      this._stats.set('queued', this.queue_size());
-      this._stats.increment('running_count');
+      this._stats.set(stats.StatsKey.QUEUED_COUNT, this.queue_size());
+      this._stats.increment(stats.StatsKey.RUNNING_COUNT);
       try {
         await this._execute(task);
       } catch (ex) {
@@ -191,13 +169,17 @@ class RequestScheduler {
   }
 }
 
-export function create(purpose: string): IRequestScheduler {
-  return new RequestScheduler(purpose, {});
+export function create(
+  purpose: string,
+  background_port_getter: () => (chrome.runtime.Port | null),
+): IRequestScheduler {
+  return new RequestScheduler(purpose, {}, background_port_getter);
 }
 
 export function create_overlaid(
   purpose: string,
-  url_map: string_string_map
+  url_map: string_string_map,
+  background_port_getter: () => (chrome.runtime.Port | null),
 ): IRequestScheduler {
-  return new RequestScheduler(purpose, url_map);
+  return new RequestScheduler(purpose, url_map, background_port_getter);
 }

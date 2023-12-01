@@ -281,7 +281,7 @@ class AzadRequest<T> {
   async D_CacheHit(converted: T) {
     this.check_state(State.DEQUEUED);
     this.change_state(State.CACHE_HIT);
-    this._scheduler.stats().increment('cache_hits');
+    this._scheduler.stats().increment(stats.StatsKey.CACHE_HIT_COUNT);
     setTimeout(() => this.IJK_Success(converted), 0);
   }
 

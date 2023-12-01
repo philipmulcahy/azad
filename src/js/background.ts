@@ -55,7 +55,7 @@ function registerConnectionListener() {
                     control_port?.postMessage(msg);
                   } catch (ex) {
                     console.debug(
-                      'could not post stats message to control port');
+                      'cannot post stats message to non-existent control port');
                   }
                 }
                 break;

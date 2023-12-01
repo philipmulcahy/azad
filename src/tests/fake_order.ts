@@ -1,4 +1,4 @@
-/* Copyright(c) 2019-2020 Philip Mulcahy. */
+/* Copyright(c) 2019-2023 Philip Mulcahy. */
 
 'use strict';
 
@@ -24,35 +24,6 @@ import * as request_scheduler from '../js/request_scheduler';
 ///////////////////////////////////////////////////////////////////////////////
 
 const DATA_ROOT_PATH = './src/tests/azad_test_data/data';
-
-// class FakeRequestScheduler {
-//     url_html_map: Record<string, string>;
-//     constructor(url_html_map: Record<string,string>) {
-//         this.url_html_map = url_html_map;
-//     }
-//     schedule(task: request_scheduler.PrioritisedTask): void {
-//       try {
-//         task.task();
-//       } catch (ex) {
-//         console.warn('FakeRequestScheduler caught this from a task:', ex);
-//       }
-//     }
-//     abort(): void {
-//       const msg = 'I am a fake scheduler, and do not implement abort()';
-//       console.warn(msg);
-//       throw msg;
-//     }
-//     isLive(): boolean {return true;}
-//     purpose(): string {return 'testing only';}
-//     cache(): cachestuff.Cache {
-//       return cachestuff.createLocalCache('testing only');
-//     }
-//     stats(): request_scheduler.Statistics {
-//       const msg = 'I am a fake scheduler, and do not implement stats()';
-//       console.warn(msg);
-//       throw msg;
-//     }
-// }
 
 function dirHasDirs(dir: fs.Dirent, dirs: string[]): boolean {
   return fs.readdirSync(
@@ -93,8 +64,8 @@ export function orderFromTestData(
     url_map[order_dump.list_url] = order_dump.list_html;
     url_map[order_dump.detail_url] = order_dump.detail_html;
     url_map[order_dump.payments_url] = order_dump.invoice_html;
-    // const scheduler = new FakeRequestScheduler( url_map );
-    const scheduler = request_scheduler.create_overlaid('testing', url_map);
+    const scheduler = request_scheduler.create_overlaid(
+      'testing', url_map, ()=>null);
     const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;
     const order_elems = extraction.findMultipleNodeValues(
         './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
