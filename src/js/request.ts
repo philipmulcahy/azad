@@ -220,11 +220,13 @@ class AzadRequest<T> {
             const msg = 'got sign-in redirect or 404';
             setTimeout(() => this.G_Failed(msg));
             reject(msg);
+            return;
           } else if ( xhr.status != 200 ) {
             const msg = 'Got HTTP' + xhr.status + ' fetching ' + this._url;
             console.warn(msg);
             setTimeout(() => this.G_Failed(msg));
             reject(msg);
+            return;
           } else {
             const msg = 'Finished ' + this._debug_context + ' ' + this._url;
             console.info(msg);
@@ -281,18 +283,20 @@ class AzadRequest<T> {
   async D_CacheHit(converted: T) {
     this.check_state(State.DEQUEUED);
     this.change_state(State.CACHE_HIT);
-    this._scheduler.stats().increment(stats.StatsKey.CACHE_HIT_COUNT);
+    this._scheduler.stats().increment(stats.OStatsKey.CACHE_HIT_COUNT);
     setTimeout(() => this.IJK_Success(converted), 0);
   }
 
   E_Response(evt: Event) {
     this.check_state([State.SENT, State.DEQUEUED]);
     this.change_state(State.RESPONDED);
+    this._scheduler.stats().increment(stats.OStatsKey.COMPLETED_COUNT);
     setTimeout(() => this.H_Convert(evt));
   }
 
   F_TimedOut() {
     this.check_state(State.SENT);
+    this._scheduler.stats().increment(stats.OStatsKey.ERROR_COUNT);
     try {
       this._reject_response(this._url + ' timed out');
     } catch(ex) {
@@ -303,6 +307,7 @@ class AzadRequest<T> {
 
   G_Failed(reason: string): void {
     this.check_state([State.SENT, State.DEQUEUED]);
+    this._scheduler.stats().increment(stats.OStatsKey.ERROR_COUNT);
     try {
       this._reject_response(reason);
     } catch(ex) {
@@ -376,6 +381,7 @@ class AzadRequest<T> {
         );
       }
     }
+    this._scheduler.stats().increment(stats.OStatsKey.COMPLETED_COUNT);
     this.change_state(State.SUCCESS);
   }
 }

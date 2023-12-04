@@ -93,7 +93,7 @@ export async function get_headers(
     const header_promises: Promise<order_header.IOrderHeader[]>[] = [];
     for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
       console.log(
-        'sending request for order: ' + iorder + ' onwards'
+        'creating header page request for order: ' + iorder + ' onwards'
       );
       const page_of_headers = get_page_of_headers(
         site, year, template, iorder, scheduler, nocache_top_level

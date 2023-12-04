@@ -13,6 +13,7 @@ const cache = cachestuff.createLocalCache('REQUESTSCHEDULER');
 
 export type Task = ()=>Promise<void>;
 export type PrioritisedTask = {task: Task, priority: string};
+export type IdentifiedTask = {task: PrioritisedTask, id: number};
 
 export interface IRequestScheduler {
   schedule(task: PrioritisedTask): void;
@@ -29,45 +30,53 @@ class RequestScheduler {
   // chrome allows 6 requests per domain at the same time.
   CONCURRENCY: number = 6;
 
-  _stats: stats.Statistics = new stats.Statistics();
+  _sequence_number: number = 0;
+
+  _stats: stats.Statistics;
   _overlay_url_map: string_string_map = {};
-
-  stats(): stats.Statistics {return this._stats;}
-  running_count(): number { return this._stats.get(stats.StatsKey.RUNNING_COUNT); }
-  completed_count(): number { return this._stats.get(stats.StatsKey.COMPLETED_COUNT); }
-  queue_size(): number { return this.queue.size(); }
-
-  queue: binary_heap.BinaryHeap = new binary_heap.BinaryHeap(
+  _purpose: string;
+  _queue: binary_heap.BinaryHeap = new binary_heap.BinaryHeap(
     (item: any): number => item.priority
   );
+
+  stats(): stats.Statistics {return this._stats;}
+  running_count(): number { return this.stats().get(stats.OStatsKey.RUNNING_COUNT); }
+  completed_count(): number { return this.stats().get(stats.OStatsKey.COMPLETED_COUNT); }
+  queue_size(): number { return this._queue.size(); }
+
   signin_warned: boolean = false;
   live: boolean = true;
-  _purpose: string;
-  _get_background_port: ()=>(chrome.runtime.Port|null);
 
   constructor(
     purpose: string,
     overlay_url_map: string_string_map,
-    get_background_port: ()=>(chrome.runtime.Port|null)
+    get_background_port: ()=>(chrome.runtime.Port|null),
+    statistics: stats.Statistics,
   ) {
     this._purpose = purpose;
     this._overlay_url_map = overlay_url_map;
     this._get_background_port = get_background_port;
+    this._stats = statistics;
     console.log('constructing new RequestScheduler');
     const bp = get_background_port();
-    this._stats.publish(bp, 'initial stats from request_scheduler');
+    this.stats().publish(bp, 'initial stats from request_scheduler');
   }
 
   purpose(): string { return this._purpose; }
   overlay_url_map(): string_string_map { return this._overlay_url_map; }
 
   schedule(task: PrioritisedTask) {
+    const id = this._sequence_number;
+    this._sequence_number += 1;
+    const id_task: IdentifiedTask = {task: task, id: id};
+    this._queue.push(id_task);
+    this.stats().set(stats.OStatsKey.QUEUED_COUNT, this.queue_size());
     console.log(
-      'Scheduling task with queue size ', this.queue.size(),
-      ' and priority ', task.priority
+      'Scheduled task', id, 'with new queue size ', this.queue_size(),
+      'running count', this.running_count(),
+      'scheduler liveness', this.isLive(),
+      'and priority', task.priority
     );
-    this.queue.push(task);
-    this._stats.set(stats.StatsKey.QUEUED_COUNT, this.queue_size());
     this._executeSomeIfPossible();
   }
 
@@ -85,19 +94,24 @@ class RequestScheduler {
     return this.live;
   }
 
+  _get_background_port: ()=>(chrome.runtime.Port|null);
+
   // Process a single de-queued request either by retrieving from the cache
   // or by sending it out.
-  async _execute(task: ()=>Promise<void>) {
+  async _execute(task: IdentifiedTask): Promise<void> {
     if (!this.live) {
       return;
     }
-    console.log(
-      'Executing task with queue size', this.queue.size()
+    console.debug(
+      'Starting task', task.id, 'with queue size', this.queue_size()
     );
 
     try {
-      this._stats.increment(stats.StatsKey.RUNNING_COUNT);
-      await task();
+      this._stats.increment(stats.OStatsKey.RUNNING_COUNT);
+      await task.task.task();
+      console.debug(
+        'Finished task', task.id, 'with queue size', this.queue_size()
+      );
     } catch( ex ) {
       if (typeof(ex) == 'string' && (ex as string).includes('sign-in')) {
         if ( !this.signin_warned ) {
@@ -105,61 +119,66 @@ class RequestScheduler {
           this.signin_warned = true;
         }
       }
-      const msg = 'task threw: ' + (ex as string).toString();
+      const msg = 'task ' + task.id + ' threw: ' + (ex as string).toString();
       return Promise.reject(msg);
+    } finally {
+      this._stats.decrement(stats.OStatsKey.RUNNING_COUNT);
     }
-    this.recordSingleSuccess();
+    this._recordSingleSuccess();
     return Promise.resolve();
   }
 
-  recordSingleSuccess() {
-    this.recordSingleCompletion();
+  _recordSingleSuccess(): void {
+    this._recordSingleCompletion();
   }
 
-  recordSingleFailure(msg: string) {
+  _recordSingleFailure(msg: string): void {
     console.warn(msg);
-    this.recordSingleCompletion();
+    this._recordSingleCompletion();
   }
 
-  recordSingleCompletion() {
-    this._stats.decrement(stats.StatsKey.RUNNING_COUNT);
+  _recordSingleCompletion(): void {
     setTimeout(
       () => {
         this._executeSomeIfPossible();
         const port = this._get_background_port();
-        this._stats.publish(port, 'task completion update from scheduler');
+        this._stats.publish(port, this._purpose);
         this._checkDone();
       }
     );
   }
 
-  async _executeSomeIfPossible() {
+  _canExecuteOne(): boolean {
+    const running = this.running_count();
+    const queue = this.queue_size();
+    return running < this.CONCURRENCY && queue > 0;
+  }
+
+  _executeSomeIfPossible(): void {
     console.debug(
-      '_executeSomeIfPossible: size: ' + this.queue.size() +
+      '_executeSomeIfPossible: size: ' + this.queue_size() +
       ', running: ' + this.running_count()
     );
-    while (this.running_count() < this.CONCURRENCY &&
-      this.queue.size() > 0
-    ) {
-      const task = (this.queue.pop() as PrioritisedTask).task;
-      this._stats.set(stats.StatsKey.QUEUED_COUNT, this.queue_size());
-      this._stats.increment(stats.StatsKey.RUNNING_COUNT);
+    while (this._canExecuteOne()) {
+      const task = this._queue.pop() as IdentifiedTask;
+      const task_id = task.id;
+      this.stats().set(stats.OStatsKey.QUEUED_COUNT, this.queue_size());
       try {
-        await this._execute(task);
+        this._execute(task);
       } catch (ex) {
-        console.warn('task execution blew up: ', ex);
+        console.warn('task', task_id, 'blew up synchronously: ', ex);
       }
     }
   }
 
-  _checkDone() {
+  _checkDone(): void {
     console.debug(
-      '_checkDone: size: ' + this.queue.size() +
+      '_checkDone: size: ' + this.queue_size() +
       ', running: ' + this.running_count() +
       ', completed: ' + this.completed_count()
     );
     if (
-      this.queue.size() == 0 &&
+      this.queue_size() == 0 &&
       this.running_count() == 0 &&
       this.completed_count() > 0  // make sure we don't kill a brand-new scheduler
     ) {
@@ -172,14 +191,17 @@ class RequestScheduler {
 export function create(
   purpose: string,
   background_port_getter: () => (chrome.runtime.Port | null),
+  statistics: stats.Statistics,
 ): IRequestScheduler {
-  return new RequestScheduler(purpose, {}, background_port_getter);
+  return new RequestScheduler(purpose, {}, background_port_getter, statistics);
 }
 
 export function create_overlaid(
   purpose: string,
   url_map: string_string_map,
   background_port_getter: () => (chrome.runtime.Port | null),
+  statistics: stats.Statistics,
 ): IRequestScheduler {
-  return new RequestScheduler(purpose, url_map, background_port_getter);
+  return new RequestScheduler(
+    purpose, url_map, background_port_getter, statistics);
 }

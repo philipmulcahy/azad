@@ -58,7 +58,7 @@ function resetScheduler(purpose: string): void {
     if (scheduler) {
         scheduler.abort();
     }
-    scheduler = request_scheduler.create(purpose, getBackgroundPort);
+    scheduler = request_scheduler.create(purpose, getBackgroundPort, _stats);
     setStatsTimeout();
 }
 

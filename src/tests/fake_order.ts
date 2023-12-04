@@ -2,14 +2,15 @@
 
 'use strict';
 
-import * as cachestuff from '../js/cachestuff';
-import * as fs from 'fs';
-import * as extraction from '../js/extraction';
-const jsdom = require('jsdom');
 import * as azad_order from '../js/order';
+import * as cachestuff from '../js/cachestuff';
+import * as extraction from '../js/extraction';
+import * as fs from 'fs';
+const jsdom = require('jsdom');
 import * as order_header from '../js/order_header';
 import * as req from '../js/request';
 import * as request_scheduler from '../js/request_scheduler';
+import * as stats from '../js/statistics';
 
 ///////////////////////////////////////////////////////////////////////////////
 // TEST TYPES:
@@ -51,6 +52,8 @@ function sitePath(site: string): string {
     return  DATA_ROOT_PATH + '/' + site;
 }
 
+const statistics = new stats.Statistics();
+
 export function orderFromTestData(
     order_id: string,
     collection_date: string,
@@ -65,7 +68,7 @@ export function orderFromTestData(
     url_map[order_dump.detail_url] = order_dump.detail_html;
     url_map[order_dump.payments_url] = order_dump.invoice_html;
     const scheduler = request_scheduler.create_overlaid(
-      'testing', url_map, ()=>null);
+      'testing', url_map, ()=>null, statistics);
     const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;
     const order_elems = extraction.findMultipleNodeValues(
         './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',

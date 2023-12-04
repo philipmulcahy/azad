@@ -1,22 +1,25 @@
 /* Copyright(c) 2020 Philip Mulcahy. */
 
-export enum StatsKey {
-  QUEUED_COUNT = 1,
-  RUNNING_COUNT,
-  COMPLETED_COUNT,
-  CACHE_HIT_COUNT,
-  ERROR_COUNT,
+export const OStatsKey = {
+  QUEUED_COUNT: 0,
+  RUNNING_COUNT: 1,
+  COMPLETED_COUNT: 2,
+  CACHE_HIT_COUNT: 3,
+  ERROR_COUNT: 4,
 }
 
+export type StatsKey = typeof OStatsKey[keyof typeof OStatsKey];
+
 type Stats = Record<StatsKey, number>;
+type StringNumberMap = {[key: string]: number};
 
 export class Statistics {
   _stats: Stats = {
-    [StatsKey.QUEUED_COUNT]: 0,
-    [StatsKey.RUNNING_COUNT]: 0,
-    [StatsKey.COMPLETED_COUNT]: 0,
-    [StatsKey.CACHE_HIT_COUNT]: 0,
-    [StatsKey.ERROR_COUNT]: 0,
+    [OStatsKey.QUEUED_COUNT]: 0,
+    [OStatsKey.RUNNING_COUNT]: 0,
+    [OStatsKey.COMPLETED_COUNT]: 0,
+    [OStatsKey.CACHE_HIT_COUNT]: 0,
+    [OStatsKey.ERROR_COUNT]: 0,
   };
 
   increment(key: StatsKey): void {
@@ -30,14 +33,28 @@ export class Statistics {
   get(key: StatsKey) {return this._stats[key];}
   set(key: StatsKey, value: number) {this._stats[key] = value;}
   clear(): void { this._stats = new Statistics()._stats }
-  publish(port: chrome.runtime.Port | null, purpose: string) {
+  transmittable(): StringNumberMap {
+    const t: StringNumberMap = {};
+    Object.keys(OStatsKey)
+          .forEach((ks: string) => {
+      const k: StatsKey = OStatsKey[ks as keyof typeof OStatsKey]; 
+      const num: number = this._stats[k];
+      t[ks] = num;
+    });
+    return t;
+  }
+  publish(
+    port: chrome.runtime.Port | null,
+    purpose: string
+  ) {
     if (!port ) {
       return;  
     }
     try {
+      const s = this.transmittable();
       port.postMessage({
           action: 'statistics_update',
-          statistics: this._stats,
+          statistics: s,
           purpose: purpose,
       });
     } catch(ex) {

@@ -820,10 +820,10 @@ export function dumpOrderDiagnostics(order_id: string) {
 
 export function updateProgressBar(statistics: stats.Statistics): void {
   if (progress_indicator) {
-    const completed = statistics.get(stats.StatsKey.COMPLETED_COUNT);
-    const cache_hits = statistics.get(stats.StatsKey.CACHE_HIT_COUNT);
-    const queued = statistics.get(stats.StatsKey.QUEUED_COUNT);
-    const running = statistics.get(stats.StatsKey.RUNNING_COUNT);
+    const completed = statistics.get(stats.OStatsKey.COMPLETED_COUNT);
+    const cache_hits = statistics.get(stats.OStatsKey.CACHE_HIT_COUNT);
+    const queued = statistics.get(stats.OStatsKey.QUEUED_COUNT);
+    const running = statistics.get(stats.OStatsKey.RUNNING_COUNT);
     if (completed!=null && queued!=null && running!=null) {
       const ratio: number = (completed + cache_hits) / (completed + queued + running + cache_hits);
       if (ratio) {
