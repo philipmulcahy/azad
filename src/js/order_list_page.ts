@@ -4,6 +4,7 @@ import * as order_header from './order_header';
 import * as dom2json from './dom2json';
 import * as extraction from './extraction';
 import * as notice from './notice';
+import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import * as sprintf from 'sprintf-js';
 import * as urls from './url';
@@ -24,16 +25,16 @@ async function get_page_data(
   nocache_top_level: boolean,
 ): Promise<IOrdersPageData>
 {
-    const nocache: boolean = (start_order_number==0) ? true : nocache_top_level;
-    const url = generateQueryString(site, year, start_order_number, template);
-    const response = await scheduler.scheduleToPromise<IOrdersPageData>(
-        url, 
-        evt => translateOrdersPage(evt, year.toString()),
-        scheduling_priority,
-        nocache,
-        'order_list_page.get_page_data: ' + start_order_number,  // debug_context
-    );
-    return response.result;
+  const nocache: boolean = (start_order_number==0) ? true : nocache_top_level;
+  const url = generateQueryString(site, year, start_order_number, template);
+  return req.makeAsyncRequest<IOrdersPageData>(
+    url, 
+    evt => translateOrdersPage(evt, year.toString()),
+    scheduler,
+    scheduling_priority,
+    nocache,
+    'order_list_page.get_page_data: ' + start_order_number,  // debug_context
+  );
 }
 
 
@@ -92,7 +93,7 @@ export async function get_headers(
     const header_promises: Promise<order_header.IOrderHeader[]>[] = [];
     for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
       console.log(
-        'sending request for order: ' + iorder + ' onwards'
+        'creating header page request for order: ' + iorder + ' onwards'
       );
       const page_of_headers = get_page_of_headers(
         site, year, template, iorder, scheduler, nocache_top_level

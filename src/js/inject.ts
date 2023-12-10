@@ -21,6 +21,8 @@ let stats_timeout: NodeJS.Timeout | null = null;
 
 const SITE: string = urls.getSite();
 
+const _stats = new stats.Statistics();
+
 function getScheduler(): request_scheduler.IRequestScheduler {
     if (!scheduler) {
         resetScheduler('unknown');
@@ -28,7 +30,7 @@ function getScheduler(): request_scheduler.IRequestScheduler {
     return scheduler!;
 }
 
-function getBackgroundPort() {
+function getBackgroundPort(): chrome.runtime.Port | null {
     return background_port;
 }
 
@@ -36,8 +38,8 @@ function setStatsTimeout() {
     const sendStatsMsg = () => {
         const bg_port = getBackgroundPort();
         if (bg_port) {
-            stats.publish(bg_port, getScheduler().purpose());
-            azad_table.updateProgressBar();
+            _stats.publish(bg_port, getScheduler().purpose());
+            azad_table.updateProgressBar(_stats);
         }
     };
     if (stats_timeout) {
@@ -56,7 +58,8 @@ function resetScheduler(purpose: string): void {
     if (scheduler) {
         scheduler.abort();
     }
-    scheduler = request_scheduler.create(purpose);
+    _stats.clear();
+    scheduler = request_scheduler.create(purpose, getBackgroundPort, _stats);
     setStatsTimeout();
 }
 
@@ -242,7 +245,7 @@ async function registerContentScript() {
                         }
                         break;
                     case 'clear_cache':
-                        getScheduler().clearCache();
+                        getScheduler().cache().clear();
                         notice.showNotificationBar(
                             'Amazon Order History Reporter Chrome' +
                             ' Extension\n\n' +

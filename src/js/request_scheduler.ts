@@ -2,39 +2,76 @@
 
 'use strict';
 
+import * as base from './request_base';
 import * as binary_heap from './binary_heap';
 import * as cachestuff from './cachestuff';
 import * as signin from './signin';
 import * as stats from './statistics';
-import * as url from './url';
 
-export interface IResponse<T> {
-  result: T,
-  query: string
-}
+export type string_string_map = {[key: string]: string};
 
-export type Event = {
-  target: {
-    responseText: string;
-    responseURL: string;
-  }
-};
+const cache = cachestuff.createLocalCache('REQUESTSCHEDULER');
 
-export type EventConverter = (evt: Event) => any;
+export type Task = ()=>Promise<void>;
+export type PrioritisedTask = {task: Task, priority: string};
+export type IdentifiedTask = {task: PrioritisedTask, id: number};
 
 export interface IRequestScheduler {
-  scheduleToPromise<T>(
-    query: string,
-    event_converter: EventConverter,
-    priority: string,
-    nocache: boolean,
-    debug_context: string,
-  ): Promise<IResponse<T>>;
 
+  // Let the scheduler know about the request, but it won't be able to do
+  // anything with it except keep track of it.
+  register(request: base.UntypedRequest): void;
+
+  // Ask the scheduler to do some work, but not before it's done higher
+  // priority tasks that are submitted before execution starts.
+  schedule(task: PrioritisedTask): void;
+
+  // Prevent the scheduler from doing any more work, or accepting any more.
   abort(): void;
-  clearCache(): void;
+
+  get_signin_warned(): boolean;
+  set_signin_warned(): void;
+
+  cache(): cachestuff.Cache;
   isLive(): boolean;
   purpose(): string;
+  stats(): stats.Statistics;
+  overlay_url_map(): string_string_map;
+}
+
+class RequestTracker {
+  _requests: base.UntypedRequest[] = [];
+
+  register(request: base.UntypedRequest): void {
+    this._requests.push(request);
+  }
+
+  stateCounts(): Map<base.State, number> {
+    const counts = new Map<base.State, number>();
+    this._requests.forEach( r => {
+      const state: base.State = r.state();
+      const previous: number = counts.has(state) ? counts.get(state) as number : 0;
+      counts.set(state, previous + 1);
+    });
+    return counts; 
+  }
+
+  allDone(): boolean {
+    const counts = this.stateCounts();
+    for(let k of counts.keys()) {
+      if (counts.get(k) == 0) {
+        counts.delete(k);
+      }
+    }
+    counts.delete(base.State.SUCCESS);
+    counts.delete(base.State.TIMED_OUT);
+    counts.delete(base.State.FAILED);
+    const entries = Array.from(counts.entries());
+    const incomplete = entries.filter(e => {
+      return [base.State.FAILED, base.State.TIMED_OUT, base.State.SUCCESS].includes(e[0]) || (e[1] != 0);
+    });
+    return incomplete.length == 0;
+  }
 }
 
 class RequestScheduler {
@@ -42,81 +79,71 @@ class RequestScheduler {
   // chrome allows 6 requests per domain at the same time.
   CONCURRENCY: number = 6;
 
-  cache: cachestuff.Cache = cachestuff.createLocalCache('REQUESTSCHEDULER');
-  queue: binary_heap.BinaryHeap = new binary_heap.BinaryHeap(
+  _sequence_number: number = 0;
+
+  _stats: stats.Statistics;
+  _overlay_url_map: string_string_map = {};
+  _purpose: string;
+  _queue: binary_heap.BinaryHeap = new binary_heap.BinaryHeap(
     (item: any): number => item.priority
   );
-  running_count: number = 0;
-  completed_count: number = 0;
-  error_count: number = 0;
-  signin_warned: boolean = false;
-  live = true;
-  _purpose: string;
+  _tracker: RequestTracker = new RequestTracker();
 
-  constructor(purpose: string) {
+  stats(): stats.Statistics { return this._stats; }
+
+  stateCounts() { return this._tracker.stateCounts(); }
+
+  running_count(): number {
+    return this.stats().get(stats.OStatsKey.RUNNING_COUNT);
+  }
+
+  completed_count(): number {
+    return this.stats().get(stats.OStatsKey.COMPLETED_COUNT);
+  }
+
+  queue_size(): number { return this._queue.size(); }
+
+  _signin_warned: boolean = false;
+  get_signin_warned(): boolean { return this._signin_warned; }
+  set_signin_warned(): void { this._signin_warned = true; }
+
+  live: boolean = true;
+
+  constructor(
+    purpose: string,
+    overlay_url_map: string_string_map,
+    get_background_port: ()=>(chrome.runtime.Port|null),
+    statistics: stats.Statistics,
+  ) {
     this._purpose = purpose;
+    this._overlay_url_map = overlay_url_map;
+    this._get_background_port = get_background_port;
+    this._stats = statistics;
     console.log('constructing new RequestScheduler');
-    this._update_statistics();
+    const bp = get_background_port();
+    this.stats().publish(bp, 'starting scrape');
   }
 
   purpose(): string { return this._purpose; }
+  overlay_url_map(): string_string_map { return this._overlay_url_map; }
 
-  _schedule(
-    query: string,
-    event_converter: EventConverter,
-    success_callback: (results: any, query: string) => void,
-    failure_callback: (query: string) => void,
-    priority: string,
-    nocache: boolean,
-    debug_context: string,
-  ): void {
-    if (!this.live) {
-      throw 'scheduler has aborted or finished, and cannot accept more queries';
-    }
-    console.log('Queuing ' + query + ' with ' + this.queue.size());
-    this.queue.push({
-      'query': query,
-      'event_converter': event_converter,
-      'success_callback': success_callback,
-      'failure_callback': failure_callback,
-      'priority': priority,
-      'nocache': nocache,
-      'debug_context': debug_context,
-    });
-    this._executeSomeIfPossible();
+  register(request: base.UntypedRequest): void {
+    this._tracker.register(request);
   }
 
-  scheduleToPromise<T>(
-    query: string,
-    event_converter: EventConverter,
-    priority: string,
-    nocache: boolean,
-    debug_context: string,
-  ): Promise<IResponse<T>> {
-    query = url.normalizeUrl(query, url.getSite());
-    console.log(
-      'Scheduling ', debug_context, query,
-      ' with queue size ', this.queue.size(),
-      ' and priority ', priority
+  schedule(task: PrioritisedTask) {
+    const id = this._sequence_number;
+    this._sequence_number += 1;
+    const id_task: IdentifiedTask = {task: task, id: id};
+    this._queue.push(id_task);
+    this.stats().set(stats.OStatsKey.QUEUED_COUNT, this.queue_size());
+    console.debug(
+      'Scheduled task', id, 'with new queue size ', this.queue_size(),
+      'running count', this.running_count(),
+      'scheduler liveness', this.isLive(),
+      'and priority', task.priority
     );
-    return new Promise<IResponse<T>>(
-      (resolve, reject) => {
-        try {
-          this._schedule(
-            query,
-            event_converter,
-            (result, query) => resolve(
-              {result: result, query: query}),
-            (query: string) => reject(query),
-            priority,
-            nocache,
-            debug_context,
-          );
-        } catch(err) {
-          reject(query);
-        }
-      }
-    );
+    this._executeSomeIfPossible();
   }
 
   abort() {
@@ -125,250 +152,99 @@ class RequestScheduler {
     this.live = false;
   }
 
-  clearCache() {
-    this.cache.clear();
-  }
-
-  _update_statistics() {
-    stats.set('queued', this.queue.size());
-    stats.set('running', this.running_count);
-    stats.set('completed', this.completed_count);
-    stats.set('errors', this.error_count);
-    stats.set('cache_hits', this.cache.hitCount());
+  cache() {
+    return cache;
   }
 
   isLive() {
     return this.live;
   }
 
+  _get_background_port: ()=>(chrome.runtime.Port|null);
+
   // Process a single de-queued request either by retrieving from the cache
   // or by sending it out.
-  async _execute(
-    query: string,
-    event_converter: EventConverter,
-    success_callback: (converted_event: any, query: string) => void,
-    failure_callback: (query: string) => void,
-    priority: number,
-    nocache: boolean,
-    debug_context: string,
-  ) {
+  async _execute(task: IdentifiedTask): Promise<void> {
     if (!this.live) {
       return;
     }
-    console.log(
-      'Executing', debug_context, query,
-      'with queue size', this.queue.size(),
-      'and priority', priority
+    console.debug(
+      'Starting task', task.id, 'with queue size', this.queue_size()
     );
 
-    // Catch any exceptions that the client's callback throws
-    // so as to avoid killing the "thread" and thus prevent
-    // subsequent responses being handled.
-    const protected_callback = async function(
-      maybe_promise_response: any,
-      query: string
-    ): Promise<any> {
-      const definitely_promise_response = Promise.resolve(maybe_promise_response);
-      const response = await definitely_promise_response;
-      console.log(
-        'protected_callback', debug_context, query,
-        'priority', priority
+    try {
+      this._stats.increment(stats.OStatsKey.RUNNING_COUNT);
+      await task.task.task();
+      console.debug(
+        'Finished task', task.id, 'with queue size', this.queue_size()
       );
-      try {
-        const result = success_callback(response, query);
-        return result;
-      } catch (ex) {
-        console.error(
-          'callback failed for ', debug_context, query, ex);
-        return null;
-      }
-    };
-
-    const protected_converter = (evt: any) => {
-      try {
-        console.log(
-          'protected_converter', debug_context, query,
-          'queue_size ', this.queue.size(),
-          'priority', priority,
-          // 'html', evt.target.responseText,
-        );
-        return event_converter(evt);
-      } catch (ex) {
-        console.error(
-          'event conversion failed for ', debug_context, query, ex);
-        return null;
-      }
-    };
-
-    const cached_response_promise = nocache ?
-      Promise.resolve(undefined) :
-      this.cache.get(query);
-
-    const cached_response = await cached_response_promise;
-
-    if (typeof(cached_response) !== 'undefined') {
-      this._pretendToSendOne(query, protected_callback, cached_response);
-    } else {
-      this._sendOne(
-        query,
-        protected_converter,
-        protected_callback,
-        failure_callback,
-        nocache,
-        debug_context,
-      );
+    } catch( ex ) {
+      const msg = 'task ' + task.id + ' threw: ' + (ex as string).toString();
+      return Promise.reject(msg);
+    } finally {
+      this._stats.decrement(stats.OStatsKey.RUNNING_COUNT);
     }
+    this._recordSingleSuccess();
+    return Promise.resolve();
   }
 
-  _pretendToSendOne(
-    query: string,
-    success_callback: (converted_event: any, query: string) => void,
-    cached_response: any
-  ) {
-    // "Return" results asynchronously...
-    // ...make it happen as soon as possible after any current
-    // synchronous code has finished - e.g. pretend it's coming back
-    // from the internet.
-    // Why? Because otherwise the scheduler will get confused about
-    // whether it has finished all of its work: the caller of this
-    // function may be intending to schedule multiple actions, and if
-    // we finish all of the work from the first call before the caller
-    // has a chance to tell us about the rest of the work, then the
-    // scheduler will shut down by setting this.live to false.
-    this._update_statistics();
-    setTimeout(
-      () => {
-        this.running_count -= 1;
-        success_callback(cached_response, query);
-        this._recordSingleCompletion();
-      }
-    );
+  _recordSingleSuccess(): void {
+    this._recordSingleCompletion();
   }
 
-  _recordSingleCompletion() {
-    // Defer checking if we're done, because success_callback
-    // (triggered above) probably involves a promise chain, and might
-    // enqueue more work that might be abandonned if we shut this
-    // scheduler down prematurely.
+  _recordSingleFailure(msg: string): void {
+    console.warn(msg);
+    this._recordSingleCompletion();
+  }
+
+  _recordSingleCompletion(): void {
     setTimeout(
       () => {
         this._executeSomeIfPossible();
-        this._update_statistics();
+        const port = this._get_background_port();
+        this._stats.publish(port, this._purpose);
         this._checkDone();
       }
     );
   }
 
-  _sendOne(
-    url: string,
-    event_converter: (evt: any) => any,
-    success_callback: (converted_event: any, query: string) => void,
-    failure_callback: (query: string) => void,
-    nocache: boolean,
-    debug_context: string,
-  ) {
-    const req = new XMLHttpRequest();
-    console.log('opening xhr on ' + url);
-    req.open('GET', url, true);
-    req.onerror = (): void =>  {
-      this.running_count -= 1;
-      this.error_count += 1;
-      if (!signin.checkTooManyRedirects(url, req) ) {
-        console.log( 'Unknown error fetching ' + debug_context + ' ' + url );
-      }
-      failure_callback(url);
-      this._recordSingleCompletion();
-    };
-    req.onload = async (evt: any): Promise<void> => {
-      console.log('got response for ', debug_context, url); 
-      this.running_count -= 1;
-      if (!this.live) {
-        this.error_count += 1;
-        this._update_statistics();
-        return;
-      }
-      try {
-        if (
-          req.responseURL.includes('/signin?') || req.status == 404
-        ) {
-          this.error_count += 1;
-          console.log(
-            'Got sign-in redirect or 404 from: ',
-            debug_context, url, req.status);
-          if ( !this.signin_warned ) {
-            signin.alertPartiallyLoggedOutAndOpenLoginTab(url);
-            this.signin_warned = true;
-          }
-          failure_callback(url);
-        } else if ( req.status != 200 ) {
-          this.error_count += 1;
-          console.warn('Got HTTP' + req.status + ' fetching ' + url);
-          failure_callback(url);
-        // } else if (url.includes('202-1231303-0351535')) {
-        //   throw 'simulating failure on fetch of 202-1231303-0351535';
-        } else {
-          this.completed_count += 1;
-          console.log(
-            'Finished ', debug_context, url,
-            ' with queue size ', this.queue.size());
-          const converted = await Promise.resolve(event_converter(evt));
-          if (!nocache) {
-            this.cache.set(url, converted);
-          }
-          success_callback(converted, url);
-        }
-      } catch (ex) {
-        failure_callback(url);
-        console.error('req handling caught unexpected: ', debug_context, ex);
-      }
-      this._recordSingleCompletion();
-    };
-    req.timeout = 20000;  // 20 seconds
-    req.ontimeout = (_evt: any): void => {
-      this.running_count -= 1;
-      this.error_count += 1;
-      if (this.live) {
-        failure_callback(url);
-        this._recordSingleCompletion();
-        console.warn('Timed out while fetching: ', debug_context, url);
-      }
-    };
-    this._update_statistics();
-    req.send();
+  _canExecuteOne(): boolean {
+    const running = this.running_count();
+    const queue = this.queue_size();
+    return running < this.CONCURRENCY && queue > 0;
   }
 
-  async _executeSomeIfPossible() {
+  _executeSomeIfPossible(): void {
     console.debug(
-      '_executeSomeIfPossible: size: ' + this.queue.size() +
-      ', running: ' + this.running_count
+      '_executeSomeIfPossible: size: ' + this.queue_size() +
+      ', running: ' + this.running_count()
     );
-    while (this.running_count < this.CONCURRENCY &&
-      this.queue.size() > 0
-    ) {
-      const task = this.queue.pop();
-      this.running_count += 1;
-      const _one_done = await this._execute(
-        task.query,
-        task.event_converter,
-        task.success_callback,
-        task.failure_callback,
-        task.priority,
-        task.nocache,
-        task.debug_context,
-      );
+    while (this._canExecuteOne()) {
+      const task = this._queue.pop() as IdentifiedTask;
+      const task_id = task.id;
+      this.stats().set(stats.OStatsKey.QUEUED_COUNT, this.queue_size());
+      try {
+        this._execute(task).then(
+          () => { console.debug('completed task'); },
+          (err) => { console.warn('task rejected with', err); },
+        );
+      } catch (ex) {
+        console.warn('task', task_id, 'blew up synchronously: ', ex);
+      }
     }
   }
 
-  _checkDone() {
+  _checkDone(): void {
     console.debug(
-      '_checkDone: size: ' + this.queue.size() +
-      ', running: ' + this.running_count +
-      ', completed: ' + this.completed_count
+      '_checkDone: size: ' + this.queue_size() +
+      ', running: ' + this.running_count() +
+      ', completed: ' + this.completed_count()
     );
     if (
-      this.queue.size() == 0 &&
-      this.running_count == 0 &&
-      this.completed_count > 0  // make sure we don't kill a brand-new scheduler
+      this.queue_size() == 0 &&
+      this.running_count() == 0 &&
+      this.completed_count() > 0 && // make sure we don't kill a brand-new scheduler
+      this._tracker.allDone() // expensive
     ) {
       console.log('RequestScheduler._checkDone() succeeded');
       this.live = false;
@@ -376,6 +252,21 @@ class RequestScheduler {
   }
 }
 
-export function create(purpose: string): IRequestScheduler {
-  return new RequestScheduler(purpose);
+export function create(
+  purpose: string,
+  background_port_getter: () => (chrome.runtime.Port | null),
+  statistics: stats.Statistics,
+): IRequestScheduler {
+  return new RequestScheduler(
+    purpose, {}, background_port_getter, statistics);
+}
+
+export function create_overlaid(
+  purpose: string,
+  url_map: string_string_map,
+  background_port_getter: () => (chrome.runtime.Port | null),
+  statistics: stats.Statistics,
+): IRequestScheduler {
+  return new RequestScheduler(
+    purpose, url_map, background_port_getter, statistics);
 }

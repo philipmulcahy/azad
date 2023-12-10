@@ -37,6 +37,10 @@ div#azad_actions, div#azad_year_list, div#azad_info, div.azad_separator {
     padding: 0px;
 }
 
+div#azad_statistics {
+   font-size: 80%;
+}
+
 button.azad_year_button {
     background-color: orange;
     color: white;

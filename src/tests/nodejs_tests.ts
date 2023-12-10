@@ -50,11 +50,17 @@ function testOneOrderTarget(
         defects: [],
     };
     console.log('testing:', target.site, target.order_id);
-    const order: azad_order.IOrder = order_data.orderFromTestData(
+    const maybe_order: azad_order.IOrder | null = order_data.orderFromTestData(
         target.order_id,
         target.scrape_date,
         target.site
     );
+
+    if (maybe_order == null ) {
+      return Promise.reject('could not create order');
+    }
+
+    const order = maybe_order as azad_order.IOrder; 
 
     // 2023-07 reinstate legacy items property.
     (order as any)['items'] = () => azad_order.get_legacy_items(order);

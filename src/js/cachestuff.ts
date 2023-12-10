@@ -62,14 +62,105 @@ function CreateMockStore(): Store {
   };
 }
 
+
+export function registerCacheListenerInBackgroundPage() {
+  chrome.runtime.onMessage.addListener(
+    function(request, _sender, responseCallback) {
+      const store = CreateRealStore();
+      switch(request.action) {
+        case 'azad-cache-get':
+          store.get(request.key).then( value => {
+            responseCallback(value); 
+            console.debug(
+              'azad-cache-get responding to', request.key, 'with', value);
+          });
+          break;
+        case 'azad-cache-getkeys':
+          store.keys().then( keys => responseCallback(keys) );
+          break;
+        case 'azad-cache-set':
+          store.set(request.key, request.value)
+               .then( response => responseCallback(response) );
+          break;
+        case 'azad-cache-remove':
+          store.remove(request.key)
+               .then( response => responseCallback(response) );
+          break;
+        default:
+          console.debug('unknown action:', request.action);
+          break;
+      }
+
+      // return true is needed for responseCallback to deliver the actual
+      // result back to caller when we're doing asynchronous stuff to get the
+      // result.
+      return true;
+    }
+  );
+}
+
+
+// Use this one if you're in a content script, because chrome.storage.local
+// is not there.
+function CreateRealStoreProxy(): Store {
+  return {
+    get: async function(key: string): Promise<any> {
+      return new Promise<any>( resolve => {
+        chrome.runtime.sendMessage(
+          {
+            action: 'azad-cache-get',
+            key: key,
+          },
+          resolve
+        );
+      }).then( response => {
+        console.debug('RealStoreProxy get', key, 'got', response);
+        return response;
+      });
+    },
+    keys: async function(): Promise<string[]> {
+      return new Promise<any>( resolve => {
+        chrome.runtime.sendMessage(
+          {
+            action: 'azad-cache-getkeys',
+          },
+          resolve
+        );
+      });
+    },
+    set: async function(key: string, value: any): Promise<void> {
+      return new Promise<any>( resolve => {
+        chrome.runtime.sendMessage(
+          {
+            action: 'azad-cache-set',
+            key: key,
+            value: value,
+          },
+          resolve
+        );
+      });
+    },
+    remove: async function(key: string): Promise<void> {
+      return new Promise<any>( resolve => {
+        chrome.runtime.sendMessage(
+          {
+            action: 'azad-cache-remove',
+            key: key,
+          },
+          resolve
+        );
+      });
+    },
+  };
+}
+
 // Store interface compliant wrapper for chrome.storage.local.
+// This only works in your background/service-worker page.
 function CreateRealStore(): Store {
   return {
     get: async function(key: string): Promise<any> {
-      const entries: any[string][] = await new Promise<any> (
-        resolve => chrome.storage.local.get(key, resolve)
-      );
-      if (entries.length) {
+      const entries = (await chrome.storage.local.get(key)) as Record<string,any>;
+      if (Object.keys(entries).length) {
         return Object.values(entries)[0];
       }
       return null;
@@ -84,8 +175,7 @@ function CreateRealStore(): Store {
     set: function(key: string, value: any): Promise<void> {
       const entry: any[string] = {};
       entry[key] = value;
-      return new Promise<void>(
-        resolve => chrome.storage.local.set([entry], resolve));
+      return chrome.storage.local.set(entry);
     },
     remove: async function(key: string): Promise<void> {
       return new Promise<void>(
@@ -103,7 +193,7 @@ function CreateStore(): Store {
     // substitute that we can use to allow tests to proceed.
     return CreateMockStore();
   }
-  return CreateMockStore();
+  return CreateRealStoreProxy();
 }
 
 function millisNow() {
