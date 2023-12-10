@@ -3,6 +3,7 @@
 import * as item from './item';
 import * as extraction from './extraction';
 import * as order_header from './order_header';
+import * as url from './url';
 import * as util from './util';
 
 export interface ITransaction {
@@ -127,7 +128,9 @@ function tracking_link(shipment_elem: HTMLElement): string {
         shipment_elem,
         'shipment.tracking_link'
       );
-      return util.defaulted((link_elem as HTMLElement).getAttribute('href'), '');
+      const base_url = util.defaulted((link_elem as HTMLElement).getAttribute('href'), '');
+      const full_url = url.normalizeUrl(base_url, url.getSite());
+      return full_url;
     },
     ''
   );
