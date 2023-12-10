@@ -2,6 +2,7 @@
 
 'use strict';
 
+import * as base from './request_base';
 import * as binary_heap from './binary_heap';
 import * as cachestuff from './cachestuff';
 import * as signin from './signin';
@@ -16,13 +17,61 @@ export type PrioritisedTask = {task: Task, priority: string};
 export type IdentifiedTask = {task: PrioritisedTask, id: number};
 
 export interface IRequestScheduler {
+
+  // Let the scheduler know about the request, but it won't be able to do
+  // anything with it except keep track of it.
+  register(request: base.UntypedRequest): void;
+
+  // Ask the scheduler to do some work, but not before it's done higher
+  // priority tasks that are submitted before execution starts.
   schedule(task: PrioritisedTask): void;
+
+  // Prevent the scheduler from doing any more work, or accepting any more.
   abort(): void;
+
+  get_signin_warned(): boolean;
+  set_signin_warned(): void;
+
   cache(): cachestuff.Cache;
   isLive(): boolean;
   purpose(): string;
   stats(): stats.Statistics;
   overlay_url_map(): string_string_map;
+}
+
+class RequestTracker {
+  _requests: base.UntypedRequest[] = [];
+
+  register(request: base.UntypedRequest): void {
+    this._requests.push(request);
+  }
+
+  stateCounts(): Map<base.State, number> {
+    const counts = new Map<base.State, number>();
+    this._requests.forEach( r => {
+      const state: base.State = r.state();
+      const previous: number = counts.has(state) ? counts.get(state) as number : 0;
+      counts.set(state, previous + 1);
+    });
+    return counts; 
+  }
+
+  allDone(): boolean {
+    const counts = this.stateCounts();
+    for(let k of counts.keys()) {
+      if (counts.get(k) == 0) {
+        counts.delete(k);
+      }
+    }
+    counts.delete(base.State.SUCCESS);
+    counts.delete(base.State.TIMED_OUT);
+    counts.delete(base.State.FAILED);
+    const entries = Array.from(counts.entries());
+    const incomplete = entries.filter(e => {
+      return [base.State.FAILED, base.State.TIMED_OUT, base.State.SUCCESS].includes(e[0]) || (e[1] != 0);
+    });
+    return incomplete.length == 0;
+  }
 }
 
 class RequestScheduler {
@@ -38,13 +87,26 @@ class RequestScheduler {
   _queue: binary_heap.BinaryHeap = new binary_heap.BinaryHeap(
     (item: any): number => item.priority
   );
+  _tracker: RequestTracker = new RequestTracker();
 
-  stats(): stats.Statistics {return this._stats;}
-  running_count(): number { return this.stats().get(stats.OStatsKey.RUNNING_COUNT); }
-  completed_count(): number { return this.stats().get(stats.OStatsKey.COMPLETED_COUNT); }
+  stats(): stats.Statistics { return this._stats; }
+
+  stateCounts() { return this._tracker.stateCounts(); }
+
+  running_count(): number {
+    return this.stats().get(stats.OStatsKey.RUNNING_COUNT);
+  }
+
+  completed_count(): number {
+    return this.stats().get(stats.OStatsKey.COMPLETED_COUNT);
+  }
+
   queue_size(): number { return this._queue.size(); }
 
-  signin_warned: boolean = false;
+  _signin_warned: boolean = false;
+  get_signin_warned(): boolean { return this._signin_warned; }
+  set_signin_warned(): void { this._signin_warned = true; }
+
   live: boolean = true;
 
   constructor(
@@ -59,11 +121,15 @@ class RequestScheduler {
     this._stats = statistics;
     console.log('constructing new RequestScheduler');
     const bp = get_background_port();
-    this.stats().publish(bp, 'initial stats from request_scheduler');
+    this.stats().publish(bp, 'starting scrape');
   }
 
   purpose(): string { return this._purpose; }
   overlay_url_map(): string_string_map { return this._overlay_url_map; }
+
+  register(request: base.UntypedRequest): void {
+    this._tracker.register(request);
+  }
 
   schedule(task: PrioritisedTask) {
     const id = this._sequence_number;
@@ -71,7 +137,7 @@ class RequestScheduler {
     const id_task: IdentifiedTask = {task: task, id: id};
     this._queue.push(id_task);
     this.stats().set(stats.OStatsKey.QUEUED_COUNT, this.queue_size());
-    console.log(
+    console.debug(
       'Scheduled task', id, 'with new queue size ', this.queue_size(),
       'running count', this.running_count(),
       'scheduler liveness', this.isLive(),
@@ -113,12 +179,6 @@ class RequestScheduler {
         'Finished task', task.id, 'with queue size', this.queue_size()
       );
     } catch( ex ) {
-      if (typeof(ex) == 'string' && (ex as string).includes('sign-in')) {
-        if ( !this.signin_warned ) {
-          signin.alertPartiallyLoggedOutAndOpenLoginTab(ex as string);
-          this.signin_warned = true;
-        }
-      }
       const msg = 'task ' + task.id + ' threw: ' + (ex as string).toString();
       return Promise.reject(msg);
     } finally {
@@ -164,7 +224,10 @@ class RequestScheduler {
       const task_id = task.id;
       this.stats().set(stats.OStatsKey.QUEUED_COUNT, this.queue_size());
       try {
-        this._execute(task);
+        this._execute(task).then(
+          () => { console.debug('completed task'); },
+          (err) => { console.warn('task rejected with', err); },
+        );
       } catch (ex) {
         console.warn('task', task_id, 'blew up synchronously: ', ex);
       }
@@ -180,7 +243,8 @@ class RequestScheduler {
     if (
       this.queue_size() == 0 &&
       this.running_count() == 0 &&
-      this.completed_count() > 0  // make sure we don't kill a brand-new scheduler
+      this.completed_count() > 0 && // make sure we don't kill a brand-new scheduler
+      this._tracker.allDone() // expensive
     ) {
       console.log('RequestScheduler._checkDone() succeeded');
       this.live = false;
@@ -193,7 +257,8 @@ export function create(
   background_port_getter: () => (chrome.runtime.Port | null),
   statistics: stats.Statistics,
 ): IRequestScheduler {
-  return new RequestScheduler(purpose, {}, background_port_getter, statistics);
+  return new RequestScheduler(
+    purpose, {}, background_port_getter, statistics);
 }
 
 export function create_overlaid(

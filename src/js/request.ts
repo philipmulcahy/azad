@@ -1,67 +1,12 @@
 /* Copyright(c) 2023 Philip Mulcahy. */
 
+import * as base from './request_base';
 import * as request_scheduler from './request_scheduler';
 import * as stats from './statistics';
 import * as signin from './signin';
 import * as urls from './url';
 
 'use strict';
-
-/*
-
-     [NEW]
-       │
-       v A
-       │
-    ENQUEUED
-       │
-       v B
-       │
-    DEQUEUED
-       │
- ┌─────┼──────┐
- │     │      │
- │     v C    v D
- │     │      │
- │    SENT  CACHE_HIT────────>───────┐
- v L   │                             │
- │     ├─────>────┬──────>─────┐     │
- │     │          │            │     │
- │     v E        │ F          │ G   │
- │     │          │            │     │
- └─RESPONDED  (TIMED_OUT)   (FAILED) │
-       │                       │     │
-       ├──────────>────────────┘     │
-       │                             │
-       v H                           │
-       │                             │
-   CONVERTED                         v I
-       │                             │
-       v J                           │
-       │                             │
-       ├─────┐                       │
-       │     │                       │
-     CACHED  │                       │
-       │     │                       │
-     K v     v                       │
-       │     │                       │
-   (SUCCESS)─┴──────────<────────────┘
-
-*/
-
-enum State {
-  NEW = 1,
-  ENQUEUED,
-  DEQUEUED,
-  SENT,
-  CACHE_HIT,
-  RESPONDED,
-  TIMED_OUT,
-  FAILED,
-  CONVERTED,
-  CACHED,
-  SUCCESS,
-}
 
 interface IResponse<T> {
   result: T,
@@ -99,7 +44,7 @@ function make_promise_with_callbacks<T>(): {
 }
 
 class AzadRequest<T> {
-  _state: State = State.NEW;
+  _state: base.State = base.State.NEW;
   _url: string;
   _event_converter: EventConverter<T>;
   _scheduler: request_scheduler.IRequestScheduler;
@@ -128,31 +73,34 @@ class AzadRequest<T> {
     this._response = response_promise_stuff.promise;
     this._resolve_response = response_promise_stuff.resolve;
     this._reject_response = response_promise_stuff.reject;
-    this._state = State.NEW;
+    this._state = base.State.NEW;
     setTimeout(() => this.A_Enqueue());
-    console.log('AzadRequest NEW ' + this._url);
+    console.debug('AzadRequest NEW ' + this._url);
   }
 
-  change_state(new_state: State): void {
-    console.log(
-      'AzadRequest', State[this._state], '->', State[new_state], this._url);
+  state(): base.State { return this._state; }
+
+  change_state(new_state: base.State): void {
+    console.debug(
+      'AzadRequest', base.State[this._state],
+      '->', base.State[new_state], this._url);
     this._state = new_state;
   }
 
-  check_state(allowable_existing_state: State|State[]): void {
+  check_state(allowable_existing_state: base.State|base.State[]): void {
     if (Array.isArray(allowable_existing_state)) {
-      const allowables = allowable_existing_state as State[];
+      const allowables = allowable_existing_state as base.State[];
       if (!allowables.includes(this._state)) {
         const msg = 'AzadRequest unexpected state: '
-                  + State[this._state]
+                  + base.State[this._state]
                   + ' but expecting one of ['
-                  + allowables.map(a => State[a]).join(',')
+                  + allowables.map(a => base.State[a]).join(',')
                   + '] ' + this._url; 
         console.error(msg);
         throw msg;
       }; 
     } else {
-      const allowable = allowable_existing_state as State;
+      const allowable = allowable_existing_state as base.State;
       this.check_state([allowable]);
     }
   }
@@ -160,8 +108,8 @@ class AzadRequest<T> {
   response(): Promise<IResponse<T>> { return this._response; }
 
   A_Enqueue(): void {
-    this.check_state(State.NEW);
-    this.change_state(State.ENQUEUED);
+    this.check_state(base.State.NEW);
+    this.change_state(base.State.ENQUEUED);
     this._scheduler.schedule({
       task: ()=>{ return this.B_Dequeued(); },
       priority: this._priority
@@ -169,15 +117,18 @@ class AzadRequest<T> {
   }
 
   async B_Dequeued(): Promise<void> {
-    this.check_state(State.ENQUEUED);
+    this.check_state(base.State.ENQUEUED);
+    this.change_state(base.State.DEQUEUED);
     try {
       const cached = await this._scheduler
                                .cache()
                                .get(this._url) as (T | null | undefined);
+      if (cached != null) {
+        return this.D_CacheHit(cached);
+      }
     } catch (ex) {
       console.warn(ex);
     }
-    this.change_state(State.DEQUEUED);
     return this.C_Send();
   }
 
@@ -191,15 +142,16 @@ class AzadRequest<T> {
   }
 
   async C_SendXHR(): Promise<void> {
-    this.check_state(State.DEQUEUED);
-    this.change_state(State.SENT);
+    this.check_state(base.State.DEQUEUED);
+    this.change_state(base.State.SENT);
     const xhr = new XMLHttpRequest();
     console.log('opening xhr on ' + this._url);
     xhr.open('GET', this._url, true);
-    return new Promise<void>((resolve, reject)=>{
+    return new Promise<void>( (resolve, reject) => {
       xhr.onerror = (): void => {
         if (!signin.checkTooManyRedirects(this._url, xhr) ) {
-          console.log('Unknown error fetching ', this._debug_context, this._url);
+          console.log(
+            'Unknown error fetching ', this._debug_context, this._url);
         }
         const msg = 'got error from XMLHttpRequest';
         setTimeout(() => this.G_Failed(msg));
@@ -219,6 +171,10 @@ class AzadRequest<T> {
               this._debug_context, this._url, xhr.status);
             const msg = 'got sign-in redirect or 404';
             setTimeout(() => this.G_Failed(msg));
+            if ( !this._scheduler.get_signin_warned() ) {
+              signin.alertPartiallyLoggedOutAndOpenLoginTab(this._url);
+              this._scheduler.set_signin_warned();
+            }
             reject(msg);
             return;
           } else if ( xhr.status != 200 ) {
@@ -260,7 +216,7 @@ class AzadRequest<T> {
   }
 
   async L_Overlaid(): Promise<void> {
-    this.check_state(State.DEQUEUED);
+    this.check_state(base.State.DEQUEUED);
     const url_map: request_scheduler.string_string_map
                    = this._scheduler.overlay_url_map();
     if (this._url in url_map) {
@@ -281,43 +237,43 @@ class AzadRequest<T> {
   }
 
   async D_CacheHit(converted: T) {
-    this.check_state(State.DEQUEUED);
-    this.change_state(State.CACHE_HIT);
+    this.check_state(base.State.DEQUEUED);
+    this.change_state(base.State.CACHE_HIT);
     this._scheduler.stats().increment(stats.OStatsKey.CACHE_HIT_COUNT);
     setTimeout(() => this.IJK_Success(converted), 0);
   }
 
   E_Response(evt: Event) {
-    this.check_state([State.SENT, State.DEQUEUED]);
-    this.change_state(State.RESPONDED);
+    this.check_state([base.State.SENT, base.State.DEQUEUED]);
+    this.change_state(base.State.RESPONDED);
     this._scheduler.stats().increment(stats.OStatsKey.COMPLETED_COUNT);
     setTimeout(() => this.H_Convert(evt));
   }
 
   F_TimedOut() {
-    this.check_state(State.SENT);
+    this.check_state(base.State.SENT);
     this._scheduler.stats().increment(stats.OStatsKey.ERROR_COUNT);
     try {
       this._reject_response(this._url + ' timed out');
     } catch(ex) {
       console.error('rejection rejected for', this._url, 'after a timeout');
     }
-    this.change_state(State.TIMED_OUT);
+    this.change_state(base.State.TIMED_OUT);
   }
 
   G_Failed(reason: string): void {
-    this.check_state([State.SENT, State.DEQUEUED]);
+    this.check_state([base.State.SENT, base.State.DEQUEUED]);
     this._scheduler.stats().increment(stats.OStatsKey.ERROR_COUNT);
     try {
       this._reject_response(reason);
     } catch(ex) {
       console.error('rejection rejected for', this._url, 'with', reason);
     }
-    this.change_state(State.FAILED);
+    this.change_state(base.State.FAILED);
   }
 
   H_Convert(evt: Event): void {
-    this.check_state(State.RESPONDED);
+    this.check_state(base.State.RESPONDED);
     const protected_converter = (evt: any): T|null => {
       try {
         console.log(
@@ -338,28 +294,29 @@ class AzadRequest<T> {
 
     const converted = protected_converter(evt);
     if (converted == null) {
-      this.change_state(State.FAILED);
+      this.change_state(base.State.FAILED);
       return;
     }
 
-    this.change_state(State.CONVERTED);
+    this.change_state(base.State.CONVERTED);
 
     if (this._nocache) {
-      this._scheduler.cache().set(this._url, converted);
-      setTimeout(() => this.IJK_Success(converted));
+      setTimeout( () => this.IJK_Success(converted) );
     } else {
-      setTimeout(() => this.J_Cached(converted));
+      setTimeout( () => this.J_Cached(converted) );
     }
   }
 
-  J_Cached(converted: T) {
-    this.check_state(State.CONVERTED);
-    this.change_state(State.CACHED);
+  async J_Cached(converted: T) {
+    this.check_state(base.State.CONVERTED);
+    await this._scheduler.cache().set(this._url, converted);
+    this.change_state(base.State.CACHED);
     setTimeout(() => this.IJK_Success(converted), 0);
   }
 
   IJK_Success(converted: T) {
-    this.check_state([State.CACHED, State.CACHE_HIT, State.CONVERTED]);
+    this.check_state(
+      [base.State.CACHED, base.State.CACHE_HIT, base.State.CONVERTED]);
     const response: IResponse<T> = {
       query: this._url,
       result: converted,
@@ -382,17 +339,17 @@ class AzadRequest<T> {
       }
     }
     this._scheduler.stats().increment(stats.OStatsKey.COMPLETED_COUNT);
-    this.change_state(State.SUCCESS);
+    this.change_state(base.State.SUCCESS);
   }
 }
 
 export async function makeAsyncRequest<T>(
-    url: string,
-    event_converter: EventConverter<T>,
-    scheduler: request_scheduler.IRequestScheduler,
-    priority: string,
-    nocache: boolean,
-    debug_context: string
+  url: string,
+  event_converter: EventConverter<T>,
+  scheduler: request_scheduler.IRequestScheduler,
+  priority: string,
+  nocache: boolean,
+  debug_context: string,
 ): Promise<T> {
   const req = new AzadRequest(
     url,
@@ -402,6 +359,7 @@ export async function makeAsyncRequest<T>(
     nocache,
     debug_context,
   );
+  scheduler.register(req);
   const response = await req.response();
   return response.result;
 }
