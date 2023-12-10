@@ -158,7 +158,7 @@ class AzadRequest<T> {
         reject(msg);
       };
       xhr.onload = (evt: any): void => {
-        console.log('got response for ', this._debug_context, this._url); 
+        console.debug('got response for', this._debug_context, this._url); 
         if (!this._scheduler.isLive) {
           reject('scheduler no longer live');
         }
@@ -185,7 +185,7 @@ class AzadRequest<T> {
             return;
           } else {
             const msg = 'Finished ' + this._debug_context + ' ' + this._url;
-            console.info(msg);
+            console.debug(msg);
             setTimeout( () => this.E_Response(evt) );
             resolve();
             return;
@@ -276,7 +276,7 @@ class AzadRequest<T> {
     this.check_state(base.State.RESPONDED);
     const protected_converter = (evt: any): T|null => {
       try {
-        console.log(
+        console.debug(
           'protected_converter', this._debug_context, this._url,
           'priority', this._priority,
         );

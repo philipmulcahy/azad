@@ -199,7 +199,7 @@ class Order implements IOrder{
     if (this.impl.detail_promise) {
       const id = await this.id();
       if (id == '204-1674798-1861151') {
-        console.log('extracting shipments from 204-1674798-1861151');
+        console.debug('extracting shipments from 204-1674798-1861151');
       }
       return this.impl.detail_promise.then( details => details.shipments );
     }
