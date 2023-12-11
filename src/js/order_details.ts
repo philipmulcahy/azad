@@ -44,12 +44,13 @@ export async function extractDetailPromise(
     throw(msg);
   }
 
-  function event_converter(
+  async function event_converter(
     evt: req.Event
-  ): IOrderDetailsAndItems {
+  ): Promise<IOrderDetailsAndItems> {
     const doc = util.parseStringToDOM( evt.target.responseText );
     const url = evt.target.responseURL;
-    const shipments = shipment.get_shipments(doc, url, header, context);
+    const shipments = await shipment.get_shipments(
+      doc, url, header, context, scheduler);
     shipments.forEach(
       s => console.log('shipment: ' + s.toString()));
     return {

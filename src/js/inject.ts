@@ -71,7 +71,7 @@ async function getYears(): Promise<number[]> {
         const response = await signin.checkedFetch(url);
         const html_text = await response.text();
         const parser = new DOMParser();
-        const doc = parser.parseFromString( html_text, 'text/html');
+        const doc = parser.parseFromString(html_text, 'text/html');
         return extraction.get_years(doc);
     }
     let years = cached_years;

@@ -28,6 +28,7 @@ export async function enriched_items_from_orders(
         delivered: shipment.Delivered.UNKNOWN,
         status: 'no shipment',
         tracking_link: '',
+        tracking_id: '',
         transaction: null,
       });
     }
@@ -37,6 +38,7 @@ export async function enriched_items_from_orders(
       delivered: s.delivered,
       status: s.status,
       tracking_link: s.tracking_link,
+      tracking_id: s.tracking_id,
       transaction: s.transaction,
     }));
     return shipments;
