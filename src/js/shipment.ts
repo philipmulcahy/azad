@@ -87,7 +87,7 @@ async function get_tracking_id(
   amazon_tracking_url: string,
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<string> {
-  return req.makeAsyncRequest(
+  const decorated_id = await req.makeAsyncRequest(
     amazon_tracking_url,
     id_from_tracking_page,
     scheduler, 
@@ -95,6 +95,8 @@ async function get_tracking_id(
     false,  // nocache=false: cached response is acceptable
     'get_tracking_id',
   );
+  const stripped_id = decorated_id.replace(/^.*: /, '');
+  return stripped_id;
 }
 
 function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {

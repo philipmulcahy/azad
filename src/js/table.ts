@@ -407,6 +407,17 @@ const ITEM_COLS: ColSpec[] = [
     is_numeric: false,
     visibility: shipment_info_enabled,
   },
+  {
+    field_name: 'tracking id',
+    render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
+      const ei = await (item as order_util.IEnrichedItem);
+      const s = ei.shipment;
+      const id = s.tracking_id;
+      td.textContent = id;
+    },
+    is_numeric: false,
+    visibility: shipment_info_enabled,
+  },
 ];
 
 async function asin_enabled(): Promise<boolean> {
