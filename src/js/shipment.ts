@@ -34,6 +34,7 @@ export async function get_shipments(
   order_header: order_header.IOrderHeader,
   context: string,
   scheduler: request_scheduler.IRequestScheduler,
+  site: string,
 ): Promise<IShipment[]> {
   const doc_elem = order_detail_doc.documentElement;
   const transactions = get_transactions(order_detail_doc);
@@ -59,6 +60,7 @@ export async function get_shipments(
     order_header,
     context,
     scheduler,
+    site,
   ));
 
   const shipments = await util.get_settled_and_discard_rejects(
@@ -75,8 +77,7 @@ export async function get_shipments(
 
 function id_from_tracking_page(evt: req.Event): string {
   const html_text = evt.target.responseText;
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html_text, 'text/html');
+  const doc = util.parseStringToDOM(html_text);
   const body = doc.body;
   const xpath = "//div[contains(@class, 'pt-delivery-card-trackingId')]";
   const id: string|null = extraction.getField(xpath, body, 'id_from_tracking_page');
@@ -124,8 +125,9 @@ async function shipment_from_elem(
   order_header: order_header.IOrderHeader,
   context: string,
   scheduler: request_scheduler.IRequestScheduler,
+  site: string,
 ): Promise<IShipment> {
-  const tracking_link: string = get_tracking_link(shipment_elem);
+  const tracking_link: string = get_tracking_link(shipment_elem, site);
   const tracking_id: string = await get_tracking_id(tracking_link, scheduler);
   return {
     items: item.extractItems(shipment_elem, order_header, context),
@@ -159,7 +161,7 @@ function get_status(shipment_elem: HTMLElement): string {
   }
 }
 
-function get_tracking_link(shipment_elem: HTMLElement): string {
+function get_tracking_link(shipment_elem: HTMLElement, site: string): string {
   return util.defaulted_call(
     () => {
       const link_elem = extraction.findSingleNodeValue(
@@ -169,7 +171,7 @@ function get_tracking_link(shipment_elem: HTMLElement): string {
       );
       const base_url = util.defaulted((link_elem as HTMLElement)
                            .getAttribute('href'), '');
-      const full_url = url.normalizeUrl(base_url, url.getSite());
+      const full_url = url.normalizeUrl(base_url, site);
       return full_url;
     },
     ''

@@ -34,7 +34,7 @@ export interface IOrderDetailsAndItems {
 
 export async function extractDetailPromise(
   header: order_header.IOrderHeader,
-  scheduler: request_scheduler.IRequestScheduler
+  scheduler: request_scheduler.IRequestScheduler,
 ): Promise<IOrderDetailsAndItems> {
   const context = 'id:' + header.id;
   const url = header.detail_url;
@@ -50,7 +50,7 @@ export async function extractDetailPromise(
     const doc = util.parseStringToDOM( evt.target.responseText );
     const url = evt.target.responseURL;
     const shipments = await shipment.get_shipments(
-      doc, url, header, context, scheduler);
+      doc, url, header, context, scheduler, header.site);
     shipments.forEach(
       s => console.log('shipment: ' + s.toString()));
     return {
@@ -444,7 +444,7 @@ function extractDetailFromDoc(
       context,
     );
     if( suffix ) {
-      return 'https://' + urls.getSite() + suffix;
+      return 'https://' + header.site + suffix;
     }
     return '';
   }();

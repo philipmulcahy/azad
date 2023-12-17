@@ -198,7 +198,9 @@ class Order implements IOrder{
   async shipments(): Promise<shipment.IShipment[]> {
     if (this.impl.detail_promise) {
       const id = await this.id();
-      return this.impl.detail_promise.then( details => details.shipments );
+      const details = await this.impl.detail_promise;
+      const shipments = details.shipments;
+      return shipments;
     }
     return Promise.resolve([]);
   }
@@ -376,6 +378,24 @@ export async function assembleDiagnostics(order: IOrder)
 
   diagnostics['items'] = await get_legacy_items(order);
 
+  async function get_tracking_data(order: ISyncOrder): Promise<Record<string, string>> {
+    const data: Record<string, string> = {};
+    order.shipments.forEach(
+      async shipment => {
+        const url = await shipment.tracking_link;
+        if (url == '') {
+          return;
+        }
+        const response = await signin.checkedFetch(util.defaulted(url, ''));
+        const html = await response.text();
+        data[url] = html;
+      }
+    );
+    return data;
+  }
+
+  diagnostics['tracking_data'] = await get_tracking_data(sync_order);
+
   return Promise.all([
     signin.checkedFetch( util.defaulted(sync_order.list_url, '') )
       .then( response => response.text())
@@ -387,11 +407,11 @@ export async function assembleDiagnostics(order: IOrder)
       .then( response => response.text() )
       .then( text => { diagnostics['invoice_html'] = text; } )
   ]).then(
-  () => diagnostics,
+    () => diagnostics,
     error_msg => {
-    notice.showNotificationBar(error_msg, document);
-    return diagnostics;
-  }
+      notice.showNotificationBar(error_msg, document);
+      return diagnostics;
+    }
   );
 }
 
@@ -401,9 +421,6 @@ export function create(
   date_filter: date.DateFilter,
 ): IOrder|null {
   try {
-    if (header.id == '202-8284158-2450727') {
-      console.info('about to attempt loading 202-8284158-2450727');
-    }
     const impl = new order_impl.OrderImpl(
       header,
       scheduler,
