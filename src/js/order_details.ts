@@ -67,7 +67,7 @@ export async function extractDetailPromise(
   const debug_context = 'order_detail';
 
   try {
-    return req.makeAsyncRequest(
+    const details = req.makeAsyncRequest(
       url,
       event_converter,
       scheduler, 
@@ -75,6 +75,7 @@ export async function extractDetailPromise(
       false,  // nocache=false: cached response is acceptable
       debug_context,
     );
+    return details;
   } catch (url) {
     const msg = 'scheduler rejected ' + header.id + ' ' + url;
     console.error(msg);

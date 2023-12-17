@@ -1,5 +1,7 @@
 /* Copyright(c) 2019-2023 Philip Mulcahy. */
 
+import * as util from './util';
+
 ///////////////////////////////////////////////////////////////////////////////
 // SOME AZAD CACHEING PRINCIPLES
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,7 +55,7 @@ function CreateMockStore(): Store {
     keys: function(): Promise<string[]> {
       return Promise.resolve(Object.keys(_store));
     },
-    set: async function(key: string, value: any): Promise<void> {
+    set: async function(key: string, value: any) {
       _store[key] = value;
     },
     remove: async function(key: string): Promise<void> {
@@ -100,8 +102,9 @@ export function registerCacheListenerInBackgroundPage() {
 }
 
 
-// Use this one if you're in a content script, because chrome.storage.local
-// is not there.
+// Use this class if you're in a content script, because chrome.storage.local
+// is not there, and this class can proxy your cache actions to the
+// service worker.
 function CreateRealStoreProxy(): Store {
   return {
     get: async function(key: string): Promise<any> {
@@ -276,7 +279,10 @@ class LocalCacheImpl {
     return store.set(real_key, entry[real_key]);
   }
 
-  set(key: string, value: any): void {
+  async set(key: string, value: any): Promise<void> {
+    if (util.is_promise(value)) {
+      value = await value;
+    }
     const real_key: string = this.buildRealKey(key);
     try {
       this.reallySet(real_key, value);

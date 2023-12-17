@@ -198,25 +198,18 @@ class Order implements IOrder{
   async shipments(): Promise<shipment.IShipment[]> {
     if (this.impl.detail_promise) {
       const id = await this.id();
-      if (id == '204-1674798-1861151') {
-        console.debug('extracting shipments from 204-1674798-1861151');
-      }
       return this.impl.detail_promise.then( details => details.shipments );
     }
     return Promise.resolve([]);
   }
-  item_list(): Promise<item.IItem[]> {
+  async item_list(): Promise<item.IItem[]> {
     const items: item.IItem[] = [];
     if (this.impl.detail_promise) {
-      return this.impl.detail_promise.then( details => {
-        details.items.forEach(item => {
-          items.push(item);
-        });
-        return items;
-      });
-    } else {
-      return Promise.resolve(items);
+      const details = await this.impl.detail_promise;
+      const items: item.IItem[] = details.items;
+      return items;
     }
+    return Promise.resolve([]);
   }
   async payments(): Promise<string[]> {
     const default_payments: string[] = [];
@@ -408,6 +401,9 @@ export function create(
   date_filter: date.DateFilter,
 ): IOrder|null {
   try {
+    if (header.id == '202-8284158-2450727') {
+      console.info('about to attempt loading 202-8284158-2450727');
+    }
     const impl = new order_impl.OrderImpl(
       header,
       scheduler,

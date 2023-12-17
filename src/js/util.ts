@@ -173,3 +173,13 @@ export function subtract_months(date: Date, months: number): Date {
   }
   return result;
 }
+
+export function is_promise(candidate: any): boolean {
+  if (typeof(candidate) != 'object') {
+    return false;
+  }
+  if ('then' in candidate) {
+    return true;
+  }
+  return false;
+}

@@ -35,7 +35,8 @@ interface ColSpec {
 
   // Yes: using IEntity here means a tonne of downcasting in the implementations.
   // The alternatives seem (to me) worse.
-  render_func?: (entity: azad_entity.IEntity, td: HTMLElement) => Promise<null>;
+  render_func?: (
+    entity: azad_entity.IEntity, td: HTMLElement) => Promise<null|void>;
 
   is_numeric: boolean;
   value_promise_func_name?: string;
@@ -460,7 +461,7 @@ function appendCell(
   tr: HTMLTableRowElement,
   entity: azad_entity.IEntity,
   col_spec: ColSpec,
-): Promise<null> {
+): Promise<null|void> {
   const td = document.createElement('td');
   td.textContent = 'pending';
   tr.appendChild(td);
@@ -482,7 +483,7 @@ function appendCell(
       return '';
     }
   };
-  const value_written_promise: Promise<null> =
+  const value_written_promise: Promise<null|void> =
     col_spec.render_func ?
     col_spec?.render_func(entity, td) :
     (() => {
@@ -533,7 +534,7 @@ function appendEntityRow(
   table: HTMLElement,
   entity: azad_entity.IEntity,
   cols: Promise<ColSpec[]>
-): Promise<Promise<null>[]> {
+): Promise<Promise<null|void>[]> {
   const tr = document.createElement('tr');
   table.appendChild(tr);
   return cols.then( cols =>
@@ -625,7 +626,7 @@ async function addTable(
     });
 
     const row_promises = await Promise.all(row_done_promises);
-    const value_done_promises: Promise<null>[] = [];
+    const value_done_promises: Promise<null|void>[] = [];
     row_promises.forEach(
       cell_done_promises => value_done_promises.push(
         ...cell_done_promises
