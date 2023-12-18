@@ -40,7 +40,7 @@ export async function get_shipments(
   const transactions = get_transactions(order_detail_doc);
 
   const candidates = extraction.findMultipleNodeValues(
-		"//div[contains(@class, 'shipment')]",
+		"//div[contains(@class, 'a-box shipment')]",
 		doc_elem);
 
   // We want elem to have 'shipment' as one of its classes
@@ -100,24 +100,54 @@ async function get_tracking_id(
   return stripped_id;
 }
 
-function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
-  const transaction_elems = extraction.findMultipleNodeValues(
-    "//span[normalize-space(text())= 'Transactions']/../../div[contains(@class, 'expander')]/div[contains(@class, 'a-row')]/span/nobr/..",
-    order_detail_doc.documentElement);
-  const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
-  return transactions;
+function enthusiastically_strip(e: Node): string {
+  return util.defaulted(e.textContent, '').replace(/\s\s+/g, ' ').trim();
 }
 
-function transaction_from_elem(elem: HTMLElement): ITransaction {
-  function enthusiastically_strip(e: Node): string {
-    return util.defaulted(e.textContent, '').replace(/\s\s+/g, ' ').trim();
+function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
+  function strategy_a(): ITransaction[] {
+    function transaction_from_elem(elem: HTMLElement): ITransaction {
+      const info_string = enthusiastically_strip(elem.childNodes[0]);
+      const payment_amount = enthusiastically_strip(elem.childNodes[1]);
+      return {
+        payment_amount: payment_amount,
+        info_string: info_string,
+      };
+    }
+    const transaction_elems = extraction.findMultipleNodeValues(
+      "//span[normalize-space(text())='Transactions']/../../div[contains(@class, 'expander')]/div[contains(@class, 'a-row')]/span/nobr/..",
+      order_detail_doc.documentElement);
+    const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
+    return transactions;
   }
-  const info_string = enthusiastically_strip(elem.childNodes[0]);
-  const payment_amount = enthusiastically_strip(elem.childNodes[1]);
-  return {
-    payment_amount: payment_amount,
-    info_string: info_string,
-  };
+  function strategy_b(): ITransaction[] {
+    function transaction_from_elem(elem: HTMLElement): ITransaction {
+
+      // 'December 17, 2023 - Visa ending in 8489: $41.49'
+      const text = enthusiastically_strip(elem.childNodes[3])
+        .replace(/\n/g, ' ')
+        .replace(/(  *)/g, ' ');
+
+      const payment_amount = text.replace(/.*: ?/, '');
+      const info_string = text.replace(/:.*/, '');
+      return {
+        payment_amount: payment_amount,
+        info_string: info_string,
+      };
+    }
+    const transaction_elems = extraction.findMultipleNodeValues(
+      "//span[normalize-space(text())='Transactions']/../../div[contains(@class, 'expander')]/div[contains(@class, 'a-row')]/span/..",
+      order_detail_doc.documentElement);
+    const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
+    return transactions;
+  }
+  const a = strategy_a();
+  if (a.length != 0) {
+    return a;
+  } else {
+    const b = strategy_b();
+    return b;
+  }
 }
 
 async function shipment_from_elem(
