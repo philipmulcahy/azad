@@ -40,8 +40,8 @@ export async function get_shipments(
   const transactions = get_transactions(order_detail_doc);
 
   const candidates = extraction.findMultipleNodeValues(
-		"//div[contains(@class, 'a-box shipment')]",
-		doc_elem);
+    "//div[contains(@class, 'a-box shipment')]",
+    doc_elem);
 
   // We want elem to have 'shipment' as one of its classes
   // not just have one of its classes _contain_ 'shipment' in its name.
@@ -141,13 +141,12 @@ function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
     const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
     return transactions;
   }
-  const a = strategy_a();
-  if (a.length != 0) {
-    return a;
-  } else {
-    const b = strategy_b();
-    return b;
-  }
+  const result = util.first_acceptable_non_throwing(
+    [strategy_a, strategy_b],
+    (result: ITransaction[])=>result.length > 0,
+    []
+  );
+  return result;
 }
 
 async function shipment_from_elem(
