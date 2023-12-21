@@ -146,7 +146,7 @@ function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
     (result: ITransaction[])=>result.length > 0,
     []
   );
-  return result;
+  return result ? result : [];  // tslint whingeing about nulls.
 }
 
 async function shipment_from_elem(
