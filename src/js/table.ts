@@ -199,13 +199,21 @@ const ORDER_COLS: ColSpec[] = [
       field_name: 'shipping',
       value_promise_func_name: 'postage',
       is_numeric: true,
-      help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.'
+      help: 'If there are only N/A values in this column, your login session' +
+        ' may have partially expired, meaning you (and the extension) cannot' +
+        ' fetch order details. Try clicking on one of the order links in the' +
+        ' left hand column and then retrying the extension button you' +
+        ' clicked to get here.',
     },
     {
       field_name: 'shipping_refund',
       value_promise_func_name: 'postage_refund',
       is_numeric: true,
-      help: 'If there are only N/A values in this column, your login session may have partially expired, meaning you (and the extension) cannot fetch order details. Try clicking on one of the order links in the left hand column and then retrying the extension button you clicked to get here.',
+      help: 'If there are only N/A values in this column, your login session' +
+        ' may have partially expired, meaning you (and the extension) cannot' +
+        ' fetch order details. Try clicking on one of the order links in the' +
+        ' left hand column and then retrying the extension button you' +
+        ' clicked to get here.',
     },
     {
       field_name: 'gift',
@@ -664,102 +672,102 @@ async function reallyDisplay(
   addProgressBar();
   const cols = getCols(items_not_orders);
   const table_promise = items_not_orders ?
-    addItemTable(
-      document, orders, cols) :
-        addOrderTable(
-          document, orders, cols);
+    addItemTable(document, orders, cols) :
+    addOrderTable(document, orders, cols);
 
-          // Wait for table to be there before doing more html stuff.
-          const _table = await table_promise;
+  // Wait for table to be there before doing more html stuff.
+  const _table = await table_promise;
 
-          $( () => {
-            if (beautiful) {
-              if (datatable) {
-                datatable.destroy();
+  $( () => {
+    if (beautiful) {
+      if (datatable) {
+        datatable.destroy();
+      }
+      util.removeButton('data table');
+      util.addButton(
+        'plain table',
+        function() { display(orders, false, items_not_orders); },
+        'azad_table_button'
+      );
+      addCsvButton(orders, items_not_orders);
+      datatable = (<any>$('#azad_order_table')).DataTable({
+        'bPaginate': true,
+        'lengthMenu': [
+          [10, 25, 50, 100, -1],
+          [10, 25, 50, 100, 'All'] ],
+        'footerCallback': function() {
+          const api = this.api();
+          // Remove the formatting to get integer data for summation
+          const floatVal = function(v: string | number): number {
+            const parse = function(i: string | number): number {
+              try {
+                if(typeof i === 'string') {
+                  return (
+                    i === 'N/A' ||
+                      i === '-' ||
+                      i === 'pending'
+                  ) ?
+                    0 :
+                    parseFloat(
+                      i.replace(
+                        /^([£$]|AUD|CAD|EUR|GBP|USD) */,
+                        ''
+                      ).replace(/,/, '.')
+                    );
+                }
+                if(typeof i === 'number') { return i; }
+              } catch (ex) {
+                console.warn(ex);
               }
-              util.removeButton('data table');
-              util.addButton(
-                'plain table',
-                function() { display(orders, false, items_not_orders); },
-                'azad_table_button'
-              );
-              addCsvButton(orders, items_not_orders);
-              datatable = (<any>$('#azad_order_table')).DataTable({
-                'bPaginate': true,
-                'lengthMenu': [ [10, 25, 50, 100, -1],
-                  [10, 25, 50, 100, 'All'] ],
-                  'footerCallback': function() {
-                    const api = this.api();
-                    // Remove the formatting to get integer data for summation
-                    const floatVal = (v: string | number): number => {
-                      const parse = (i: string | number) => {
-                        try {
-                          if(typeof i === 'string') {
-                            return (
-                              i === 'N/A' ||
-                                i === '-' ||
-                                i === 'pending'
-                            ) ?
-                              0 :
-                              parseFloat(
-                                i.replace(
-                                  /^([£$]|AUD|CAD|EUR|GBP|USD) */,
-    ''
-                                ).replace(/,/, '.')
-                            );
-                          }
-                          if(typeof i === 'number') { return i; }
-                        } catch (ex) {
-                          console.warn(ex);
-                        }
-                        return 0;
-                      };
-                      const candidate = parse(v);
-                      if (isNaN(candidate)) {
-                        return 0;
-                      }
-                      return candidate;
-                    };
-                    let col_index = 0;
-                    cols.then( cols => cols.forEach( col_spec => {
-                      const sum_col = function(col: any) {
-                        const data = col.data();
-                        if (data) {
-                          const sum = data
-                          .map( (v: string | number) => floatVal(v) )
-                          .reduce( (a: number, b: number) => a + b, 0 );
-                          return floatVal(sum);
-                        } else {
-                          return 0;
-                        }
-                      };
-                      if(col_spec.is_numeric) {
-                        col_spec.sum = sum_col(api.column(col_index));
-                        col_spec.pageSum = sum_col(
-                          api.column(col_index, { page: 'current' }));
-                          $(api.column(col_index).footer()).html(
-                            sprintf.sprintf('page=%s; all=%s',
-                                            col_spec.pageSum.toFixed(2),
-                                            col_spec.sum.toFixed(2))
-                          );
-                      }
-                      col_index += 1;
-                    }));
-                  }
-              });
-            } else {
-              util.removeButton('plain table');
-              util.addButton(
-                'data table',
-                function() { display(orders, true, items_not_orders); },
-                'azad_table_button'
-              );
-              addCsvButton(orders, items_not_orders);
+              return 0;
+            };
+            const candidate = parse(v);
+            if (isNaN(candidate)) {
+              return 0;
             }
-          });
+            return candidate;
+          };
+          let col_index = 0;
+          cols.then( cols => cols.forEach( col_spec => {
+            const sum_col = function(col: any) {
+              const data = col.data();
+              if (data) {
+                const sum = data
+                .map( (v: string | number) => floatVal(v) )
+                .reduce( (a: number, b: number) => a + b, 0 );
+                return floatVal(sum);
+              } else {
+                return 0;
+              }
+            };
+            if(col_spec.is_numeric) {
+              col_spec.sum = sum_col(api.column(col_index));
+              col_spec.pageSum = sum_col(
+                api.column(col_index, {page: 'current'}));
+                $(api.column(col_index).footer()).html(
+                  sprintf.sprintf(
+                    'page=%s; all=%s',
+                    col_spec.pageSum.toFixed(2),
+                    col_spec.sum.toFixed(2))
+                );
+            }
+            col_index += 1;
+          }));
+        }
+      });
+    } else {
+      util.removeButton('plain table');
+      util.addButton(
+        'data table',
+        function() { display(orders, true, items_not_orders); },
+        'azad_table_button'
+      );
+      addCsvButton(orders, items_not_orders);
+    }
+  });
 
-          console.log('azad.reallyDisplay returning');
-          return table_promise;
+  console.log('azad.reallyDisplay returning');
+  return table_promise;
 }
 
 function addProgressBar(): void {

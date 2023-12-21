@@ -63,14 +63,18 @@ class RequestTracker {
         counts.delete(k);
       }
     }
-    counts.delete(base.State.SUCCESS);
-    counts.delete(base.State.TIMED_OUT);
-    counts.delete(base.State.FAILED);
     const entries = Array.from(counts.entries());
-    const incomplete = entries.filter(e => {
-      return [base.State.FAILED, base.State.TIMED_OUT, base.State.SUCCESS].includes(e[0]) || (e[1] != 0);
-    });
-    return incomplete.length == 0;
+    const states_msg = 'StateCounts: ' +
+      entries.map(e => base.State[e[0]] + ':' + e[1]).join(', ');
+    const incomplete = entries.filter(e => ![
+                                             base.State.SUCCESS,
+                                             base.State.TIMED_OUT,
+                                             base.State.FAILED,
+                                           ].includes(e[0]))
+                              .filter(e => e[1] != 0);
+    const result = incomplete.length == 0;
+    console.debug('RequestTracker.allDone() returning', result, states_msg);
+    return result;
   }
 }
 
