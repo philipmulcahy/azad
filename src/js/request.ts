@@ -262,14 +262,18 @@ class AzadRequest<T> {
   }
 
   G_Failed(reason: string): void {
-    this.check_state([base.State.SENT, base.State.DEQUEUED]);
+    this.check_state([
+      base.State.SENT,
+      base.State.DEQUEUED,
+      base.State.RESPONDED,
+    ]);
     this._scheduler.stats().increment(stats.OStatsKey.ERROR_COUNT);
+    this.change_state(base.State.FAILED);
     try {
       this._reject_response(reason);
     } catch(ex) {
       console.error('rejection rejected for', this._url, 'with', reason);
     }
-    this.change_state(base.State.FAILED);
   }
 
   async H_Convert(evt: Event): Promise<void> {

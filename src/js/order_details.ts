@@ -67,7 +67,7 @@ export async function extractDetailPromise(
   const debug_context = 'order_detail';
 
   try {
-    const details = req.makeAsyncRequest(
+    const details_promise = req.makeAsyncRequest(
       url,
       event_converter,
       scheduler, 
@@ -75,11 +75,11 @@ export async function extractDetailPromise(
       false,  // nocache=false: cached response is acceptable
       debug_context,
     );
-    return details;
+    return details_promise;
   } catch (url) {
-    const msg = 'scheduler rejected ' + header.id + ' ' + url;
+    const msg = 'scheduler synchronously rejected ' + header.id + ' ' + url;
     console.error(msg);
-    throw('timeout or other problem when fetching ' + url);
+    throw('synchronous timeout or other problem when fetching ' + url);
   }
 }
 

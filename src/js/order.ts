@@ -198,18 +198,26 @@ class Order implements IOrder{
   async shipments(): Promise<shipment.IShipment[]> {
     if (this.impl.detail_promise) {
       const id = await this.id();
-      const details = await this.impl.detail_promise;
-      const shipments = details.shipments;
-      return shipments;
+      try {
+        const details = await this.impl.detail_promise;
+        const shipments = details.shipments;
+        return shipments;
+      } catch (ex) {
+        console.warn('detail_promise rejected', ex);
+      }
     }
     return Promise.resolve([]);
   }
   async item_list(): Promise<item.IItem[]> {
     const items: item.IItem[] = [];
     if (this.impl.detail_promise) {
-      const details = await this.impl.detail_promise;
-      const items: item.IItem[] = details.items;
-      return items;
+      try {
+        const details = await this.impl.detail_promise;
+        const items: item.IItem[] = details.items;
+        return items;
+      } catch (ex) {
+        console.warn('detail_promise rejected', ex);
+      }
     }
     return Promise.resolve([]);
   }
@@ -229,10 +237,14 @@ class Order implements IOrder{
       detail_lambda: (d: order_details.IOrderDetails) => string
   ): Promise<string> {
     if (this.impl.detail_promise) {
-      const details_and_items = await this.impl.detail_promise;
-      const details: order_details.IOrderDetails = details_and_items.details;
-      const details_string = detail_lambda(details);
-      return details_string;
+      try {
+        const details_and_items = await this.impl.detail_promise;
+        const details: order_details.IOrderDetails = details_and_items.details;
+        const details_string = detail_lambda(details);
+        return details_string;
+      } catch (ex) {
+        console.warn('detail_promise rejected', ex);
+      }
     }
     return Promise.resolve('');
   }
@@ -289,16 +301,21 @@ export async function getOrdersByYear(
   latest_year: number,
   date_filter: date.DateFilter,
 ): Promise<IOrder[]> {
-  const orderss = await Promise.all(
-    years.map(
-      function(year: number): Promise<IOrder[]> {
-        const nocache_top_level = (year == latest_year);
-        return fetchYear(
-          year, scheduler, nocache_top_level, date_filter);
-      }
-    )
-  );
-  return orderss.flat();
+  try {
+    const orderss = await Promise.all(
+      years.map(
+        function(year: number): Promise<IOrder[]> {
+          const nocache_top_level = (year == latest_year);
+          return fetchYear(
+            year, scheduler, nocache_top_level, date_filter);
+        }
+      )
+    );
+    return orderss.flat();
+  } catch (ex) {
+    console.error('getOrdersByYear blew up');
+    return [];
+  }
 }
 
 export async function getOrdersByRange(
@@ -324,7 +341,16 @@ export async function getOrdersByRange(
     }
   );
 
-  const orderss = await util.get_settled_and_discard_rejects(order_years);
+
+  const orderss = await async function() {
+    try {
+      const orderss = await util.get_settled_and_discard_rejects(order_years);
+      return orderss;
+    } catch (ex) {
+      console.error('failed to get order_years'); 
+      return [[]];
+    }
+  }();
   const orders: IOrder[] = orderss.flat();
 
   const f_in_date_window = async function(order: IOrder): Promise<boolean> {
