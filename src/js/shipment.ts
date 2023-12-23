@@ -88,16 +88,24 @@ async function get_tracking_id(
   amazon_tracking_url: string,
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<string> {
-  const decorated_id = await req.makeAsyncRequest(
-    amazon_tracking_url,
-    id_from_tracking_page,
-    scheduler, 
-    '9999',
-    false,  // nocache=false: cached response is acceptable
-    'get_tracking_id',
-  );
-  const stripped_id = decorated_id.replace(/^.*: /, '');
-  return stripped_id;
+  try {
+    const decorated_id = await req.makeAsyncRequest(
+      amazon_tracking_url,
+      id_from_tracking_page,
+      scheduler,
+      '9999',
+      false,  // nocache=false: cached response is acceptable
+      'get_tracking_id',
+    );
+    const stripped_id = decorated_id.replace(/^.*: /, '');
+    return stripped_id;
+  } catch (ex) {
+    console.warn(
+      'while trying to get tracking_id from', amazon_tracking_url, 'we got',
+      ex
+    );
+    return '';
+  }
 }
 
 function enthusiastically_strip(e: Node): string {
@@ -179,7 +187,7 @@ function is_delivered(shipment_elem: HTMLElement): Delivered {
 function get_status(shipment_elem: HTMLElement): string {
   try {
     const elem = extraction.findSingleNodeValue(
-      "//div[contains(@class, 'shipment-info-container')]//div[@class='a-row']/span",
+      ".//div[contains(@class, 'shipment-info-container')]//div[@class='a-row']/span",
       shipment_elem,
       'shipment.status'
     );
@@ -194,7 +202,7 @@ function get_tracking_link(shipment_elem: HTMLElement, site: string): string {
   return util.defaulted_call(
     () => {
       const link_elem = extraction.findSingleNodeValue(
-        "//a[contains(@href, '/progress-tracker/')]",
+        ".//a[contains(@href, '/progress-tracker/')]",
         shipment_elem,
         'shipment.tracking_link'
       );
