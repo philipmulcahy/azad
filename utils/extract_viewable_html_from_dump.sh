@@ -10,7 +10,10 @@ jq -r 'keys[] | select(contains("html"))' ${JSON_FILE} \
   > keys.txt
 
 for KEY in $(cat keys.txt); do
-  jq ".${KEY}" $JSON_FILE > ${KEY}.html;
+  jq ".${KEY}" $JSON_FILE \
+    | perl -pe 's/\\"/"/g' \
+    | perl -pe 's/\\n/\n/g' \
+    > ${KEY}.html;
 done
 
 SHIPMENT_COUNT=$( \
