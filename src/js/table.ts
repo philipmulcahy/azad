@@ -487,9 +487,9 @@ function appendCell(
     if (x) {
       if (
         typeof(x) === 'string' &&
-        parseFloat(x.replace(/^([£$]|CAD|EUR|GBP) */, '')
-    .replace(/,/, '.')
-                  ) + 0 == 0
+        parseFloat(
+          x.replace(/^([£$]|CAD|EUR|GBP) */, '').replace(/,/, '.')
+        ) + 0 == 0
       ) {
         return 0;
       } else {
@@ -536,15 +536,12 @@ function appendCell(
   if (col_spec.help) {
     td.setAttribute(
       'class',
-      td.getAttribute('class') + 'azad_elem_has_help '
-    );
+      td.getAttribute('class') + ' azad_elem_has_help');
     td.setAttribute('title', col_spec.help);
   }
-  // order.id().then( id => {
-  //     if (id == '203-4990948-9075513' && col_spec.field_name == 'postage') {
-  //         value_written_promise.then(() => console.log('written promise resolved'));
-  //     }
-  // })
+  if (col_spec.hide_in_browser) {
+    td.setAttribute( 'class', td.getAttribute('class') + ' azad_hidden');
+  }
   return value_written_promise;
 }
 
@@ -582,14 +579,22 @@ async function addTable(
     entities: azad_entity.IEntity[],
     cols: Promise<ColSpec[]>
 ): Promise<HTMLTableElement> {
-  const addHeader = function(row: HTMLElement, value: string, help: string) {
+  const addHeader = function(
+    row: HTMLElement,
+    value: string,
+    help: string,
+    hidden: boolean,
+  ) {
     const th = row.ownerDocument!.createElement('th');
-    th.setAttribute('class', ' azad_thClass ');
+    th.setAttribute('class', 'azad_thClass');
+    if (hidden) {
+      th.setAttribute('class', th.getAttribute('class') + ' azad_hidden');
+    }
     row.appendChild(th);
     th.textContent = value;
     if( help ) {
       th.setAttribute(
-        'class', th.getAttribute('class') + 'azad_th_has_help ');
+        'class', th.getAttribute('class') + ' azad_th_has_help ');
         th.setAttribute('title', help);
     }
     return th;
@@ -610,7 +615,7 @@ async function addTable(
   document.body.appendChild(table);
   table.setAttribute('id', 'azad_order_table');
   table.setAttribute(
-    'class', 'azad_table stripe compact hover order-column ');
+    'class', 'azad_table stripe compact hover order-column');
 
     const thead = doc.createElement('thead');
     thead.setAttribute('id', 'azad_order_table_head');
@@ -630,8 +635,16 @@ async function addTable(
 
     const actual_cols = await cols;
     actual_cols.forEach( col_spec => {
-      addHeader(hr, col_spec.field_name, col_spec?.help ?? '');
-      addHeader(fr, col_spec.field_name, col_spec?.help ?? '');
+      const hidden = col_spec.hide_in_browser;
+      [hr, fr].forEach(
+        parent_row => {
+          addHeader(
+            parent_row,
+            col_spec.field_name,
+            col_spec?.help ?? '',
+            hidden);
+        }
+      );
     });
 
     const tbody = doc.createElement('tbody');

@@ -46,3 +46,7 @@
     opacity: 1;
     transition: opacity 500ms;
 }
+
+.azad_hidden {
+    display: none;
+}
