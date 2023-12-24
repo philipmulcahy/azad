@@ -45,6 +45,7 @@ interface ColSpec {
   visibility?: () => Promise<boolean>;
   sum?: number;
   pageSum?: number;
+  hide_in_browser?: boolean;
 }
 
 const ORDER_COLS: ColSpec[] = [
@@ -60,6 +61,12 @@ const ORDER_COLS: ColSpec[] = [
         )
     ),
     is_numeric: false,
+  },
+  {
+    field_name: 'order url',
+    value_promise_func_name: 'detail_url',
+    is_numeric: false,
+    hide_in_browser: true,
   },
   {
     field_name: 'items',
@@ -150,168 +157,153 @@ const ORDER_COLS: ColSpec[] = [
     },
     is_numeric: false,
     visibility: ()=>Promise.resolve(false),
-  },
-    {
-      field_name: 'shipments',
-      render_func: async function(order: azad_entity.IEntity, td: HTMLElement) {
-        const shipments = await (order as azad_order.IOrder).shipments();
+  }, {
+    field_name: 'shipments',
+    render_func: async function(order: azad_entity.IEntity, td: HTMLElement) {
+      const shipments = await (order as azad_order.IOrder).shipments();
+      const ul = td.ownerDocument!.createElement('ul');
+      td.textContent = '';
+      td.appendChild(ul);
+      shipments.forEach(s => {
+        const li = td.ownerDocument!.createElement('li');
+        ul.appendChild(li);
+        const t = s.transaction;
+        const html = 'delivered: ' + shipment.Delivered[s.delivered] +
+          '; status: ' + s.status +
+          (s.tracking_link != '' ? '; <a href="' + s.tracking_link + '">tracking link</a>' : '') +
+          (t ? ('; transaction: ' + t.payment_amount + ' ' + t.info_string) : '');
+        li.innerHTML = html;
+      });
+      return null;
+    },
+    is_numeric: false,
+    visibility: shipment_info_enabled,
+  }, {
+    field_name: 'to',
+    value_promise_func_name: 'who',
+    is_numeric: false,
+  }, {
+    field_name: 'date',
+    render_func:
+      (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
+      const order = entity as azad_order.IOrder;
+      return order.date().then((date: Date|null) => {
+        td.innerHTML = date ? util.dateToDateIsoString(date): '?';
+        return Promise.resolve(null);
+      });
+    },
+    is_numeric: false,
+  }, {
+    field_name: 'total',
+    value_promise_func_name: 'total',
+    is_numeric: true,
+  }, {
+    field_name: 'shipping',
+    value_promise_func_name: 'postage',
+    is_numeric: true,
+    help: 'If there are only N/A values in this column, your login session' +
+      ' may have partially expired, meaning you (and the extension) cannot' +
+      ' fetch order details. Try clicking on one of the order links in the' +
+      ' left hand column and then retrying the extension button you' +
+      ' clicked to get here.',
+  }, {
+    field_name: 'shipping_refund',
+    value_promise_func_name: 'postage_refund',
+    is_numeric: true,
+    help: 'If there are only N/A values in this column, your login session' +
+      ' may have partially expired, meaning you (and the extension) cannot' +
+      ' fetch order details. Try clicking on one of the order links in the' +
+      ' left hand column and then retrying the extension button you' +
+      ' clicked to get here.',
+  }, {
+    field_name: 'gift',
+    value_promise_func_name: 'gift',
+    is_numeric: true,
+  }, {
+    field_name: 'VAT',
+    value_promise_func_name: 'vat',
+    is_numeric: true,
+    help: TAX_HELP,
+    sites: new RegExp('amazon(?!.com)'),
+  }, {
+    field_name: 'tax',
+    value_promise_func_name: 'us_tax',
+    is_numeric: true,
+    help: TAX_HELP,
+    sites: new RegExp('\\.com$'),
+  }, {
+    field_name: 'GST',
+    value_promise_func_name: 'gst',
+    is_numeric: true,
+    help: TAX_HELP,
+    sites: new RegExp('\\.ca$'),
+  }, {
+    field_name: 'PST',
+    value_promise_func_name: 'pst',
+    is_numeric: true,
+    help: TAX_HELP,
+    sites: new RegExp('\\.ca$'),
+  }, {
+    field_name: 'refund',
+    value_promise_func_name: 'refund',
+    is_numeric: true,
+  }, {
+    field_name: 'payments',
+    render_func: (order: azad_entity.IEntity, td: HTMLElement) => {
+      return (order as azad_order.IOrder).payments().then( payments => {
         const ul = td.ownerDocument!.createElement('ul');
         td.textContent = '';
-        td.appendChild(ul);
-        shipments.forEach(s => {
-          const li = td.ownerDocument!.createElement('li');
+        payments.forEach( (payment: any) => {
+          const li = document.createElement('li');
           ul.appendChild(li);
-          const t = s.transaction;
-          const html = 'delivered: ' + shipment.Delivered[s.delivered] +
-            '; status: ' + s.status +
-            (s.tracking_link != '' ? '; <a href="' + s.tracking_link + '">tracking link</a>' : '') +
-            (t ? ('; transaction: ' + t.payment_amount + ' ' + t.info_string) : '');
-          li.innerHTML = html;
-        });
-        return null;
-      },
-      is_numeric: false,
-      visibility: shipment_info_enabled,
-    },
-    {
-      field_name: 'to',
-      value_promise_func_name: 'who',
-      is_numeric: false,
-    },
-    {
-      field_name: 'date',
-      render_func:
-        (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> => {
-        const order = entity as azad_order.IOrder;
-        return order.date().then((date: Date|null) => {
-          td.innerHTML = date ? util.dateToDateIsoString(date): '?';
-          return Promise.resolve(null);
-        });
-      },
-      is_numeric: false,
-    },
-    {
-      field_name: 'total',
-      value_promise_func_name: 'total',
-      is_numeric: true,
-    },
-    {
-      field_name: 'shipping',
-      value_promise_func_name: 'postage',
-      is_numeric: true,
-      help: 'If there are only N/A values in this column, your login session' +
-        ' may have partially expired, meaning you (and the extension) cannot' +
-        ' fetch order details. Try clicking on one of the order links in the' +
-        ' left hand column and then retrying the extension button you' +
-        ' clicked to get here.',
-    },
-    {
-      field_name: 'shipping_refund',
-      value_promise_func_name: 'postage_refund',
-      is_numeric: true,
-      help: 'If there are only N/A values in this column, your login session' +
-        ' may have partially expired, meaning you (and the extension) cannot' +
-        ' fetch order details. Try clicking on one of the order links in the' +
-        ' left hand column and then retrying the extension button you' +
-        ' clicked to get here.',
-    },
-    {
-      field_name: 'gift',
-      value_promise_func_name: 'gift',
-      is_numeric: true,
-    },
-    {
-      field_name: 'VAT',
-      value_promise_func_name: 'vat',
-      is_numeric: true,
-      help: TAX_HELP,
-      sites: new RegExp('amazon(?!.com)'),
-    },
-    {
-      field_name: 'tax',
-      value_promise_func_name: 'us_tax',
-      is_numeric: true,
-      help: TAX_HELP,
-      sites: new RegExp('\\.com$'),
-    },
-    {
-      field_name: 'GST',
-      value_promise_func_name: 'gst',
-      is_numeric: true,
-      help: TAX_HELP,
-      sites: new RegExp('\\.ca$'),
-    },
-    {
-      field_name: 'PST',
-      value_promise_func_name: 'pst',
-      is_numeric: true,
-      help: TAX_HELP,
-      sites: new RegExp('\\.ca$'),
-    },
-    {
-      field_name: 'refund',
-      value_promise_func_name: 'refund',
-      is_numeric: true,
-    },
-    {
-      field_name: 'payments',
-      render_func: (order: azad_entity.IEntity, td: HTMLElement) => {
-        return (order as azad_order.IOrder).payments().then( payments => {
-          const ul = td.ownerDocument!.createElement('ul');
-          td.textContent = '';
-          payments.forEach( (payment: any) => {
-            const li = document.createElement('li');
-            ul.appendChild(li);
-            const a = document.createElement('a');
-            li.appendChild(a);
-            // Replace unknown/none with "-" to make it look uninteresting.
-            if (!payment) {
-              a.textContent = '-';
-            } else {
-              a.textContent = payment + '; ';
-            }
-            (order as azad_order.IOrder).detail_url().then(
-              detail_url => a.setAttribute( 'href', detail_url)
-            );
-          });
-          if(datatable) {
-            datatable.rows().invalidate();
-            datatable.draw();
-          }
-          td.appendChild(ul);
-          return null;
-        });
-      },
-      is_numeric: false,
-    },
-    {
-      field_name: 'invoice',
-      render_func: (order: azad_entity.IEntity, td: HTMLElement) => {
-        return (order as azad_order.IOrder).invoice_url().then( url => {
-          if ( url ) {
-            const link = td.ownerDocument!.createElement('a');
-            link.textContent = url;
-            link.setAttribute('href', url);
-            td.textContent = '';
-            td.appendChild(link);
+          const a = document.createElement('a');
+          li.appendChild(a);
+          // Replace unknown/none with "-" to make it look uninteresting.
+          if (!payment) {
+            a.textContent = '-';
           } else {
-            td.textContent = '';
+            a.textContent = payment + '; ';
           }
-          return null;
+          (order as azad_order.IOrder).detail_url().then(
+            detail_url => a.setAttribute( 'href', detail_url)
+          );
         });
-      },
-      is_numeric: false,
-      visibility: () => settings.getBoolean('show_invoice_links'),
-    }
+        if(datatable) {
+          datatable.rows().invalidate();
+          datatable.draw();
+        }
+        td.appendChild(ul);
+        return null;
+      });
+    },
+    is_numeric: false,
+  }, {
+    field_name: 'invoice',
+    render_func: (order: azad_entity.IEntity, td: HTMLElement) => {
+      return (order as azad_order.IOrder).invoice_url().then( url => {
+        if ( url ) {
+          const link = td.ownerDocument!.createElement('a');
+          link.textContent = url;
+          link.setAttribute('href', url);
+          td.textContent = '';
+          td.appendChild(link);
+        } else {
+          td.textContent = '';
+        }
+        return null;
+      });
+    },
+    is_numeric: false,
+    visibility: () => settings.getBoolean('show_invoice_links'),
+  }
 ];
 
 const ITEM_COLS: ColSpec[] = [
   {
     field_name: 'order id',
-    render_func:
-      async function(
-        entity: azad_entity.IEntity,
-        td: HTMLElement
+    render_func: async function(
+      entity: azad_entity.IEntity,
+      td: HTMLElement
     ): Promise<null> {
       const item = entity as azad_item.IItem;
       const order_id = item.order_header.id;
@@ -322,11 +314,24 @@ const ITEM_COLS: ColSpec[] = [
     },
     is_numeric: false,
   }, {
+    field_name: 'order url',
+    render_func: async function(
+      entity: azad_entity.IEntity,
+      td: HTMLElement
+    ): Promise<null> {
+      const item = entity as azad_item.IItem;
+      const order_id = item.order_header.id;
+      const order_detail_url = item.order_header.detail_url;
+      td.innerHTML = order_detail_url;
+      return Promise.resolve(null);
+    },
+    is_numeric: false,
+    hide_in_browser: true,
+  }, {
     field_name: 'order date',
-    render_func:
-      async function(
-        entity: azad_entity.IEntity,
-        td: HTMLElement
+    render_func: async function(
+      entity: azad_entity.IEntity,
+      td: HTMLElement
     ): Promise<null> {
       const item = entity as azad_item.IItem;
       const date = item.order_header.date;
@@ -347,6 +352,11 @@ const ITEM_COLS: ColSpec[] = [
       return Promise.resolve(null);
     },
     is_numeric: false,
+  }, {
+    field_name: 'item url',
+    value_promise_func_name: 'url',
+    is_numeric: false,
+    hide_in_browser: true,
   }, {
     field_name: 'price',
     value_promise_func_name: 'price',
