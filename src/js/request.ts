@@ -262,25 +262,30 @@ class AzadRequest<T> {
   }
 
   G_Failed(reason: string): void {
-    this.check_state([base.State.SENT, base.State.DEQUEUED]);
+    this.check_state([
+      base.State.SENT,
+      base.State.DEQUEUED,
+      base.State.RESPONDED,
+    ]);
     this._scheduler.stats().increment(stats.OStatsKey.ERROR_COUNT);
+    this.change_state(base.State.FAILED);
     try {
       this._reject_response(reason);
     } catch(ex) {
       console.error('rejection rejected for', this._url, 'with', reason);
     }
-    this.change_state(base.State.FAILED);
   }
 
-  H_Convert(evt: Event): void {
+  async H_Convert(evt: Event): Promise<void> {
     this.check_state(base.State.RESPONDED);
-    const protected_converter = (evt: any): T|null => {
+    const protected_converter = async (evt: any): Promise<T|null> => {
       try {
         console.debug(
           'protected_converter', this._debug_context, this._url,
           'priority', this._priority,
         );
-        return this._event_converter(evt);
+        const t: T = await this._event_converter(evt);
+        return t;
       } catch (ex) {
         console.error(
           'event conversion failed for ',
@@ -292,9 +297,9 @@ class AzadRequest<T> {
       }
     };
 
-    const converted = protected_converter(evt);
+    const converted = await protected_converter(evt);
     if (converted == null) {
-      this.change_state(base.State.FAILED);
+      setTimeout(() => this.G_Failed('conversion failed'));
       return;
     }
 

@@ -198,25 +198,28 @@ class Order implements IOrder{
   async shipments(): Promise<shipment.IShipment[]> {
     if (this.impl.detail_promise) {
       const id = await this.id();
-      if (id == '204-1674798-1861151') {
-        console.debug('extracting shipments from 204-1674798-1861151');
+      try {
+        const details = await this.impl.detail_promise;
+        const shipments = details.shipments;
+        return shipments;
+      } catch (ex) {
+        console.warn('detail_promise rejected', ex);
       }
-      return this.impl.detail_promise.then( details => details.shipments );
     }
     return Promise.resolve([]);
   }
-  item_list(): Promise<item.IItem[]> {
+  async item_list(): Promise<item.IItem[]> {
     const items: item.IItem[] = [];
     if (this.impl.detail_promise) {
-      return this.impl.detail_promise.then( details => {
-        details.items.forEach(item => {
-          items.push(item);
-        });
+      try {
+        const details = await this.impl.detail_promise;
+        const items: item.IItem[] = details.items;
         return items;
-      });
-    } else {
-      return Promise.resolve(items);
+      } catch (ex) {
+        console.warn('detail_promise rejected', ex);
+      }
     }
+    return Promise.resolve([]);
   }
   async payments(): Promise<string[]> {
     const default_payments: string[] = [];
@@ -234,10 +237,14 @@ class Order implements IOrder{
       detail_lambda: (d: order_details.IOrderDetails) => string
   ): Promise<string> {
     if (this.impl.detail_promise) {
-      const details_and_items = await this.impl.detail_promise;
-      const details: order_details.IOrderDetails = details_and_items.details;
-      const details_string = detail_lambda(details);
-      return details_string;
+      try {
+        const details_and_items = await this.impl.detail_promise;
+        const details: order_details.IOrderDetails = details_and_items.details;
+        const details_string = detail_lambda(details);
+        return details_string;
+      } catch (ex) {
+        console.warn('detail_promise rejected', ex);
+      }
     }
     return Promise.resolve('');
   }
@@ -294,16 +301,21 @@ export async function getOrdersByYear(
   latest_year: number,
   date_filter: date.DateFilter,
 ): Promise<IOrder[]> {
-  const orderss = await Promise.all(
-    years.map(
-      function(year: number): Promise<IOrder[]> {
-        const nocache_top_level = (year == latest_year);
-        return fetchYear(
-          year, scheduler, nocache_top_level, date_filter);
-      }
-    )
-  );
-  return orderss.flat();
+  try {
+    const orderss = await Promise.all(
+      years.map(
+        function(year: number): Promise<IOrder[]> {
+          const nocache_top_level = (year == latest_year);
+          return fetchYear(
+            year, scheduler, nocache_top_level, date_filter);
+        }
+      )
+    );
+    return orderss.flat();
+  } catch (ex) {
+    console.error('getOrdersByYear blew up');
+    return [];
+  }
 }
 
 export async function getOrdersByRange(
@@ -329,7 +341,16 @@ export async function getOrdersByRange(
     }
   );
 
-  const orderss = await util.get_settled_and_discard_rejects(order_years);
+
+  const orderss = await async function() {
+    try {
+      const orderss = await util.get_settled_and_discard_rejects(order_years);
+      return orderss;
+    } catch (ex) {
+      console.error('failed to get order_years'); 
+      return [[]];
+    }
+  }();
   const orders: IOrder[] = orderss.flat();
 
   const f_in_date_window = async function(order: IOrder): Promise<boolean> {
@@ -383,6 +404,24 @@ export async function assembleDiagnostics(order: IOrder)
 
   diagnostics['items'] = await get_legacy_items(order);
 
+  async function get_tracking_data(order: ISyncOrder): Promise<Record<string, string>> {
+    const data: Record<string, string> = {};
+    order.shipments.forEach(
+      async shipment => {
+        const url = await shipment.tracking_link;
+        if (url == '') {
+          return;
+        }
+        const response = await signin.checkedFetch(util.defaulted(url, ''));
+        const html = await response.text();
+        data[url] = html;
+      }
+    );
+    return data;
+  }
+
+  diagnostics['tracking_data'] = await get_tracking_data(sync_order);
+
   return Promise.all([
     signin.checkedFetch( util.defaulted(sync_order.list_url, '') )
       .then( response => response.text())
@@ -394,11 +433,11 @@ export async function assembleDiagnostics(order: IOrder)
       .then( response => response.text() )
       .then( text => { diagnostics['invoice_html'] = text; } )
   ]).then(
-  () => diagnostics,
+    () => diagnostics,
     error_msg => {
-    notice.showNotificationBar(error_msg, document);
-    return diagnostics;
-  }
+      notice.showNotificationBar(error_msg, document);
+      return diagnostics;
+    }
   );
 }
 

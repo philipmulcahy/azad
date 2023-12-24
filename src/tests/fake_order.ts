@@ -67,6 +67,14 @@ export function orderFromTestData(
     url_map[order_dump.list_url] = order_dump.list_html;
     url_map[order_dump.detail_url] = order_dump.detail_html;
     url_map[order_dump.payments_url] = order_dump.invoice_html;
+    const tracking_data = order_dump['tracking_data'] as Record<string, string>;
+    if (tracking_data) {
+      Object.entries(tracking_data).forEach( entry => {
+        const url = entry[0];
+        const html = entry[1];
+        url_map[url] = html;
+      });
+    }
     const scheduler = request_scheduler.create_overlaid(
       'testing', url_map, ()=>null, statistics);
     const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;

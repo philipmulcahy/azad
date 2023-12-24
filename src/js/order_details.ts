@@ -34,7 +34,7 @@ export interface IOrderDetailsAndItems {
 
 export async function extractDetailPromise(
   header: order_header.IOrderHeader,
-  scheduler: request_scheduler.IRequestScheduler
+  scheduler: request_scheduler.IRequestScheduler,
 ): Promise<IOrderDetailsAndItems> {
   const context = 'id:' + header.id;
   const url = header.detail_url;
@@ -44,12 +44,13 @@ export async function extractDetailPromise(
     throw(msg);
   }
 
-  function event_converter(
+  async function event_converter(
     evt: req.Event
-  ): IOrderDetailsAndItems {
+  ): Promise<IOrderDetailsAndItems> {
     const doc = util.parseStringToDOM( evt.target.responseText );
     const url = evt.target.responseURL;
-    const shipments = shipment.get_shipments(doc, url, header, context);
+    const shipments = await shipment.get_shipments(
+      doc, url, header, context, scheduler, header.site);
     shipments.forEach(
       s => console.log('shipment: ' + s.toString()));
     return {
@@ -66,7 +67,7 @@ export async function extractDetailPromise(
   const debug_context = 'order_detail';
 
   try {
-    return req.makeAsyncRequest(
+    const details_promise = req.makeAsyncRequest(
       url,
       event_converter,
       scheduler, 
@@ -74,10 +75,11 @@ export async function extractDetailPromise(
       false,  // nocache=false: cached response is acceptable
       debug_context,
     );
+    return details_promise;
   } catch (url) {
-    const msg = 'scheduler rejected ' + header.id + ' ' + url;
+    const msg = 'scheduler synchronously rejected ' + header.id + ' ' + url;
     console.error(msg);
-    throw('timeout or other problem when fetching ' + url);
+    throw('synchronous timeout or other problem when fetching ' + url);
   }
 }
 
@@ -442,7 +444,7 @@ function extractDetailFromDoc(
       context,
     );
     if( suffix ) {
-      return 'https://' + urls.getSite() + suffix;
+      return 'https://' + header.site + suffix;
     }
     return '';
   }();

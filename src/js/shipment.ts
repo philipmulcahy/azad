@@ -3,6 +3,9 @@
 import * as item from './item';
 import * as extraction from './extraction';
 import * as order_header from './order_header';
+import * as req from './request';
+import * as request_scheduler from './request_scheduler';
+import * as url from './url';
 import * as util from './util';
 
 export interface ITransaction {
@@ -21,21 +24,24 @@ export interface IShipment {
   delivered: Delivered;
   status: string;
   tracking_link: string;
+  tracking_id: string;
   transaction: ITransaction|null
 }
 
-export function get_shipments(
+export async function get_shipments(
   order_detail_doc: HTMLDocument,
   _url: string,  // for debugging
   order_header: order_header.IOrderHeader,
   context: string,
-): IShipment[] {
+  scheduler: request_scheduler.IRequestScheduler,
+  site: string,
+): Promise<IShipment[]> {
   const doc_elem = order_detail_doc.documentElement;
   const transactions = get_transactions(order_detail_doc);
 
   const candidates = extraction.findMultipleNodeValues(
-		"//div[contains(@class, 'shipment')]",
-		doc_elem);
+    "//div[contains(@class, 'a-box shipment')]",
+    doc_elem);
 
   // We want elem to have 'shipment' as one of its classes
   // not just have one of its classes _contain_ 'shipment' in its name.
@@ -49,11 +55,17 @@ export function get_shipments(
         return classes.includes('shipment');
     });
 
-  const shipments = elems.map(e => shipment_from_elem(
+  const shipment_promises = elems.map(e => shipment_from_elem(
     e as HTMLElement,
     order_header,
     context,
+    scheduler,
+    site,
   ));
+
+  const shipments = await util.get_settled_and_discard_rejects(
+    shipment_promises
+  );
 
   if (shipments.length == transactions.length) {
     for (let i=0; i!=shipments.length; ++i) {
@@ -63,36 +75,103 @@ export function get_shipments(
   return shipments;
 }
 
-function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
-  const transaction_elems = extraction.findMultipleNodeValues(
-    "//span[normalize-space(text())= 'Transactions']/../../div[contains(@class, 'expander')]/div[contains(@class, 'a-row')]/span/nobr/..",
-    order_detail_doc.documentElement);
-  const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
-  return transactions;
+function id_from_tracking_page(evt: req.Event): string {
+  const html_text = evt.target.responseText;
+  const doc = util.parseStringToDOM(html_text);
+  const body = doc.body;
+  const xpath = "//div[contains(@class, 'pt-delivery-card-trackingId')]";
+  const id: string|null = extraction.getField(xpath, body, 'id_from_tracking_page');
+  return id!=undefined ? id : '';
 }
 
-function transaction_from_elem(elem: HTMLElement): ITransaction {
-  function enthusiastically_strip(e: Node): string {
-    return util.defaulted(e.textContent, '').replace(/\s\s+/g, ' ').trim();
+async function get_tracking_id(
+  amazon_tracking_url: string,
+  scheduler: request_scheduler.IRequestScheduler,
+): Promise<string> {
+  try {
+    const decorated_id = await req.makeAsyncRequest(
+      amazon_tracking_url,
+      id_from_tracking_page,
+      scheduler,
+      '9999',
+      false,  // nocache=false: cached response is acceptable
+      'get_tracking_id',
+    );
+    const stripped_id = decorated_id.replace(/^.*: /, '');
+    return stripped_id;
+  } catch (ex) {
+    console.warn(
+      'while trying to get tracking_id from', amazon_tracking_url, 'we got',
+      ex
+    );
+    return '';
   }
-  const info_string = enthusiastically_strip(elem.childNodes[0]);
-  const payment_amount = enthusiastically_strip(elem.childNodes[1]);
-  return {
-    payment_amount: payment_amount,
-    info_string: info_string,
-  };
 }
 
-function shipment_from_elem(
+function enthusiastically_strip(e: Node): string {
+  return util.defaulted(e.textContent, '').replace(/\s\s+/g, ' ').trim();
+}
+
+function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
+  function strategy_a(): ITransaction[] {
+    function transaction_from_elem(elem: HTMLElement): ITransaction {
+      const info_string = enthusiastically_strip(elem.childNodes[0]);
+      const payment_amount = enthusiastically_strip(elem.childNodes[1]);
+      return {
+        payment_amount: payment_amount,
+        info_string: info_string,
+      };
+    }
+    const transaction_elems = extraction.findMultipleNodeValues(
+      "//span[normalize-space(text())='Transactions']/../../div[contains(@class, 'expander')]/div[contains(@class, 'a-row')]/span/nobr/..",
+      order_detail_doc.documentElement);
+    const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
+    return transactions;
+  }
+  function strategy_b(): ITransaction[] {
+    function transaction_from_elem(elem: HTMLElement): ITransaction {
+
+      // 'December 17, 2023 - Visa ending in 8489: $41.49'
+      const text = enthusiastically_strip(elem.childNodes[3])
+        .replace(/\n/g, ' ')
+        .replace(/(  *)/g, ' ');
+
+      const payment_amount = text.replace(/.*: ?/, '');
+      const info_string = text.replace(/:.*/, '');
+      return {
+        payment_amount: payment_amount,
+        info_string: info_string,
+      };
+    }
+    const transaction_elems = extraction.findMultipleNodeValues(
+      "//span[normalize-space(text())='Transactions']/../../div[contains(@class, 'expander')]/div[contains(@class, 'a-row')]/span/..",
+      order_detail_doc.documentElement);
+    const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
+    return transactions;
+  }
+  const result = util.first_acceptable_non_throwing(
+    [strategy_a, strategy_b],
+    (result: ITransaction[])=>result.length > 0,
+    []
+  );
+  return result ? result : [];  // tslint whingeing about nulls.
+}
+
+async function shipment_from_elem(
   shipment_elem: HTMLElement,
   order_header: order_header.IOrderHeader,
-  context: string
-): IShipment {
+  context: string,
+  scheduler: request_scheduler.IRequestScheduler,
+  site: string,
+): Promise<IShipment> {
+  const tracking_link: string = get_tracking_link(shipment_elem, site);
+  const tracking_id: string = await get_tracking_id(tracking_link, scheduler);
   return {
     items: item.extractItems(shipment_elem, order_header, context),
     delivered: is_delivered(shipment_elem),
     status: get_status(shipment_elem),
-    tracking_link: tracking_link(shipment_elem),
+    tracking_link: tracking_link,
+    tracking_id: tracking_id,
     transaction: null,
   };
 }
@@ -108,7 +187,7 @@ function is_delivered(shipment_elem: HTMLElement): Delivered {
 function get_status(shipment_elem: HTMLElement): string {
   try {
     const elem = extraction.findSingleNodeValue(
-      "//div[contains(@class, 'shipment-info-container')]//div[@class='a-row']/span",
+      ".//div[contains(@class, 'shipment-info-container')]//div[@class='a-row']/span",
       shipment_elem,
       'shipment.status'
     );
@@ -119,15 +198,18 @@ function get_status(shipment_elem: HTMLElement): string {
   }
 }
 
-function tracking_link(shipment_elem: HTMLElement): string {
+function get_tracking_link(shipment_elem: HTMLElement, site: string): string {
   return util.defaulted_call(
     () => {
       const link_elem = extraction.findSingleNodeValue(
-        "//a[contains(@href, '/progress-tracker/')]",
+        ".//a[contains(@href, '/progress-tracker/')]",
         shipment_elem,
         'shipment.tracking_link'
       );
-      return util.defaulted((link_elem as HTMLElement).getAttribute('href'), '');
+      const base_url = util.defaulted((link_elem as HTMLElement)
+                           .getAttribute('href'), '');
+      const full_url = url.normalizeUrl(base_url, site);
+      return full_url;
     },
     ''
   );
