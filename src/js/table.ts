@@ -635,7 +635,7 @@ async function addTable(
 
     const actual_cols = await cols;
     actual_cols.forEach( col_spec => {
-      const hidden = col_spec.hide_in_browser;
+      const hidden: boolean = col_spec.hide_in_browser ? true: false;
       [hr, fr].forEach(
         parent_row => {
           addHeader(
@@ -720,45 +720,17 @@ async function reallyDisplay(
           [10, 25, 50, 100, 'All'] ],
         'footerCallback': function() {
           const api = this.api();
-          // Remove the formatting to get integer data for summation
-          const floatVal = function(v: string | number): number {
-            const parse = function(i: string | number): number {
-              try {
-                if(typeof i === 'string') {
-                  return (
-                    i === 'N/A' ||
-                      i === '-' ||
-                      i === 'pending'
-                  ) ?
-                    0 :
-                    parseFloat(
-                      i.replace(
-                        /^([£$]|AUD|CAD|EUR|GBP|USD) */,
-                        ''
-                      ).replace(/,/, '.')
-                    );
-                }
-                if(typeof i === 'number') { return i; }
-              } catch (ex) {
-                console.warn(ex);
-              }
-              return 0;
-            };
-            const candidate = parse(v);
-            if (isNaN(candidate)) {
-              return 0;
-            }
-            return candidate;
-          };
           let col_index = 0;
           cols.then( cols => cols.forEach( col_spec => {
             const sum_col = function(col: any) {
               const data = col.data();
               if (data) {
-                const sum = data
-                .map( (v: string | number) => floatVal(v) )
-                .reduce( (a: number, b: number) => a + b, 0 );
-                return floatVal(sum);
+                const sum = data.map( (v: string | number) => util.floatVal(v) )
+                                .reduce(
+                                  (a: number, b: number) => a+b,
+                                   0
+                                );
+                return util.floatVal(sum);
               } else {
                 return 0;
               }
