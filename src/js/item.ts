@@ -2,8 +2,9 @@
 
 import * as azad_entity from './entity';
 import * as extraction from './extraction';
-import * as util from './util';
 import * as order_header from './order_header';
+import * as util from './util';
+import * as urls from './url';
 
 export interface IItem extends azad_entity.IEntity {
   description: string;
@@ -121,7 +122,7 @@ function strategy0(
       order_header: order_header,
       price: price,
       quantity: qty,
-      url: url,
+      url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
     };
   });
@@ -165,7 +166,7 @@ function strategy1(
       order_header: order_header,
       price: price,
       quantity: qty,
-      url: url,
+      url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
     };
   });
@@ -212,7 +213,7 @@ function strategy2(
       order_header: order_header,
       price: price,
       quantity: qty,
-      url: url,
+      url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
     };
   });
@@ -256,7 +257,7 @@ function strategy3(
       order_header: order_header,
       price: price,
       quantity: qty,
-      url: url,
+      url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
     };
   });
