@@ -45,6 +45,60 @@ export function parseStringToDOM(html: string) {
     }
 }
 
+function clean_mixed_decimal_separators(number_string: string): string {
+  if (number_string.includes(',') && number_string.includes('.')) {
+    const seps = number_string.replace(/[^.,]/g, '');
+    const last = seps.substr(seps.length-1,1);
+    const others = seps.replace(last, '');
+    if (others.length != (seps.length-1)) {
+      throw Error(number_string + ' has too many ' + last + ' chars.');
+    }
+    const cleaned = number_string.replace(others[0], '');
+    return cleaned;
+  }
+  return number_string;
+}
+
+function parseToNumber(i: string | number): number {
+  try {
+    if(typeof i === 'string') {
+      const c = clean_mixed_decimal_separators(i);
+      return (
+        c === 'N/A' ||
+        c === '-' ||
+        c === ''  ||
+        c === 'pending'
+      ) ?
+        0 :
+        parseFloat(
+          c.replace( /^([£$]|AUD|CAD|EUR|GBP|USD) */, '' )
+           .replace( /,/, '.' )
+        );
+    }
+    if(typeof i === 'number') {
+      return i;
+    }
+  } catch (ex) {
+    console.warn(ex);
+  }
+  return 0;
+};
+
+// Remove the formatting to get integer data for summation
+function reallyfloatVal(v: string | number): number {
+  const candidate = parseToNumber(v);
+  if (isNaN(candidate)) {
+    return 0;
+  }
+  return candidate;
+};
+
+export function floatVal(v: string|number): number {
+  const result = reallyfloatVal(v);
+  console.log('floatVal', v, result);
+  return result;
+}
+
 export function isNumeric(n: any) {
     return !isNaN(parseFloat(n)) && isFinite(n);
 }
