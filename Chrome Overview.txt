@@ -1,5 +1,5 @@
 This extension extracts order history from your Amazon account.
-Amazon used to provide csv reports via https://www.amazon.com/gp/b2b/for US customers only, but it didn't include digital orders, shipping, total amount, or payment information. Sometime in the middle of 2020, Amazon withdrew the feature even in the US.
+Amazon used to provide csv reports for US customers only, but it didn't include digital orders, shipping, total amount, or payment information. Sometime in the middle of 2020, Amazon withdrew the feature even in the US.
 
 This extension aims to fill the gap.
 
@@ -10,7 +10,7 @@ After you install the extension, you won't see anything until you view your orde
 Get to your orders page, then click on the extension icon at the top right of the Chrome window; look for an orange upper case A. Once you do this, you  should see buttons with years on the extensions pop-up window.
 Clicking on one of these buttons causes the extension to sift through all of your order pages and show you a searchable, sortable table with all of the orders in. It can take a few seconds to get all of the pages.
 A blue button enables you to download a CSV (viewable in Excel and other spreadsheet programs) of the order table the extension has assembled.
-It's better not to have more than one amazon tab open while the extension is doing stuff.
+It's better not to have more than one amazon tab open while the extension is doing stuff. I (Philip) find the Items CSV more useful: https://github.com/philipmulcahy/azad/blob/master/doc/img/items_csv_2023-12.png
 
 Currently supported:
 amazon.com.au, .ca, .de, .es, .in, co.uk, com, .com.mx (partial).
@@ -24,33 +24,55 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 4) using English - you're not paying me and while I can scrape by in French and German, I'm spending more of my spare time on this project than you are, and it's not about learning human languages.
 5) having read the (very brief) instructions - and if English is not your favorite language, you have two choices:
    i) Google translate (don't send it to me!)
-   ii) Sending me a translation (better than Google's) of the instructions. 
+   ii) Sending me a translation (better than Google's) of the instructions.
        I will figure out how to incorporate it and list you in the credits.
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.10.0
+---------------
+* More urls in csv files.
+* Locales that use commas for decimal separators (such as .fr and .de) should now see more credible totals at the bottom of relevant (money) columns.
+Premium:
+* Fixed some shipment bugs (some orders with multiple shipments saw all shipped items be labelled with the first shipment's details)
+
+Changes 1.9.34
+---------------
+More likely to be able to get past unparseable orders without getting stuck.
+More likely to log "bad" order details.
+Better caching (more room, and not sharing target site cache).
+
 Changes 1.9.32
 ---------------
 Bug fix for .com (and maybe other regions?): site(s) changed sometime in early September 2023, preventing year fetching by 1.9.31 and earlier.
-
-Changes 1.9.31
----------------
-Lots of bug fixes including removing accidental/inappropriate paywall prompts
-on selection of free features.
-Addition of new shipment information and tracking link feature (behind-paywall: if this proves to be reliable, the annual preview subscription will rise).
-
-Changes 1.9.30
----------------
-Item ASIN and last 1/2/3 months' orders features are free to all users.
-Partial implementation of automatic cache clearance when a new version is installed.
 
 Source Code
 -------------
 https://github.com/philipmulcahy/azad
 contributors (Thank you!): https://github.com/philipmulcahy/azad/graphs/contributors
 
+Premium Features
+---------------
+Please read https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md
+
 Donations
 ---------------
 I have a day job, and cannot accept personal donations.
 Don't worry: just redirect your gratitude here instead: https://www.justgiving.com/fundraising/azad-pah
-If you seek commercial features, please read https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md before even thinking about contacting me directly. I am bored of reading proposals from malware distributors.
+Donations entitle you to nothing except a warm feeling of righteousness/generosity.
+
+Premium Subscriptions
+---------------
+It is necessary to subscribe ONLY if you want to use a small set of features aimed at commercial users. Paying for an annual subscription also entitles you to any new subscription-only features I might add during your subscription period. Please see the blurb in the subscription workflow for more details, and also:
+https://github.com/philipmulcahy/azad/blob/master/README.md#subscribe-to-premium-features. I offer no warranty of any kind: this is a personal project that you are welcome to use and contribute to.
+
+I am a human being, not a corporation and I don't make my living from this extension. Please bear that in mind before complaining about bugs or making false statements in your reviews of this product - others have been there ahead of you:
+The most amusing (and demotivating) posts tend to fall into one or more of the following three categories.
+i) I ordered stuff from you and it hasn't arrived: no stars for you Philip (I am not Amazon, and you haven't given me any of your money).
+ii) Your extension stole my credit card details (It never sees your card details - only stripe.com gets those - and it carefully avoids seeing your amazon login credentials as well - you are free to inspect the source code to verify this)
+iii) You have to pay, and it still doesn't work. (You don't, and I'm sorry it's not working for you - would you like some help?)
+Strangely none of the authors ever follows up with evidence or indeed any reasoned feedback at all.
+
+New Commercial Features
+---------------
+If you seek new commercial features, please read https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md before even thinking about contacting me directly. I am bored of reading proposals from malware distributors.

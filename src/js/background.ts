@@ -2,6 +2,7 @@
 
 'use strict';
 
+import * as cachestuff from './cachestuff';
 import * as util from './util';
 import * as extpay from './extpay_client';
 import * as msg from './message_types';
@@ -55,12 +56,12 @@ function registerConnectionListener() {
                     control_port?.postMessage(msg);
                   } catch (ex) {
                     console.debug(
-                      'could not post stats message to control port');
+                      'cannot post stats message to non-existent control port');
                   }
                 }
                 break;
               default:
-                console.warn('unknown action: ' + msg.action);
+                console.debug('unknown action: ' + msg.action);
                 break;
             }
           });
@@ -211,10 +212,9 @@ function registerMessageListener() {
             url: request.cookie_url,
             name: request.cookie_name,
           },
-          () =>
-            console.log(
-              'removed cookie ' + request.cookie_url + ' ' + request.cookie_name
-            )
+          () => console.log(
+            'removed cookie ' + request.cookie_url + ' ' + request.cookie_name
+          )
         );
         break;
       case 'open_tab':
@@ -222,7 +222,7 @@ function registerMessageListener() {
         chrome.tabs.create({ url: request.url });
         break;
       default:
-        console.warn('unknown action: ' + request.action);
+        console.debug('unknown action: ' + request.action);
     }
   });
 }
@@ -252,10 +252,16 @@ async function handleAuthorisationRequest(
   const authorised =
     feature_id == 'premium_preview' ? await extpay.check_authorised() : false;
   settings.storeBoolean('preview_features_enabled', authorised);
-  control_port?.postMessage({
-    action: 'authorisation_status',
-    authorisation_status: authorised,
-  });
+  try {
+    control_port?.postMessage({
+      action: 'authorisation_status',
+      authorisation_status: authorised,
+    });
+  } catch(ex) {
+    if (!(ex as string).includes('disconnected')) {
+      throw ex;
+    }
+  }
 }
 
 function registerVersionUpdateListener() {
@@ -276,6 +282,7 @@ function registerVersionUpdateListener() {
   });
 }
 
+cachestuff.registerCacheListenerInBackgroundPage();
 registerVersionUpdateListener();
 registerConnectionListener();
 registerRightClickActions();

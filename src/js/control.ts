@@ -212,7 +212,7 @@ function handleYearClick(evt: { target: { value: any; }; }) {
   const years = [year];
   activateScraping(years);
   if (background_port) {
-    console.log('sending scrape_years', year);
+    console.log('sending scrape_years', year, 'message');
     background_port.postMessage({
       action: 'scrape_years',
       years: years,
@@ -228,7 +228,7 @@ async function handleMonthsClick(evt: { target: { value: any; }; }) {
   const start_date = util.subtract_months(end_date, month_count);
   activateScraping([month_count]);
   if (background_port) {
-    console.log('sending scrape_range', start_date, end_date);
+    console.log('sending scrape_range', start_date, end_date, 'message');
     background_port.postMessage({
       action: 'scrape_range',
       start_date: start_date,
