@@ -85,19 +85,13 @@ function parseToNumber(i: string | number): number {
 };
 
 // Remove the formatting to get integer data for summation
-function reallyfloatVal(v: string | number): number {
+export function floatVal(v: string | number): number {
   const candidate = parseToNumber(v);
   if (isNaN(candidate)) {
     return 0;
   }
   return candidate;
 };
-
-export function floatVal(v: string|number): number {
-  const result = reallyfloatVal(v);
-  console.log('floatVal', v, result);
-  return result;
-}
 
 export function isNumeric(n: any) {
     return !isNaN(parseFloat(n)) && isFinite(n);
