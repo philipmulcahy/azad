@@ -333,6 +333,7 @@ function extractDetailFromDoc(
   const us_tax = function(): string {
     let a = extraction.by_regex(
       [
+        '//div[text() = "Tax Collected:"]/following-sibling::div/text()',
         '//span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span/text()',
         '//span[contains(@id, "totalTax-amount")]/text()',
       ],
