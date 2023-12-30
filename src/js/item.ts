@@ -10,6 +10,7 @@ export interface IItem extends azad_entity.IEntity {
   description: string;
   price: string;
   quantity: number;
+  refund: string;
   url: string;
   asin: string;
   order_header: order_header.IOrderHeader;
@@ -122,6 +123,7 @@ function strategy0(
       order_header: order_header,
       price: price,
       quantity: qty,
+      refund: '',
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
     };
@@ -166,6 +168,7 @@ function strategy1(
       order_header: order_header,
       price: price,
       quantity: qty,
+      refund: '',
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
     };
@@ -213,6 +216,7 @@ function strategy2(
       order_header: order_header,
       price: price,
       quantity: qty,
+      refund: '',
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
     };
@@ -257,6 +261,7 @@ function strategy3(
       order_header: order_header,
       price: price,
       quantity: qty,
+      refund: '',
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
     };

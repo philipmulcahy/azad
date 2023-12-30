@@ -50,6 +50,7 @@ export async function enriched_items_from_orders(
       description: i.description,
       price: i.price,
       quantity: i.quantity,
+      refund: i.refund,
       url: i.url,
       asin: i.asin,
       order_header: i.order_header,

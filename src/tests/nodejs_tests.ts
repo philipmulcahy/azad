@@ -131,6 +131,7 @@ function runAllOrderTests():  Promise<ITestResult[]> {
       // .filter(target => target.order_id == '114-5123493-8741858')  // Eric Corbin
       // .filter(target => target.order_id == '202-7225797-3968301')
       // .filter(target => target.order_id == '203-5043319-1160320')
+      .filter(target => target.order_id == '205-7528990-3423569')
       // .filter(target => target.order_id == '206-1563844-4321133')
       // .filter(target => target.order_id == 'D01-4607619-0755448')  // danniboy
       // .filter(target => target.order_id == 'D01-8755888-0539825')
