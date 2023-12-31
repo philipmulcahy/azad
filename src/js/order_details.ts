@@ -439,7 +439,7 @@ function extractDetailFromDoc(
 
   const invoice_url: string = function (): string {
     const suffix: string|null = getAttribute(
-      '//a[contains(@href, "/invoice")]',
+      '//a[contains(@href, "/invoice") or contains(@href, "_invoice")]',
       'href',
       doc.documentElement,
       context,
