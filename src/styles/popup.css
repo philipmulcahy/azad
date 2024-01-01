@@ -142,3 +142,7 @@ a:hover {
 a:active {
   text-decoration: underline;
 }
+
+#azad_table_type_setting {
+  border: 1px solid orange;
+}

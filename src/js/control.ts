@@ -121,6 +121,47 @@ function handleAuthorisationMessage(authorised: boolean): void {
   $('#azad_extensionpay_status').html(authorised_html);
 }
 
+function registerTableTypeRadioButtons() {
+  // Set up checked state from settings.
+  Array.from(document.getElementsByClassName('azad_table_type')).forEach(
+    (elem: Element) => {
+      const id = elem.getAttribute('id');
+      settings.getString('azad_table_type').then(
+        (table_type: string) => {
+          console.log('for azad_table_type got', table_type);
+          if ('azad_show_' + table_type == elem.getAttribute('id') ) {
+            elem.setAttribute('checked', 'checked');
+          }
+        },
+        (error: string) => console.error(error),
+      );
+    }
+  );
+
+  // Set up click listeners.
+  $('.azad_table_type').on('click', (evt: any) => {
+    (async () => {
+      try {
+        Array.from(document.getElementsByClassName('azad_table_type')).forEach(
+          async (elem: Element) => {
+            if (elem.getAttribute('id') == evt.target.getAttribute('id')) {
+              elem.setAttribute('checked', 'checked');
+              console.log('added checked attribute to', evt.target.getAttribute('id'));
+              const table_type = elem.getAttribute('id')!.replace('azad_show_', '');
+              await settings.storeString('azad_table_type', table_type)
+            } else {
+              elem.removeAttribute('checked');
+              console.log('removed checked attribute from', elem.getAttribute('id'));
+            }
+          }
+        );
+      } catch (ex) {
+        console.warn('failed during registration of table type radio buttons', ex);
+      }
+    })();
+  });
+}
+
 function registerActionButtons() {
   try {
     $('#azad_clear_cache').on('click', () => {
@@ -253,6 +294,7 @@ function init() {
   connectToBackground();
   registerActionButtons();
   registerPageButtons();
+  registerTableTypeRadioButtons();
 }
 
 $(document).ready( () => init() );

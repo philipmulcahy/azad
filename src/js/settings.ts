@@ -142,6 +142,14 @@ export function initialiseUi(): Promise<void> {
 }
 
 export function storeBoolean(key: string, value: boolean): Promise<void> {
+  return store<boolean>(key, value);
+}
+
+export function storeString(key: string, value: string): Promise<void> {
+  return store<string>(key, value);
+}
+
+function store<T>(key: string, value: T): Promise<void> {
   return new Promise<void>( function( resolve, reject ) {
     chrome.storage.sync.get(
       EXTENSION_KEY,
@@ -171,13 +179,21 @@ export function storeBoolean(key: string, value: boolean): Promise<void> {
 }
 
 export function getBoolean(key: string): Promise<boolean> {
-  return new Promise<boolean>( function( resolve ) {
+  return get<boolean>(key);
+}
+
+export function getString(key: string): Promise<string> {
+  return get<string>(key);
+}
+
+export function get<T>(key: string): Promise<T> {
+  return new Promise<T>( function( resolve ) {
     chrome.storage.sync.get(
       EXTENSION_KEY,
       function(entries) {
         const settings = getSettings(entries);
         const any_value = settings[key];
-        const value = <boolean>any_value;
+        const value = <T>any_value;
         resolve(value);
       }
     );
