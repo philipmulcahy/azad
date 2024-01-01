@@ -127,11 +127,12 @@ div#footer table tbody tr td {
     text-decoration: none;
 }
 
-a:link {
-  text-decoration: none;
+a.azad_link {
+    font-weight: bold;
+    text-decoration: underline dotted;
 }
 
-a:visited {
+a:link {
   text-decoration: none;
 }
 
