@@ -1,5 +1,6 @@
 /* Copyright(c) 2019, 2023 Philip Mulcahy. */
 
+const $ = require('jquery');
 import * as extraction from './extraction';
 import * as ui_messages from  './ui_messages';
 
@@ -97,17 +98,19 @@ async function updateElements(
   return;
 }
 
-async function setElemClickHandlers(
+async function setCheckboxElemClickHandlers(
   key_to_elem: Record<string, HTMLElement>
 ): Promise<void> {
-  console.info('settings.setElemClickHandlers() starting');
+  console.info('settings.setCheckboxElemClickHandlers() starting');
   for( const key of Object.keys(key_to_elem) ) {
     const elem = key_to_elem[key];
     if (elem) {
       elem.onclick = async function() {
         let value: boolean = await getBoolean(key);
         value = value ? false : true;
-        if (elem.parentElement?.getAttribute('class')?.includes('azad_disabled'))
+        if (elem.parentElement
+                ?.getAttribute('class')
+                ?.includes('azad_disabled'))
         {
           const preview_authorised = await getBoolean(
             'preview_features_enabled');
@@ -125,6 +128,70 @@ async function setElemClickHandlers(
   }
 }
 
+export async function registerTableTypeRadioButtons() {
+  const SETTINGS_KEY = 'azad_table_type';
+
+  // Make sure that a table type is set.
+  let initial_table_type = await getString(SETTINGS_KEY);
+  if (!['orders', 'items', 'shipments'].includes(initial_table_type)) {
+    initial_table_type = 'orders';
+    await storeString(SETTINGS_KEY, initial_table_type);
+  }
+
+  // Set up checked state from settings.
+  Array.from(document.getElementsByClassName('azad_table_type')).forEach(
+    (elem: Element) => {
+      const id = elem.getAttribute('id');
+      console.log('for azad_table_type got', initial_table_type);
+      if ('azad_show_' + initial_table_type == elem.getAttribute('id') ) {
+        elem.setAttribute('checked', 'checked');
+      }
+    }
+  );
+
+  async function radio_button_click_handler(evt: Event) {
+    try {
+      const preview_authorised = await getBoolean('preview_features_enabled');
+      const clicked = evt.target as Element;
+      const target_id = clicked.getAttribute('id');
+      const table_type = clicked.getAttribute('id')!.replace('azad_show_', '');
+      const target_class = clicked.getAttribute('class');
+      const azad_disabled = target_class!.includes('azad_disabled');
+      if (azad_disabled) {
+        if (preview_authorised) {
+          // They'll be confused if they get a table with no columns.
+          await storeBoolean('show_shipment_info', true);
+        } else {
+          setTimeout(
+            () => {
+              alert(ui_messages.preview_feature_disabled);
+              const default_button = document.getElementById(
+                'azad_show_orders');
+              default_button?.dispatchEvent(new Event('click'));
+            },
+            100,
+          );
+          throw 'feature disabled';
+        }
+      }
+      setTimeout(()=>clicked.setAttribute('checked', 'checked'), 10);
+      await storeString(SETTINGS_KEY, table_type);
+    } catch (ex) {
+      console.warn('failed during handling table type radio button event', ex);
+    }
+  }
+
+  // Set up click listeners.
+  const radio_buttons = Array.from(
+    document.getElementsByClassName('azad_table_type'))
+  radio_buttons.forEach(
+    btn => btn.addEventListener(
+      'click',
+      radio_button_click_handler
+    )
+  );
+}
+
 export function initialiseUi(): Promise<void> {
   console.info('settings.initialiseUi() starting');
   return new Promise<void>( function( resolve ) {
@@ -134,7 +201,7 @@ export function initialiseUi(): Promise<void> {
         const settings = getSettings(entries);
         const key_to_elem: Record<string, HTMLElement> = getElementsByKey();
         await updateElements(key_to_elem, settings);
-        setElemClickHandlers(key_to_elem);
+        setCheckboxElemClickHandlers(key_to_elem);
         resolve();
       }
     );

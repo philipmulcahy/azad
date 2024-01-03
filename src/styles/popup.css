@@ -69,6 +69,10 @@ td.azad_disabled {
   color: lightgray;
 }
 
+td.azad_disabled input {
+  color: lightgray;
+}
+
 div.azad_separator {
     height: 10px;
     background-color: white;

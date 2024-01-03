@@ -20,12 +20,13 @@ export enum Delivered {
 }
 
 export interface IShipment {
+  shipment_id: string,
   items: item.IItem[],
   delivered: Delivered;
   status: string;
   tracking_link: string;
   tracking_id: string;
-  transaction: ITransaction|null
+  transaction: ITransaction|null,
 }
 
 export async function get_shipments(
@@ -108,6 +109,12 @@ async function get_tracking_id(
   }
 }
 
+function extract_shipment_id(tracking_link: string): string {
+  // https://www.amazon.co.uk/progress-tracker/package/ref=ppx_od_dt_b_track_package?_encoding=UTF8&itemId=lkpgkspopoluuo&orderId=202-1416149-4038736&packageIndex=0&shipmentId=DT7cMbTTr&vt=ORDER_DETAILS
+  return tracking_link.replace(/.*shipmentId=/, '')
+                      .replace(/&.*/, '');
+}
+
 function enthusiastically_strip(e: Node): string {
   return util.defaulted(e.textContent, '').replace(/\s\s+/g, ' ').trim();
 }
@@ -166,7 +173,11 @@ async function shipment_from_elem(
 ): Promise<IShipment> {
   const tracking_link: string = get_tracking_link(shipment_elem, site);
   const tracking_id: string = await get_tracking_id(tracking_link, scheduler);
+  const shipment_id = tracking_id != '' ?
+                      extract_shipment_id(tracking_link) :
+                      '';
   return {
+    shipment_id: shipment_id,
     items: item.extractItems(shipment_elem, order_header, context),
     delivered: is_delivered(shipment_elem),
     status: get_status(shipment_elem),

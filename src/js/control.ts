@@ -6,6 +6,8 @@ const $ = require('jquery');
 
 import * as settings from './settings';
 import * as util from './util';
+import * as ui_messages from './ui_messages';
+
 
 $(document).ready(function() {
   $('body').on(
@@ -119,47 +121,6 @@ function handleAuthorisationMessage(authorised: boolean): void {
     'Preview/Premium features <b>enabled</b>' :
     'Preview/Premium features <b>disabled</b>';
   $('#azad_extensionpay_status').html(authorised_html);
-}
-
-function registerTableTypeRadioButtons() {
-  // Set up checked state from settings.
-  Array.from(document.getElementsByClassName('azad_table_type')).forEach(
-    (elem: Element) => {
-      const id = elem.getAttribute('id');
-      settings.getString('azad_table_type').then(
-        (table_type: string) => {
-          console.log('for azad_table_type got', table_type);
-          if ('azad_show_' + table_type == elem.getAttribute('id') ) {
-            elem.setAttribute('checked', 'checked');
-          }
-        },
-        (error: string) => console.error(error),
-      );
-    }
-  );
-
-  // Set up click listeners.
-  $('.azad_table_type').on('click', (evt: any) => {
-    (async () => {
-      try {
-        Array.from(document.getElementsByClassName('azad_table_type')).forEach(
-          async (elem: Element) => {
-            if (elem.getAttribute('id') == evt.target.getAttribute('id')) {
-              elem.setAttribute('checked', 'checked');
-              console.log('added checked attribute to', evt.target.getAttribute('id'));
-              const table_type = elem.getAttribute('id')!.replace('azad_show_', '');
-              await settings.storeString('azad_table_type', table_type)
-            } else {
-              elem.removeAttribute('checked');
-              console.log('removed checked attribute from', elem.getAttribute('id'));
-            }
-          }
-        );
-      } catch (ex) {
-        console.warn('failed during registration of table type radio buttons', ex);
-      }
-    })();
-  });
 }
 
 function registerActionButtons() {
@@ -289,12 +250,12 @@ function handleStopClick() {
 function init() {
   settings.startMonitoringSettingsStorage();
   settings.initialiseUi();
+  settings.registerTableTypeRadioButtons();
   console.log('init');
   activateIdle();
   connectToBackground();
   registerActionButtons();
   registerPageButtons();
-  registerTableTypeRadioButtons();
 }
 
 $(document).ready( () => init() );

@@ -15,15 +15,16 @@ export interface IEnrichedItem extends item.IItem {
   shipment: shipment.IShipment;
 }
 
-export async function enriched_items_from_orders(
-  orders: order.IOrder[],
-): Promise<IEnrichedItem[]> {
+export async function enriched_shipments_from_orders(
+  orders: order.IOrder[]
+): Promise<IEnrichedShipment[]> {
   const oop = orders.map(o => o.sync());
   const oo = await util.get_settled_and_discard_rejects(oop);
   const shipments: IEnrichedShipment[] = oo.flatMap( o => {
     const ss = o.shipments;
     if (ss.length == 0) {
       ss.push({
+        shipment_id: '',
         items: o.item_list,
         delivered: shipment.Delivered.UNKNOWN,
         status: 'no shipment',
@@ -33,6 +34,7 @@ export async function enriched_items_from_orders(
       });
     }
     return ss.map( s => ({
+      shipment_id: s.shipment_id,
       order: o,
       items: s.items,
       delivered: s.delivered,
@@ -43,6 +45,13 @@ export async function enriched_items_from_orders(
     }));
     return shipments;
   });
+  return shipments;
+}
+
+export async function enriched_items_from_orders(
+  orders: order.IOrder[],
+): Promise<IEnrichedItem[]> {
+  const shipments = await enriched_shipments_from_orders(orders);
   const items: IEnrichedItem[] = shipments.flatMap( s => {
     const ii = s.items;
     return ii.map( i => ({

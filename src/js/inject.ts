@@ -102,11 +102,7 @@ async function showOrdersOrItems(
         );
     }
 
-    const items_not_orders = await settings.getBoolean('show_items_not_orders');
-
-    // TODO: remove the third param from this call, and chase the removal
-    // all the way down the call tree below it.
-    return azad_table.display(orders, beautiful_table, items_not_orders);
+    return azad_table.display(orders, beautiful_table);
 }
 
 async function fetchAndShowOrdersByYears(
