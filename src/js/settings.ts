@@ -48,7 +48,7 @@ function reflow(elem: HTMLElement) {
   location.reload();
 }
 
-function updateElement(elem: HTMLElement, value: boolean) {
+function updateCheckBoxElement(elem: HTMLElement, value: boolean) {
   console.info('settings.updateElem(...)');
   if (value) {
     elem.setAttribute('checked', 'true');
@@ -121,7 +121,7 @@ async function setCheckboxElemClickHandlers(
         }
         storeBoolean(key, value);
         if (elem) {
-          updateElement(elem, value);
+          updateCheckBoxElement(elem, value);
         }
       };
     }
@@ -170,6 +170,16 @@ export async function registerTableTypeRadioButtons() {
       const table_type = target_id!.replace('azad_show_', '');
       clicked.setAttribute('checked', 'checked');
       await storeString(SETTINGS_KEY, table_type);
+      if (table_type == 'shipments') {
+        const show_shipment_info = await getBoolean('show_shipment_info');
+        if (!show_shipment_info) {
+          // They're asking for the shipments table, so they might be confused
+          // if most/all of the shipment related columns are missing.
+          document.getElementById('show_shipment_info')!
+                  .dispatchEvent(new Event('click'));
+        }
+      }
+      reflow(clicked!.parentElement!.parentElement as HTMLElement);
     } catch (ex) {
       console.warn('failed during handling table type radio button event', ex);
     }
