@@ -31,6 +31,7 @@ export async function enriched_shipments_from_orders(
         tracking_link: '',
         tracking_id: '',
         transaction: null,
+        refund: '',
       });
     }
     return ss.map( s => ({
@@ -42,6 +43,7 @@ export async function enriched_shipments_from_orders(
       tracking_link: s.tracking_link,
       tracking_id: s.tracking_id,
       transaction: s.transaction,
+      refund: s.refund,
     }));
     return shipments;
   });
