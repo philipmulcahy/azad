@@ -249,8 +249,10 @@ async function handleAuthorisationRequest(
   feature_id: string,
   control_port: msg.ControlPort | null
 ): Promise<void> {
-  const authorised =
-    feature_id == 'premium_preview' ? await extpay.check_authorised() : false;
+  const ext_pay_authorised = await extpay.check_authorised();
+  const authorised = feature_id == 'premium_preview' ?
+    ext_pay_authorised :
+    false;
   settings.storeBoolean('preview_features_enabled', authorised);
   try {
     control_port?.postMessage({
@@ -258,7 +260,8 @@ async function handleAuthorisationRequest(
       authorisation_status: authorised,
     });
   } catch(ex) {
-    if (!(ex as string).includes('disconnected')) {
+    const e = ex!.toString();
+    if (!(e as string).includes('disconnected')) {
       throw ex;
     }
   }

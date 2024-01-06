@@ -1,5 +1,6 @@
 /* Copyright(c) 2019, 2023 Philip Mulcahy. */
 
+const $ = require('jquery');
 import * as extraction from './extraction';
 import * as ui_messages from  './ui_messages';
 
@@ -47,7 +48,7 @@ function reflow(elem: HTMLElement) {
   location.reload();
 }
 
-function updateElement(elem: HTMLElement, value: boolean) {
+function updateCheckBoxElement(elem: HTMLElement, value: boolean) {
   console.info('settings.updateElem(...)');
   if (value) {
     elem.setAttribute('checked', 'true');
@@ -57,20 +58,20 @@ function updateElement(elem: HTMLElement, value: boolean) {
   reflow(elem);
 }
 
-async function updateElements(
+async function updateCheckboxElements(
   elements: Record<string, HTMLElement>,
   values: Record<string, boolean>
 ): Promise<void> {
-  console.info('settings.updateElements(...)');
+  console.info('settings.updateCheckboxElements(...)');
   const preview_authorised = await getBoolean('preview_features_enabled');
-  console.info('settings.updateElements(...) preview_authorised', preview_authorised);
+  console.info('settings.updateCheckboxElements(...) preview_authorised', preview_authorised);
   for ( const key of Object.keys(elements) ) {
     const value: boolean = (values && key in values) ?
       <boolean>values[key] :
       false;
     const elem = elements[key];
     if (elem) {
-      console.info('settings.updateElements(...)', key, value);
+      console.info('settings.updateCheckboxElements(...)', key, value);
       if (value) {
         elem.setAttribute('checked', 'true');
       } else {
@@ -79,16 +80,16 @@ async function updateElements(
       if (preview_authorised) {
         const parent = elem.parentElement;
         let parent_classes = parent!.getAttribute('class');
-        console.info('settings.updateElements(...) classes for', key, ':', parent_classes);
+        console.info('settings.updateCheckboxElements(...) classes for', key, ':', parent_classes);
         if (parent_classes) {
           parent_classes = parent_classes.replace('azad_disabled', '').trim();
-          console.info('settings.updateElements(...) new classes for', key, ':', parent_classes);
+          console.info('settings.updateCheckboxElements(...) new classes for', key, ':', parent_classes);
           if (parent_classes.length) {
             parent!.setAttribute('class', parent_classes);
-            console.info('settings.updateElements(...) setting class');
+            console.info('settings.updateCheckboxElements(...) setting class');
           } else {
             parent!.removeAttribute('class');
-            console.info('settings.updateElements(...) removing class');
+            console.info('settings.updateCheckboxElements(...) removing class');
           }
         }
       }
@@ -97,17 +98,19 @@ async function updateElements(
   return;
 }
 
-async function setElemClickHandlers(
+async function setCheckboxElemClickHandlers(
   key_to_elem: Record<string, HTMLElement>
 ): Promise<void> {
-  console.info('settings.setElemClickHandlers() starting');
+  console.info('settings.setCheckboxElemClickHandlers() starting');
   for( const key of Object.keys(key_to_elem) ) {
     const elem = key_to_elem[key];
     if (elem) {
       elem.onclick = async function() {
         let value: boolean = await getBoolean(key);
         value = value ? false : true;
-        if (elem.parentElement?.getAttribute('class')?.includes('azad_disabled'))
+        if (elem.parentElement
+                ?.getAttribute('class')
+                ?.includes('azad_disabled'))
         {
           const preview_authorised = await getBoolean(
             'preview_features_enabled');
@@ -118,11 +121,81 @@ async function setElemClickHandlers(
         }
         storeBoolean(key, value);
         if (elem) {
-          updateElement(elem, value);
+          updateCheckBoxElement(elem, value);
         }
       };
     }
   }
+}
+
+export async function registerTableTypeRadioButtons() {
+  const SETTINGS_KEY = 'azad_table_type';
+  const preview_authorised = await getBoolean('preview_features_enabled');
+  const radio_buttons = Array.from(
+    document.getElementsByClassName('azad_table_type'))
+
+  // Make sure that a table type is set.
+  let initial_table_type = await getString(SETTINGS_KEY);
+  if (!['orders', 'items', 'shipments'].includes(initial_table_type)) {
+    initial_table_type = 'orders';
+    await storeString(SETTINGS_KEY, initial_table_type);
+  }
+
+  // Set up checked state from settings.
+  radio_buttons.forEach(
+    (elem: Element) => {
+      const id = elem.getAttribute('id');
+      console.log('for azad_table_type got', initial_table_type);
+      if ('azad_show_' + initial_table_type == elem.getAttribute('id') ) {
+        elem.setAttribute('checked', 'checked');
+      }
+    }
+  );
+
+  async function forbidden_radio_button_click_handler(_evt: Event) {
+    setTimeout(
+      () => {
+        alert(ui_messages.preview_feature_disabled);
+        const default_button = document.getElementById('azad_show_orders');
+        default_button?.dispatchEvent(new Event('click'));
+      },
+      100,
+    );
+  }
+
+  async function permitted_radio_button_click_handler(evt: Event) {
+    try {
+      const clicked = evt.target as Element;
+      const target_id = clicked.getAttribute('id');
+      const table_type = target_id!.replace('azad_show_', '');
+      clicked.setAttribute('checked', 'checked');
+      await storeString(SETTINGS_KEY, table_type);
+      if (table_type == 'shipments') {
+        const show_shipment_info = await getBoolean('show_shipment_info');
+        if (!show_shipment_info) {
+          // They're asking for the shipments table, so they might be confused
+          // if most/all of the shipment related columns are missing.
+          document.getElementById('show_shipment_info')!
+                  .dispatchEvent(new Event('click'));
+        }
+      }
+      reflow(clicked!.parentElement!.parentElement as HTMLElement);
+    } catch (ex) {
+      console.warn('failed during handling table type radio button event', ex);
+    }
+  }
+
+  // Set up click listeners
+  radio_buttons.forEach(
+    btn => {
+      if (btn.getAttribute('class')!.includes('azad_disabled') && !preview_authorised) {
+        btn.addEventListener('click', forbidden_radio_button_click_handler);
+      } else {
+        btn.addEventListener('click', permitted_radio_button_click_handler);
+        btn.setAttribute('class', btn.getAttribute('class')!.replace('azad_disabled', ''));
+      }
+    }
+  );
 }
 
 export function initialiseUi(): Promise<void> {
@@ -133,8 +206,8 @@ export function initialiseUi(): Promise<void> {
       async function(entries) {
         const settings = getSettings(entries);
         const key_to_elem: Record<string, HTMLElement> = getElementsByKey();
-        await updateElements(key_to_elem, settings);
-        setElemClickHandlers(key_to_elem);
+        await updateCheckboxElements(key_to_elem, settings);
+        setCheckboxElemClickHandlers(key_to_elem);
         resolve();
       }
     );
@@ -142,6 +215,14 @@ export function initialiseUi(): Promise<void> {
 }
 
 export function storeBoolean(key: string, value: boolean): Promise<void> {
+  return store<boolean>(key, value);
+}
+
+export function storeString(key: string, value: string): Promise<void> {
+  return store<string>(key, value);
+}
+
+function store<T>(key: string, value: T): Promise<void> {
   return new Promise<void>( function( resolve, reject ) {
     chrome.storage.sync.get(
       EXTENSION_KEY,
@@ -171,13 +252,21 @@ export function storeBoolean(key: string, value: boolean): Promise<void> {
 }
 
 export function getBoolean(key: string): Promise<boolean> {
-  return new Promise<boolean>( function( resolve ) {
+  return get<boolean>(key);
+}
+
+export function getString(key: string): Promise<string> {
+  return get<string>(key);
+}
+
+export function get<T>(key: string): Promise<T> {
+  return new Promise<T>( function( resolve ) {
     chrome.storage.sync.get(
       EXTENSION_KEY,
       function(entries) {
         const settings = getSettings(entries);
         const any_value = settings[key];
-        const value = <boolean>any_value;
+        const value = <T>any_value;
         resolve(value);
       }
     );

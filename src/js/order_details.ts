@@ -333,6 +333,7 @@ function extractDetailFromDoc(
   const us_tax = function(): string {
     let a = extraction.by_regex(
       [
+        '//div[text() = "Tax Collected:"]/following-sibling::div/text()',
         '//span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span/text()',
         '//span[contains(@id, "totalTax-amount")]/text()',
       ],
@@ -438,7 +439,7 @@ function extractDetailFromDoc(
 
   const invoice_url: string = function (): string {
     const suffix: string|null = getAttribute(
-      '//a[contains(@href, "/invoice")]',
+      '//a[contains(@href, "/invoice") or contains(@href, "_invoice")]',
       'href',
       doc.documentElement,
       context,

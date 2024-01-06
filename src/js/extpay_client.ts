@@ -2,7 +2,7 @@
 
 'use strict';
 
-const ep = require('extpay');
+const ep = require('ExtPay');
 
 // Apparently (https://github.com/glench/ExtPay#manifest-v3)
 // we should fetch a new ExtPay reference each time we need one (for async code)

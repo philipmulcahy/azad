@@ -50,6 +50,23 @@
         </a>
       </div>
       <div class="azad_separator"></div>
+      <table id="azad_table_type_setting">
+        <tr>
+          <td colspan="3">
+            What do you want to see?
+          </td>
+        </tr>
+        <tr>
+          <td>Orders</td>
+          <td>Items</td>
+          <td>Shipments</td>
+        </tr>
+        <tr>
+          <td><input type="radio" class="azad_table_type" id="azad_show_orders" name="table_type"/></td>
+          <td><input type="radio" class="azad_table_type" id="azad_show_items" name="table_type"/></td>
+          <td class="azad_disabled"><input type="radio" class="azad_table_type azad_disabled" id="azad_show_shipments" name="table_type"/></td>
+        </tr>
+      </table>
       <table id="azad_settings">
         <tr><td>
           <input type="checkbox" id="show_totals_in_csv">
@@ -63,21 +80,15 @@
         </td></tr>
         <tr><td>
           <input type="checkbox"
-                 id="show_items_not_orders"
-                 title="Causes generated table to show a row per item, not per order, but duplicate items are coalesced and the quantity displayed.">
-          <label for="show_items_not_orders">Show items not orders</label>
-        </td></tr>
-        <tr><td>
-          <input type="checkbox"
                  id="show_asin_in_items_view"
                  title="formerly behind the paywall, but now free for everyone">
-          <label for="show_asin_in_items_view">Show ASIN in items view</label>
+          <label for="show_asin_in_items_view">Show ASIN in item table</label>
         </td></tr>
         <tr><td class="azad_disabled">
           <input type="checkbox"
                  id="show_shipment_info"
                  title="While this feature is behind the paywall you should reload your amazon pages after you log into the extensionpay dialog: if the text for this checkbox is still faded then it is not settable.">
-          <label for="show_shipment_info">Show shipment/tracking</label>
+          <label for="show_shipment_info">Show shipment/tracking columns</label>
         </td></tr>
       </table>
       <div class="azad_separator"></div>
@@ -95,6 +106,25 @@
         </table>
       </div>
       <div class="azad_separator"></div>
+      <div id="footer">
+        <a href='http://www.justgiving.com/azad-pah'
+           title='JustGiving - Sponsor me now!'
+           target='_blank' >
+           <table>
+             <tr>
+               <td class="azad_thanks">
+                   Thank you!
+               </td>
+               <td>
+                 <img src='http://www.justgiving.com/App_Themes/JustGiving/images/badges/badge9.gif'
+                      width='120'
+                      height='90'
+                      alt='JustGiving - Sponsor me now!' />
+               </td>
+             </tr>
+           </table>
+        </a>
+      </div>
     </div>
     <div class="azad_separator"></div>
     <div id="azad_page_extensionpay" class="azad_control_page">
@@ -181,31 +211,12 @@
         </p>
         <p>
           Check out
-          <a href='https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md'>
+          <a class="azad_link"
+             href='https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md'>
             this page
           </a> for some back story.
         </p>
       </div>
-    </div>
-    <div class="azad_separator"></div>
-    <div id="footer">
-      <a href='http://www.justgiving.com/azad-pah'
-         title='JustGiving - Sponsor me now!'
-         target='_blank' >
-         <table>
-           <tr>
-             <td class="azad_thanks">
-                 Thank you!
-             </td>
-             <td>
-               <img src='http://www.justgiving.com/App_Themes/JustGiving/images/badges/badge9.gif'
-                    width='120'
-                    height='90'
-                    alt='JustGiving - Sponsor me now!' />
-             </td>
-           </tr>
-         </table>
-      </a>
     </div>
   </body>
 </html>

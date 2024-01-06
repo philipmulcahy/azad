@@ -69,6 +69,10 @@ td.azad_disabled {
   color: lightgray;
 }
 
+td.azad_disabled input {
+  color: lightgray;
+}
+
 div.azad_separator {
     height: 10px;
     background-color: white;
@@ -127,11 +131,12 @@ div#footer table tbody tr td {
     text-decoration: none;
 }
 
-a:link {
-  text-decoration: none;
+a.azad_link {
+    font-weight: bold;
+    text-decoration: underline dotted;
 }
 
-a:visited {
+a:link {
   text-decoration: none;
 }
 
@@ -141,4 +146,8 @@ a:hover {
 
 a:active {
   text-decoration: underline;
+}
+
+#azad_table_type_setting {
+  border: 1px solid orange;
 }

@@ -6,6 +6,8 @@ const $ = require('jquery');
 
 import * as settings from './settings';
 import * as util from './util';
+import * as ui_messages from './ui_messages';
+
 
 $(document).ready(function() {
   $('body').on(
@@ -248,6 +250,7 @@ function handleStopClick() {
 function init() {
   settings.startMonitoringSettingsStorage();
   settings.initialiseUi();
+  settings.registerTableTypeRadioButtons();
   console.log('init');
   activateIdle();
   connectToBackground();
