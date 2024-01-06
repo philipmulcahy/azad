@@ -69,6 +69,10 @@ td.azad_disabled {
   color: lightgray;
 }
 
+td.azad_disabled input {
+  color: lightgray;
+}
+
 div.azad_separator {
     height: 10px;
     background-color: white;
@@ -142,4 +146,8 @@ a:hover {
 
 a:active {
   text-decoration: underline;
+}
+
+#azad_table_type_setting {
+  border: 1px solid orange;
 }

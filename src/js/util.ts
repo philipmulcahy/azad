@@ -134,10 +134,10 @@ export function clearBody(): void {
 }
 
 export function moneyRegEx(): RegExp {
-    return /\s+((GBP|USD|CAD|EUR|AUD|[$£€])?\s?(\d+[.,]\d\d))\s+/;
+    return /\s*((GBP|USD|CAD|EUR|AUD|[$£€])?\s?(\d+[.,]\d\d))\s*/;
 /*
     /
-        \s+
+        \s*
         (
             (
                 GBP|USD|CAD|EUR|AUD|[$£€]
@@ -145,6 +145,7 @@ export function moneyRegEx(): RegExp {
             \s?
             (\d+[.,]\d\d)
         )
+        \s*
     /
 */
 }

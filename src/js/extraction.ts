@@ -8,6 +8,7 @@ const xpath = require('xpath');
 
 "use strict";
 
+// Considers only the first match for each xpath.
 export function by_regex(
     xpaths: string[],
     regex: RegExp | null,
@@ -44,6 +45,41 @@ export function by_regex(
     } catch {
         return null;
     }
+}
+
+// Consider every xpath match, not just the first match for each xpath.
+export function by_regex2(
+  xpaths: string[],
+  regex: RegExp,
+  default_value: string|number|null,
+  elem: HTMLElement,
+  context: string,
+): string | null {
+  for ( let i=0; i!=xpaths.length; i++ ) {
+    const xpath = xpaths[i];
+    try {
+      const candidate_nodes: Node[] = findMultipleNodeValues(
+        xpath,
+        elem,
+        context,
+      );
+      for ( let j=0; j!=candidate_nodes.length; j++ ) {
+        const candidate_node = candidate_nodes[j];
+        const match: RegExpMatchArray | null | undefined
+          = candidate_node.textContent?.trim().match(regex);
+        if (match !== null && typeof(match) !== 'undefined') {
+          return match[1];
+        }
+      }
+    } catch ( ex ) {
+      console.debug('Caught ' + JSON.stringify(ex) + 'while doing:' + context);
+    }
+  }
+  try {
+    return default_value!.toString();
+  } catch {
+    return null;
+  }
 }
 
 export function payments_from_invoice(doc: HTMLDocument): string[] {
@@ -198,6 +234,7 @@ export function findSingleNodeValue(
 export function findMultipleNodeValues(
     xpath: string,
     elem: HTMLElement,
+    context: string = 'unknown',
 ): Node[] {
 	try {
 		const snapshot = elem.ownerDocument!.evaluate(
@@ -217,10 +254,7 @@ export function findMultipleNodeValues(
 		}
 		return values;
 	} catch( ex ) {
-		if (ex) {
-			throw ex;
-		}
-		throw 'Unknown exception from findMultipleNodeValues.';
+		throw 'Unknown exception from findMultipleNodeValues: ' + context + ' ' + (ex as string).toString();
 	}
 }
 
