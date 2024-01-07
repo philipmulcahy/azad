@@ -70,7 +70,7 @@ export async function extractDetailPromise(
     const details_promise = req.makeAsyncRequest(
       url,
       event_converter,
-      scheduler, 
+      scheduler,
       util.defaulted(header.id, '9999'),
       false,  // nocache=false: cached response is acceptable
       debug_context,
@@ -374,20 +374,14 @@ function extractDetailFromDoc(
       [
         ['GST', 'HST'].map(
           label => sprintf.sprintf(
-            '//div[contains(@id,"od-subtotals")]//' +
-            'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
-            'parent::div/following-sibling::div/span',
+            '//div[contains(@id,"od-subtotals")]//span[contains(text(),"%s") and not(contains(.,"Before"))]/parent::div/following-sibling::div/span',
             label
           )
         ).join('|'),
-
         '//*[text()[contains(.,"GST") and not(contains(.,"Before"))]]',
-
-        '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
-        'span[contains(text(),"GST")]/' +
-        'parent::div/following-sibling::div/span',
+        '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//span[contains(text(),"GST")]/parent::div/following-sibling::div/span',
       ],
-      /(:?VAT:)? *([-$£€0-9.]*)/i,
+      util.moneyRegEx(),
       null,
       doc.documentElement,
       context,
@@ -400,20 +394,14 @@ function extractDetailFromDoc(
       [
         ['PST', 'RST', 'QST'].map(
           label => sprintf.sprintf(
-            '//div[contains(@id,"od-subtotals")]//' +
-            'span[contains(text(),"%s") and not(contains(.,"Before"))]/' +
-            'parent::div/following-sibling::div/span',
+            '//div[contains(@id,"od-subtotals")]//span[contains(text(),"%s") and not(contains(.,"Before"))]/parent::div/following-sibling::div/span',
             label
           )
         ).join('|'),
-
         '//*[text()[contains(.,"PST") and not(contains(.,"Before"))]]',
-
-        '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
-        'span[contains(text(),"PST")]/' +
-        'parent::div/following-sibling::div/span',
+        '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//span[contains(text(),"PST")]/parent::div/following-sibling::div/span',
       ],
-      /(VAT: *)([-$£€0-9.]*)/i,
+      util.moneyRegEx(),
       null,
       doc.documentElement,
       context,
