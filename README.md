@@ -9,21 +9,23 @@ https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilaj
 3) Navigate to one of the supported amazon sites.
 4) Click on the extension's icon (orange A) bringing up its pop-up/control panel.
 5) Click on one of the year buttons to scrape and display a year's worth of orders. The extension updates scrape query statistics in the pop-up, so you can see how the fetching/scraping is progressing. At some point it will clear the amazon window and place an orange progress bar that grows until scraping is complete. The more orders you have, the longer it takes.
-6) Sometimes, the extension will warn you you're [logged out](https://github.com/philipmulcahy/azad/edit/master/README.md#log-in-message). You may disagree and be able to navigate around your amazon stuff directly, but the warning has been generated because the site has responded in a way that suggests that for at least some queries a log-out and log back in will help.
-7) The popup has various options you can use to control how it behaves.
+6) Sometimes, the extension will warn you you're [logged out](https://github.com/philipmulcahy/azad/edit/master/README.md#log-in-message). You may disagree and be able to navigate around your amazon stuff directly, but the warning has been generated because the site has responded to the extension's queries in a way that suggests that for at least some queries a log-out and log back in will help. The extension never sees your log-in credentials - you supply them directly to the Amazon page. The cookies that are set by Amazon enable queries sent by the extension to succeed, but the extension doesn't look at those cookies, store them, share them or misuse them in any way. This is by design - I am a single developer doing this on a voluntary basis, and haven't got time to be looking after sensitive user data, so I've gone around the problem by avoiding contact with it altogether.
+7) The popup has various options you can use to control how it behaves. They are mostly self explanatory. Some of the controls show text help boxes if you point to them for a second or two.
 
-## Commercial Features 2023
-A clear(ish) signal has emerged from the 2022 survey - here are the top two requested features:
+## Commercial/Premium/Preview Features
+Paywall subscription/donations count towards the total (less the fees that stripe and others charge).
+As and when I develop new features, I may choose to put them behind the paywall for a time.
+
+A clear(ish) signal emerged from a 2022 survey - here are the top two requested features:
 1) Report ASINs, price, and quantity
 2) Scrape specific month/quarter
 
 I got these working and deployed them behind a preview subscription paywall in v1.9.26 in June 2023.
-When the GBP 5000 charity goal is reached, they will become free.
-Paywall subscription/donations count towards the total (less the fees that stripe and others charge).
-As and when I develop new features, I may choose to put them behind the paywall for a time.
-At the moment, the one I know I want to work on is Tracking Links - lots of users have asked for this.
+When a GBP 5000 charity goal was reached, they became free.
 
-Check out [commercial_features.md](doc/commercial_features.md) for more detail. You need to actually subscribe to get the hidden features - giving directly to the JustGiving page will not work (though it all goes to the same charity destination). I am frequently assailed by folks who have given the minimum donation to the JustGiving page, and are angry that they have not been subscribed - I've put warnings similar to this one in all the places they will have passed on their route to doing the wrong thing.
+As of Jan 2024, only shipment/tracking data sits behind the paywall.
+
+Check out [commercial_features.md](doc/commercial_features.md) for more detail. You need to actually subscribe to get the hidden features - giving directly to the JustGiving page will not work (though it all goes to the same charity destination). I am frequently assailed by folks who have given the minimum donation to the JustGiving page, and are angry that they have not been subscribed - I've put warnings similar to this one in all the places they will have passed on their route to doing the "wrong thing".
 
 # Help!
 
@@ -39,7 +41,6 @@ The "subscription" option is a bit harder to find - because I wanted folks to re
 If you are reading this, it is possible that you handed over your money to charity via the first option (thanks), instead of the second.
 Here are some screenshots (taken from v1.9.32, in September 2023) that show how to subscribe:  
 ![premium1_2.png](doc/img/premium1_2.png) ![premium2_2.png](doc/img/premium2_2.png)
-
 
 ### No orders shown even though you know there should be some
 
@@ -69,10 +70,13 @@ Symptoms: pending task count sticks at a non-zero number for many seconds.
 I don't understand why this happens, but the workaround that has always worked for me is to remove all amazon cookies (this will log you out) and then everything works again.
 If you look in the extension logs (see below), a clue that this is appropriate is entries in the log that complain about too many redirections.
 
-### Amazon changed their site
+### Amazon changed their site, or there are aspects of your orders that the developers have not seen before
 
 The extension needs to be updated by developers to learn the new layout.
-Please check to see that no-one else has filed a ticket for the same problem. If they have, join in the fun on that ticket rather than making your own "me-too" ticket. At some point you're going to need to work with us by providing debug data and testing experimental versions of the extension. I don't have direct access to your orders (or likely you country's version of Amazon), so if you're not willing to help, please don't waste everybody's time with a ticket - your issue will not get fixed.
+
+Please check to see that no-one else has filed a ticket for the same problem. If they have, join in the fun on that ticket rather than making your own "me-too" ticket.
+
+At some point you're going to need to work with us by providing debug data (logs, order debug json files and screenshots) and testing experimental versions of the extension. I don't have direct access to your orders (or likely your country's version of Amazon), so if you're not willing to help, please don't waste everybody's time with a ticket - your issue cannot be fixed without your help.
 
 ### You've got a country+order_type combination we've not got test data for
 
@@ -98,12 +102,11 @@ This serves two purposes:
 * The project owner will be able to contact you for more information, if needed.
 
 Before you send log files, debug info, or screenshots, please be aware that postings on GitHub are NOT private.
-If you have log files, debug info, or screenshts to send but don't want them to be public, please ask how to send.
+If you have log files, debug info, or screenshots to send but don't want them to be public, you can send them to azadextension@gmail.com with the ticket number in the email subject, and update the ticket to say you've sent such an email. The email inbox is not monitored: I only look at it when I am pointed there by a github ticket I have chosen to work on.
 
-* Log files are usually free of personal info.
-* Screenshots can be edited with a image editor to overwrite anything you don't want public, such as name, address, product description, or last 4 of the card.
+* Log files are usually free of personal info except if you include the most verbose filter settings - sometimes this is necessary, in which case send them by email rather than attaching them to a ticket post.
+* Screenshots can be edited with a image editor to overwrite anything you don't want public, such as name, address, product description, or last 4 digits of credit card numbers. If you choose to send them to the azad email, you don't need to redact: I won't share them with the whole internet.
 * Debug info contains info you'd probably want kept private (though we've not seen any credit card info), so don't post it on GitHub.
-
 
 #### How to save a log file
 
@@ -112,7 +115,6 @@ If you have log files, debug info, or screenshts to send but don't want them to 
 * Once the console is open, do your thing with the extension. If you command a scrape and only then open the console, you'll probably only get the last few hundred lines of log. I think this is to save memory.
 * RIGHT-click on the log pane and select "Save as..."
 * Save the file as desired.
-
 
 #### How to save and send an order debug json file
 
