@@ -31,6 +31,14 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.10.1
+---------------
+* New shipments view (behind premium/preview paywall like other shipment/tracking info).
+* Refund amount on shipments (see line above).
+* Multiple bug fixes (including .ca tax, fully qualified links in csvs).
+* JustGiving direct link hidden on subscription page to reduce chance of confusion.
+* Experimental (english) .ae (UAE) support.
+
 Changes 1.10.0
 ---------------
 * More urls in csv files.
@@ -43,10 +51,6 @@ Changes 1.9.34
 More likely to be able to get past unparseable orders without getting stuck.
 More likely to log "bad" order details.
 Better caching (more room, and not sharing target site cache).
-
-Changes 1.9.32
----------------
-Bug fix for .com (and maybe other regions?): site(s) changed sometime in early September 2023, preventing year fetching by 1.9.31 and earlier.
 
 Source Code
 -------------
