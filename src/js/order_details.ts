@@ -298,8 +298,8 @@ function extractDetailFromDoc(
     const xpaths = ['VAT', 'tax', 'TVA', 'IVA'].map(
       label =>
         '//div[contains(@id,"od-subtotals")]//' +
-        'span[contains(text(), "' + label + '") ' +
-        'and not(contains(text(),"Before") or contains(text(), "esclusa") ' +
+        'span[contains(text(),"' + label + '") ' +
+        'and not(contains(text(),"before") or contains(text(),"Before") or contains(text(),"esclusa") ' +
         ')]/' +
         'parent::div/following-sibling::div/span'
     ).concat(
@@ -308,8 +308,8 @@ function extractDetailFromDoc(
         'span[contains(text(),"VAT")]/' +
         'parent::div/following-sibling::div/span',
 
-        '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "VAT: ")]]',
-        '//div[contains(@class, "orderSummary")]//*[text()[contains(., "VAT: ")]]'
+        '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(.,"VAT: ")]]',
+        '//div[contains(@class, "orderSummary")]//*[text()[contains(.,"VAT: ")]]'
       ]
     );
     const a = extraction.by_regex(
@@ -320,9 +320,7 @@ function extractDetailFromDoc(
       context,
     );
     if( a != null ) {
-      const b = a.match(
-        /VAT: *([-$£€0-9.]*)/i
-      );
+      const b = a.match( new RegExp('VAT:' + util.moneyRegEx().source, 'i') );
       if( b !== null ) {
         return b[1];
       }
