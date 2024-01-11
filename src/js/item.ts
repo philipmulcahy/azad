@@ -96,28 +96,18 @@ function getCategoriesForProduct(
     (evt) => {
       const productPage = util.parseStringToDOM(evt.target.responseText)
                               .documentElement;
-      try {
-        return util.defaulted(
-          extraction.findSingleNodeValue(
-            '//*[@id="wayfinding-breadcrumbs_feature_div"]/ul',
-            productPage,
-            'category',
-          )!.textContent!.replace(/\n|\r|[ ]{2,}/g, ""),
-          '',
-        );
-      } catch (_) {
-        try {
-          // If the breadcrumb doesn't exist, the category might be highlighted
-          // bold on a submenu bar.
-          return extraction.findSingleNodeValue(
-            '//*[@id="nav-subnav"]/a[contains(@class, "nav-b")]',
-            productPage,
-            'category'
-          )!.textContent!.trim()
-        } catch (_) {
-          return '';
-        }
-      }
+      const raw = extraction.by_regex(
+        [
+          '//*[@id="wayfinding-breadcrumbs_feature_div"]/ul',
+          '//*[@id="nav-subnav"]/a[contains(@class, "nav-b")]',
+        ],
+        null,
+        '',
+        productPage,
+        'category'
+      );
+      const tidied = raw.replace(/\s+/g, ' ').trim();
+      return tidied;
     },
     scheduler,
     '00000',  // priority
