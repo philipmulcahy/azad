@@ -77,7 +77,11 @@ async function categoriseItems(
   items.forEach(async function(item: IItem) {
     const category_promise = getCategoriesForProduct(item.url, scheduler);
     completions.push(category_promise.then(_ => {}));
-    item.category = await category_promise;
+    try {
+      item.category = await category_promise;
+    } catch (_) {
+      // We don't care;
+    }
   })
   await Promise.allSettled(completions);
   return items;
@@ -101,14 +105,18 @@ function getCategoriesForProduct(
           )!.textContent!.replace(/\n|\r|[ ]{2,}/g, ""),
           '',
         );
-      } catch (ex) {
-        // If the breadcrumb doesn't exist, the category might be highlighted
-        // bold on a submenu bar.
-        return extraction.findSingleNodeValue(
-          '//*[@id="nav-subnav"]/a[contains(@class, "nav-b")]',
-          productPage,
-          'category'
-        )!.textContent!.trim()
+      } catch (_) {
+        try {
+          // If the breadcrumb doesn't exist, the category might be highlighted
+          // bold on a submenu bar.
+          return extraction.findSingleNodeValue(
+            '//*[@id="nav-subnav"]/a[contains(@class, "nav-b")]',
+            productPage,
+            'category'
+          )!.textContent!.trim()
+        } catch (_) {
+          return '';
+        }
       }
     },
     scheduler,
