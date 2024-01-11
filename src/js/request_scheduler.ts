@@ -17,7 +17,6 @@ export type PrioritisedTask = {task: Task, priority: string};
 export type IdentifiedTask = {task: PrioritisedTask, id: number};
 
 export interface IRequestScheduler {
-
   // Let the scheduler know about the request, but it won't be able to do
   // anything with it except keep track of it.
   register(request: base.UntypedRequest): void;

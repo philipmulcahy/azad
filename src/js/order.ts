@@ -17,105 +17,105 @@ import * as urls from './url';
 import * as util from './util';
 
 export interface IOrder extends azad_entity.IEntity {
-    id(): Promise<string>;
-    detail_url(): Promise<string>;
-    invoice_url(): Promise<string>;
-    list_url(): Promise<string>;
-    payments_url(): Promise<string>;
+  id(): Promise<string>;
+  detail_url(): Promise<string>;
+  invoice_url(): Promise<string>;
+  list_url(): Promise<string>;
+  payments_url(): Promise<string>;
 
-    date(): Promise<Date|null>;
-    gift(): Promise<string>;
-    gst(): Promise<string>;
-    item_list(): Promise<item.IItem[]>;
-    shipments(): Promise<shipment.IShipment[]>;
-    payments(): Promise<string[]>;
-    postage(): Promise<string>;
-    postage_refund(): Promise<string>;
-    pst(): Promise<string>;
-    refund(): Promise<string>;
-    site(): Promise<string>;
-    total(): Promise<string>;
-    us_tax(): Promise<string>;
-    vat(): Promise<string>;
-    who(): Promise<string>;
+  date(): Promise<Date|null>;
+  gift(): Promise<string>;
+  gst(): Promise<string>;
+  item_list(): Promise<item.IItem[]>;
+  shipments(): Promise<shipment.IShipment[]>;
+  payments(): Promise<string[]>;
+  postage(): Promise<string>;
+  postage_refund(): Promise<string>;
+  pst(): Promise<string>;
+  refund(): Promise<string>;
+  site(): Promise<string>;
+  total(): Promise<string>;
+  us_tax(): Promise<string>;
+  vat(): Promise<string>;
+  who(): Promise<string>;
 
-    sync(): Promise<ISyncOrder>;
+  sync(): Promise<ISyncOrder>;
 }
 
 export interface ISyncOrder extends azad_entity.IEntity {
-    id: string;
-    detail_url: string;
-    invoice_url: string;
-    list_url: string;
-    payments_url: string;
-    date: Date|null;
-    gift: string;
-    gst: string;
-    item_list: item.IItem[];
-    shipments: shipment.IShipment[];
-    payments: string[];
-    postage: string;
-    postage_refund: string;
-    pst: string;
-    refund: string;
-    site: string;
-    total: string;
-    us_tax: string;
-    vat: string;
-    who: string;
+  id: string;
+  detail_url: string;
+  invoice_url: string;
+  list_url: string;
+  payments_url: string;
+  date: Date|null;
+  gift: string;
+  gst: string;
+  item_list: item.IItem[];
+  shipments: shipment.IShipment[];
+  payments: string[];
+  postage: string;
+  postage_refund: string;
+  pst: string;
+  refund: string;
+  site: string;
+  total: string;
+  us_tax: string;
+  vat: string;
+  who: string;
 }
 
 class SyncOrder implements ISyncOrder {
-    id: string = '';
-    detail_url: string = '';
-    invoice_url: string = '';
-    list_url: string = '';
-    payments_url: string = '';
-    date: Date|null = null;
-    gift: string = '';
-    gst: string = '';
-    shipments: shipment.IShipment[] = [];
-    item_list: item.IItem[] = [];
-    payments: string[] = [];
-    postage: string = '';
-    postage_refund: string = '';
-    pst: string = '';
-    refund: string = '';
-    site: string = '';
-    total: string = '';
-    us_tax: string = '';
-    vat: string = '';
-    who: string = '';
+  id: string = '';
+  detail_url: string = '';
+  invoice_url: string = '';
+  list_url: string = '';
+  payments_url: string = '';
+  date: Date|null = null;
+  gift: string = '';
+  gst: string = '';
+  shipments: shipment.IShipment[] = [];
+  item_list: item.IItem[] = [];
+  payments: string[] = [];
+  postage: string = '';
+  postage_refund: string = '';
+  pst: string = '';
+  refund: string = '';
+  site: string = '';
+  total: string = '';
+  us_tax: string = '';
+  vat: string = '';
+  who: string = '';
 
-    constructor(rhs: ISyncOrder) {
-        Object.assign(this, rhs);
-    }
+  constructor(rhs: ISyncOrder) {
+    Object.assign(this, rhs);
+  }
 
-    unsync(): IOrder {
-      return {
-        sync: ()=>Promise.resolve(this),
-        id: ()=>Promise.resolve(this.id),
-        detail_url: ()=>Promise.resolve(this.detail_url),
-        invoice_url: ()=>Promise.resolve(this.invoice_url),
-        list_url: ()=>Promise.resolve(this.list_url),
-        payments_url: ()=>Promise.resolve(this.payments_url),
-        date: ()=>Promise.resolve(this.date),
-        gift: ()=>Promise.resolve(this.gift),
-        gst: ()=>Promise.resolve(this.gst),
-        shipments: ()=>Promise.resolve(this.shipments),
-        item_list: ()=>Promise.resolve(this.item_list),
-        payments: ()=>Promise.resolve(this.payments),
-        postage: ()=>Promise.resolve(this.postage),
-        postage_refund: ()=>Promise.resolve(this.postage_refund),
-        pst: ()=>Promise.resolve(this.pst),
-        refund: ()=>Promise.resolve(this.refund),
-        site: ()=>Promise.resolve(this.site),
-        total: ()=>Promise.resolve(this.total),
-        us_tax: ()=>Promise.resolve(this.us_tax),
-        vat: ()=>Promise.resolve(this.vat),
-        who: ()=>Promise.resolve(this.who),
-      };
-    }
+  unsync(): IOrder {
+    return {
+      sync: ()=>Promise.resolve(this),
+      id: ()=>Promise.resolve(this.id),
+      detail_url: ()=>Promise.resolve(this.detail_url),
+      invoice_url: ()=>Promise.resolve(this.invoice_url),
+      list_url: ()=>Promise.resolve(this.list_url),
+      payments_url: ()=>Promise.resolve(this.payments_url),
+      date: ()=>Promise.resolve(this.date),
+      gift: ()=>Promise.resolve(this.gift),
+      gst: ()=>Promise.resolve(this.gst),
+      shipments: ()=>Promise.resolve(this.shipments),
+      item_list: ()=>Promise.resolve(this.item_list),
+      payments: ()=>Promise.resolve(this.payments),
+      postage: ()=>Promise.resolve(this.postage),
+      postage_refund: ()=>Promise.resolve(this.postage_refund),
+      pst: ()=>Promise.resolve(this.pst),
+      refund: ()=>Promise.resolve(this.refund),
+      site: ()=>Promise.resolve(this.site),
+      total: ()=>Promise.resolve(this.total),
+      us_tax: ()=>Promise.resolve(this.us_tax),
+      vat: ()=>Promise.resolve(this.vat),
+      who: ()=>Promise.resolve(this.who),
+    };
+  }
 }
 
 class Order implements IOrder{
@@ -441,6 +441,7 @@ export async function assembleDiagnostics(order: IOrder)
   );
 }
 
+// TODO looks like the best entrypoint to test a single order
 export function create(
   header: order_header.IOrderHeader,
   scheduler: request_scheduler.IRequestScheduler,

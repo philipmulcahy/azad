@@ -391,8 +391,11 @@ const ITEM_COLS: colspec.ColSpec[] = [
     value_promise_func_name: 'asin',
     is_numeric: false,
     visibility: asin_enabled
-  },
-  {
+  }, {
+    field_name: 'category',
+    value_promise_func_name: 'category',
+    is_numeric: false,
+  }, {
     field_name: 'delivered',
     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
       const ei = await (item as order_util.IEnrichedItem);
@@ -402,8 +405,7 @@ const ITEM_COLS: colspec.ColSpec[] = [
     },
     is_numeric: false,
     visibility: shipment_info_enabled,
-  },
-  {
+  }, {
     field_name: 'shipping status',
     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
       const ei = await (item as order_util.IEnrichedItem);
@@ -413,8 +415,7 @@ const ITEM_COLS: colspec.ColSpec[] = [
     },
     is_numeric: false,
     visibility: shipment_info_enabled,
-  },
-  {
+  }, {
     field_name: 'transaction',
     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
       const ei = await (item as order_util.IEnrichedItem);
@@ -430,8 +431,7 @@ const ITEM_COLS: colspec.ColSpec[] = [
     },
     is_numeric: false,
     visibility: shipment_info_enabled,
-  },
-  {
+  }, {
     field_name: 'tracking link',
     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
       const ei = await (item as order_util.IEnrichedItem);
@@ -450,8 +450,7 @@ const ITEM_COLS: colspec.ColSpec[] = [
     },
     is_numeric: false,
     visibility: shipment_info_enabled,
-  },
-  {
+  }, {
     field_name: 'tracking id',
     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
       const ei = await (item as order_util.IEnrichedItem);
@@ -461,8 +460,7 @@ const ITEM_COLS: colspec.ColSpec[] = [
     },
     is_numeric: false,
     visibility: shipment_info_enabled,
-  },
-  {
+  }, {
     field_name: 'shipment id',
     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
       const ei = item as order_util.IEnrichedItem;
