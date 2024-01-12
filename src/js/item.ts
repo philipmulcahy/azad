@@ -5,6 +5,7 @@ import * as extraction from './extraction';
 import * as order_header from './order_header';
 import * as request_scheduler from './request_scheduler';
 import * as req from './request';
+import * as settings from './settings';
 import * as urls from './url';
 import * as util from './util';
 
@@ -73,9 +74,21 @@ async function categoriseItems(
   items: IItem[],
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<IItem[]> {
+  let show_category_in_items_view = true;
+  try {
+    show_category_in_items_view = await settings.getBoolean(
+      'show_category_in_items_view');
+      if (!show_category_in_items_view) {
+        return items;
+      }
+  } catch(ex) {
+    console.log(
+      'categoriseItems caught', ex,
+      'when looking at settings: maybe we are doing regression testing?');
+  }
   const completions: Promise<void>[] = [];
   items.forEach(async function(item: IItem) {
-    const category_promise = getCategoriesForProduct(item.url, scheduler);
+    const category_promise = getCategoryForProduct(item.url, scheduler);
     completions.push(category_promise.then(_ => {}));
     try {
       item.category = await category_promise;
@@ -87,12 +100,12 @@ async function categoriseItems(
   return items;
 }
 
-function getCategoriesForProduct(
-  productUrl: string,
+function getCategoryForProduct(
+  product_url: string,
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<string> {
   return req.makeAsyncRequest<string>(
-    productUrl,
+    product_url,
     (evt) => {
       const productPage = util.parseStringToDOM(evt.target.responseText)
                               .documentElement;

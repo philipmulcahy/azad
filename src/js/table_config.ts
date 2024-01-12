@@ -46,11 +46,16 @@ export function getCols(table_type: string): Promise<colspec.ColSpec[]> {
 
 const TAX_HELP = 'Caution: tax is often missing when not supplied by Amazon, cancelled, or pre-order.';
 
-async function asin_enabled(): Promise<boolean> {
-  const ezp_mode = await settings.getBoolean('ezp_mode');
-  const show_asin_in_items_view = await settings.getBoolean(
-    'show_asin_in_items_view');
-  return ezp_mode || show_asin_in_items_view;
+async function category_enabled(): Promise<boolean> {
+  let show_category_in_items_view = true;
+  try {
+    show_category_in_items_view = await settings.getBoolean(
+      'show_category_in_items_view');
+  } catch(ex) {
+    console.log(
+      'category_enabled() caught', ex, ' - maybe it has never been set?');
+  }
+  return show_category_in_items_view;
 }
 
 async function shipment_info_enabled(): Promise<boolean> {
@@ -390,11 +395,11 @@ const ITEM_COLS: colspec.ColSpec[] = [
     field_name: 'ASIN',
     value_promise_func_name: 'asin',
     is_numeric: false,
-    visibility: asin_enabled
   }, {
     field_name: 'category',
     value_promise_func_name: 'category',
     is_numeric: false,
+    visibility: category_enabled,
   }, {
     field_name: 'delivered',
     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
