@@ -404,21 +404,39 @@ export async function assembleDiagnostics(order: IOrder)
 
   diagnostics['items'] = await get_legacy_items(order);
 
+  async function get_url_html_map(
+    urls: string[]
+  ): Promise<Record<string, string>>
+  {
+    const data: Record<string, string> = {};
+    const done_promises = urls.filter(url => url != '' && url != null)
+                              .map( async url => {
+      const response = await signin.checkedFetch(url);
+      const html = await response.text();
+      data[url] = html;
+      return;
+    });
+    await Promise.allSettled(done_promises);
+    return data;
+  }
+
+  async function get_item_data(
+    order: ISyncOrder
+  ): Promise<Record<string, string>> {
+    const urls = order.item_list
+                      .map(item => item.url)
+    const data = await get_url_html_map(urls);
+    return data;
+  }
+
+  diagnostics['item_data'] = await get_item_data(sync_order);
+
   async function get_tracking_data(
     order: ISyncOrder
   ): Promise<Record<string, string>> {
-    const data: Record<string, string> = {};
-    order.shipments.forEach(
-      async shipment => {
-        const url = await shipment.tracking_link;
-        if (url == '') {
-          return;
-        }
-        const response = await signin.checkedFetch(util.defaulted(url, ''));
-        const html = await response.text();
-        data[url] = html;
-      }
-    );
+    const urls = order.shipments
+                      .map(s => s.tracking_link);
+    const data = await get_url_html_map(urls);
     return data;
   }
 
@@ -426,12 +444,12 @@ export async function assembleDiagnostics(order: IOrder)
 
   return Promise.all([
     signin.checkedFetch( util.defaulted(sync_order.list_url, '') )
-      .then( response => response.text())
+      .then( response => response.text() )
       .then( text => { diagnostics['list_html'] = text; } ),
     signin.checkedFetch( util.defaulted(sync_order.detail_url, '') )
       .then( response => response.text() )
       .then( text => { diagnostics['detail_html'] = text; } ),
-    signin.checkedFetch(util.defaulted(sync_order.payments_url, ''))
+    signin.checkedFetch( util.defaulted(sync_order.payments_url, '') )
       .then( response => response.text() )
       .then( text => { diagnostics['invoice_html'] = text; } )
   ]).then(
@@ -443,7 +461,6 @@ export async function assembleDiagnostics(order: IOrder)
   );
 }
 
-// TODO looks like the best entrypoint to test a single order
 export function create(
   header: order_header.IOrderHeader,
   scheduler: request_scheduler.IRequestScheduler,
