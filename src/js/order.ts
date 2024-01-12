@@ -404,7 +404,9 @@ export async function assembleDiagnostics(order: IOrder)
 
   diagnostics['items'] = await get_legacy_items(order);
 
-  async function get_tracking_data(order: ISyncOrder): Promise<Record<string, string>> {
+  async function get_tracking_data(
+    order: ISyncOrder
+  ): Promise<Record<string, string>> {
     const data: Record<string, string> = {};
     order.shipments.forEach(
       async shipment => {
