@@ -48,12 +48,13 @@ function appendCell(
       } else {
         return x;
       }
-    } else if (x == 0) {
-      return 0;
-    } else {
+    } else if (x == '') {
       return '';
+    } else {
+      return 0;
     }
   };
+
   const value_written_promise: Promise<null|void> =
     col_spec.render_func ?
     col_spec?.render_func(entity, td) :

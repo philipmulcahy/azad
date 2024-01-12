@@ -97,10 +97,7 @@ function getCategoriesForProduct(
       const productPage = util.parseStringToDOM(evt.target.responseText)
                               .documentElement;
       const raw = extraction.by_regex(
-        [
-          '//*[@id="wayfinding-breadcrumbs_feature_div"]/ul',
-          '//*[@id="nav-subnav"]/a[contains(@class, "nav-b")]',
-        ],
+        [ '//*[@id="wayfinding-breadcrumbs_feature_div"]/ul', ],
         null,
         '',
         productPage,
