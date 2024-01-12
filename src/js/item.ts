@@ -103,7 +103,7 @@ function getCategoriesForProduct(
         productPage,
         'category'
       );
-      const tidied = raw.replace(/\s+/g, ' ').trim();
+      const tidied = raw!.replace(/\s+/g, ' ').trim();
       return tidied;
     },
     scheduler,
