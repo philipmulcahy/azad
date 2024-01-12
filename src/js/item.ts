@@ -3,8 +3,11 @@
 import * as azad_entity from './entity';
 import * as extraction from './extraction';
 import * as order_header from './order_header';
-import * as util from './util';
+import * as request_scheduler from './request_scheduler';
+import * as req from './request';
+import * as settings from './settings';
 import * as urls from './url';
+import * as util from './util';
 
 export interface IItem extends azad_entity.IEntity {
   description: string;
@@ -13,6 +16,7 @@ export interface IItem extends azad_entity.IEntity {
   url: string;
   asin: string;
   order_header: order_header.IOrderHeader;
+  category: string;
 }
 
 type ItemsExtractor = (
@@ -39,8 +43,9 @@ function extract_asin_from_url(url: string): string {
 export function extractItems(
   order_elem: HTMLElement,
   order_header: order_header.IOrderHeader,
+  scheduler: request_scheduler.IRequestScheduler,
   context: string,
-): IItem[] {
+): Promise<IItem[]> {
   const strategies: ItemsExtractor[] = [
     strategy0,
     strategy1,
@@ -56,13 +61,69 @@ export function extractItems(
         context + ';extractItems:strategy:' + i,
       );
       if (items.length) {
-        return items;
+        return categoriseItems(items, scheduler);
       }
     } catch (ex) {
       console.log('strategy', i, 'caught', ex);
     }
   }
-  return [];
+  return Promise.resolve([]);
+}
+
+async function categoriseItems(
+  items: IItem[],
+  scheduler: request_scheduler.IRequestScheduler,
+): Promise<IItem[]> {
+  let show_category_in_items_view = true;
+  try {
+    show_category_in_items_view = await settings.getBoolean(
+      'show_category_in_items_view');
+      if (!show_category_in_items_view) {
+        return items;
+      }
+  } catch(ex) {
+    console.log(
+      'categoriseItems caught', ex,
+      'when looking at settings: maybe we are doing regression testing?');
+  }
+  const completions: Promise<void>[] = [];
+  items.forEach(async function(item: IItem) {
+    const category_promise = getCategoryForProduct(item.url, scheduler);
+    completions.push(category_promise.then(_ => {}));
+    try {
+      item.category = await category_promise;
+    } catch (_) {
+      // We don't care;
+    }
+  })
+  await Promise.allSettled(completions);
+  return items;
+}
+
+function getCategoryForProduct(
+  product_url: string,
+  scheduler: request_scheduler.IRequestScheduler,
+): Promise<string> {
+  return req.makeAsyncRequest<string>(
+    product_url,
+    (evt) => {
+      const productPage = util.parseStringToDOM(evt.target.responseText)
+                              .documentElement;
+      const raw = extraction.by_regex(
+        [ '//*[@id="wayfinding-breadcrumbs_feature_div"]/ul', ],
+        null,
+        '',
+        productPage,
+        'category'
+      );
+      const tidied = raw!.replace(/\s+/g, ' ').trim();
+      return tidied;
+    },
+    scheduler,
+    '00000',  // priority
+    false,  // false means results are cacheable,
+    'category',
+  );
 }
 
 function strategy0(
@@ -124,6 +185,7 @@ function strategy0(
       quantity: qty,
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
+      category: '',
     };
   });
   return items;
@@ -168,6 +230,7 @@ function strategy1(
       quantity: qty,
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
+      category: '',
     };
   });
   return items;
@@ -215,6 +278,7 @@ function strategy2(
       quantity: qty,
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
+      category: '',
     };
   });
   return items.filter( item => item.description != '' );
@@ -259,6 +323,7 @@ function strategy3(
       quantity: qty,
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
+      category: '',
     };
   });
   return items;

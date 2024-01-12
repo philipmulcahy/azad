@@ -17,105 +17,105 @@ import * as urls from './url';
 import * as util from './util';
 
 export interface IOrder extends azad_entity.IEntity {
-    id(): Promise<string>;
-    detail_url(): Promise<string>;
-    invoice_url(): Promise<string>;
-    list_url(): Promise<string>;
-    payments_url(): Promise<string>;
+  id(): Promise<string>;
+  detail_url(): Promise<string>;
+  invoice_url(): Promise<string>;
+  list_url(): Promise<string>;
+  payments_url(): Promise<string>;
 
-    date(): Promise<Date|null>;
-    gift(): Promise<string>;
-    gst(): Promise<string>;
-    item_list(): Promise<item.IItem[]>;
-    shipments(): Promise<shipment.IShipment[]>;
-    payments(): Promise<string[]>;
-    postage(): Promise<string>;
-    postage_refund(): Promise<string>;
-    pst(): Promise<string>;
-    refund(): Promise<string>;
-    site(): Promise<string>;
-    total(): Promise<string>;
-    us_tax(): Promise<string>;
-    vat(): Promise<string>;
-    who(): Promise<string>;
+  date(): Promise<Date|null>;
+  gift(): Promise<string>;
+  gst(): Promise<string>;
+  item_list(): Promise<item.IItem[]>;
+  shipments(): Promise<shipment.IShipment[]>;
+  payments(): Promise<string[]>;
+  postage(): Promise<string>;
+  postage_refund(): Promise<string>;
+  pst(): Promise<string>;
+  refund(): Promise<string>;
+  site(): Promise<string>;
+  total(): Promise<string>;
+  us_tax(): Promise<string>;
+  vat(): Promise<string>;
+  who(): Promise<string>;
 
-    sync(): Promise<ISyncOrder>;
+  sync(): Promise<ISyncOrder>;
 }
 
 export interface ISyncOrder extends azad_entity.IEntity {
-    id: string;
-    detail_url: string;
-    invoice_url: string;
-    list_url: string;
-    payments_url: string;
-    date: Date|null;
-    gift: string;
-    gst: string;
-    item_list: item.IItem[];
-    shipments: shipment.IShipment[];
-    payments: string[];
-    postage: string;
-    postage_refund: string;
-    pst: string;
-    refund: string;
-    site: string;
-    total: string;
-    us_tax: string;
-    vat: string;
-    who: string;
+  id: string;
+  detail_url: string;
+  invoice_url: string;
+  list_url: string;
+  payments_url: string;
+  date: Date|null;
+  gift: string;
+  gst: string;
+  item_list: item.IItem[];
+  shipments: shipment.IShipment[];
+  payments: string[];
+  postage: string;
+  postage_refund: string;
+  pst: string;
+  refund: string;
+  site: string;
+  total: string;
+  us_tax: string;
+  vat: string;
+  who: string;
 }
 
 class SyncOrder implements ISyncOrder {
-    id: string = '';
-    detail_url: string = '';
-    invoice_url: string = '';
-    list_url: string = '';
-    payments_url: string = '';
-    date: Date|null = null;
-    gift: string = '';
-    gst: string = '';
-    shipments: shipment.IShipment[] = [];
-    item_list: item.IItem[] = [];
-    payments: string[] = [];
-    postage: string = '';
-    postage_refund: string = '';
-    pst: string = '';
-    refund: string = '';
-    site: string = '';
-    total: string = '';
-    us_tax: string = '';
-    vat: string = '';
-    who: string = '';
+  id: string = '';
+  detail_url: string = '';
+  invoice_url: string = '';
+  list_url: string = '';
+  payments_url: string = '';
+  date: Date|null = null;
+  gift: string = '';
+  gst: string = '';
+  shipments: shipment.IShipment[] = [];
+  item_list: item.IItem[] = [];
+  payments: string[] = [];
+  postage: string = '';
+  postage_refund: string = '';
+  pst: string = '';
+  refund: string = '';
+  site: string = '';
+  total: string = '';
+  us_tax: string = '';
+  vat: string = '';
+  who: string = '';
 
-    constructor(rhs: ISyncOrder) {
-        Object.assign(this, rhs);
-    }
+  constructor(rhs: ISyncOrder) {
+    Object.assign(this, rhs);
+  }
 
-    unsync(): IOrder {
-      return {
-        sync: ()=>Promise.resolve(this),
-        id: ()=>Promise.resolve(this.id),
-        detail_url: ()=>Promise.resolve(this.detail_url),
-        invoice_url: ()=>Promise.resolve(this.invoice_url),
-        list_url: ()=>Promise.resolve(this.list_url),
-        payments_url: ()=>Promise.resolve(this.payments_url),
-        date: ()=>Promise.resolve(this.date),
-        gift: ()=>Promise.resolve(this.gift),
-        gst: ()=>Promise.resolve(this.gst),
-        shipments: ()=>Promise.resolve(this.shipments),
-        item_list: ()=>Promise.resolve(this.item_list),
-        payments: ()=>Promise.resolve(this.payments),
-        postage: ()=>Promise.resolve(this.postage),
-        postage_refund: ()=>Promise.resolve(this.postage_refund),
-        pst: ()=>Promise.resolve(this.pst),
-        refund: ()=>Promise.resolve(this.refund),
-        site: ()=>Promise.resolve(this.site),
-        total: ()=>Promise.resolve(this.total),
-        us_tax: ()=>Promise.resolve(this.us_tax),
-        vat: ()=>Promise.resolve(this.vat),
-        who: ()=>Promise.resolve(this.who),
-      };
-    }
+  unsync(): IOrder {
+    return {
+      sync: ()=>Promise.resolve(this),
+      id: ()=>Promise.resolve(this.id),
+      detail_url: ()=>Promise.resolve(this.detail_url),
+      invoice_url: ()=>Promise.resolve(this.invoice_url),
+      list_url: ()=>Promise.resolve(this.list_url),
+      payments_url: ()=>Promise.resolve(this.payments_url),
+      date: ()=>Promise.resolve(this.date),
+      gift: ()=>Promise.resolve(this.gift),
+      gst: ()=>Promise.resolve(this.gst),
+      shipments: ()=>Promise.resolve(this.shipments),
+      item_list: ()=>Promise.resolve(this.item_list),
+      payments: ()=>Promise.resolve(this.payments),
+      postage: ()=>Promise.resolve(this.postage),
+      postage_refund: ()=>Promise.resolve(this.postage_refund),
+      pst: ()=>Promise.resolve(this.pst),
+      refund: ()=>Promise.resolve(this.refund),
+      site: ()=>Promise.resolve(this.site),
+      total: ()=>Promise.resolve(this.total),
+      us_tax: ()=>Promise.resolve(this.us_tax),
+      vat: ()=>Promise.resolve(this.vat),
+      who: ()=>Promise.resolve(this.who),
+    };
+  }
 }
 
 class Order implements IOrder{
@@ -404,19 +404,39 @@ export async function assembleDiagnostics(order: IOrder)
 
   diagnostics['items'] = await get_legacy_items(order);
 
-  async function get_tracking_data(order: ISyncOrder): Promise<Record<string, string>> {
+  async function get_url_html_map(
+    urls: string[]
+  ): Promise<Record<string, string>>
+  {
     const data: Record<string, string> = {};
-    order.shipments.forEach(
-      async shipment => {
-        const url = await shipment.tracking_link;
-        if (url == '') {
-          return;
-        }
-        const response = await signin.checkedFetch(util.defaulted(url, ''));
-        const html = await response.text();
-        data[url] = html;
-      }
-    );
+    const done_promises = urls.filter(url => url != '' && url != null)
+                              .map( async url => {
+      const response = await signin.checkedFetch(url);
+      const html = await response.text();
+      data[url] = html;
+      return;
+    });
+    await Promise.allSettled(done_promises);
+    return data;
+  }
+
+  async function get_item_data(
+    order: ISyncOrder
+  ): Promise<Record<string, string>> {
+    const urls = order.item_list
+                      .map(item => item.url)
+    const data = await get_url_html_map(urls);
+    return data;
+  }
+
+  diagnostics['item_data'] = await get_item_data(sync_order);
+
+  async function get_tracking_data(
+    order: ISyncOrder
+  ): Promise<Record<string, string>> {
+    const urls = order.shipments
+                      .map(s => s.tracking_link);
+    const data = await get_url_html_map(urls);
     return data;
   }
 
@@ -424,12 +444,12 @@ export async function assembleDiagnostics(order: IOrder)
 
   return Promise.all([
     signin.checkedFetch( util.defaulted(sync_order.list_url, '') )
-      .then( response => response.text())
+      .then( response => response.text() )
       .then( text => { diagnostics['list_html'] = text; } ),
     signin.checkedFetch( util.defaulted(sync_order.detail_url, '') )
       .then( response => response.text() )
       .then( text => { diagnostics['detail_html'] = text; } ),
-    signin.checkedFetch(util.defaulted(sync_order.payments_url, ''))
+    signin.checkedFetch( util.defaulted(sync_order.payments_url, '') )
       .then( response => response.text() )
       .then( text => { diagnostics['invoice_html'] = text; } )
   ]).then(

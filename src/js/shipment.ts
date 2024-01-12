@@ -180,7 +180,7 @@ async function shipment_from_elem(
   const refund: string = get_refund(shipment_elem);
   return {
     shipment_id: shipment_id,
-    items: item.extractItems(shipment_elem, order_header, context),
+    items: await item.extractItems(shipment_elem, order_header, scheduler, context),
     delivered: is_delivered(shipment_elem),
     status: get_status(shipment_elem),
     tracking_link: tracking_link,

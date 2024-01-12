@@ -64,6 +64,7 @@ export async function enriched_items_from_orders(
       url: i.url,
       asin: i.asin,
       order_header: i.order_header,
+      category: i.category,
     }));
   });
   return items;
