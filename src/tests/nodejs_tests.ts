@@ -77,35 +77,41 @@ function testOneOrderTarget(
         let expected_value = util.defaulted(expected[key], '');
         const actual_value_promise = (order as Record<string, any>)[key]();
         let actual_value = await actual_value_promise;
-        {
-          console.log('key:', key, expected_value, actual_value);
-          if ( key.toLowerCase().includes('date') ) {
-            actual_value = util.dateToDateIsoString(actual_value as Date);
-          }
-          if ( key == 'item_list' ) {
-            const strip_uninteresting_fields = function(item_list: azad_item.IItem[]): azad_item.IItem[] {
-              item_list.forEach(item => {
-                [
-                  'order_date', 'order_id', 'order_detail_url', 'order_header'
-                ].forEach( key => { delete (item as any)[key]; } );
-              });
-              return item_list;
-            };
-            expected_value = strip_uninteresting_fields(expected_value as azad_item.IItem[]);
-            actual_value = strip_uninteresting_fields(actual_value as azad_item.IItem[]);
-          }
-          if ( key == 'shipments' ) {
-            actual_value.forEach( (shipment: any) => 
-              shipment.items.forEach( (item: any) => { delete item.order_header } )
-            );
-          }
-          const actual_string = JSON.stringify(actual_value);
-          const expected_string = JSON.stringify(expected_value);
-          if ( actual_string != expected_string ) {
-              const msg = key + ' should be ' + expected_string +
-                  ' but we got ' + actual_string;
-              result.defects.push(msg);
-          }
+        console.log('key:', key, expected_value, actual_value);
+        if ( key.toLowerCase().includes('date') ) {
+          actual_value = util.dateToDateIsoString(actual_value as Date);
+        }
+        if ( key == 'item_list' ) {
+          const strip_uninteresting_fields = function(
+            item_list: azad_item.IItem[]
+          ): azad_item.IItem[] {
+            item_list.forEach( item => {
+              [
+                'order_date', 'order_id', 'order_detail_url', 'order_header'
+              ].forEach( key => { delete (item as any)[key]; } );
+            });
+            return item_list;
+          };
+          expected_value = strip_uninteresting_fields(
+            expected_value as azad_item.IItem[]
+          );
+          actual_value = strip_uninteresting_fields(
+            actual_value as azad_item.IItem[]
+          );
+        }
+        if ( key == 'shipments' ) {
+          actual_value.forEach( (shipment: any) =>
+            shipment.items.forEach(
+              (item: any) => { delete item.order_header }
+            )
+          );
+        }
+        const actual_string = JSON.stringify(actual_value);
+        const expected_string = JSON.stringify(expected_value);
+        if ( actual_string != expected_string ) {
+            const msg = key + ' should be ' + expected_string +
+                ' but we got ' + actual_string;
+            result.defects.push(msg);
         }
       } catch(ex) {
         console.error(ex);
@@ -131,6 +137,7 @@ function runAllOrderTests():  Promise<ITestResult[]> {
       // .filter(target => target.order_id == '114-2140650-5679427')
       // .filter(target => target.order_id == '114-3539224-5901069')
       // .filter(target => target.order_id == '114-5123493-8741858')  // Eric Corbin
+      // .filter(target => target.order_id == '202-1048401-1481922')  // @philipmulcahy
       // .filter(target => target.order_id == '202-7225797-3968301')
       // .filter(target => target.order_id == '203-5043319-1160320')
       // .filter(target => target.order_id == '205-7528990-3423569')
