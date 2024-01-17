@@ -85,7 +85,7 @@ export function forceLogOut(site_url: string) {
     // In any particular situation, some of the things we do here may be
     // overkill, but each of the strategies have helped in certain situations.
 
-    const no_www_site_url = site_url.replace(new RegExp('^www\.'), '');
+    const no_www_site_url = site_url.replace(new RegExp('^www\\.'), '');
 
     // Delete some cookies (this is delegated to the background script, because
     // we're not allowed to do it in a content script.

@@ -95,7 +95,7 @@ async function categoriseItems(
     } catch (_) {
       // We don't care;
     }
-  })
+  });
   await Promise.allSettled(completions);
   return items;
 }

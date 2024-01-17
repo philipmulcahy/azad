@@ -3,7 +3,6 @@
 import * as azad_entity from './entity';
 import * as azad_item from './item';
 import * as azad_order from './order';
-import * as azad_shipment from './shipment';
 import * as colspec from './colspec';
 import * as datatable_wrap from './datatable_wrap';
 import * as order_util from './order_util';
@@ -349,7 +348,6 @@ const ITEM_COLS: colspec.ColSpec[] = [
       td: HTMLElement
     ): Promise<null> {
       const item = entity as azad_item.IItem;
-      const order_id = item.order_header.id;
       const order_detail_url = item.order_header.detail_url;
       td.innerHTML = order_detail_url;
       return Promise.resolve(null);

@@ -1,6 +1,5 @@
 /* Copyright(c) 2019, 2023 Philip Mulcahy. */
 
-const $ = require('jquery');
 import * as extraction from './extraction';
 import * as ui_messages from  './ui_messages';
 
@@ -132,7 +131,7 @@ export async function registerTableTypeRadioButtons() {
   const SETTINGS_KEY = 'azad_table_type';
   const preview_authorised = await getBoolean('preview_features_enabled');
   const radio_buttons = Array.from(
-    document.getElementsByClassName('azad_table_type'))
+    document.getElementsByClassName('azad_table_type'));
 
   // Make sure that a table type is set.
   let initial_table_type = await getString(SETTINGS_KEY);
@@ -146,7 +145,7 @@ export async function registerTableTypeRadioButtons() {
     (elem: Element) => {
       const id = elem.getAttribute('id');
       console.log('for azad_table_type got', initial_table_type);
-      if ('azad_show_' + initial_table_type == elem.getAttribute('id') ) {
+      if ('azad_show_' + initial_table_type == id) {
         elem.setAttribute('checked', 'checked');
       }
     }

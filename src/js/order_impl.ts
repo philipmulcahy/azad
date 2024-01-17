@@ -9,7 +9,6 @@ import * as request_scheduler from './request_scheduler';
 import * as util from './util';
 
 type Payments = string[];
-type PaymentsResponse = {result: Payments};
 
 export class OrderImpl {
   header: order_header.IOrderHeader;
@@ -32,7 +31,7 @@ export class OrderImpl {
     scheduler: request_scheduler.IRequestScheduler
   ) {
     if (!date_filter(this.header.date)) {
-      throw new Error("Discarding order due to date filter: " + this.header.id);")
+      throw new Error("Discarding order due to date filter: " + this.header.id);
     }
 
     this.detail_promise = order_details.extractDetailPromise(

@@ -95,7 +95,7 @@ function reallyExtractOrderHeader(
   const site: string = function() {
       if (list_url) {
           const list_url_match = list_url.match(
-              RegExp('.*\/\/([^/]*)'));
+              RegExp('.*//([^/]*)'));
           if (list_url_match) {
               return util.defaulted(list_url_match[1], '');
           }

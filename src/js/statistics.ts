@@ -6,7 +6,7 @@ export const OStatsKey = {
   COMPLETED_COUNT: 2,
   CACHE_HIT_COUNT: 3,
   ERROR_COUNT: 4,
-}
+};
 
 export type StatsKey = typeof OStatsKey[keyof typeof OStatsKey];
 
@@ -32,7 +32,7 @@ export class Statistics {
   }
   get(key: StatsKey) {return this._stats[key];}
   set(key: StatsKey, value: number) {this._stats[key] = value;}
-  clear(): void { this._stats = new Statistics()._stats }
+  clear(): void { this._stats = new Statistics()._stats; }
   transmittable(): StringNumberMap {
     const t: StringNumberMap = {};
     Object.keys(OStatsKey)

@@ -41,7 +41,7 @@ interface Store {
   keys(): Promise<string[]>,
   set(key: string, value: any): Promise<void>,
   remove(key: string): Promise<void>,
-};
+}
 
 // Only intended to allow tests to work outside of a chrome extension,
 // where chrome.storage.local is not available.
@@ -350,7 +350,7 @@ class LocalCacheImpl {
     const all = await store.keys();
     const filtered = all.filter(
       key => key.startsWith(this.key_stem)
-    )
+    );
     return filtered;
   }
 

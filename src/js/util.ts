@@ -82,7 +82,7 @@ function parseToNumber(i: string | number): number {
     console.warn(ex);
   }
   return 0;
-};
+}
 
 // Remove the formatting to get integer data for summation
 export function floatVal(v: string | number): number {
@@ -91,7 +91,7 @@ export function floatVal(v: string | number): number {
     return 0;
   }
   return candidate;
-};
+}
 
 export function isNumeric(n: any) {
     return !isNaN(parseFloat(n)) && isFinite(n);

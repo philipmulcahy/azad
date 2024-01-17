@@ -13,7 +13,7 @@ function currency_zero_test(): boolean {
   try {
     ['CAD', 'AUD', 'CAD', '€', 'EUR', 'GBP', '$', 'USD'].forEach(
       (ccy: string) => {
-        const szero = '0.00'
+        const szero = '0.00';
         const s1 = ccy + szero;
         const s2 = ccy + ' ' + szero;
         if (util.floatVal(s1) != 0) {
@@ -30,7 +30,7 @@ function currency_zero_test(): boolean {
   return true;
 }
 
-const dot_as_decimal_test = () => {
+function dot_as_decimal_test() {
   return util.floatVal('123.456') == 123.456;
 }
 

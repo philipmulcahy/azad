@@ -197,7 +197,6 @@ class Order implements IOrder{
   }
   async shipments(): Promise<shipment.IShipment[]> {
     if (this.impl.detail_promise) {
-      const id = await this.id();
       try {
         const details = await this.impl.detail_promise;
         const shipments = details.shipments;
@@ -209,7 +208,6 @@ class Order implements IOrder{
     return Promise.resolve([]);
   }
   async item_list(): Promise<item.IItem[]> {
-    const items: item.IItem[] = [];
     if (this.impl.detail_promise) {
       try {
         const details = await this.impl.detail_promise;
@@ -424,7 +422,7 @@ export async function assembleDiagnostics(order: IOrder)
     order: ISyncOrder
   ): Promise<Record<string, string>> {
     const urls = order.item_list
-                      .map(item => item.url)
+                      .map(item => item.url);
     const data = await get_url_html_map(urls);
     return data;
   }

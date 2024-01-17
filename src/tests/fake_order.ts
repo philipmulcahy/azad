@@ -3,12 +3,10 @@
 'use strict';
 
 import * as azad_order from '../js/order';
-import * as cachestuff from '../js/cachestuff';
 import * as extraction from '../js/extraction';
 import * as fs from 'fs';
 const jsdom = require('jsdom');
 import * as order_header from '../js/order_header';
-import * as req from '../js/request';
 import * as request_scheduler from '../js/request_scheduler';
 import * as stats from '../js/statistics';
 

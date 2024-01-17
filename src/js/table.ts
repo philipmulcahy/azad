@@ -3,7 +3,6 @@
 const $ = require('jquery');
 import 'datatables';
 import * as azad_entity from './entity';
-import * as azad_item from './item';
 import * as azad_order from './order';
 import * as order_util from './order_util';
 import * as colspec from './colspec';
@@ -13,10 +12,8 @@ import * as diagnostic_download from './diagnostic_download';
 import * as notice from './notice';
 import * as progress_bar from './progress_bar';
 import * as settings from './settings';
-import * as shipment from './shipment';
 import * as stats from './statistics';
 import * as table_config from './table_config';
-import * as urls from './url';
 import * as util from './util';
 
 'use strict';
@@ -272,7 +269,7 @@ async function reallyDisplay(
         (() => {throw('unsupported table_type: ' + table_type);})();
 
   // Wait for table to be there before doing more html stuff.
-  const _table = await table_promise;
+  await table_promise;
 
   $( () => {
     if (beautiful) {

@@ -6,7 +6,6 @@ const $ = require('jquery');
 
 import * as settings from './settings';
 import * as util from './util';
-import * as ui_messages from './ui_messages';
 
 
 $(document).ready(function() {

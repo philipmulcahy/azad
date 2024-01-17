@@ -37,7 +37,7 @@ const chrome_extension_options = {
                 use: ['style-loader','css-loader']
             },
             {
-                test: new RegExp('\.(' + imageFileExtensions.join('|') + ')$'),
+                test: new RegExp('\\.(' + imageFileExtensions.join('|') + ')$'),
                 use: [
                     {
                         loader: 'file-loader',
@@ -111,7 +111,7 @@ const node_options = {
         rules: [
             // TODO upgrade to https://webpack.js.org/guides/asset-modules/
             {
-                test: new RegExp('\.(' + imageFileExtensions.join('|') + ')$'),
+                test: new RegExp('\\.(' + imageFileExtensions.join('|') + ')$'),
                 use: [
                     {
                         loader: 'file-loader',

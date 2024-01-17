@@ -8,7 +8,6 @@ import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import * as shipment from './shipment';
 import * as sprintf from 'sprintf-js';
-import * as urls from './url';
 import * as util from './util';
 
 export interface IOrderDetails {

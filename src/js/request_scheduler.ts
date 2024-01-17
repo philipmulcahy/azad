@@ -5,7 +5,6 @@
 import * as base from './request_base';
 import * as binary_heap from './binary_heap';
 import * as cachestuff from './cachestuff';
-import * as signin from './signin';
 import * as stats from './statistics';
 
 export type string_string_map = {[key: string]: string};
@@ -57,7 +56,7 @@ class RequestTracker {
 
   allDone(): boolean {
     const counts = this.stateCounts();
-    for(let k of counts.keys()) {
+    for(const k of counts.keys()) {
       if (counts.get(k) == 0) {
         counts.delete(k);
       }

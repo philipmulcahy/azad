@@ -1,6 +1,5 @@
 /* Copyright(c) 2019-2021 Philip Mulcahy. */
 
-import * as azad_entity from '../js/entity';
 import * as azad_item from '../js/item';
 import * as azad_order from '../js/order';
 import * as extraction from '../js/extraction';
@@ -102,7 +101,7 @@ function testOneOrderTarget(
         if ( key == 'shipments' ) {
           actual_value.forEach( (shipment: any) =>
             shipment.items.forEach(
-              (item: any) => { delete item.order_header }
+              (item: any) => { delete item.order_header; }
             )
           );
         }
@@ -152,6 +151,8 @@ function runAllOrderTests():  Promise<ITestResult[]> {
 
 async function main() {
   const get_years_results = await testAllGetYearsTargets();
+  process.stdout.write(JSON.stringify(get_years_results, null, 2));
+
   const order_results = await runAllOrderTests();
   process.stdout.write(JSON.stringify(order_results, null, 2));
 }

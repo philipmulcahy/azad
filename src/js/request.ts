@@ -40,7 +40,7 @@ function make_promise_with_callbacks<T>(): {
     resolve: resolve,
     reject: reject,
     promise: promise,
-  }
+  };
 }
 
 class AzadRequest<T> {
@@ -98,7 +98,7 @@ class AzadRequest<T> {
                   + '] ' + this._url; 
         console.error(msg);
         throw msg;
-      }; 
+      } 
     } else {
       const allowable = allowable_existing_state as base.State;
       this.check_state([allowable]);
