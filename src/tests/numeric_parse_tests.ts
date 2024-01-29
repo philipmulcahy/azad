@@ -42,6 +42,11 @@ function dot_as_decimal_difficult_test(): boolean {
   return util.floatVal('123,456.789') == 123456.789;
 }
 
+function comma_as_decimal_more_difficult_test(): boolean {
+  return util.floatVal(' \u20ac27,58 ') == 27.58 &&
+         util.floatVal('€27,58') == 27.58;
+}
+
 function comma_as_decimal_difficult_test(): boolean {
   return util.floatVal('123.456,789') == 123456.789;
 }
@@ -53,6 +58,7 @@ const numeric_parse = {
     comma_as_decimal_test: comma_as_decimal_test,
     dot_as_decimal_difficult_test: dot_as_decimal_difficult_test,
     comma_as_decimal_difficult_test: comma_as_decimal_difficult_test,
+    comma_as_decimal_more_difficult_test: comma_as_decimal_more_difficult_test,
 };
 
 tests.register('numeric_parse', numeric_parse);
