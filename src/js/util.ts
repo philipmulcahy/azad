@@ -63,17 +63,23 @@ function parseToNumber(i: string | number): number {
   try {
     if(typeof i === 'string') {
       const c = clean_mixed_decimal_separators(i);
-      return (
+      if (
         c === 'N/A' ||
         c === '-' ||
         c === ''  ||
         c === 'pending'
-      ) ?
-        0 :
-        parseFloat(
-          c.replace( /^([£$]|AUD|CAD|EUR|GBP|USD) */, '' )
-           .replace( /,/, '.' )
-        );
+      ) {
+        return 0;
+      } else {
+        const cc = c.trim()
+        // \u20ac is Euro symbol (€).
+        // Sometimes typing it "properly" seems to break the regular
+        // expression.
+                    .replace( /^(\u20ac|€|£|$|AUD|CAD|EUR|GBP|USD) */, '' )
+                    .replace( /,/, '.' );
+        const ccc = parseFloat(cc);
+        return ccc;
+      }
     }
     if(typeof i === 'number') {
       return i;
