@@ -34,7 +34,7 @@ Check out [commercial_features.md](doc/commercial_features.md) for more detail. 
 *If you've not read through this document (and indicated that you've done so in the help request), your help ticket may be closed without further comment.*
 
 ### Subscribe to Premium features
-### I Subscribed but I am not getting premiumfeatures
+### I Subscribed but I am not getting premium features
 
 In order to subscribe, or even know there is a subscription option you probably paged past some text that explained how there are two ways to give to my chosen charity in order to support this extension.  
 The more prominent, older one is purely altruistic in nature, and does not give you access to the premium features, because I'd not figured out how to erect a paywall or even realised that it might be a good idea (commercial users used to contribute almost nothing).  
