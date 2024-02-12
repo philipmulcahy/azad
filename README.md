@@ -6,7 +6,7 @@ https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilaj
 ## Quick Start Instructions
 1) Install the extension from [here](https://chrome.google.com/webstore/detail/amazon-order-history-repo/mgkilgclilajckgnedgjgnfdokkgnibi).
 2) (Optional) pin the extension icon in your browser by clicking on the jigsaw puzzle piece icon (high right in the chrome browser window), and then clicking on the pin next to "Amazon Order History Reporter", making the pin icon blue. This should permanently display the extension's orange A (for amazon) icon in your extension bar.
-3) Navigate to one of the supported amazon sites.
+3) Navigate to one of the supported amazon sites, and make sure you're logged in to your amazon account on that page (so that the extension will be able to see your account data).
 4) Click on the extension's icon (orange A) bringing up its pop-up/control panel.
 5) Click on one of the year buttons to scrape and display a year's worth of orders. The extension updates scrape query statistics in the pop-up, so you can see how the fetching/scraping is progressing. At some point it will clear the amazon window and place an orange progress bar that grows until scraping is complete. The more orders you have, the longer it takes.
 6) Sometimes, the extension will warn you you're [logged out](https://github.com/philipmulcahy/azad/edit/master/README.md#log-in-message). You may disagree and be able to navigate around your amazon stuff directly, but the warning has been generated because the site has responded to the extension's queries in a way that suggests that for at least some queries a log-out and log back in will help. The extension never sees your log-in credentials - you supply them directly to the Amazon page. The cookies that are set by Amazon enable queries sent by the extension to succeed, but the extension doesn't look at those cookies, store them, share them or misuse them in any way. This is by design - I am a single developer doing this on a voluntary basis, and haven't got time to be looking after sensitive user data, so I've gone around the problem by avoiding contact with it altogether.
@@ -42,6 +42,15 @@ The "subscription" option is a bit harder to find - because I wanted folks to re
 If you are reading this, it is possible that you handed over your money to charity via the first option (thanks), instead of the second.
 Here are some screenshots (taken from v1.9.32, in September 2023) that show how to subscribe:  
 ![premium1_2.png](doc/img/premium1_2.png) ![premium2_2.png](doc/img/premium2_2.png)
+
+### I subscribed, but I don't want it to renew
+
+Thank you!
+This [article](https://github.com/philipmulcahy/azad/issues/264) explains how to unsubscribe.
+
+### No orange year buttons showing in the extension popup
+
+You should check that you've followed the [quick start instructions](https://github.com/philipmulcahy/azad/blob/master/README.md#quick-start-instructions). In particular the bit about being on a logged-in amazon page before you open the extension pop-up. If the extension can't see your amazon account, then it cannot know which years you've got orders in.
 
 ### No orders shown even though you know there should be some
 
@@ -144,6 +153,3 @@ This may be necessary if you are sent a link to a zip file (probably something l
 7) Navigate to the azad folder you unzipped in step (2)
 8) Open an Amazon tab and start testing.
 9) Remember to uninstall or disable the test version once you've finished playing. It will not automatically update with fixes, unlike the chrome web store version.
-
-
-
