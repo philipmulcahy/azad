@@ -31,6 +31,14 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.11.0
+---------------
+* Many documentation improvements including "how to unsubscribe from premium channel" article, and "console log capture".
+* Better parsing of EU currency amounts.
+* Category extraction, inspired by iloveitaly's (
+Michael Bianco) pull request last year.
+* Better VAT tax handling for Canadian orders.
+
 Changes 1.10.1
 ---------------
 * New shipments view (behind premium/preview paywall like other shipment/tracking info).
@@ -46,11 +54,6 @@ Changes 1.10.0
 Premium:
 * Fixed some shipment bugs (some orders with multiple shipments saw all shipped items be labelled with the first shipment's details)
 
-Changes 1.9.34
----------------
-More likely to be able to get past unparseable orders without getting stuck.
-More likely to log "bad" order details.
-Better caching (more room, and not sharing target site cache).
 
 Source Code
 -------------
