@@ -4,6 +4,7 @@ const $ = require('jquery');
 import 'datatables';
 import * as azad_entity from './entity';
 import * as azad_order from './order';
+import * as banner from './banner';
 import * as order_util from './order_util';
 import * as colspec from './colspec';
 import * as csv from './csv';
@@ -254,8 +255,6 @@ async function reallyDisplay(
       id => { order_map[id] = order; }
     );
   });
-  util.clearBody();
-  addProgressBar();
   
   const table_type = await settings.getString('azad_table_type');
 
@@ -277,7 +276,7 @@ async function reallyDisplay(
       util.removeButton('data table');
       util.addButton(
         'plain table',
-        function() { display(orders, false); },
+        function() { display(Promise.resolve(orders), false); },
         'azad_table_button'
       );
       addCsvButton(orders);
@@ -286,7 +285,7 @@ async function reallyDisplay(
       util.removeButton('plain table');
       util.addButton(
         'data table',
-        function() { display(orders, true); },
+        function() { display(Promise.resolve(orders), true); },
         'azad_table_button'
       );
       addCsvButton(orders);
@@ -307,7 +306,10 @@ function addCsvButton(orders: azad_order.IOrder[]): void
   util.addButton(
     title,
     async function() {
-      const table: HTMLTableElement = await display(orders, false);
+      const table: HTMLTableElement = await display(
+        Promise.resolve(orders),
+        false
+      );
       const show_totals: boolean = await settings.getBoolean(
         'show_totals_in_csv');
         csv.download(table, show_totals);
@@ -317,10 +319,25 @@ function addCsvButton(orders: azad_order.IOrder[]): void
 }
 
 export async function display(
-  orders: azad_order.IOrder[],
+  orders_promise: Promise<azad_order.IOrder[]>,
   beautiful: boolean,
 ): Promise<HTMLTableElement> {
+  util.clearBody();
+  banner.addBanner();
+  addProgressBar();
+
+  const orders = await orders_promise;
   console.log('amazon_order_history_table.display starting');
+  if (orders.length >= 500 && beautiful) {
+    beautiful= false;
+    notice.showNotificationBar(
+      '500 or more orders found. That\'s a lot!\n' +
+      'We\'ll start you off with a plain table to make display faster.\n' +
+      'You can click the blue "datatable" button to restore sorting, filtering etc.',
+      document
+    );
+  }
+  banner.removeBanner();
   const table_promise: Promise<HTMLTableElement> = reallyDisplay(
     orders,
     beautiful,

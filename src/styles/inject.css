@@ -21,12 +21,17 @@
 
 .azad_progress_bar {
     background-color: LightBlue;
+    block: inline;
 }
 
 .azad_progress_worm {
     background-color: Orange;
     height: 25px;
     border-width: 0px;
+}
+
+.azad_banner {
+    margin: 20px;
 }
 
 #azad_order_table {
