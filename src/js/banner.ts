@@ -7,7 +7,56 @@ export function addBanner(): void {
   const a = document.createElement('div');
   a.setAttribute('class', 'azad_banner');
   a.setAttribute('title', 'show that we are doing stuff');
-  a.innerHTML = 'Scraping Amazon order history';
+  a.innerHTML = `
+<h2>Scraping Amazon order history</h2>
+<table>
+  <tr>
+    <td>
+      Your results table should appear on this tab.
+      <br/>
+      Until them, you can follow progress using the orange and blue progress
+      bar above.
+    </td>
+    <td>
+      <div class="azad_ad_container">
+        Your message could go here
+        in exchange for a suitable contribution
+        to Princess Alice Hospice via https://www.justgiving.com/azad-pah.
+        <br/?
+        Contact azad_extension@gmail.com if you're interested.
+        <h4>Some initial small print</h4>
+        <ol class="azad_small_print">
+          <li>html only: no scripts, and I'm not at all sure about images.
+            Why?
+            <ul>
+              <li>
+                We don't want to risk a script breaking out and taking control
+                of users' accounts.
+              </li>
+              <li> We don't want to annoy users. </li>
+            </ul>
+          </li>
+          <li>
+            I (Philip) get to decide what "suitable" means, both in terms of
+            price, duration and content.
+            <br/>
+            I am not going to publish an exhaustive list of unacceptable
+            content subjects and types,
+            <br/>
+            I reserve the right to reject proposals for any reason, and will
+            not explain or debate rejections.
+            <br/>
+            If you think this might be a good venue to conduct your culture war
+            , you are mistaken.
+            <br/>
+            This extension currently exists to support a charity that should
+            offend no-one.
+        </ol>
+      </div>
+    </td>
+  </tr>
+</table>
+  `
   parent.insertBefore(
     a,
     parent.firstChild

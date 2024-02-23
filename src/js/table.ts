@@ -250,6 +250,9 @@ async function reallyDisplay(
   for (const entry in order_map) {
     delete order_map[entry];
   }
+  util.clearBody();
+  banner.addBanner();
+  addProgressBar();
   orders.forEach( order => {
     order.id().then(
       id => { order_map[id] = order; }
@@ -268,7 +271,8 @@ async function reallyDisplay(
         (() => {throw('unsupported table_type: ' + table_type);})();
 
   // Wait for table to be there before doing more html stuff.
-  await table_promise;
+  const table = await table_promise;
+  banner.removeBanner();
 
   $( () => {
     if (beautiful) {
@@ -293,7 +297,7 @@ async function reallyDisplay(
   });
 
   console.log('azad.reallyDisplay returning');
-  return table_promise;
+  return table;
 }
 
 function addProgressBar(): void {
@@ -322,10 +326,6 @@ export async function display(
   orders_promise: Promise<azad_order.IOrder[]>,
   beautiful: boolean,
 ): Promise<HTMLTableElement> {
-  util.clearBody();
-  banner.addBanner();
-  addProgressBar();
-
   const orders = await orders_promise;
   console.log('amazon_order_history_table.display starting');
   if (orders.length >= 500 && beautiful) {
@@ -337,7 +337,6 @@ export async function display(
       document
     );
   }
-  banner.removeBanner();
   const table_promise: Promise<HTMLTableElement> = reallyDisplay(
     orders,
     beautiful,

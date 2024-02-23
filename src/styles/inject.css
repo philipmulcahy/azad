@@ -34,6 +34,16 @@
     margin: 20px;
 }
 
+.azad_ad_container {
+    border-width: 2px;
+    border-style: solid;
+    border-color: Orange;
+}
+
+.azad_small_print {
+  font-size: 0.75em;
+}
+
 #azad_order_table {
     background-color: White;
 }

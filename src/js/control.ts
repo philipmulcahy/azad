@@ -214,10 +214,14 @@ function handleYearClick(evt: { target: { value: any; }; }) {
   activateScraping(years);
   if (background_port) {
     console.log('sending scrape_years', year, 'message');
-    background_port.postMessage({
-      action: 'scrape_years',
-      years: years,
-    });
+    try {
+      background_port.postMessage({
+        action: 'scrape_years',
+        years: years,
+      });
+    } catch (ex) {
+      console.log(ex);
+    }
   } else {
     console.warn('background_port not set');
   }
