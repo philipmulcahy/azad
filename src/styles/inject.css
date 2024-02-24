@@ -36,12 +36,13 @@
 
 .azad_ad_container {
     border-width: 2px;
+    padding: 5px;
     border-style: solid;
     border-color: Orange;
 }
 
 .azad_small_print {
-  font-size: 0.75em;
+  font-size: 0.7em;
 }
 
 #azad_order_table {

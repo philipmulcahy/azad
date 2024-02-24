@@ -20,8 +20,10 @@ export function addBanner(): void {
     <td>
       <div class="azad_ad_container">
         Your message could go here
-        in exchange for a suitable contribution
-        to Princess Alice Hospice via https://www.justgiving.com/azad-pah.
+        in exchange for a suitable contribution to
+        <a href="https://www.justgiving.com/azad-pah">
+          Princess Alice Hospice
+        </a>.
         <br/?
         Contact azad_extension@gmail.com if you're interested.
         <h4>Some initial small print</h4>
