@@ -12,10 +12,17 @@ export function addBanner(): void {
 <table>
   <tr>
     <td>
-      Your results table should appear on this tab.
+      Your results table should appear on this tab, and this message should
+      disappear when all the scraped data has been filled in.
       <br/>
-      Until them, you can follow progress using the orange and blue progress
-      bar above.
+      Until them, you can follow progress by...
+      <ul>
+        <li>using the orange and blue progress_bar bar above.</li>
+        <li>
+          opening the control popup and looking at the task state counts.
+          These are shown on the right hand side of the pane, next to the
+          orange status box.
+        </li>
     </td>
     <td>
       <div class="azad_ad_container">
