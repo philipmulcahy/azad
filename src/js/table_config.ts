@@ -72,7 +72,7 @@ const ORDER_COLS: colspec.ColSpec[] = [
         const o = (order as azad_order.IOrder);
         const id = await o.id();
         const detail_url = await o.detail_url();
-        td.innerHTML = '<a href="' + detail_url + '">' + id + '</a>';
+        td.innerHTML = util.safe_new_tab_link(detail_url, id);
       },
     is_numeric: false,
   },
@@ -93,10 +93,7 @@ const ORDER_COLS: colspec.ColSpec[] = [
           if (Object.prototype.hasOwnProperty.call(items, title)) {
             const li = td.ownerDocument!.createElement('li');
             ul.appendChild(li);
-            const a = td.ownerDocument!.createElement('a');
-            li.appendChild(a);
-            a.textContent = title + '; ';
-            a.href = items[title];
+            li.innerHTML = util.safe_new_tab_link(items[title], title + '; ');
           }
         }
         td.textContent = '';
@@ -194,7 +191,7 @@ const ORDER_COLS: colspec.ColSpec[] = [
         const html = 'delivered: ' + shipment.Delivered[s.delivered] +
           '; status: ' + s.status + (
             s.tracking_link != '' ?
-              '; <a href="' + s.tracking_link + '">tracking link</a>' :
+              '; ' + util.safe_new_tab_link(s.tracking_link, 'tracking link') :
               ''
           ) + (
             t ?
@@ -284,19 +281,13 @@ const ORDER_COLS: colspec.ColSpec[] = [
       return (order as azad_order.IOrder).payments().then( payments => {
         const ul = td.ownerDocument!.createElement('ul');
         td.textContent = '';
-        payments.forEach( (payment: any) => {
+        payments.forEach( async (payment: any) => {
           const li = document.createElement('li');
           ul.appendChild(li);
-          const a = document.createElement('a');
-          li.appendChild(a);
-          // Replace unknown/none with "-" to make it look uninteresting.
-          if (!payment) {
-            a.textContent = '-';
-          } else {
-            a.textContent = payment + '; ';
-          }
-          (order as azad_order.IOrder).detail_url().then(
-            detail_url => a.setAttribute( 'href', detail_url)
+          const detail_url = await (order as azad_order.IOrder).detail_url();
+          li.innerHTML = util.safe_new_tab_link(
+            detail_url,
+            (payment ? payment : '-') + '; '
           );
         });
         datatable_wrap.invalidate();
@@ -310,11 +301,7 @@ const ORDER_COLS: colspec.ColSpec[] = [
     render_func: (order: azad_entity.IEntity, td: HTMLElement) => {
       return (order as azad_order.IOrder).invoice_url().then( url => {
         if ( url ) {
-          const link = td.ownerDocument!.createElement('a');
-          link.textContent = url;
-          link.setAttribute('href', url);
-          td.textContent = '';
-          td.appendChild(link);
+          td.innerHTML = util.safe_new_tab_link(url, url);
         } else {
           td.textContent = '';
         }
@@ -336,8 +323,7 @@ const ITEM_COLS: colspec.ColSpec[] = [
       const item = entity as azad_item.IItem;
       const order_id = item.order_header.id;
       const order_detail_url = item.order_header.detail_url;
-      td.innerHTML = '<a href="' + order_detail_url +
-        '">' + order_id + '</a>';
+      td.innerHTML = util.safe_new_tab_link(order_detail_url, order_id);
       return Promise.resolve(null);
     },
     is_numeric: false,
@@ -375,8 +361,7 @@ const ITEM_COLS: colspec.ColSpec[] = [
     render_func: 
       function (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> {
         const item = entity as azad_item.IItem;
-        td.innerHTML = '<a href="' + item.url +
-          '">' + item.description + '</a>';
+        td.innerHTML = util.safe_new_tab_link(item.url, item.description);
         return Promise.resolve(null);
       },
     is_numeric: false,
@@ -441,11 +426,9 @@ const ITEM_COLS: colspec.ColSpec[] = [
       const s = ei.shipment;
       const l = s.tracking_link;
       if (l != null && l != '') {
-        const a = td.ownerDocument.createElement('a');
-        a.setAttribute('href', s.tracking_link);
-        td.textContent = '';
-        td.appendChild(a);
-        a.textContent = s.tracking_link;
+        td.innerHTML = util.safe_new_tab_link(
+          s.tracking_link, s.tracking_link
+        );
       } else {
         td.textContent = '';
       }
@@ -499,8 +482,7 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
       const shipment = entity as order_util.IEnrichedShipment;
       const order_id: string = shipment.order.id;
       const order_detail_url = shipment.order.detail_url;
-      td.innerHTML = '<a href="' + order_detail_url +
-        '">' + order_id + '</a>';
+      td.innerHTML = util.safe_new_tab_link(order_detail_url, order_id);
       return Promise.resolve(null);
     },
     is_numeric: false,
@@ -568,11 +550,9 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
       const s = await (item as order_util.IEnrichedShipment);
       const l = s.tracking_link;
       if (l != null && l != '') {
-        const a = td.ownerDocument.createElement('a');
-        a.setAttribute('href', s.tracking_link);
-        td.textContent = '';
-        td.appendChild(a);
-        a.textContent = s.tracking_link;
+        td.innerHTML = util.safe_new_tab_link(
+          s.tracking_link, s.tracking_link
+        );
       } else {
         td.textContent = '';
       }

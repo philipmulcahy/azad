@@ -256,3 +256,11 @@ export function first_acceptable_non_throwing<T>(
   }
   return default_t;
 }
+
+export function safe_new_tab_link(url: string, title: string): string {
+  return '<a ' +
+         'href="' + url + '" ' +
+         'target="_blank" ' +
+         'rel="noopener noreferrer"' +
+         '>' + title + '</a>';
+}
