@@ -15,11 +15,9 @@ export function field_from_entity(
     field_name: string
 ): Field {
     function is_order(value: any): boolean {
-			if (typeof value != 'object') {
-				return false;
-			}
-      return 'item_list' in value;  // You may well sniff at this: type erasure
-    }                               // has its moments.
+      // You may well sniff at this: type erasure has its moments.
+      return Object(value) === value && 'item_list' in value;
+    }
     const value = is_order(entity) ?
         (entity as azad_order.IOrder)[field_name as keyof azad_order.IOrder] :
         (entity as azad_item.IItem)[field_name as keyof azad_item.IItem];
