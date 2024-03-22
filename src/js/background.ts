@@ -163,11 +163,18 @@ function registerExternalConnectionListener() {
 }
 
 function registerRightClickActions() {
-  chrome.contextMenus.create({
-    id: 'save_order_debug_info',
-    title: 'save order debug info',
-    contexts: ['link'],
-  });
+  try {
+    chrome.contextMenus.create({
+      id: 'save_order_debug_info',
+      title: 'save order debug info',
+      contexts: ['link'],
+    });
+  } catch (ex) {
+    // Catch but otherwise do nothing other than log, because if the menu item
+    // has already been registered, we still want the rest of this function
+    // to run.
+    console.log(ex);
+  }
   chrome.contextMenus.onClicked.addListener((info) => {
     console.log('context menu item: ' + info.menuItemId + ' clicked;');
     if (info.menuItemId == 'save_order_debug_info') {

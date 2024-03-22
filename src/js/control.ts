@@ -23,6 +23,11 @@ $(document).ready(function() {
   );
 });
 
+function updateStateText(state_string: string) {
+  console.log('updateStateText', state_string);
+  $('#azad_state').text(state_string);
+}
+
 function activateIdle(): void {
   console.log('activateIdle');
   actionsShowOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
@@ -32,16 +37,20 @@ function activateScraping(years: number[]): void {
   console.log('activateScraping');
   actionsShowOnly(['azad_stop', 'azad_hide_controls']);
   try {
-    $('#azad_state').text('scraping ' + years.join(','));
+    updateStateText(
+      'scraping ' + (Array.isArray(years) ? years.join(',') : years)
+    );
   } catch (ex) {
     console.log('control.activateScraping blew up with: ', ex);
   }
 }
 
-function activateDone(periods: number): void {
+function activateDone(purpose: string): void {
   console.log('activateDone');
-  actionsShowOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
-  $('#azad_state').text(periods);
+  actionsShowOnly([
+    'azad_clear_cache', 'azad_force_logout', 'azad_hide_controls'
+  ]);
+  updateStateText(purpose);
 }
 
 function actionsShowOnly(button_ids: string[]): void {
@@ -85,7 +94,11 @@ function connectToBackground() {
           .map(([k,v]) => {return k + ':' + v;})
           .join('; ');
           $('#azad_statistics').text(text);
-          if ((msg.statistics.queued + msg.statistics.running) > 0) {
+          if (
+            (
+              msg.statistics.QUEUED_COUNT + msg.statistics.RUNNING_COUNT
+            ) > 0
+          ) {
             activateScraping(msg.purpose);
           } else {
             activateDone(msg.purpose);
@@ -214,10 +227,14 @@ function handleYearClick(evt: { target: { value: any; }; }) {
   activateScraping(years);
   if (background_port) {
     console.log('sending scrape_years', year, 'message');
-    background_port.postMessage({
-      action: 'scrape_years',
-      years: years,
-    });
+    try {
+      background_port.postMessage({
+        action: 'scrape_years',
+        years: years,
+      });
+    } catch (ex) {
+      console.log(ex);
+    }
   } else {
     console.warn('background_port not set');
   }
@@ -244,6 +261,7 @@ function handleStopClick() {
   if (background_port) {
     background_port.postMessage({action: 'abort'});
   }
+  updateStateText('Scrape cancelled');
 }
 
 function init() {

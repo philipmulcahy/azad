@@ -24,63 +24,64 @@ const SITE: string = urls.getSite();
 const _stats = new stats.Statistics();
 
 function getScheduler(): request_scheduler.IRequestScheduler {
-    if (!scheduler) {
-        resetScheduler('unknown');
-    }
-    return scheduler!;
+  if (!scheduler) {
+    resetScheduler('unknown');
+  }
+  return scheduler!;
 }
 
 function getBackgroundPort(): chrome.runtime.Port | null {
-    return background_port;
+  return background_port;
 }
 
 function setStatsTimeout() {
-    const sendStatsMsg = () => {
-        const bg_port = getBackgroundPort();
-        if (bg_port) {
-            _stats.publish(bg_port, getScheduler().purpose());
-            azad_table.updateProgressBar(_stats);
-        }
-    };
-    if (stats_timeout) {
-        clearTimeout(stats_timeout);
+  const sendStatsMsg = () => {
+    const bg_port = getBackgroundPort();
+    if (bg_port) {
+      _stats.publish(bg_port, getScheduler().purpose());
+      azad_table.updateProgressBar(_stats);
     }
-    stats_timeout = setTimeout(
-        () => {
-            setStatsTimeout();
-            sendStatsMsg();
-        },
-        2000
-    );
+  };
+  if (stats_timeout) {
+    clearTimeout(stats_timeout);
+  }
+  stats_timeout = setTimeout(
+    () => {
+      setStatsTimeout();
+      sendStatsMsg();
+    },
+    2000
+  );
 }
 
 function resetScheduler(purpose: string): void {
-    if (scheduler) {
-        scheduler.abort();
-    }
-    _stats.clear();
-    scheduler = request_scheduler.create(purpose, getBackgroundPort, _stats);
-    setStatsTimeout();
+  if (scheduler) {
+    scheduler.abort();
+  }
+  _stats.clear();
+  scheduler = request_scheduler.create(purpose, getBackgroundPort, _stats);
+  setStatsTimeout();
 }
 
 const cached_years: Promise<number[]> | null = null;
 
 async function getYears(): Promise<number[]> {
-    async function getPromise(): Promise<number[]> {
-        const url = 'https://' + SITE + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
-        const response = await signin.checkedFetch(url);
-        const html_text = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html_text, 'text/html');
-        return extraction.get_years(doc);
-    }
-    let years = cached_years;
-    if(!years) {
-        console.log('getYears() needs to do something');
-        years = getPromise();
-    }
-    console.log('getYears() returning ', years);
-    return years;
+  async function getPromise(): Promise<number[]> {
+    const url = 'https://' + SITE
+              + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
+    const response = await signin.checkedFetch(url);
+    const html_text = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html_text, 'text/html');
+    return extraction.get_years(doc);
+  }
+  let years = cached_years;
+  if(!years) {
+    console.log('getYears() needs to do something');
+    years = getPromise();
+  }
+  console.log('getYears() returning ', years);
+  return years;
 }
 
 async function latestYear(): Promise<number> {
@@ -88,79 +89,62 @@ async function latestYear(): Promise<number> {
   return all_years[0];
 }
 
-async function showOrdersOrItems(
-  orders: azad_order.IOrder[],
-  beautiful_table: boolean
-): Promise<HTMLTableElement> {
-    if (orders.length >= 500 && beautiful_table) {
-        beautiful_table = false;
-        notice.showNotificationBar(
-            '500 or more orders found. That\'s a lot!\n' +
-            'We\'ll start you off with a plain table to make display faster.\n' +
-            'You can click the blue "datatable" button to restore sorting, filtering etc.',
-            document
-        );
-    }
-
-    return azad_table.display(orders, beautiful_table);
-}
-
 async function fetchAndShowOrdersByYears(
   years: number[]
 ): Promise<HTMLTableElement|undefined> {
-    const ezp_mode: boolean = await settings.getBoolean('ezp_mode');
-    if ( ! ezp_mode ) {
-      if ( document.visibilityState != 'visible' ) {
-          console.log(
-              'fetchAndShowOrdersByYears() returning without doing anything: ' +
-              'tab is not visible'
-          );
-          return;
-      }
+  const ezp_mode: boolean = await settings.getBoolean('ezp_mode');
+  if ( ! ezp_mode ) {
+    if ( document.visibilityState != 'visible' ) {
+      console.log(
+        'fetchAndShowOrdersByYears() returning without doing anything: ' +
+        'tab is not visible'
+      );
+      return;
     }
-    const purpose: string = years.join(', ');
-    resetScheduler(purpose);
-    const latest_year: number = await latestYear();
-    const order_promises = await azad_order.getOrdersByYear(
-        years,
-        getScheduler(),
-        latest_year,
-        (_date: Date|null) => true,  // DateFilter predicate
-    );
-    return showOrdersOrItems(order_promises, true);
+  }
+  const purpose: string = years.join(', ');
+  resetScheduler(purpose);
+  const latest_year: number = await latestYear();
+  const order_promises = azad_order.getOrdersByYear(
+    years,
+    getScheduler(),
+    latest_year,
+    (_date: Date|null) => true,  // DateFilter predicate
+  );
+  return azad_table.display(order_promises, true);
 }
 
 async function fetchAndShowOrdersByRange(
   start_date: Date, end_date: Date,
   beautiful_table: boolean
 ): Promise<HTMLTableElement|undefined> {
-    console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);
-    if ( document.visibilityState != 'visible' ) {
-        console.log(
-            'fetchAndShowOrdersByRange() returning without doing anything: ' +
-            'tab is not visible'
-        );
-        return;
-    }
-    const purpose: string
-      = util.dateToDateIsoString(start_date)
-      + ' -> '
-      + util.dateToDateIsoString(end_date);
-    resetScheduler(purpose);
-    const latest_year: number = await latestYear();
-    const orders = await azad_order.getOrdersByRange(
-      start_date,
-      end_date,
-      getScheduler(),
-      latest_year,
-      function (d: Date|null): boolean {
-        if (typeof(d) === 'undefined') {
-          return false;
-        }
-        return d! >= start_date && d! <= end_date;  // DateFilter
-      },
+  console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);
+  if ( document.visibilityState != 'visible' ) {
+    console.log(
+      'fetchAndShowOrdersByRange() returning without doing anything: ' +
+      'tab is not visible'
     );
-    return showOrdersOrItems(orders, beautiful_table);
+    return;
+  }
+  const purpose: string
+    = util.dateToDateIsoString(start_date)
+    + ' -> '
+    + util.dateToDateIsoString(end_date);
+  resetScheduler(purpose);
+  const latest_year: number = await latestYear();
+  const orders = azad_order.getOrdersByRange(
+    start_date,
+    end_date,
+    getScheduler(),
+    latest_year,
+    function (d: Date|null): boolean {
+      if (typeof(d) === 'undefined') {
+        return false;
+      }
+      return d! >= start_date && d! <= end_date;  // DateFilter
+    },
+  );
+  return azad_table.display(orders, beautiful_table);
 }
 
 async function fetchShowAndSendItemsByRange(
@@ -206,65 +190,65 @@ async function advertisePeriods() {
 }
 
 async function registerContentScript() {
-    // @ts-ignore null IS allowed as first arg to connect.
-    background_port = chrome.runtime.connect(null, {name: 'azad_inject'});
+  // @ts-ignore null IS allowed as first arg to connect.
+  background_port = chrome.runtime.connect(null, {name: 'azad_inject'});
 
-    const bg_port = getBackgroundPort();
-    if (bg_port) {
-        bg_port.onMessage.addListener( msg => {
-            try {
-                switch(msg.action) {
-                    case 'dump_order_detail':
-                        azad_table.dumpOrderDiagnostics(msg.order_id);
-                        break;
-                    case 'scrape_years':
-                        years = msg.years;
-                        if (years) {
-                            fetchAndShowOrdersByYears(years);
-                        }
-                        break;
-                    case 'scrape_range':
-                        {
-                          const start_date: Date = new Date(msg.start_date);
-                          const end_date: Date = new Date(msg.end_date);
-                          fetchAndShowOrdersByRange(start_date, end_date, true);
-                        }
-                        break;
-                    case 'scrape_range_and_dump_items':
-                        {
-                          const start_date: Date = new Date(msg.start_date);
-                          const end_date: Date = new Date(msg.end_date);
-                          fetchShowAndSendItemsByRange(
-                            start_date,
-                            end_date,
-                            msg.sender_id);
-                        }
-                        break;
-                    case 'clear_cache':
-                        getScheduler().cache().clear();
-                        notice.showNotificationBar(
-                            'Amazon Order History Reporter Chrome' +
-                            ' Extension\n\n' +
-                            'Cache cleared',
-                            document
-                        );
-                        break;
-                    case 'force_logout':
-                        signin.forceLogOut('https://' + SITE);
-                        break;
-                    case 'abort':
-                        resetScheduler('aborted');
-                        break;
-                    default:
-                        console.warn('unknown action: ' + msg.action);
-                }
-            } catch (ex) {
-                console.error('message handler blew up with ' + ex +
-                              ' while trying to process ' + msg);
+  const bg_port = getBackgroundPort();
+  if (bg_port) {
+    bg_port.onMessage.addListener( msg => {
+      try {
+        switch(msg.action) {
+          case 'dump_order_detail':
+            azad_table.dumpOrderDiagnostics(msg.order_id);
+            break;
+          case 'scrape_years':
+            years = msg.years;
+            if (years) {
+                fetchAndShowOrdersByYears(years);
             }
-        } );
-    }
-    console.log('script registered');
+            break;
+          case 'scrape_range':
+            {
+              const start_date: Date = new Date(msg.start_date);
+              const end_date: Date = new Date(msg.end_date);
+              fetchAndShowOrdersByRange(start_date, end_date, true);
+            }
+            break;
+          case 'scrape_range_and_dump_items':
+            {
+              const start_date: Date = new Date(msg.start_date);
+              const end_date: Date = new Date(msg.end_date);
+              fetchShowAndSendItemsByRange(
+                start_date,
+                end_date,
+                msg.sender_id);
+            }
+            break;
+          case 'clear_cache':
+            getScheduler().cache().clear();
+            notice.showNotificationBar(
+              'Amazon Order History Reporter Chrome' +
+              ' Extension\n\n' +
+              'Cache cleared',
+              document
+            );
+            break;
+          case 'force_logout':
+            signin.forceLogOut('https://' + SITE);
+            break;
+          case 'abort':
+            resetScheduler('aborted');
+            break;
+          default:
+            console.warn('unknown action: ' + msg.action);
+        }
+      } catch (ex) {
+        console.error('message handler blew up with ' + ex +
+                      ' while trying to process ' + msg);
+      }
+    });
+  }
+  console.log('script registered');
 }
 
 console.log('Amazon Order History Reporter starting');
