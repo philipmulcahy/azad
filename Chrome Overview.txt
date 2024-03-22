@@ -32,6 +32,12 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.12.0
+--------------
+#256 Make "I'm doing stuff for you" more obvious during scrapes.
+#181 Rendered order links open a new tab instead of jumping, to avoid losing state
+Fixes for various bugs including #204 (again), #266
+
 Changes 1.11.0
 ---------------
 * Many documentation improvements including "how to unsubscribe from premium channel" article, and "console log capture".
@@ -47,14 +53,6 @@ Changes 1.10.1
 * Multiple bug fixes (including .ca tax, fully qualified links in csvs).
 * JustGiving direct link hidden on subscription page to reduce chance of confusion.
 * Experimental (english) .ae (UAE) support.
-
-Changes 1.10.0
----------------
-* More urls in csv files.
-* Locales that use commas for decimal separators (such as .fr and .de) should now see more credible totals at the bottom of relevant (money) columns.
-Premium:
-* Fixed some shipment bugs (some orders with multiple shipments saw all shipped items be labelled with the first shipment's details)
-
 
 Source Code
 -------------
