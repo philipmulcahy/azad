@@ -62,6 +62,8 @@ export function orderFromTestData(
     const json: string = fs.readFileSync(path, 'utf8');
     const order_dump = JSON.parse(json);
     const url_map: request_scheduler.string_string_map = {};
+    // TODO Contrive a way for www.amazon.com and similar to be replaced
+    //      with www.azadexample.com.
     url_map[order_dump.list_url] = order_dump.list_html;
     url_map[order_dump.detail_url] = order_dump.detail_html;
     url_map[order_dump.payments_url] = order_dump.invoice_html;
