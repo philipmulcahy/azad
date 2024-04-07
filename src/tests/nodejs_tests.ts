@@ -113,7 +113,8 @@ function testOneOrderTarget(
             result.defects.push(msg);
         }
       } catch(ex) {
-        console.error(ex);
+        console.error(ex.toString());
+        result.defects.push(ex.toString());
       }
     });
     return Promise.all(key_validation_promises).then( () => {
@@ -130,6 +131,7 @@ function runAllOrderTests():  Promise<ITestResult[]> {
     order_test_targets
       // .filter(target => target.order_id == '002-9651082-1715432')
       // .filter(target => target.order_id == '026-5653597-4769168')  // @philipmulcahy
+      // .filter(target => target.order_id == '111-7327625-5652241')  // @alfredoagg
       // .filter(target => target.order_id == '112-1097135-4205023')
       // .filter(target => target.order_id == '114-0199479-3410664')
       // .filter(target => target.order_id == '114-0571216-2380247')  // @Sunshine-Oh-My
