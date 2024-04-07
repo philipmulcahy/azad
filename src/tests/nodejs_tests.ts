@@ -113,8 +113,8 @@ function testOneOrderTarget(
             result.defects.push(msg);
         }
       } catch(ex) {
-        console.error(ex.toString());
-        result.defects.push(ex.toString());
+        console.error(ex!.toString());
+        result.defects.push(ex!.toString());
       }
     });
     return Promise.all(key_validation_promises).then( () => {

@@ -36,6 +36,7 @@ export interface IOrder extends azad_entity.IEntity {
   site(): Promise<string>;
   total(): Promise<string>;
   us_tax(): Promise<string>;
+  subscribe_and_save(): Promise<string>;
   vat(): Promise<string>;
   who(): Promise<string>;
 
@@ -61,6 +62,7 @@ export interface ISyncOrder extends azad_entity.IEntity {
   site: string;
   total: string;
   us_tax: string;
+  subscribe_and_save: string;
   vat: string;
   who: string;
 }
@@ -84,6 +86,7 @@ class SyncOrder implements ISyncOrder {
   site: string = '';
   total: string = '';
   us_tax: string = '';
+  subscribe_and_save: string = '';
   vat: string = '';
   who: string = '';
 
@@ -112,6 +115,7 @@ class SyncOrder implements ISyncOrder {
       site: ()=>Promise.resolve(this.site),
       total: ()=>Promise.resolve(this.total),
       us_tax: ()=>Promise.resolve(this.us_tax),
+      subscribe_and_save: ()=>Promise.resolve(this.subscribe_and_save),
       vat: ()=>Promise.resolve(this.vat),
       who: ()=>Promise.resolve(this.who),
     };
@@ -144,6 +148,7 @@ class Order implements IOrder{
     const site = await this.site();
     const total = await this.total();
     const us_tax = await this.us_tax();
+    const subscribe_and_save = await this.subscribe_and_save();
     const vat = await this.vat();
     const who = await this.who();
 
@@ -166,6 +171,7 @@ class Order implements IOrder{
       site: site,
       total: total,
       us_tax: us_tax,
+      subscribe_and_save: subscribe_and_save,
       vat: vat,
       who: who,
     };
@@ -259,6 +265,9 @@ class Order implements IOrder{
   }
   us_tax(): Promise<string> {
     return this._detail_dependent_promise( detail => detail.us_tax );
+  }
+  subscribe_and_save(): Promise<string> {
+    return this._detail_dependent_promise( detail => detail.subscribe_and_save );
   }
   vat(): Promise<string> {
     return this._detail_dependent_promise( detail => detail.vat );
