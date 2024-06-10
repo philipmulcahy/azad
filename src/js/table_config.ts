@@ -380,6 +380,10 @@ const ITEM_COLS: colspec.ColSpec[] = [
     value_promise_func_name: 'price',
     is_numeric: false,
   }, {
+    field_name: 'subscribe & save',
+    value_promise_func_name: 'subscribe_and_save',
+    is_numeric: true
+  }, {
     field_name: 'ASIN',
     value_promise_func_name: 'asin',
     is_numeric: false,
