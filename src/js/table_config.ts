@@ -272,6 +272,11 @@ const ORDER_COLS: colspec.ColSpec[] = [
     help: TAX_HELP,
     sites: new RegExp('\\.ca$'),
   }, {
+    field_name: 'subscribe & save',
+    value_promise_func_name: 'subscribe_and_save',
+    is_numeric: true,
+    sites: new RegExp('\\.(ca|.com|.co.uk)'),
+  }, {
     field_name: 'refund',
     value_promise_func_name: 'refund',
     is_numeric: true,
@@ -374,6 +379,10 @@ const ITEM_COLS: colspec.ColSpec[] = [
     field_name: 'price',
     value_promise_func_name: 'price',
     is_numeric: false,
+  }, {
+    field_name: 'subscribe & save',
+    value_promise_func_name: 'subscribe_and_save',
+    is_numeric: true
   }, {
     field_name: 'ASIN',
     value_promise_func_name: 'asin',

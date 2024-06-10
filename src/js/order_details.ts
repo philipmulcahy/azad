@@ -20,6 +20,7 @@ export interface IOrderDetails {
   vat: string;
   gst: string;
   pst: string;
+  subscribe_and_save: string;  // discount
   refund: string;
   who: string;
   invoice_url: string;
@@ -296,6 +297,22 @@ function extractDetailFromDoc(
     );
   };
 
+  const subscribe_and_save = function(): string {
+    let a = extraction.by_regex(
+      [
+        '//span[contains(text(), "Subscribe & Save:")]/../following-sibling::div/span/text()'
+      ],
+      util.moneyRegEx(),
+      null,
+      doc.documentElement,
+      context,
+    );
+    if ( !a ) {
+      a = null;
+    }
+    return util.defaulted(a, '');
+  }
+
   const vat = function(): string {
     const xpaths = ['VAT', 'tax', 'TVA', 'IVA'].map(
       label =>
@@ -409,7 +426,7 @@ function extractDetailFromDoc(
     return util.defaulted(a, '');
   };
 
-  const refund = function (): string {
+  const refund = function(): string {
     const a = extraction.getField(
       ['Refund', 'Totale rimborso'].map( //TODO other field names?
         label => sprintf.sprintf(
@@ -444,6 +461,7 @@ function extractDetailFromDoc(
     postage: postage(),
     postage_refund: postage_refund(),
     gift: gift(),
+    subscribe_and_save: subscribe_and_save(),
     us_tax: us_tax(),
     vat: vat(),
     gst: cad_gst(),
