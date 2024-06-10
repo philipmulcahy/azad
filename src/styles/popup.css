@@ -1,64 +1,64 @@
 html {
-    font-family: arial,sans-serif;
+  font-family: arial,sans-serif;
 }
 
 input.azad_action {
-    color: white;
-    background-color: royalblue;
-    font-size: 120%;
-    margin: 0px;
-    border: 0px;
-    padding: 5px;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    padding-left: 5px;
-    padding-right: 5px;
-    text-align: center;
+  color: white;
+  background-color: royalblue;
+  font-size: 120%;
+  margin: 0px;
+  border: 0px;
+  padding: 5px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  text-align: center;
 }
 
 a#azad_help {
-    color: white;
-    background-color: orange;
-    border-color: orange;
-    border: 5px;
-    border-radius: 10px;
-    padding: 5px;
-    text-align: center;
+  color: white;
+  background-color: orange;
+  border-color: orange;
+  border: 5px;
+  border-radius: 10px;
+  padding: 5px;
+  text-align: center;
 }
 
 div#azad_actions, div#azad_year_list, div#azad_info, div.azad_separator {
-    width: 300px;
-    margin: 0px;
+  width: 300px;
+  margin: 0px;
 }
 
 #azad_year_list {
-    margin: 0px;
-    border: 0px;
-    padding: 0px;
+  margin: 0px;
+  border: 0px;
+  padding: 0px;
 }
 
 div#azad_statistics {
-   font-size: 80%;
+  font-size: 80%;
 }
 
 button.azad_year_button {
-    background-color: orange;
-    color: white;
-    width: 35px;
-    text-align: center;
-    margin: 1px;
-    border: 0px;
-    padding: 2px;
+  background-color: orange;
+  color: white;
+  width: 35px;
+  text-align: center;
+  margin: 1px;
+  border: 0px;
+  padding: 2px;
 }
 
 button.azad_months_button {
-    background-color: orange;
-    color: white;
-    width: 35px;
-    text-align: center;
-    margin: 1px;
-    border: 0px;
-    padding: 2px;
+  background-color: orange;
+  color: white;
+  width: 35px;
+  text-align: center;
+  margin: 1px;
+  border: 0px;
+  padding: 2px;
 }
 
 button.azad_disabled {
@@ -74,66 +74,67 @@ td.azad_disabled input {
 }
 
 div.azad_separator {
-    height: 10px;
-    background-color: white;
-    margin: 0px;
-    border: 0px;
-    padding: 0px;
+  height: 10px;
+  background-color: white;
+  margin: 0px;
+  border: 0px;
+  padding: 0px;
 }
 
 div#azad_info {
-    margin: 0px;
-    border: 0px;
-    padding: 0px;
+  margin: 0px;
+  border: 0px;
+  padding: 0px;
 }
 
 div#azad_state {
-    font-weight: bold;
-    font-size: 120%;
-    color: orange;
-    width: 110px;
-    margin: 0px;
-    border: 5px;
-    border-style: solid;
-    border-color: orange;
-    padding: 4px;
-    text-align: center;
+  font-weight: bold;
+  font-size: 120%;
+  color: orange;
+  width: 110px;
+  margin: 0px;
+  border: 5px;
+  border-style: solid;
+  border-color: orange;
+  padding: 4px;
+  text-align: center;
 }
 
 div#azad_statistics {
-    color: orange;
-    width: 180px;
-    margin: 0px;
-    border: 0px;
-    padding: 5px;
+  color: orange;
+  width: 180px;
+  margin: 0px;
+  border: 0px;
+  padding: 5px;
 }
 
 div#azad_settings input {
-    margin: 5px;
+  margin: 5px;
 }
 
 .hidden {
-    display: none;
+  display: none;
 }
 
 div#footer {
-    text-align: right;
+  text-align: right;
 }
 
 div#footer table tbody tr td {
-    width: 150px;
+  width: 150px;
 }
 
 .azad_thanks {
-    font-size: 200%;
-    font-weight: bold;
-    color: orange;
-    text-decoration: none;
+  font-size: 200%;
+  font-weight: bold;
+  color: orange;
+  text-decoration: none;
 }
 
-a.azad_link {
-    font-weight: bold;
-    text-decoration: underline dotted;
+a {
+  color: royalblue;
+  font-weight: bold;
+  text-decoration: underline dotted;
 }
 
 a:link {

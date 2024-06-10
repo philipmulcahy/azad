@@ -8,7 +8,7 @@ function checkSigninRedirect(
     original_url: string
 ): void {
     if (response.redirected && response.url.includes('signin')) {
-        const msg = 'Got status:' + response.status +
+        const msg = 'Got response that looks like a sign-in page' +
                     ' while fetching ' + original_url +
                     ' \nThis might be because you are not fully' +
                     ' logged in to Amazon.';

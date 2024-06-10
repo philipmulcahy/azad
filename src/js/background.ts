@@ -45,7 +45,7 @@ function registerConnectionListener() {
                 console.log('forwarding advertise_periods', msg.period);
                 advertised_periods = [
                   ...Array.from(
-                    new Set<number>(advertised_periods.concat(msg.periods))
+                    new Set<number>(msg.periods)
                   ),
                 ].sort((a, b) => a - b);
                 advertisePeriods();

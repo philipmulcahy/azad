@@ -63,23 +63,22 @@ function resetScheduler(purpose: string): void {
   setStatsTimeout();
 }
 
-const cached_years: Promise<number[]> | null = null;
-
 async function getYears(): Promise<number[]> {
   async function getPromise(): Promise<number[]> {
     const url = 'https://' + SITE
               + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
-    const response = await signin.checkedFetch(url);
-    const html_text = await response.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html_text, 'text/html');
-    return extraction.get_years(doc);
+    try {
+      const response = await signin.checkedFetch(url);
+      const html_text = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html_text, 'text/html');
+      return extraction.get_years(doc);
+    } catch (exception) {
+      console.error('getYears() caught:', exception);
+      return [];
+    }
   }
-  let years = cached_years;
-  if(!years) {
-    console.log('getYears() needs to do something');
-    years = getPromise();
-  }
+  const years = await getPromise();
   console.log('getYears() returning ', years);
   return years;
 }
@@ -174,7 +173,7 @@ async function advertisePeriods() {
   const years = await getYears();
   console.log('advertising years', years);
   const bg_port = getBackgroundPort();
-  const periods = [1, 2, 3].concat(years);
+  const periods = years.length == 0 ? [] : [1, 2, 3].concat(years);
   if (bg_port) {
     try {
       bg_port.postMessage({

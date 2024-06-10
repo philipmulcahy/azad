@@ -196,13 +196,29 @@ function registerPageButtons(): void {
 
 function showYearButtons(years: number[]) {
   console.log('show year buttons', years);
+  const got_some_years: boolean = years.length > 0;
   $('.azad_year_button').remove();
+  maybeShowMissingYearsMessage(got_some_years);
   years.sort().reverse().forEach( year => {
     $('#azad_year_list').append(
       '<button class="azad_year_button" value="' + year + '">' + year + '</button>'
     );
   });
   $('.azad_year_button').on('click', handleYearClick);
+}
+
+function maybeShowMissingYearsMessage(got_some_years: boolean) {
+  $('#azad_year_missing_message *').remove();
+  if (!got_some_years) {
+    $('#azad_year_missing_message').append(
+      '<span>No scrapeable years found. ' +
+      'It is likely you don\'t have a tab open that ' +
+      'can see your amazon orders. It needs to be open on your chosen ' +
+      'amazon country site, <band</b> logged in to your account.</span>' +
+      '<br/>' +
+      'See <a href="https://github.com/philipmulcahy/azad/issues/280">' +
+      'this article</a> for more.') ;
+  }
 }
 
 async function showMonthsButtons(month_counts: number[]): Promise<void> {
