@@ -355,7 +355,7 @@ function strategy4(
       qty = parseInt(
         util.defaulted(
           extraction.findSingleNodeValue(
-            './/span[@class="item-view-qty"]',
+            '../..//div[@class="od-item-view-qty"]/span',
             <HTMLElement>itemElem,
             context,
           ).textContent,
