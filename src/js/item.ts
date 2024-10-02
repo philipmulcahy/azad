@@ -371,7 +371,7 @@ function strategy4(
     let price = '';
     try {
       const priceElem = <HTMLElement>extraction.findSingleNodeValue(
-        './/div[@data-component="unitPrice"]//span',
+        './/div[@data-component="unitPrice"]//span[not(span)]',
         <HTMLElement>itemElem,
         context,
       );
