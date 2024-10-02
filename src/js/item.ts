@@ -51,6 +51,7 @@ export function extractItems(
     strategy1,
     strategy2,
     strategy3,
+    strategy4,
   ];
   for (let i=0; i!=strategies.length; i+=1) {
     const strategy: ItemsExtractor = strategies[i];
@@ -308,6 +309,69 @@ function strategy3(
     try {
       const priceElem = <HTMLElement>extraction.findSingleNodeValue(
         './/span[contains(@id, "item-total-price")]',
+        <HTMLElement>itemElem,
+        context,
+      );
+      price = util.defaulted(priceElem.textContent, '').trim();
+    } catch(ex) {
+      console.warn('could not find price for: ' + description);
+    }
+    const asin = extract_asin_from_url(url);
+    return {
+      description: description,
+      order_header: order_header,
+      price: price,
+      quantity: qty,
+      url: urls.normalizeUrl(url, urls.getSite()),
+      asin: asin,
+      category: '',
+    };
+  });
+  return items;
+}
+
+// This strategy is aimed at physical orders whose items stopped parsing in
+// September 2024 for all previous strategies.
+function strategy4(
+  order_elem: HTMLElement,
+  order_header: order_header.IOrderHeader,
+  context: string
+): IItem[] {
+  const item_xpath = './/div/div[contains(@data-component, "itemTitle")]/..';
+  const itemElems: Node[] = extraction.findMultipleNodeValues(
+    item_xpath,
+    order_elem
+  );
+  const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
+    const link = <HTMLElement>extraction.findSingleNodeValue(
+      './/div[@data-component="itemTitle"]//a',
+      <HTMLElement>itemElem,
+      context,
+    );
+    const description = util.defaulted(link.textContent, '').trim();
+    const url = util.defaulted(link.getAttribute('href'), '').trim();
+    let qty: number = 0;
+    try {
+      qty = parseInt(
+        util.defaulted(
+          extraction.findSingleNodeValue(
+            './/span[@class="item-view-qty"]',
+            <HTMLElement>itemElem,
+            context,
+          ).textContent,
+          '1'
+        ).trim()
+      );
+    } catch(ex: any) {
+      qty = 1;
+      if (!String(ex).includes('match')) {
+        console.log(ex);
+      }
+    }
+    let price = '';
+    try {
+      const priceElem = <HTMLElement>extraction.findSingleNodeValue(
+        './/div[@data-component="unitPrice"]//span',
         <HTMLElement>itemElem,
         context,
       );
