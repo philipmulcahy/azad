@@ -39,23 +39,37 @@ export async function get_shipments(
   site: string,
 ): Promise<IShipment[]> {
   const doc_elem = order_detail_doc.documentElement;
-  const transactions = get_transactions(order_detail_doc);
+  const transactions = get_transactions(doc_elem);
 
-  const candidates = extraction.findMultipleNodeValues(
-    "//div[contains(@class, 'a-box shipment')]",
-    doc_elem);
+  function strategy_a(): Node[] {
+    const candidates = extraction.findMultipleNodeValues(
+        '//div[contains(@class, "a-box shipment")]',
+        doc_elem);
 
-  // We want elem to have 'shipment' as one of its classes
-  // not just have one of its classes _contain_ 'shipment' in its name.
-  // There may be a way to do this in xpath, but it wouldn't be very
-  // readable, and I am also a bit short on sleep.
-  const elems = candidates.filter(
-    elem => {
-      const cs: string = util.defaulted(
-        (elem as HTMLElement)!.getAttribute('class'), '');
-        const classes: string[] = cs.split(' ');
-        return classes.includes('shipment');
-    });
+    // We want elem to have 'shipment' as one of its classes
+    // not just have one of its classes _contain_ 'shipment' in its name.
+    // There may be a way to do this in xpath, but it wouldn't be very
+    // readable, and I am also a bit short on sleep.
+    return candidates.filter(
+      elem => {
+        const cs: string = util.defaulted(
+          (elem as HTMLElement)!.getAttribute('class'), '');
+          const classes: string[] = cs.split(' ');
+          return classes.includes('shipment');
+      }
+    );
+  }
+
+  function strategy_b(): Node[] {
+    return extraction.findMultipleNodeValues(
+      '//div[div[@data-component="shipmentsLeftGrid"]/div[div[@data-component="shipmentStatus"]]]',
+      doc_elem);
+  }
+
+  let elems = strategy_a();
+  if (elems.length == 0) {
+    elems = strategy_b();
+  }
 
   const shipment_promises = elems.map(e => shipment_from_elem(
     e as HTMLElement,
@@ -120,7 +134,7 @@ function enthusiastically_strip(e: Node): string {
   return util.defaulted(e.textContent, '').replace(/\s\s+/g, ' ').trim();
 }
 
-function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
+function get_transactions(order_detail_doc_elem: HTMLElement): ITransaction[] {
   function strategy_a(): ITransaction[] {
     function transaction_from_elem(elem: HTMLElement): ITransaction {
       const info_string = enthusiastically_strip(elem.childNodes[0]);
@@ -132,7 +146,7 @@ function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
     }
     const transaction_elems = extraction.findMultipleNodeValues(
       "//span[normalize-space(text())='Transactions']/../../div[contains(@class, 'expander')]/div[contains(@class, 'a-row')]/span/nobr/..",
-      order_detail_doc.documentElement);
+      order_detail_doc_elem);
     const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
     return transactions;
   }
@@ -153,7 +167,7 @@ function get_transactions(order_detail_doc: HTMLDocument): ITransaction[] {
     }
     const transaction_elems = extraction.findMultipleNodeValues(
       "//span[normalize-space(text())='Transactions']/../../div[contains(@class, 'expander')]/div[contains(@class, 'a-row')]/span/..",
-      order_detail_doc.documentElement);
+      order_detail_doc_elem);
     const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
     return transactions;
   }
@@ -229,7 +243,10 @@ function get_tracking_link(shipment_elem: HTMLElement, site: string): string {
   return util.defaulted_call(
     () => {
       const link_elem = extraction.findSingleNodeValue(
-        ".//a[contains(@href, '/progress-tracker/')]",
+        [
+          ".//a[contains(@href, '/progress-tracker/')]",
+          ".//a[contains(@href, '/ship-track')]",
+        ].join('|'),
         shipment_elem,
         'shipment.tracking_link'
       );
