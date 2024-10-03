@@ -228,7 +228,10 @@ function is_delivered(shipment_elem: HTMLElement): Delivered {
 function get_status(shipment_elem: HTMLElement): string {
   try {
     const elem = extraction.findSingleNodeValue(
-      ".//div[contains(@class, 'shipment-info-container')]//div[@class='a-row']/span",
+      [
+        ".//div[contains(@class, 'shipment-info-container')]//div[@class='a-row']/span",
+        ".//div[@data-component='shipmentStatus']",
+      ].join('|'),
       shipment_elem,
       'shipment.status'
     );
@@ -250,8 +253,10 @@ function get_tracking_link(shipment_elem: HTMLElement, site: string): string {
         shipment_elem,
         'shipment.tracking_link'
       );
-      const base_url = util.defaulted((link_elem as HTMLElement)
-                           .getAttribute('href'), '');
+      const base_url = util.defaulted(
+        (link_elem as HTMLElement).getAttribute('href'),
+        ''
+      );
       const full_url = url.normalizeUrl(base_url, site);
       return full_url;
     },
