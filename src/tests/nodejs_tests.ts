@@ -142,7 +142,7 @@ function runAllOrderTests():  Promise<ITestResult[]> {
       // .filter(target => target.order_id == '202-7225797-3968301')
       // .filter(target => target.order_id == '203-3119409-7380334')  // @philipmulcahy
       // .filter(target => target.order_id == '203-5431933-7437105')  // @philipmulcahy
-         .filter(target => target.order_id == '203-6059583-9048313')  // @philipmulcahy
+      // .filter(target => target.order_id == '203-6059583-9048313')  // @philipmulcahy
       // .filter(target => target.order_id == '203-5043319-1160320')
       // .filter(target => target.order_id == '205-7528990-3423569')
       // .filter(target => target.order_id == '206-1563844-4321133')
