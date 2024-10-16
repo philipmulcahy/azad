@@ -27,6 +27,20 @@ As of Jan 2024, only shipment/tracking data sits behind the paywall.
 
 Check out [commercial_features.md](doc/commercial_features.md) for more detail. You need to actually subscribe to get the hidden features - giving directly to the JustGiving page will not work (though it all goes to the same charity destination). I am frequently assailed by folks who have given the minimum donation to the JustGiving page, and are angry that they have not been subscribed - I've put warnings similar to this one in all the places they will have passed on their route to doing the "wrong thing".
 
+## Selected Feedback
+
+* Thanks so much for your fine work on behalf of both PAH and Amazon users everywhere!
+* I want to thank you for the plugin. It saved me hours of time. Thanks!
+* I don't know how many man-hours Azad has saved me, but it's a lot, and I appreciate every one of them.  Thank you.  Please keep up the excellent work!  (BTW, your trouble-shooting tips work great!)
+* Your Order History application is a great piece of coding & a HUGE time saver for everyone missing the facility Amazon so strangely removed & the PAH is a fantastic cause. Thank you !!!
+* Happy to donate to a good cause and getting the help of Phillip's program is great. Saved me a lot of time
+* Thank you for this app!  Philip's Amazon Order History Reporter is a game changer!
+* I have a small business and find your tool invaluable for doing my VAT returns. Thank you for creating and maintaining it and for the very moving rationale behind your motivation for doing so.
+* Thank you or saving me n entire night of digging through amazon's horrible purchase list!
+* Thanks for the amazing Amazon Order History plugin. What an excellent cause as well.
+* Thank you! First, for the great and useful tool you've created; second, for paying all that effort forward to something as meaningful and important as Princess Alice. You are a good man.
+* Great extension. Saves a ton of time vs doing this manually. Amazon really is shafting their users here. One plus would to report the entire address or scape the postal code...
+
 # Help!
 
 ## Common problems, with some fixes
