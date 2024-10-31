@@ -32,6 +32,18 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.15.0
+--------------
+Clarified cancellation terms: No refunds, because they cost the charity ~5x the refund.
+If you don't unsubscribe before annual auto-renewal, it's on you.
+Chargeback requests not explicitly agreed by me (author) in writing may result in (but not be limited to):
+1) public sharing of your identity to prevent future fraud.
+2) permanent disablement all of extension's free functionality for the offending user.
+
+Changes 1.14.2
+--------------
+#293 Compatibility with site changes Amazon appear to have made in September 2024.
+
 Changes 1.14.0
 --------------
 #280 Better guidance when not properly logged in.
@@ -39,20 +51,6 @@ Changes 1.14.0
 Changes 1.13.0
 --------------
 #237 Rudimentary Subscribe&Save support.
-
-Changes 1.12.0
---------------
-#256 Make "I'm doing stuff for you" more obvious during scrapes.
-#181 Rendered order links open a new tab instead of jumping, to avoid losing state
-Fixes for various bugs including #204 (again), #266
-
-Changes 1.11.0
----------------
-* Many documentation improvements including "how to unsubscribe from premium channel" article, and "console log capture".
-* Better parsing of EU currency amounts.
-* Category extraction, inspired by iloveitaly's (
-Michael Bianco) pull request last year.
-* Better VAT tax handling for Canadian orders.
 
 Source Code
 -------------
