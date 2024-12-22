@@ -84,8 +84,9 @@ async function getYears(): Promise<number[]> {
 }
 
 async function latestYear(): Promise<number> {
-  const all_years = await getYears();
-  return all_years[0];
+  const all_years = [...await getYears()];
+  all_years.sort();
+  return all_years.at(-1) ?? -1;
 }
 
 async function fetchAndShowOrdersByYears(
