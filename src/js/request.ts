@@ -74,6 +74,13 @@ class AzadRequest<T> {
     this._resolve_response = response_promise_stuff.resolve;
     this._reject_response = response_promise_stuff.reject;
     this._state = base.State.NEW;
+    try {
+      if (this._url.includes('=110')) {
+        console.log('ROT STARTED');
+      }
+    } catch (ex) {
+      console.log(ex);
+    }
     setTimeout(() => this.A_Enqueue());
     console.debug('AzadRequest NEW ' + this._url);
   }
@@ -111,12 +118,15 @@ class AzadRequest<T> {
     this.check_state(base.State.NEW);
     this.change_state(base.State.ENQUEUED);
     this._scheduler.schedule({
-      task: ()=>{ return this.B_Dequeued(); },
+      task: () => this.B_Dequeued(),
       priority: this._priority
     });
   }
 
   async B_Dequeued(): Promise<void> {
+    if (this._url.includes('=110')) {
+      console.log('ANYWHEN');
+    }
     this.check_state(base.State.ENQUEUED);
     this.change_state(base.State.DEQUEUED);
     try {
@@ -277,6 +287,9 @@ class AzadRequest<T> {
   }
 
   async H_Convert(evt: Event): Promise<void> {
+    if (this._url.includes('=110')) {
+      console.log('EVERYWHERE');
+    }
     this.check_state(base.State.RESPONDED);
     const protected_converter = async (evt: any): Promise<T|null> => {
       try {
@@ -356,6 +369,9 @@ export async function makeAsyncRequest<T>(
   nocache: boolean,
   debug_context: string,
 ): Promise<T> {
+  if (url.includes('=110')) {
+    console.log('everywhere');
+  }
   const req = new AzadRequest(
     url,
     event_converter,

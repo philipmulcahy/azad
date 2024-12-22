@@ -132,6 +132,9 @@ function CreateRealStoreProxy(): Store {
       });
     },
     set: async function(key: string, value: any): Promise<void> {
+      if (key.includes('=110')) {
+        console.log('HERE!');
+      }
       return new Promise<any>( resolve => {
         chrome.runtime.sendMessage(
           {
