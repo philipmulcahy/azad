@@ -60,6 +60,10 @@ function registerConnectionListener() {
                   }
                 }
                 break;
+              case 'transaction_slice':
+                console.log('forwarding transaction_slice');
+                broadcast_to_content_pages(msg);
+                break;
               default:
                 console.debug('unknown action: ' + msg.action);
                 break;

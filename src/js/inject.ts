@@ -223,6 +223,9 @@ async function registerContentScript() {
                 msg.sender_id);
             }
             break;
+          case 'transaction_slice':
+            console.log('got slice of transactions');
+            break;
           case 'clear_cache':
             getScheduler().cache().clear();
             notice.showNotificationBar(
@@ -253,3 +256,6 @@ async function registerContentScript() {
 console.log('Amazon Order History Reporter starting');
 registerContentScript();
 advertisePeriods();
+
+import * as transaction from './transaction';
+transaction.initialisePage();
