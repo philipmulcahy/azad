@@ -4,7 +4,7 @@ import * as util from './util';
 interface Transaction {
   date: Date,
   cardInfo: string,
-  orderId: string,
+  orderIds: string[],
   amount: number,
   vendor: string,
 };
@@ -78,18 +78,30 @@ function extractSingleTransaction(
     'transaction components') as HTMLElement[];
 
   const cardAndAmount = children[0];
-  const orderIdElem = children[1];
-  const vendorElem = children[2];
 
-  const orderId: string = util.defaulted(
-    extraction.by_regex(
-      ['.//a[contains(@href, "order")]'],
-      new RegExp('.*([A-Z0-9]{3}-\\d+-\\d+).*'),
+  const orderIdElems = children
+    .slice(1)
+    .filter(oie => oie.textContent?.match(util.orderIdRegExp()));
+
+  const vendorElems = children
+    .slice(1)
+    .filter(oie => !oie.textContent?.match(util.orderIdRegExp()));
+
+  const vendor = vendorElems.length
+    ? (vendorElems.at(-1)?.textContent?.trim() ?? '??')
+    : '??';
+
+  const orderIds: string[] = orderIdElems.map(
+    oe => util.defaulted(
+      extraction.by_regex(
+        ['.//a[contains(@href, "order")]'],
+        new RegExp('.*([A-Z0-9]{3}-\\d+-\\d+).*'),
+        '??',
+        oe,
+        'transaction order id',
+      ),
       '??',
-      orderIdElem,
-      'transaction order id',
-    ),
-    '??',
+    )
   );
 
   const amountSpan = extraction.findMultipleNodeValues(
@@ -113,14 +125,9 @@ function extractSingleTransaction(
     '??',
   );
 
-  const vendor = util.defaulted(
-    vendorElem?.textContent?.trim(),
-    '??',
-  );
-
   const transaction = {
     date,
-    orderId,
+    orderIds,
     cardInfo,
     amount,
     vendor,
