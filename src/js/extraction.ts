@@ -10,11 +10,11 @@ const xpath = require('xpath');
 
 // Considers only the first match for each xpath.
 export function by_regex(
-    xpaths: string[],
-    regex: RegExp | null,
-    default_value: string|number|null,
-    elem: HTMLElement,
-    context: string,
+    xpaths: string[],  // the priority ordered list of regular expressions.
+    regex: RegExp | null,  // if supplied, and matched, the string returned will be first match.
+    default_value: string|number|null,  // if not convertible to a string, then will be replaced with null.
+    elem: HTMLElement,  // the element that will be searched (including its descendants).
+    context: string,  // for log messages and debugging only.
 ): string | null {
     let i;
     for ( i=0; i!=xpaths.length; i++ ) {
