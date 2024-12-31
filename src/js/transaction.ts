@@ -1,5 +1,7 @@
+import * as cacheStuff from './cachestuff';
 import * as extraction from './extraction';
 import * as util from './util';
+const lzjs = require('lzjs');
 
 interface Transaction {
   date: Date,
@@ -9,38 +11,113 @@ interface Transaction {
   vendor: string,
 };
 
-export async function initialisePage() {
-  if (inIframedTransactionsPage()) {
+const cache = cacheStuff.createLocalCache('TRANSACTIONS');
+
+export async function initialisePage(
+  getPort: ()=>(chrome.runtime.Port | null)
+) {
+  if (isInIframedTransactionsPage()) {
     const transactions = await extractTransactions();
+    const port = getPort();
     console.log(transactions);
+    try {
+      if (port) {
+        port.postMessage({
+          action: 'transactions',
+          transactions,
+        });
+      }
+    } catch (ex) {
+      console.warn(ex);
+    }
   } else {
     plantButton();
   }
 }
 
-function plantTransactionsIframe() {
-  const iframe = document.createElement('iframe') as HTMLIFrameElement;
+export function clearCache() {
+  cache.clear();
+}
+
+const IFRAME_ID = 'AZAD-TRANSACTION-SCRAPER';
+
+function plantIframe() {
+
+  // Remove existing iframe if one exists.
+  let iframe = document.getElementById(IFRAME_ID);
+  if (iframe) {
+    iframe.remove();
+  }
+
+  iframe = document.createElement('iframe') as HTMLIFrameElement;
   iframe.setAttribute('src', 'https://www.amazon.co.uk/cpe/yourpayments/transactions');
+  iframe.setAttribute('id', IFRAME_ID);
+  iframe.style.width = '1px';
+  iframe.style.height = '1px';
   document.body.insertBefore(iframe, document.body.firstChild);
 }
 
+function removeIframe() {
+}
+
 async function extractTransactions() {
-  const transactions = extractPageOfTransactions();
-  let nextButton: HTMLElement | null = null;
-  try {
-    nextButton = findUsableNextButton() as HTMLElement;
-  } catch(ex) {
-    console.warn(ex);
-  }
-  while(nextButton) {
+  const cached = await getTransactionsFromCache();
+  const maxCachedTimestamp = Math.max(...cached.map(t => t.date.getTime()));
+  const firstPage = extractPageOfTransactions();
+  let minNewTimestamp = Math.min(...firstPage.map(t => t.date.getTime()));
+  let transactions = mergeTransactions(firstPage, cached);
+  let nextButton = findUsableNextButton() as HTMLElement;
+
+  while(nextButton && minNewTimestamp >= maxCachedTimestamp) {
     nextButton.click();
     await new Promise(r => setTimeout(r, 5000));
-    const ts = extractPageOfTransactions();
-    console.log('scraped', ts.length, 'transactions');
-    transactions.push(...ts);
+
+    const page = extractPageOfTransactions();
+    console.log('scraped', page.length, 'transactions');
+    minNewTimestamp = Math.min(...transactions.map(t => t.date.getTime()));
+    transactions = mergeTransactions(page, transactions);
     nextButton = findUsableNextButton() as HTMLElement;
   }
+
+  putTransactionsInCache(transactions);
   return transactions;
+}
+
+function restoreDateObjects(ts: Transaction[]): Transaction[] {
+  return ts.map( t => {
+    const copy = JSON.parse(JSON.stringify(t));
+    copy.date = new Date(copy.date);
+    return copy;
+  });
+}
+
+function mergeTransactions(a: Transaction[], b: Transaction[]): Transaction[] {
+  // Q: Why are you not using map on Set.values() iterator?
+  // A? YCM linting thinks it's not a thing, along with a bunch of other
+  //    sensible iterator magic. Chrome is fine with it, but my life is too
+  //    short, and in the typical use case the copy won't be too expensive.
+  const merged = new Set<string>([a, b].flat().map(t => JSON.stringify(t)));
+  const ss = Array.from(merged.values());
+  const ts: Transaction[] = restoreDateObjects(ss.map(s => JSON.parse(s)));
+  return ts;
+}
+
+const CACHE_KEY = 'ALL_TRANSACTIONS';
+
+async function getTransactionsFromCache(): Promise<Transaction[]> {
+  const compressed = await cache.get(CACHE_KEY);
+  if (!compressed) {
+    return [];
+  }
+  const s = lzjs.decompress(compressed);
+  const ts = restoreDateObjects(JSON.parse(s));
+  return ts;
+}
+
+function putTransactionsInCache(ts: Transaction[]) {
+  const s = JSON.stringify(ts);
+  const compressed = lzjs.compress(s);
+  cache.set(CACHE_KEY, compressed);
 }
 
 function extractPageOfTransactions(): Transaction[] {
@@ -138,11 +215,11 @@ function extractSingleTransaction(
   return transaction;
 }
 
-function inIframedTransactionsPage(): boolean {
-  const inIframe = window.self !== window.top;
+function isInIframedTransactionsPage(): boolean {
+  const isInIframe = window.self !== window.top;
   const url = document.URL;
-  const inTransactionsPage = url.includes('/transactions');
-  return inIframe && inTransactionsPage;
+  const isInTransactionsPage = url.includes('/transactions');
+  return isInIframe && isInTransactionsPage;
 }
 
 function plantButton() {
@@ -158,7 +235,7 @@ function plantButton() {
 
   transactionBtn.addEventListener(
     'click',
-    _evt => plantTransactionsIframe()
+    _evt => plantIframe()
   );
 }
 

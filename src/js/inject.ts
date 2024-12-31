@@ -11,6 +11,7 @@ import * as request_scheduler from './request_scheduler';
 import * as settings from './settings';
 import * as signin from './signin';
 import * as stats from './statistics';
+import * as transaction from './transaction';
 import * as urls from './url';
 import * as util from './util';
 
@@ -223,11 +224,12 @@ async function registerContentScript() {
                 msg.sender_id);
             }
             break;
-          case 'transaction_slice':
-            console.log('got slice of transactions');
+          case 'transactions':
+            console.log('got transactions', msg.transactions);
             break;
           case 'clear_cache':
             getScheduler().cache().clear();
+            transaction.clearCache();
             notice.showNotificationBar(
               'Amazon Order History Reporter Chrome' +
               ' Extension\n\n' +
@@ -256,6 +258,4 @@ async function registerContentScript() {
 console.log('Amazon Order History Reporter starting');
 registerContentScript();
 advertisePeriods();
-
-import * as transaction from './transaction';
-transaction.initialisePage();
+transaction.initialisePage(getBackgroundPort);
