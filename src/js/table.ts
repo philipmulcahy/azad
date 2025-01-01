@@ -166,80 +166,86 @@ async function addTable(
   let table: HTMLTableElement = <HTMLTableElement>doc.querySelector(
     '[id="azad_order_table"]'
   );
+
   if ( table !== null ) {
     console.log('removing old table');
     table.parentNode!.removeChild(table);
     console.log('removed old table');
   }
+
   console.log('adding table');
   table = <HTMLTableElement>doc.createElement('table');
   console.log('added table');
   document.body.appendChild(table);
   table.setAttribute('id', 'azad_order_table');
+
   table.setAttribute(
-    'class', 'azad_table stripe compact hover order-column');
+  'class', 'azad_table stripe compact hover order-column');
 
-    const thead = doc.createElement('thead');
-    thead.setAttribute('id', 'azad_order_table_head');
-    table.appendChild(thead);
+  const thead = doc.createElement('thead');
+  thead.setAttribute('id', 'azad_order_table_head');
+  table.appendChild(thead);
 
-    const hr = doc.createElement('tr');
-    hr.setAttribute('id', 'azad_order_table_hr');
-    thead.appendChild(hr);
+  const hr = doc.createElement('tr');
+  hr.setAttribute('id', 'azad_order_table_hr');
+  thead.appendChild(hr);
 
-    const tfoot = doc.createElement('tfoot');
-    tfoot.setAttribute('id', 'azad_order_table_foot');
-    table.appendChild(tfoot);
+  const tfoot = doc.createElement('tfoot');
+  tfoot.setAttribute('id', 'azad_order_table_foot');
+  table.appendChild(tfoot);
 
-    const fr = doc.createElement('tr');
-    fr.setAttribute('id', 'azad_order_table_fr');
-    tfoot.appendChild(fr);
+  const fr = doc.createElement('tr');
+  fr.setAttribute('id', 'azad_order_table_fr');
+  tfoot.appendChild(fr);
 
-    const actual_cols = await cols;
-    actual_cols.forEach( col_spec => {
-      const hidden: boolean = col_spec.hide_in_browser ? true: false;
-      [hr, fr].forEach(
-        parent_row => {
-          addHeader(
-            parent_row,
-            col_spec.field_name,
-            col_spec?.help ?? '',
-            hidden);
-        }
-      );
-    });
-
-    const tbody = doc.createElement('tbody');
-    table.appendChild(tbody);
-
-    // Record all the promises: we're going to need to wait on all of them
-    // to resolve before we can hand over the table to our callers.
-    const row_done_promises = entities.map( entity => {
-      return appendEntityRow(tbody, entity, cols);
-    });
-
-    const row_promises = await Promise.all(row_done_promises);
-    const value_done_promises: Promise<null|void>[] = [];
-    row_promises.forEach(
-      cell_done_promises => value_done_promises.push(
-        ...cell_done_promises
-      )
-    );
-    console.log(
-      'value_done_promises.length',
-      value_done_promises.length
-    );
-    return Promise.allSettled(value_done_promises).then( settled => {
-      const rejected_count = settled.filter(row => row.status == 'rejected')
-      .length;
-      if (rejected_count) {
-        console.warn(
-          'table.addTable(...) encountered ',
-          rejected_count,
-          'rejected value promises.');
+  const actual_cols = await cols;
+  actual_cols.forEach( col_spec => {
+    const hidden: boolean = col_spec.hide_in_browser ? true: false;
+    [hr, fr].forEach(
+      parent_row => {
+        addHeader(
+          parent_row,
+          col_spec.field_name,
+          col_spec?.help ?? '',
+          hidden);
       }
-      return table;
-    });
+    );
+  });
+
+  const tbody = doc.createElement('tbody');
+  table.appendChild(tbody);
+
+  // Record all the promises: we're going to need to wait on all of them
+  // to resolve before we can hand over the table to our callers.
+  const row_done_promises = entities.map( entity => {
+    return appendEntityRow(tbody, entity, cols);
+  });
+
+  const row_promises = await Promise.all(row_done_promises);
+  const value_done_promises: Promise<null|void>[] = [];
+
+  row_promises.forEach(
+    cell_done_promises => value_done_promises.push(
+      ...cell_done_promises
+    )
+  );
+
+  console.log(
+    'value_done_promises.length',
+    value_done_promises.length
+  );
+
+  return Promise.allSettled(value_done_promises).then( settled => {
+    const rejected_count = settled.filter(row => row.status == 'rejected')
+    .length;
+    if (rejected_count) {
+      console.warn(
+        'table.addTable(...) encountered ',
+        rejected_count,
+        'rejected value promises.');
+    }
+    return table;
+  });
 }
 
 async function reallyDisplay(
@@ -247,12 +253,15 @@ async function reallyDisplay(
   beautiful: boolean,
 ): Promise<HTMLTableElement> {
   console.log('amazon_order_history_table.reallyDisplay starting');
+
   for (const entry in order_map) {
     delete order_map[entry];
   }
+
   util.clearBody();
   banner.addBanner();
   addProgressBar();
+
   orders.forEach( order => {
     order.id().then(
       id => { order_map[id] = order; }
@@ -307,6 +316,7 @@ function addProgressBar(): void {
 function addCsvButton(orders: azad_order.IOrder[]): void
 {
   const title = "download spreadsheet ('.csv')";
+
   util.addButton(
     title,
     async function() {
@@ -328,6 +338,7 @@ export async function display(
 ): Promise<HTMLTableElement> {
   const orders = await orders_promise;
   console.log('amazon_order_history_table.display starting');
+
   if (orders.length >= 500 && beautiful) {
     beautiful= false;
     notice.showNotificationBar(
@@ -337,14 +348,17 @@ export async function display(
       document
     );
   }
+
   const table_promise: Promise<HTMLTableElement> = reallyDisplay(
     orders,
     beautiful,
   );
+
   console.log(
     'amazon_order_history_table.display then func returning ' +
       'table promise.'
   );
+
   console.log('amazon_order_history_table.display returning');
   return table_promise;
 }
