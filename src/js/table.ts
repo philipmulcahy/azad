@@ -13,6 +13,7 @@ import * as diagnostic_download from './diagnostic_download';
 import * as notice from './notice';
 import * as progress_bar from './progress_bar';
 import * as settings from './settings';
+import * as transaction from './transaction';
 import * as stats from './statistics';
 import * as table_config from './table_config';
 import * as util from './util';
@@ -340,9 +341,12 @@ function addCsvButton(orders: azad_order.IOrder[]): void
         Promise.resolve(orders),
         false
       );
+
       const show_totals: boolean = await settings.getBoolean(
-        'show_totals_in_csv');
-        csv.download(table, show_totals);
+        'show_totals_in_csv'
+      );
+
+      csv.download(table, show_totals);
     },
     'azad_table_button'
   );
@@ -356,7 +360,8 @@ export async function display(
   console.log('amazon_order_history_table.display starting');
 
   if (orders.length >= 500 && beautiful) {
-    beautiful= false;
+    beautiful = false;
+
     notice.showNotificationBar(
       '500 or more orders found. That\'s a lot!\n' +
       'We\'ll start you off with a plain table to make display faster.\n' +
@@ -417,9 +422,41 @@ export function updateProgressBar(statistics: stats.Statistics): void {
     if (completed!=null && queued!=null && running!=null) {
       const ratio: number = (completed + cache_hits) /
                             (completed + queued + running + cache_hits);
+
       if (ratio) {
         progress_indicator.update_progress(ratio);
       }
     }
   }
+}
+
+export async function displayTransactions(
+  transactions: transaction.Transaction[],
+): Promise<HTMLTableElement> {
+  let beautiful = true;
+
+  if (transactions.length >= 500) {
+    beautiful = false;
+
+    notice.showNotificationBar(
+      '500 or more transactions found. That\'s a lot!\n' +
+      'We\'ll start you off with a plain table to make display faster.\n' +
+      'You can click the blue "datatable" button to restore sorting, filtering etc.',
+      document
+    );
+  }
+
+  const table_promise: Promise<HTMLTableElement> = reallyDisplay(
+    transactions,
+    beautiful,
+  );
+
+  console.log(
+    'amazon_order_history_table.display then func returning ' +
+      'table promise.'
+  );
+
+  console.log('amazon_order_history_table.display returning');
+  return table_promise;
+
 }

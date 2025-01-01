@@ -3,7 +3,7 @@ import * as extraction from './extraction';
 import * as util from './util';
 const lzjs = require('lzjs');
 
-interface Transaction {
+export interface Transaction {
   date: Date,
   cardInfo: string,
   orderIds: string[],

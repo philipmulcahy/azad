@@ -8,6 +8,7 @@ import * as datatable_wrap from './datatable_wrap';
 import * as order_util from './order_util';
 import * as settings from './settings';
 import * as shipment from './shipment';
+import * as transaction from './transaction';
 import * as urls from './url';
 import * as util from './util';
 
@@ -539,21 +540,6 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
     is_numeric: false,
     visibility: shipment_info_enabled,
   }, {
-    field_name: 'transaction',
-    render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
-      const s = await (item as order_util.IEnrichedShipment);
-      const t = s.transaction;
-      if (t != null) {
-        const ts = t.info_string + ': ' + t.payment_amount;
-        td.textContent = ts;
-      } else {
-        td.textContent = '';
-      }
-      return null;
-    },
-    is_numeric: false,
-    visibility: shipment_info_enabled,
-  }, {
     field_name: 'tracking link',
     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
       const s = await (item as order_util.IEnrichedShipment);
@@ -578,5 +564,101 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
     },
     is_numeric: false,
     visibility: shipment_info_enabled,
+  },
+];
+
+const TRANSACTION_COLS: colspec.ColSpec[] = [
+  {
+    field_name: 'date',
+    render_func: function(
+      entity: azad_entity.IEntity,
+      td: HTMLElement
+    ): Promise<null> {
+      const t = entity as transaction.Transaction;
+      const date = t.date;
+      td.innerHTML = date.toString();
+      return Promise.resolve(null);
+    },
+    is_numeric: false,
+  }, {
+    field_name: 'order ids',
+    render_func: async function(
+      entity: azad_entity.IEntity,
+      td: HTMLElement
+    ): Promise<null> {
+      const t = entity as transaction.Transaction;
+      const ids: string[] = t.orderIds;
+      const site = urls.getSite();
+
+      const links = ids.map(id => {
+        const url = urls.getDefaultOrderDetailUrl(id, site);
+        const link = util.safe_new_tab_link(url, id);
+        const listItem = `<li>${link}</li>`;
+        return listItem;
+      }).join('');
+
+      const list = '<ul>' + links + '</ul>';
+      td.innerHTML = list;
+      return Promise.resolve(null);
+    },
+    is_numeric: false,
+  }, {
+    field_name: 'order urls',
+    render_func: async function(
+      entity: azad_entity.IEntity,
+      td: HTMLElement
+    ): Promise<null> {
+      const t = entity as transaction.Transaction;
+      const ids: string[] = t.orderIds;
+      const site = urls.getSite();
+
+      const urlList = ids.map(id => {
+        const url = urls.getDefaultOrderDetailUrl(id, site);
+        return url;
+      }).join(', ');
+
+      td.innerText = urlList;
+      return Promise.resolve(null);
+    },
+    is_numeric: false,
+    hide_in_browser: true,
+  },
+  {
+    field_name: 'vendor',
+    render_func: function(
+      entity: azad_entity.IEntity,
+      td: HTMLElement
+    ): Promise<null> {
+      const transaction = entity as transaction.Transaction;
+      const vendor = transaction.vendor;
+      td.innerHTML = vendor;
+      return Promise.resolve(null);
+    },
+    is_numeric: false,
+    hide_in_browser: true,
+  }, {
+    field_name: 'card_details',
+    render_func: async function(
+      entity: azad_entity.IEntity,
+      td: HTMLElement
+    ): Promise<null> {
+      const transaction = entity as transaction.Transaction;
+      const cardInfo = transaction.cardInfo;
+      td.innerHTML = cardInfo;
+      return Promise.resolve(null);
+    },
+    is_numeric: false,
+  }, {
+    field_name: 'amount',
+    render_func: async function(
+      entity: azad_entity.IEntity,
+      td: HTMLElement
+    ): Promise<null> {
+      const transaction = entity as transaction.Transaction;
+      const amount = transaction.amount;
+      td.innerText = amount.toString();
+      return Promise.resolve(null);
+    },
+    is_numeric: true,
   },
 ];

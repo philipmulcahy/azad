@@ -28,6 +28,7 @@ function getScheduler(): request_scheduler.IRequestScheduler {
   if (!scheduler) {
     resetScheduler('unknown');
   }
+
   return scheduler!;
 }
 
@@ -38,14 +39,17 @@ function getBackgroundPort(): chrome.runtime.Port | null {
 function setStatsTimeout() {
   const sendStatsMsg = () => {
     const bg_port = getBackgroundPort();
+
     if (bg_port) {
       _stats.publish(bg_port, getScheduler().purpose());
       azad_table.updateProgressBar(_stats);
     }
   };
+
   if (stats_timeout) {
     clearTimeout(stats_timeout);
   }
+
   stats_timeout = setTimeout(
     () => {
       setStatsTimeout();
@@ -59,6 +63,7 @@ function resetScheduler(purpose: string): void {
   if (scheduler) {
     scheduler.abort();
   }
+
   _stats.clear();
   scheduler = request_scheduler.create(purpose, getBackgroundPort, _stats);
   setStatsTimeout();
@@ -68,6 +73,7 @@ async function getYears(): Promise<number[]> {
   async function getPromise(): Promise<number[]> {
     const url = 'https://' + SITE
               + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
+
     try {
       const response = await signin.checkedFetch(url);
       const html_text = await response.text();
@@ -79,6 +85,7 @@ async function getYears(): Promise<number[]> {
       return [];
     }
   }
+
   const years = await getPromise();
   console.log('getYears() returning ', years);
   return years;
@@ -93,6 +100,7 @@ async function fetchAndShowOrdersByYears(
   years: number[]
 ): Promise<HTMLTableElement|undefined> {
   const ezp_mode: boolean = await settings.getBoolean('ezp_mode');
+
   if ( ! ezp_mode ) {
     if ( document.visibilityState != 'visible' ) {
       console.log(
@@ -102,15 +110,18 @@ async function fetchAndShowOrdersByYears(
       return;
     }
   }
+
   const purpose: string = years.join(', ');
   resetScheduler(purpose);
   const latest_year: number = await latestYear();
+
   const order_promises = azad_order.getOrdersByYear(
     years,
     getScheduler(),
     latest_year,
     (_date: Date|null) => true,  // DateFilter predicate
   );
+
   return azad_table.display(order_promises, true);
 }
 
@@ -119,6 +130,7 @@ async function fetchAndShowOrdersByRange(
   beautiful_table: boolean
 ): Promise<HTMLTableElement|undefined> {
   console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);
+
   if ( document.visibilityState != 'visible' ) {
     console.log(
       'fetchAndShowOrdersByRange() returning without doing anything: ' +
@@ -126,12 +138,15 @@ async function fetchAndShowOrdersByRange(
     );
     return;
   }
+
   const purpose: string
     = util.dateToDateIsoString(start_date)
     + ' -> '
     + util.dateToDateIsoString(end_date);
+
   resetScheduler(purpose);
   const latest_year: number = await latestYear();
+
   const orders = azad_order.getOrdersByRange(
     start_date,
     end_date,
@@ -144,6 +159,7 @@ async function fetchAndShowOrdersByRange(
       return d! >= start_date && d! <= end_date;  // DateFilter
     },
   );
+
   return azad_table.display(orders, beautiful_table);
 }
 
@@ -155,19 +171,22 @@ async function fetchShowAndSendItemsByRange(
   await settings.storeBoolean('ezp_mode', true);
   const original_items_setting = await settings.getBoolean('show_items_not_orders');
   await settings.storeBoolean('show_items_not_orders', true);
+
   const table: (HTMLTableElement|undefined) = await fetchAndShowOrdersByRange(
     start_date,
     end_date,
     false
   );
+
   await settings.storeBoolean('show_items_not_orders', original_items_setting);
 
   if (typeof(table) != 'undefined') {
     await csv.send_csv_to_ezp_peer(table, destination_extension_id);
     await settings.storeBoolean('ezp_mode', false);
     return;
+  } else {
+    return undefined;
   }
-  else return undefined;
 }
 
 async function advertisePeriods() {
@@ -175,6 +194,7 @@ async function advertisePeriods() {
   console.log('advertising years', years);
   const bg_port = getBackgroundPort();
   const periods = years.length == 0 ? [] : [1, 2, 3].concat(years);
+
   if (bg_port) {
     try {
       bg_port.postMessage({
@@ -204,7 +224,7 @@ async function registerContentScript() {
           case 'scrape_years':
             years = msg.years;
             if (years) {
-                fetchAndShowOrdersByYears(years);
+              fetchAndShowOrdersByYears(years);
             }
             break;
           case 'scrape_range':
@@ -226,6 +246,7 @@ async function registerContentScript() {
             break;
           case 'transactions':
             console.log('got transactions', msg.transactions);
+            table.displayTransactions(msg.transactions);
             break;
           case 'clear_cache':
             getScheduler().cache().clear();
@@ -252,6 +273,7 @@ async function registerContentScript() {
       }
     });
   }
+
   console.log('script registered');
 }
 
