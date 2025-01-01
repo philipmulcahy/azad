@@ -34,6 +34,7 @@ function appendCell(
   const td = document.createElement('td');
   td.textContent = 'pending';
   tr.appendChild(td);
+
   const null_converter = function(x: any): any {
     if (x) {
       if (
@@ -56,44 +57,54 @@ function appendCell(
   const value_written_promise: Promise<null|void> =
     col_spec.render_func ?
     col_spec?.render_func(entity, td) :
-    (() => {
-    const field_name: string | undefined = col_spec.value_promise_func_name;
-    if (typeof(field_name) == 'undefined') {
-      const msg = 'empty field name not expected';
-      console.error(msg);
-      throw(msg);
-    }
-    const field: azad_entity.Field = azad_entity.field_from_entity(
-      entity,
-      <string>field_name);
-    const value_promise: Promise<azad_entity.Value> = (
-      typeof(field) === 'function'
-    ) ?
-      field.bind(entity)() :
-      Promise.resolve(field);
-    return value_promise
-    .then(null_converter)
-    .then(
-      (value: string) => {
-        td.innerText = value;
-        datatable_wrap.invalidate();
-        return null;
+    (
+      () => {
+        const field_name: string | undefined = col_spec.value_promise_func_name;
+
+        if (typeof(field_name) == 'undefined') {
+          const msg = 'empty field name not expected';
+          console.error(msg);
+          throw(msg);
+        }
+
+        const field: azad_entity.Field = azad_entity.field_from_entity(
+          entity,
+          <string>field_name);
+
+        const value_promise: Promise<azad_entity.Value> = (
+          typeof(field) === 'function'
+        ) ?
+          field.bind(entity)() :
+          Promise.resolve(field);
+
+        return value_promise
+          .then(null_converter)
+          .then(
+            (value: string) => {
+              td.innerText = value;
+              datatable_wrap.invalidate();
+              return null;
+            }
+          );
       }
-    );
-  })();
+    )();
+
   td.setAttribute(
     'class', td.getAttribute('class') + ' ' +
     'azad_col_' + col_spec.field_name + ' ' +
     'azad_numeric_' + (col_spec.is_numeric ? 'yes' : 'no' ) + ' ');
+
   if (col_spec.help) {
     td.setAttribute(
       'class',
       td.getAttribute('class') + ' azad_elem_has_help');
     td.setAttribute('title', col_spec.help);
   }
+
   if (col_spec.hide_in_browser) {
     td.setAttribute( 'class', td.getAttribute('class') + ' azad_hidden');
   }
+
   return value_written_promise;
 }
 
@@ -104,9 +115,10 @@ function appendEntityRow(
 ): Promise<Promise<null|void>[]> {
   const tr = document.createElement('tr');
   table.appendChild(tr);
+
   return cols.then( cols =>
-                   cols.map( col_spec => appendCell(tr, entity, col_spec) )
-                  );
+    cols.map( col_spec => appendCell(tr, entity, col_spec) )
+  );
 }
 
 function addOrderTable(
@@ -149,16 +161,20 @@ async function addTable(
   ) {
     const th = row.ownerDocument!.createElement('th');
     th.setAttribute('class', 'azad_thClass');
+
     if (hidden) {
       th.setAttribute('class', th.getAttribute('class') + ' azad_hidden');
     }
+
     row.appendChild(th);
     th.textContent = value;
+
     if( help ) {
       th.setAttribute(
         'class', th.getAttribute('class') + ' azad_th_has_help ');
         th.setAttribute('title', help);
     }
+
     return th;
   };
 
@@ -269,8 +285,8 @@ async function reallyDisplay(
   });
   
   const table_type = await settings.getString('azad_table_type');
-
   const cols = table_config.getCols(table_type);
+
   const table_promise = (table_type == 'orders') ?
     addOrderTable(document, orders, cols) :
     (table_type == 'items') ?
@@ -366,25 +382,27 @@ export async function display(
 export function dumpOrderDiagnostics(order_id: string) {
   console.log('dumpOrderDiagnostics: ' + order_id);
   const order = order_map[order_id];
+
   if (order) {
     const utc_today = new Date().toISOString().substr(0,10);
     const file_name = order_id + '_' + utc_today + '.json';
+
     azad_order.assembleDiagnostics(order).then(
       diagnostics => diagnostic_download.save_json_to_file(
         diagnostics,
         file_name
       )
     ).then(
-    () => notice.showNotificationBar(
-      'Debug file ' + file_name + ' saved.',
-      document
-    ),
-    err => {
-      const msg = 'Failed to create debug file: ' + file_name +
-        ' ' + err;
-      console.warn(msg);
-      notice.showNotificationBar(msg, document);
-    }
+      () => notice.showNotificationBar(
+        'Debug file ' + file_name + ' saved.',
+        document
+      ),
+      err => {
+        const msg = 'Failed to create debug file: ' + file_name +
+          ' ' + err;
+        console.warn(msg);
+        notice.showNotificationBar(msg, document);
+      }
     );
   }
 }
@@ -395,6 +413,7 @@ export function updateProgressBar(statistics: stats.Statistics): void {
     const cache_hits = statistics.get(stats.OStatsKey.CACHE_HIT_COUNT);
     const queued = statistics.get(stats.OStatsKey.QUEUED_COUNT);
     const running = statistics.get(stats.OStatsKey.RUNNING_COUNT);
+
     if (completed!=null && queued!=null && running!=null) {
       const ratio: number = (completed + cache_hits) /
                             (completed + queued + running + cache_hits);
