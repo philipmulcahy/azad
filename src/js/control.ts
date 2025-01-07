@@ -7,7 +7,6 @@ const $ = require('jquery');
 import * as settings from './settings';
 import * as util from './util';
 
-
 $(document).ready(function() {
   $('body').on(
     'click',

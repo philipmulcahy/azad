@@ -82,6 +82,7 @@ function registerConnectionListener() {
             case 'scrape_years':
               console.log('forwarding scrape_years', msg.years);
               broadcast_to_content_pages(msg);
+              broadcast_to_content_pages({action: 'scrape_transactions'});
               break;
             case 'scrape_range':
               console.log(
@@ -90,6 +91,7 @@ function registerConnectionListener() {
                 msg.end_date
               );
               broadcast_to_content_pages(msg);
+              broadcast_to_content_pages({action: 'scrape_transactions'});
               break;
             case 'check_feature_authorized':
               handleAuthorisationRequest(msg.feature_id, control_port);

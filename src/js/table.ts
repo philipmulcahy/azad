@@ -149,6 +149,14 @@ async function addShipmentsTable(
   return addTable(doc, shipments, cols);
 }
 
+function addTransactionTable(
+  doc: HTMLDocument,
+  transactions: transaction.Transaction[],
+  cols: Promise<colspec.ColSpec[]>
+): Promise<HTMLTableElement> {
+  return addTable(doc, transactions, cols);
+}
+
 async function addTable(
     doc: HTMLDocument,
     entities: azad_entity.IEntity[],
@@ -309,7 +317,7 @@ async function reallyDisplay(
         function() { display(Promise.resolve(orders), false); },
         'azad_table_button'
       );
-      addCsvButton(orders);
+      addOrdersCsvButton(orders);
       datatable_wrap.init(cols);
     } else {
       util.removeButton('plain table');
@@ -318,7 +326,58 @@ async function reallyDisplay(
         function() { display(Promise.resolve(orders), true); },
         'azad_table_button'
       );
-      addCsvButton(orders);
+      addOrdersCsvButton(orders);
+    }
+  });
+
+  console.log('azad.reallyDisplay returning');
+  return table;
+}
+
+async function reallyDisplayTransactions(
+  transactions: transaction.Transaction[],
+  beautiful: boolean,
+): Promise<HTMLTableElement> {
+  console.log('amazon_order_history_table.reallyDisplay starting');
+
+  for (const entry in order_map) {
+    delete order_map[entry];
+  }
+
+  util.clearBody();
+  banner.addBanner();
+  addProgressBar();
+  
+  const table_type = await settings.getString('azad_table_type');
+  const cols = table_config.getCols(table_type);
+
+  const table_promise = (table_type == 'transactions') ?
+    addTransactionTable(document, transactions, cols) :
+    (() => {throw('unsupported table_type: ' + table_type);})();
+
+  // Wait for table to be there before doing more html stuff.
+  const table = await table_promise;
+  banner.removeBanner();
+
+  $( () => {
+    if (beautiful) {
+      datatable_wrap.destroy();
+      util.removeButton('data table');
+      util.addButton(
+        'plain table',
+        () => displayTransactions(transactions),
+        'azad_table_button'
+      );
+      addTransactionsCsvButton(transactions);
+      datatable_wrap.init(cols);
+    } else {
+      util.removeButton('plain table');
+      util.addButton(
+        'data table',
+        () => displayTransactions(transactions),
+        'azad_table_button'
+      );
+      addTransactionsCsvButton(transactions);
     }
   });
 
@@ -330,7 +389,7 @@ function addProgressBar(): void {
   progress_indicator = progress_bar.addProgressBar(document.body);
 }
 
-function addCsvButton(orders: azad_order.IOrder[]): void
+function addOrdersCsvButton(orders: azad_order.IOrder[]): void
 {
   const title = "download spreadsheet ('.csv')";
 
@@ -341,6 +400,25 @@ function addCsvButton(orders: azad_order.IOrder[]): void
         Promise.resolve(orders),
         false
       );
+
+      const show_totals: boolean = await settings.getBoolean(
+        'show_totals_in_csv'
+      );
+
+      csv.download(table, show_totals);
+    },
+    'azad_table_button'
+  );
+}
+
+function addTransactionsCsvButton(transactions: transaction.Transaction[]): void
+{
+  const title = "download spreadsheet ('.csv')";
+
+  util.addButton(
+    title,
+    async function() {
+      const table: HTMLTableElement = await displayTransactions(transactions);
 
       const show_totals: boolean = await settings.getBoolean(
         'show_totals_in_csv'
@@ -446,7 +524,7 @@ export async function displayTransactions(
     );
   }
 
-  const table_promise: Promise<HTMLTableElement> = reallyDisplay(
+  const table_promise: Promise<HTMLTableElement> = reallyDisplayTransactions(
     transactions,
     beautiful,
   );

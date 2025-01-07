@@ -12,6 +12,8 @@ import * as settings from './settings';
 import * as signin from './signin';
 import * as stats from './statistics';
 import * as transaction from './transaction';
+import * as transaction_iframe from './transaction_iframe';
+import * as transaction_parent from './transaction_parent';
 import * as urls from './url';
 import * as util from './util';
 
@@ -244,9 +246,13 @@ async function registerContentScript() {
                 msg.sender_id);
             }
             break;
+          case 'scrape_transactions':
+            console.log('got scrape_transactions');
+            transaction.scrapeAndPublish();
+            break;
           case 'transactions':
             console.log('got transactions', msg.transactions);
-            table.displayTransactions(msg.transactions);
+            azad_table.displayTransactions(msg.transactions);
             break;
           case 'clear_cache':
             getScheduler().cache().clear();
