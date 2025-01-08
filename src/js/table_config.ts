@@ -17,13 +17,16 @@ export function getCols(table_type: string): Promise<colspec.ColSpec[]> {
   const waits: Promise<any>[] = [];
   const results: colspec.ColSpec[] = [];
   
+  // TODO: this should be a(n) map/object and lookup func.
   const cols: colspec.ColSpec[] = (table_type == 'orders') ?
     ORDER_COLS :
     (table_type == 'items') ?
       ITEM_COLS :
       (table_type == 'shipments') ?
         SHIPMENT_COLS :
-        (() => {throw('unsupported table_type: ' + table_type);})();
+        (table_type == 'transactions') ?
+          TRANSACTION_COLS :
+          (() => {throw('unsupported table_type: ' + table_type);})();
 
   cols.forEach( col => {
     if (col?.sites?.test(urls.getSite()) ?? true) {

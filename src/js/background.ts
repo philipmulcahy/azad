@@ -17,7 +17,7 @@ export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
   'ciklnhigjmbmehniheaolibcchfmabfp', // EZP Alpha Tester Release
 ];
 
-const content_ports: Record<number, any> = {};
+const content_ports: Record<string, any> = {};
 
 function broadcast_to_content_pages(msg: any) {
   Object.values(content_ports).forEach((port) => port.postMessage(msg));
@@ -27,6 +27,13 @@ let control_port: msg.ControlPort | null = null;
 
 let advertised_periods: number[] = [];
 
+function getPortKey(port: chrome.runtime.Port): string {
+  const tabId = port?.sender?.tab?.id?.toString() ?? '?';
+  const url = port?.sender?.url ?? '?';
+  const key = `${tabId}#${url}`;
+  return key;
+}
+
 function registerConnectionListener() {
   chrome.runtime.onConnect.addListener((port) => {
     console.log('new connection from ' + port.name);
@@ -34,7 +41,7 @@ function registerConnectionListener() {
       case 'azad_inject':
         {
           port.onDisconnect.addListener(() => {
-            const key = port?.sender?.tab?.id;
+            const key = getPortKey(port);
             if (key != null && typeof(key) != 'undefined') {
               delete content_ports[key];
             }
@@ -69,10 +76,9 @@ function registerConnectionListener() {
                 break;
             }
           });
-          const port_key: number|undefined = port?.sender?.tab?.id;
-          if (typeof(port_key) != 'undefined') {
-            content_ports[port_key] = port;
-          }
+
+          const portKey = getPortKey(port);
+          content_ports[portKey] = port;
         }
         break;
       case 'azad_control':

@@ -252,7 +252,11 @@ async function registerContentScript() {
             break;
           case 'transactions':
             console.log('got transactions', msg.transactions);
-            azad_table.displayTransactions(msg.transactions);
+
+            if (!transaction.isInIframedTransactionsPage()) {
+              azad_table.displayTransactions(msg.transactions);
+            }
+
             break;
           case 'clear_cache':
             getScheduler().cache().clear();

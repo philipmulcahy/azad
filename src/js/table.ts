@@ -340,10 +340,6 @@ async function reallyDisplayTransactions(
 ): Promise<HTMLTableElement> {
   console.log('amazon_order_history_table.reallyDisplay starting');
 
-  for (const entry in order_map) {
-    delete order_map[entry];
-  }
-
   util.clearBody();
   banner.addBanner();
   addProgressBar();

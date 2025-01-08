@@ -29,7 +29,7 @@ export function clearCache() {
   getCache().clear();
 }
 
-function isInIframedTransactionsPage(): boolean {
+export function isInIframedTransactionsPage(): boolean {
   const isInIframe = window.self !== window.top;
   const url = document.URL;
   const isInTransactionsPage = url.includes('/transactions');
@@ -37,7 +37,7 @@ function isInIframedTransactionsPage(): boolean {
 }
 
 export function scrapeAndPublish() {
-  if (isInIframedTransactionsPage()) {
+  if (!isInIframedTransactionsPage()) {
     parent.plantIframe();
   }
 }
