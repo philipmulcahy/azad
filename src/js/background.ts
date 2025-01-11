@@ -83,21 +83,19 @@ function registerConnectionListener() {
         break;
       case 'azad_control':
         control_port = port;
-        port.onMessage.addListener((msg) => {
+        port.onMessage.addListener(async (msg) => {
           switch (msg.action) {
             case 'scrape_years':
-              console.log('forwarding scrape_years', msg.years);
-              broadcast_to_content_pages(msg);
-              broadcast_to_content_pages({action: 'scrape_transactions'});
-              break;
             case 'scrape_range':
-              console.log(
-                'forwarding scrape_range',
-                msg.start_date,
-                msg.end_date
-              );
-              broadcast_to_content_pages(msg);
-              broadcast_to_content_pages({action: 'scrape_transactions'});
+              await async function(){
+                const table_type = await settings.getString('azad_table_type');
+                if (table_type == 'transactions') {
+                  broadcast_to_content_pages({action: 'scrape_transactions'});
+                } else {
+                  console.log(`forwarding ${msg.toString()}`);
+                  broadcast_to_content_pages(msg);
+                }
+              }();
               break;
             case 'check_feature_authorized':
               handleAuthorisationRequest(msg.feature_id, control_port);

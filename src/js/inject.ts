@@ -253,9 +253,11 @@ async function registerContentScript() {
           case 'transactions':
             console.log('got transactions', msg.transactions);
 
-            if (!transaction.isInIframedTransactionsPage()) {
-              azad_table.displayTransactions(msg.transactions);
-            }
+            (async ()=>{
+              if (!transaction.isInIframedTransactionsPage()) {
+                await azad_table.displayTransactions(msg.transactions);
+              }
+            })();
 
             break;
           case 'clear_cache':

@@ -342,7 +342,6 @@ async function reallyDisplayTransactions(
 
   util.clearBody();
   banner.addBanner();
-  addProgressBar();
   
   const table_type = await settings.getString('azad_table_type');
   const cols = table_config.getCols(table_type);
