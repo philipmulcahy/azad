@@ -578,8 +578,9 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
       td: HTMLElement
     ): Promise<null> {
       const t = entity as transaction.Transaction;
-      const date = t.date;
-      td.innerHTML = date.toString();
+      const date = new Date(t.date.toString());
+      const ds = util.dateToDateIsoString(date);
+      td.innerHTML = ds;
       return Promise.resolve(null);
     },
     is_numeric: false,
