@@ -140,11 +140,12 @@ export function clearBody(): void {
 }
 
 export function moneyRegEx(): RegExp {
-    return /\s*((GBP|USD|CAD|EUR|AUD|[$£€])?\s?(\d+[.,]\d\d))\s*/;
+    return /\s*(-?(GBP|USD|CAD|EUR|AUD|[$£€])?\s?(\d+[.,]\d\d))\s*/;
 /*
     /
         \s*
         (
+            -?
             (
                 GBP|USD|CAD|EUR|AUD|[$£€]
             )?
@@ -154,6 +155,10 @@ export function moneyRegEx(): RegExp {
         \s*
     /
 */
+}
+
+export function orderIdRegExp(): RegExp {
+  return /.*([A-Z0-9]\d\d-\d{7}-\d{7}).*/;
 }
 
 export function dateToDateIsoString(d: Date): string {

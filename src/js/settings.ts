@@ -135,7 +135,14 @@ export async function registerTableTypeRadioButtons() {
 
   // Make sure that a table type is set.
   let initial_table_type = await getString(SETTINGS_KEY);
-  if (!['orders', 'items', 'shipments'].includes(initial_table_type)) {
+  if (
+    ![
+      'orders',
+      'items',
+      'shipments',
+      'transactions',
+    ].includes(initial_table_type)
+  ) {
     initial_table_type = 'orders';
     await storeString(SETTINGS_KEY, initial_table_type);
   }

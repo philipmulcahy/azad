@@ -46,7 +46,7 @@ export function orderDetailUrlFromListElement(
   return getDefaultOrderDetailUrl(orderId, site);
 }
 
-function getDefaultOrderDetailUrl(orderId: string, site: string) {
+export function getDefaultOrderDetailUrl(orderId: string, site: string) {
   const suffix = orderId.startsWith('D') ?
     '/gp/your-account/order-history/' +
       'ref=ppx_yo_dt_b_search?opt=ab&search=' + orderId:
