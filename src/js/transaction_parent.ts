@@ -1,22 +1,5 @@
 const IFRAME_ID = 'AZAD-TRANSACTION-SCRAPER';
 
-export function plantButton() {
-  const transactionBtn = document.createElement('button');
-
-  document.body.insertBefore(
-    transactionBtn, document.body.firstChild
-  );
-
-  transactionBtn.setAttribute('type', 'button');
-  transactionBtn.setAttribute('style', 'height:50;width:200; background-color:orange');
-  transactionBtn.innerText='Get Transactions';
-
-  transactionBtn.addEventListener(
-    'click',
-    _evt => plantIframe()
-  );
-}
-
 // Should lead to transactions being scraped, merged with existing cached
 // transactions and for the whole set being published.
 export function plantIframe() {

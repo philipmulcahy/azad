@@ -20,10 +20,7 @@ export async function initialisePage(
 ) {
   if (isInIframedTransactionsPage()) {
     iframe.reallyScrapeAndPublish(getPort);
-  } else {
-    parent.plantButton();
-  }
-}
+  }}
 
 export function clearCache() {
   getCache().clear();
