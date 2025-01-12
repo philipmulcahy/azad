@@ -360,7 +360,7 @@ async function reallyDisplayTransactions(
       util.removeButton('data table');
       util.addButton(
         'plain table',
-        () => displayTransactions(transactions),
+        () => reallyDisplayTransactions(transactions, false),
         'azad_table_button'
       );
       addTransactionsCsvButton(transactions);
@@ -369,7 +369,7 @@ async function reallyDisplayTransactions(
       util.removeButton('plain table');
       util.addButton(
         'data table',
-        () => displayTransactions(transactions),
+        () => reallyDisplayTransactions(transactions, true),
         'azad_table_button'
       );
       addTransactionsCsvButton(transactions);
@@ -413,7 +413,9 @@ function addTransactionsCsvButton(transactions: transaction.Transaction[]): void
   util.addButton(
     title,
     async function() {
-      const table: HTMLTableElement = await displayTransactions(transactions);
+      const table: HTMLTableElement = await displayTransactions(
+        transactions, false
+      );
 
       const show_totals: boolean = await settings.getBoolean(
         'show_totals_in_csv'
@@ -505,9 +507,8 @@ export function updateProgressBar(statistics: stats.Statistics): void {
 
 export async function displayTransactions(
   transactions: transaction.Transaction[],
+  beautiful: boolean,
 ): Promise<HTMLTableElement> {
-  let beautiful = true;
-
   if (transactions.length >= 500) {
     beautiful = false;
 
@@ -531,5 +532,4 @@ export async function displayTransactions(
 
   console.log('amazon_order_history_table.display returning');
   return table_promise;
-
 }

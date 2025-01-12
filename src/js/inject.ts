@@ -255,7 +255,7 @@ async function registerContentScript() {
 
             (async ()=>{
               if (!transaction.isInIframedTransactionsPage()) {
-                await azad_table.displayTransactions(msg.transactions);
+                await azad_table.displayTransactions(msg.transactions, true);
               }
             })();
 
