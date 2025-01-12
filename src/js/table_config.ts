@@ -597,7 +597,9 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
       const links = ids.map(id => {
         const url = urls.getDefaultOrderDetailUrl(id, site);
         const link = util.safe_new_tab_link(url, id);
-        const listItem = `<li>${link}</li>`;
+        const isLastOne = id == ids.at(-1);
+        const separator = isLastOne ? '' : ', ';
+        const listItem = `<li>${link}${separator}</li>`;
         return listItem;
       }).join('');
 
