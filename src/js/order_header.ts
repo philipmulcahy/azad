@@ -72,7 +72,8 @@ function reallyExtractOrderHeader(
                   'Commande effectuée',
                   'Order placed',
                   'Ordine effettuato',
-                  'Pedido realizado'
+                  'Pedido realizado',
+                  'Subscription Charged on',
               ].map(
                   label => sprintf.sprintf(
                       './/div[contains(span,"%s")]' +
