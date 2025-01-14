@@ -52,6 +52,7 @@ export function extractItems(
     strategy2,
     strategy3,
     strategy4,
+    strategy5,
   ];
   for (let i=0; i!=strategies.length; i+=1) {
     const strategy: ItemsExtractor = strategies[i];
@@ -390,5 +391,64 @@ function strategy4(
       category: '',
     };
   });
+  return items;
+}
+
+// Digital subscription orders, such as Disney+
+// from 2025-01
+function strategy5(
+  order_elem: HTMLElement,
+  order_header: order_header.IOrderHeader,
+  context: string
+): IItem[] {
+  const itemHeaders: Node[] = extraction.findMultipleNodeValues(
+    '//div[@id="digitalOrderSummaryContainer"]//tr//td//b[contains(text(), "Ordered")]/parent::*/parent::*',
+    order_elem,
+    context,
+  );
+
+  if (itemHeaders.length != 1) {
+    throw 'not looking like a digital order';
+  }
+
+  const itemsHeader = itemHeaders[0] as HTMLElement;
+  const firstItemRow = itemsHeader.nextElementSibling as HTMLElement;
+
+  const itemCells = extraction.findMultipleNodeValues(
+    './/td',
+    firstItemRow,
+    context + ' item',
+  ) as HTMLElement[];
+
+  const lines = itemCells[0].innerHTML.split('<br>').map(
+    html => {
+      html = html.trim();
+      const e = order_elem.ownerDocument.createElement('div') as HTMLElement;
+      e.innerHTML = html;
+      return e.textContent;
+    }
+  );
+
+  const description = lines[0];
+  const seller = lines[1];
+  const quantity = +(lines[2]!);
+  const price = itemCells[1]?.textContent?.trim();
+  const url =  urls.normalizeUrl(
+    `/gp/digital/your-account/order-summary.html?orderID=${order_header.id}`,
+    urls.getSite()
+  );
+
+  const items: IItem[] = [
+    {
+      description,
+      order_header,
+      price,
+      quantity,
+      url,
+      asin: '',
+      category: '',
+    } as IItem,
+  ];
+
   return items;
 }
