@@ -31,6 +31,7 @@ function testAllGetYearsTargets(): ITestResult[] {
     'NathanChristie_2023-09-08',
     'PhilipMulcahy_2023-09-09',
     'shood_2023-09-08',
+    'WatersPaul_2025-01-14',
   ].map(
     s => testOneGetYearsTarget(
       './src/tests/azad_test_data/get_years/' + s + '.html'

@@ -171,24 +171,61 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
 }
 
 export function get_years(orders_page_doc: HTMLDocument): number[] {
-  const snapshot: Node[] = findMultipleNodeValues(
-    '//select[@name="orderFilter" or @name="timeFilter"]/option[@value]',
-    orders_page_doc.documentElement
-  );
-  const years = snapshot
-    .filter( elem => elem )  // not null or undefined
-    .filter( elem => elem.textContent )  // text content not null or empty
-    .map(
-      elem => elem!.textContent!
-      .replace('en', '')  // amazon.fr
-      .replace('nel', '')  // amazon.it
-      .trim())
+  type Strategy = (orders_page_doc: HTMLDocument) => number[]; 
+
+  const  strategy0: Strategy = function(doc: HTMLDocument) {
+    const snapshot: Node[] = findMultipleNodeValues(
+      '//select[@name="orderFilter" or @name="timeFilter"]/option[@value]',
+      doc.documentElement,
+    );
+    const years = snapshot
+      .filter( elem => elem )  // not null or undefined
+      .filter( elem => elem.textContent )  // text content not null or empty
+      .map(
+        elem => elem!.textContent!
+        .replace('en', '')  // amazon.fr
+        .replace('nel', '')  // amazon.it
+        .trim()
+      )
       .filter( element => (/^\d+$/).test(element) )
       .map( (year_string: string) => Number(year_string) )
       .filter( year => (year >= 2004) )
       // TODO remove duplicates
       .sort();
-  return years;
+    return years;
+  }
+
+  const  strategy1: Strategy = function(doc: HTMLDocument) {
+    const snapshot: Node[] = findMultipleNodeValues(
+      '//select[@id="timeFilterDropdown"]/option',
+      doc.documentElement,
+    );
+
+    const years = snapshot
+      .filter( elem => elem )  // not null or undefined
+      .filter( elem => elem.textContent )  // text content not null or empty
+      .filter( elem => (elem as HTMLElement).hasAttribute('value') )
+      .map( elem => (elem as HTMLElement)!.getAttribute('value')!.trim() )
+      .filter( yearString => (/^\d+$/).test(yearString) )
+      .map( (year_string: string) => Number(year_string) )
+      .filter( year => (year >= 2004) )
+      // TODO remove duplicates
+      .sort();
+
+    return years;
+  }
+
+  for (const s of [strategy0, strategy1]) {
+    try {
+      const years = s(orders_page_doc);
+      if (years.length) {
+        return years;
+      }
+    } catch(ex) {
+      console.log('get_years caught', ex);
+    }
+  }
+  return [];
 }
 
 export function getField(
