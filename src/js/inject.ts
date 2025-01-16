@@ -34,13 +34,17 @@ function getScheduler(): request_scheduler.IRequestScheduler {
   return scheduler!;
 }
 
-function getBackgroundPort(): chrome.runtime.Port | null {
+async function getBackgroundPort(): Promise<chrome.runtime.Port | null> {
+  if (!background_port) {
+    await registerContentScript();
+  }
+
   return background_port;
 }
 
 function setStatsTimeout() {
-  const sendStatsMsg = () => {
-    const bg_port = getBackgroundPort();
+  const sendStatsMsg = async () => {
+    const bg_port = await getBackgroundPort();
 
     if (bg_port) {
       _stats.publish(bg_port, getScheduler().purpose());
@@ -195,7 +199,7 @@ async function fetchShowAndSendItemsByRange(
 async function advertisePeriods() {
   const years = await getYears();
   console.log('advertising years', years);
-  const bg_port = getBackgroundPort();
+  const bg_port = await getBackgroundPort();
   const periods = years.length == 0 ? [] : [1, 2, 3].concat(years);
 
   if (bg_port) {
@@ -216,7 +220,12 @@ async function registerContentScript() {
   // @ts-ignore null IS allowed as first arg to connect.
   background_port = chrome.runtime.connect(null, {name: 'azad_inject'});
 
-  const bg_port = getBackgroundPort();
+  background_port.onDisconnect.addListener( _port => {
+    background_port = null;
+  });
+
+  const bg_port = await getBackgroundPort();
+
   if (bg_port) {
     bg_port.onMessage.addListener( msg => {
       try {

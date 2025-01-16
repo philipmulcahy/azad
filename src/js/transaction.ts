@@ -16,7 +16,7 @@ export interface Transaction {
 };
 
 export async function initialisePage(
-  getPort: ()=>(chrome.runtime.Port | null)
+  getPort: () => Promise<chrome.runtime.Port | null>
 ) {
   if (isInIframedTransactionsPage()) {
     iframe.reallyScrapeAndPublish(getPort);

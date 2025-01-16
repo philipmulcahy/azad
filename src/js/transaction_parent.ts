@@ -1,3 +1,4 @@
+import * as urls from './url';
 const IFRAME_ID = 'AZAD-TRANSACTION-SCRAPER';
 
 // Should lead to transactions being scraped, merged with existing cached
@@ -10,8 +11,12 @@ export function plantIframe() {
     iframe.remove();
   }
 
+  const url = urls.normalizeUrl(
+    '/cpe/yourpayments/transactions', urls.getSite()
+  );
+
   iframe = document.createElement('iframe') as HTMLIFrameElement;
-  iframe.setAttribute('src', 'https://www.amazon.co.uk/cpe/yourpayments/transactions');
+  iframe.setAttribute('src', url);
   iframe.setAttribute('id', IFRAME_ID);
   iframe.style.width = '1px';
   iframe.style.height = '1px';
