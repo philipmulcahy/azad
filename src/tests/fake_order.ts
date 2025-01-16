@@ -78,7 +78,7 @@ export function orderFromTestData(
       }
     });
     const scheduler = request_scheduler.create_overlaid(
-      'testing', url_map, ()=>null, statistics);
+      'testing', url_map, ()=>Promise.resolve(null), statistics);
     const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;
     const order_elems = extraction.findMultipleNodeValues(
         './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',

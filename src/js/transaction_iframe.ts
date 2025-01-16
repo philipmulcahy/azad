@@ -6,10 +6,10 @@ import * as util from './util';
 const CACHE_KEY = 'ALL_TRANSACTIONS';
 
 export async function reallyScrapeAndPublish(
-  getPort: ()=>(chrome.runtime.Port | null)
+  getPort: () => Promise<chrome.runtime.Port | null>
 ) {
   const transactions = await extractTransactions();
-  const port = getPort();
+  const port = await getPort();
   try {
     if (port) {
       port.postMessage({
@@ -146,7 +146,7 @@ async function extractTransactions() {
 
   while(nextButton && minNewTimestamp >= maxCachedTimestamp) {
     nextButton.click();
-    await new Promise(r => setTimeout(r, 5000));
+    await new Promise(r => setTimeout(r, 2500));
 
     const page = extractPageOfTransactions();
     console.log('scraped', page.length, 'transactions');
