@@ -32,6 +32,11 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.1
+--------------
+#310 transactions fetching (new in 1.16.0) was hardcoded to amazon.co.uk (sorry!)
+#N/A long transaction scrape caused loss of connectivity between content page and background script preventing table display for transactions until user retried (caching means that this retry is quick).
+
 Changes 1.16.0
 --------------
 #295 New: Transactions table (premium only)
