@@ -7,73 +7,77 @@ function checkSigninRedirect(
     response: Response,
     original_url: string
 ): void {
-    if (response.redirected && response.url.includes('signin')) {
-        const msg = 'Got response that looks like a sign-in page' +
-                    ' while fetching ' + original_url +
-                    ' \nThis might be because you are not fully' +
-                    ' logged in to Amazon.';
-        console.warn(msg);
-        notice.showNotificationBar(msg, document);
-        throw msg;
-    }
+  if (response.redirected && response.url.includes('signin')) {
+     const msg = 'Got response that looks like a sign-in page' +
+                 ' while fetching ' + original_url +
+                 ' \nThis might be because you are not fully' +
+                 ' logged in to Amazon.';
+
+     console.warn(msg);
+     notice.showNotificationBar(msg, document);
+     throw msg;
+  }
 }
 
 export function checkedFetch(url: string): Promise<Response> {
-    return fetch(url).then(
-        (response: Response) => {
-            checkSigninRedirect( response, url );
-            return response;
-        },
-        err => {
-            const msg = 'Got error while fetching debug data for: ' + url + ' ' + err;
-            console.warn(msg);
-            notice.showNotificationBar(msg, document);
-            throw err;
-        }
-    );
+  return fetch(url).then(
+    (response: Response) => {
+      checkSigninRedirect( response, url );
+      return response;
+    },
+    err => {
+      const msg = 'Got error while fetching debug data for: ' + url + ' ' + err;
+      console.warn(msg);
+      notice.showNotificationBar(msg, document);
+      throw err;
+    }
+  );
 }
 
 export function alertPartiallyLoggedOutAndOpenLoginTab(url: string): void {
-    notice.showNotificationBar(
-        'Amazon Order History Reporter Chrome Extension\n\n' +
-        'It looks like you might have been logged out of Amazon.\n' +
-        'Sometimes this can be "partial" - some types of order info stay ' +
-        'logged in and some do not.\n' +
-        'I will now attempt to open a new tab with a login prompt. Please ' +
-        'use it to login,\n' +
-        'and then retry your chosen orange button.',
-        document
-    );
-    const site = urls.getSite();
-    url = urls.normalizeUrl(url, site);
-    chrome.runtime.sendMessage(
-        {
-            action: 'open_tab',
-            url: url
-        }
-    );
+  notice.showNotificationBar(
+    'Amazon Order History Reporter Chrome Extension\n\n' +
+    'It looks like you might have been logged out of Amazon.\n' +
+    'Sometimes this can be "partial" - some types of order info stay ' +
+    'logged in and some do not.\n' +
+    'I will now attempt to open a new tab with a login prompt. Please ' +
+    'use it to login,\n' +
+    'and then retry your chosen orange button.',
+    document
+  );
+
+  const site = urls.getSite();
+  url = urls.normalizeUrl(url, site);
+
+  chrome.runtime.sendMessage(
+    {
+      action: 'open_tab',
+      url: url
+    }
+  );
 }
 
 // check if request has ended in HTTP310 and return True if it has.
 export function checkTooManyRedirects(url: string, req: XMLHttpRequest): boolean {
-    if ([310, 0].includes(req.status)) {
-        const msg = 'HTTP' + req.status +
-                ': too many redirects when fetching ' + url + ' ' +
-                'which has been redirected ' +
-                (
-                    req.responseURL ?
-                        'to ' + req.responseURL :
-                        '' + '\n'
-                ) +
-                'You might want to consider using the ' +
-                '"force full log out" button and logging yourself back ' +
-                'into Amazon.';
-        console.warn(msg);
-        notice.showNotificationBar(msg, document);
-        return true;
-    } else {
-        return false;
-    }
+  if ([310, 0].includes(req.status)) {
+    const msg = 'HTTP' + req.status +
+      ': too many redirects when fetching ' + url + ' ' +
+      'which has been redirected ' +
+      (
+          req.responseURL ?
+              'to ' + req.responseURL :
+              '' + '\n'
+      ) +
+      'You might want to consider using the ' +
+      '"force full log out" button and logging yourself back ' +
+      'into Amazon.';
+
+    console.warn(msg);
+    notice.showNotificationBar(msg, document);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 export function forceLogOut(site_url: string) {
@@ -92,6 +96,7 @@ export function forceLogOut(site_url: string) {
     const cookie_names = new Set(
         document.cookie.split('; ').map( c => c.split('=')[0] )
     );
+
     [
         // no-www
         'at-acbuk',
@@ -137,10 +142,12 @@ export function forceLogOut(site_url: string) {
         '?path=/' +
         '&signIn=1&useRedirectOnSuccess=1' +
         '&action=sign-out&ref_=nav_AccountFlyout_signout';
+
     window.location.href = logout_with_redirect_url;
 
     const msg = 'Logged out from Amazon queued as requested. ' +
                 'Please log back in and have another try: Good Luck!';
+
     console.log(msg);
     notice.showNotificationBar(msg, document);
 }
