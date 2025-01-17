@@ -22,7 +22,7 @@ function checkSigninRedirect(
 export function checkedFetch(url: string): Promise<Response> {
   return fetch(url).then(
     (response: Response) => {
-      checkSigninRedirect( response, url );
+      checkSigninRedirect(response, url);
       return response;
     },
     err => {

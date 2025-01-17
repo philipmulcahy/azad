@@ -6,6 +6,7 @@ import * as azad_order from './order';
 import * as azad_table from './table';
 import * as csv from './csv';
 import * as extraction from './extraction';
+const lzjs = require('lzjs');
 import * as notice from './notice';
 import * as request_scheduler from './request_scheduler';
 import * as settings from './settings';
@@ -81,8 +82,12 @@ async function getYears(): Promise<number[]> {
               + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
 
     try {
+      console.log('fetching', url, 'for getYears()');
       const response = await signin.checkedFetch(url);
       const html_text = await response.text();
+      const compressed_html = lzjs.compressToBase64(html_text);
+      console.log('compressed html follows');
+      console.log(compressed_html);
       const parser = new DOMParser();
       const doc = parser.parseFromString(html_text, 'text/html');
       return extraction.get_years(doc);
