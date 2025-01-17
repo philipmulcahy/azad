@@ -86,9 +86,11 @@ class RequestScheduler {
   _stats: stats.Statistics;
   _overlay_url_map: string_string_map = {};
   _purpose: string;
+
   _queue: binary_heap.BinaryHeap = new binary_heap.BinaryHeap(
     (item: any): number => item.priority
   );
+
   _tracker: RequestTracker = new RequestTracker();
 
   stats(): stats.Statistics { return this._stats; }
@@ -114,7 +116,7 @@ class RequestScheduler {
   constructor(
     purpose: string,
     overlay_url_map: string_string_map,
-    get_background_port: ()=>(chrome.runtime.Port|null),
+    get_background_port: () => Promise<chrome.runtime.Port|null>,
     statistics: stats.Statistics,
   ) {
     this._purpose = purpose;
@@ -122,8 +124,10 @@ class RequestScheduler {
     this._get_background_port = get_background_port;
     this._stats = statistics;
     console.log('constructing new RequestScheduler');
-    const bp = get_background_port();
-    this.stats().publish(bp, 'starting scrape');
+
+    get_background_port().then( bp => {
+      this.stats().publish(bp, 'starting scrape');
+    });
   }
 
   purpose(): string { return this._purpose; }
@@ -162,7 +166,7 @@ class RequestScheduler {
     return this.live;
   }
 
-  _get_background_port: ()=>(chrome.runtime.Port|null);
+  _get_background_port: ()=> Promise<chrome.runtime.Port|null>;
 
   // Process a single de-queued request either by retrieving from the cache
   // or by sending it out.
@@ -201,9 +205,9 @@ class RequestScheduler {
 
   _recordSingleCompletion(): void {
     setTimeout(
-      () => {
+      async () => {
         this._executeSomeIfPossible();
-        const port = this._get_background_port();
+        const port = await this._get_background_port();
         this._stats.publish(port, this._purpose);
         this._checkDone();
       }
@@ -256,7 +260,7 @@ class RequestScheduler {
 
 export function create(
   purpose: string,
-  background_port_getter: () => (chrome.runtime.Port | null),
+  background_port_getter: () => Promise<chrome.runtime.Port | null>,
   statistics: stats.Statistics,
 ): IRequestScheduler {
   return new RequestScheduler(
@@ -266,7 +270,7 @@ export function create(
 export function create_overlaid(
   purpose: string,
   url_map: string_string_map,
-  background_port_getter: () => (chrome.runtime.Port | null),
+  background_port_getter: () => Promise<chrome.runtime.Port | null>,
   statistics: stats.Statistics,
 ): IRequestScheduler {
   return new RequestScheduler(
