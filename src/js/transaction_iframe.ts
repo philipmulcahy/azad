@@ -146,7 +146,7 @@ async function extractTransactions() {
 
   while(nextButton && minNewTimestamp >= maxCachedTimestamp) {
     nextButton.click();
-    await new Promise(r => setTimeout(r, 2500));
+    await new Promise(r => setTimeout(r, 7500));
 
     const page = extractPageOfTransactions();
     console.log('scraped', page.length, 'transactions');
