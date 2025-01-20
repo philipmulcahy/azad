@@ -32,6 +32,11 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.3
+--------------
+* Faster and more robust transaction fetches
+* Transaction date filtering according to the orange year or months button clicked.
+
 Changes 1.16.2
 --------------
 * Removed alltests.bundle.js because webstore objected to some embedded amazon html (it contained remote script links, so fair play, but then again this code was not reachable).
