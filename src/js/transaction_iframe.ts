@@ -32,6 +32,36 @@ function extractPageOfTransactions(): transaction.Transaction[] {
   return dateElems.map(de => extractTransactionsWithDate(de)).flat();
 }
 
+async function retryingExtractPageOfTransactions(): Promise<transaction.Transaction[]> {
+  let elapsedMillis: number = 0;
+  const DEADLINE_MILLIS = 10 * 1000;
+  const INCREMENT_MILLIS = 1000;
+
+  while (elapsedMillis <= DEADLINE_MILLIS) {
+    console.log('waiting', INCREMENT_MILLIS);
+    await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
+    elapsedMillis += INCREMENT_MILLIS;
+    console.log('elapsedMillis', elapsedMillis);
+    const page = extractPageOfTransactions();
+    console.log(`got ${page.length} transactions`);
+
+    if (page.length == 20) {
+      console.log(`returning ${page.length} transactions`);
+      return page;
+    } else if (page.length > 0) {
+      // Wait before trying one final time
+      // in case amazon code was still running when we sampled.
+      console.log(`waiting (once) before scraping one last time`);
+      await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
+      const finalTry = extractPageOfTransactions();
+      console.log(`got ${finalTry.length} transactions`);
+      return finalTry;
+    }
+  };
+
+  return [];
+}
+
 function extractTransactionsWithDate(
   dateElem: Element
 ): transaction.Transaction[] {
@@ -114,7 +144,7 @@ function extractSingleTransaction(
     vendor,
   };
 
-  console.debug(transaction);
+  console.debug('extractSingleTransaction returning', transaction);
 
   return transaction;
 }
@@ -137,26 +167,29 @@ function mergeTransactions(
 }
 
 async function extractTransactions() {
-  const cached = await getTransactionsFromCache();
-  const maxCachedTimestamp = Math.max(...cached.map(t => t.date.getTime()));
-  const firstPage = extractPageOfTransactions();
-  let minNewTimestamp = Math.min(...firstPage.map(t => t.date.getTime()));
-  let transactions = mergeTransactions(firstPage, cached);
+  let allKnownTransactions = await getTransactionsFromCache();
+
+  const maxCachedTimestamp = Math.max(
+    ...allKnownTransactions.map(t => t.date.getTime()));
+
+  let minNewTimestamp = new Date(3000, 1, 1).getTime();
   let nextButton = findUsableNextButton() as HTMLElement;
+  let page: transaction.Transaction[] = [];
 
-  while(nextButton && minNewTimestamp >= maxCachedTimestamp) {
-    nextButton.click();
-    await new Promise(r => setTimeout(r, 2500));
-
-    const page = extractPageOfTransactions();
+  do {
+    page = await retryingExtractPageOfTransactions();
     console.log('scraped', page.length, 'transactions');
-    minNewTimestamp = Math.min(...transactions.map(t => t.date.getTime()));
-    transactions = mergeTransactions(page, transactions);
+    minNewTimestamp = Math.min(...allKnownTransactions.map(t => t.date.getTime()));
+    allKnownTransactions = mergeTransactions(page, allKnownTransactions);
     nextButton = findUsableNextButton() as HTMLElement;
-  }
 
-  putTransactionsInCache(transactions);
-  return transactions;
+    if (nextButton) {
+      nextButton.click();
+    }
+  } while(nextButton && page && minNewTimestamp >= maxCachedTimestamp)
+
+  putTransactionsInCache(allKnownTransactions);
+  return allKnownTransactions;
 }
 
 function findUsableNextButton(): HTMLInputElement | null {
