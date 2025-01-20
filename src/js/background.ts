@@ -107,11 +107,10 @@ function registerConnectionListener() {
               await async function(){
                 const table_type = await settings.getString('azad_table_type');
                 if (table_type == 'transactions') {
-                  broadcast_to_content_pages({action: 'scrape_transactions'});
-                } else {
-                  console.log(`forwarding ${msg.toString()}`);
-                  broadcast_to_content_pages(msg);
+                  msg.action = 'scrape_transactions';
                 }
+                console.log(`forwarding ${msg.toString()}`);
+                broadcast_to_content_pages(msg);
               }();
               break;
             case 'check_feature_authorized':

@@ -251,17 +251,34 @@ async function registerContentScript() {
             break;
           case 'scrape_range_and_dump_items':
             {
-              const start_date: Date = new Date(msg.start_date);
-              const end_date: Date = new Date(msg.end_date);
+              const startDate: Date = new Date(msg.start_date);
+              const endDate: Date = new Date(msg.end_date);
               fetchShowAndSendItemsByRange(
-                start_date,
-                end_date,
+                startDate,
+                endDate,
                 msg.sender_id);
             }
             break;
           case 'scrape_transactions':
-            console.log('got scrape_transactions');
-            transaction.scrapeAndPublish();
+            {
+              console.log('got scrape_transactions');
+              if (
+                msg.hasOwnProperty('start_date') &&
+                msg.hasOwnProperty('end_date')
+              ) {
+                const startDate = new Date(msg.start_date);
+                const endDate = new Date(msg.end_date);
+                transaction.scrapeAndPublish(startDate, endDate);
+              } else if (msg.hasOwnProperty('years')) {
+                const years = (msg.years as string[]).map(ys => +ys).sort();
+                const minYear = years.at(0)!;
+                const maxYear = years.at(-1)!;
+                const startDate = new Date(minYear, 0);
+                const endDate = new Date(maxYear, 11, 31, 23, 59, 59, 999);
+                transaction.scrapeAndPublish(startDate, endDate);
+              }
+
+            }
             break;
           case 'transactions':
             console.log('got transactions', msg.transactions);

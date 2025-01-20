@@ -33,8 +33,8 @@ export function isInIframedTransactionsPage(): boolean {
   return isInIframe && isInTransactionsPage;
 }
 
-export function scrapeAndPublish() {
+export function scrapeAndPublish(startDate: Date, endDate: Date) {
   if (!isInIframedTransactionsPage()) {
-    parent.plantIframe();
+    parent.plantIframe(startDate, endDate);
   }
 }
