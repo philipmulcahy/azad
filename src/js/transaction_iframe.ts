@@ -8,18 +8,30 @@ const CACHE_KEY = 'ALL_TRANSACTIONS';
 export async function reallyScrapeAndPublish(
   getPort: () => Promise<chrome.runtime.Port | null>
 ) {
-  const transactions = await extractTransactions();
+  const transactions = await extractAllTransactions();
+  const filtered = filterTransactionsByDateRange(transactions);
   const port = await getPort();
   try {
     if (port) {
       port.postMessage({
         action: 'transactions',
-        transactions,
+        transactions: filtered,
       });
     }
   } catch (ex) {
     console.warn(ex);
   }
+}
+
+function filterTransactionsByDateRange(
+  transactions: transaction.Transaction[]
+): transaction.Transaction[] {
+  const url = document.URL;
+  const paramString = url.split('?')[1];
+  const sp = new URLSearchParams(paramString);
+  const start = new Date(sp.get('startDate') as string);
+  const end = new Date(sp.get('endDate') as string);
+  return transactions.filter(t => t.date >= start && t.date <= end);
 }
 
 function extractPageOfTransactions(): transaction.Transaction[] {
@@ -166,7 +178,7 @@ function mergeTransactions(
   return ts;
 }
 
-async function extractTransactions() {
+async function extractAllTransactions() {
   let allKnownTransactions = await getTransactionsFromCache();
 
   const maxCachedTimestamp = Math.max(
