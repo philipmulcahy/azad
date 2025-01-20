@@ -217,8 +217,11 @@ async function advertisePeriods() {
 }
 
 async function registerContentScript() {
+  const portUID: string = new Date().getUTCMilliseconds().toString();
+  const portName = `azad_inject:${portUID}`;
+
   // @ts-ignore null IS allowed as first arg to connect.
-  background_port = chrome.runtime.connect(null, {name: 'azad_inject'});
+  background_port = chrome.runtime.connect(null, {name: portName});
 
   background_port.onDisconnect.addListener( _port => {
     background_port = null;
