@@ -32,6 +32,11 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.2
+--------------
+* Removed alltests.bundle.js because webstore objected to some embedded amazon html (it contained remote script links, so fair play, but then again this code was not reachable).
+* Handled scenario where user asks for transactions while on the transactions page (this was causing confusion in message routing between the background script and the two content scripts).
+
 Changes 1.16.1
 --------------
 #310 transactions fetching (new in 1.16.0) was hardcoded to amazon.co.uk (sorry!)
@@ -94,3 +99,4 @@ Strangely none of the authors ever follows up with evidence or indeed any reason
 New Commercial Features
 ---------------
 If you seek new commercial features, please read https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md before even thinking about contacting me directly. I am bored of reading proposals from malware distributors.
+
