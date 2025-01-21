@@ -20,7 +20,15 @@ export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
 const content_ports: Record<string, any> = {};
 
 function broadcast_to_content_pages(msg: any) {
-  Object.values(content_ports).forEach((port) => port.postMessage(msg));
+  Object.values(content_ports).forEach(
+    (port) => {
+      try {
+        port.postMessage(msg);
+      } catch (ex) {
+        console.warn('error when sending msg to content port', ex);
+      }
+    }
+  );
 }
 
 let control_port: msg.ControlPort | null = null;
@@ -28,24 +36,33 @@ let control_port: msg.ControlPort | null = null;
 let advertised_periods: number[] = [];
 
 function getPortKey(port: chrome.runtime.Port): string {
+  const name = port?.name;
   const tabId = port?.sender?.tab?.id?.toString() ?? '?';
   const url = port?.sender?.url ?? '?';
-  const key = `${tabId}#${url}`;
+  const key = `${name}#${tabId}#${url}`;
   return key;
 }
 
 function registerConnectionListener() {
   chrome.runtime.onConnect.addListener((port) => {
     console.log('new connection from ' + port.name);
-    switch (port.name) {
+    const portNamePrefix = port.name.split(':')[0];
+
+    switch (portNamePrefix) {
       case 'azad_inject':
         {
+          const portKey = getPortKey(port);
+          console.log('adding content port', portKey);
+          content_ports[portKey] = port;
+
           port.onDisconnect.addListener(() => {
             const key = getPortKey(port);
             if (key != null && typeof(key) != 'undefined') {
+              console.log('removing disconnected port', key);
               delete content_ports[key];
             }
           });
+
           port.onMessage.addListener((msg) => {
             switch (msg.action) {
               case 'advertise_periods':
@@ -76,13 +93,13 @@ function registerConnectionListener() {
                 break;
             }
           });
-
-          const portKey = getPortKey(port);
-          content_ports[portKey] = port;
         }
+
         break;
+
       case 'azad_control':
         control_port = port;
+
         port.onMessage.addListener(async (msg) => {
           switch (msg.action) {
             case 'scrape_years':
@@ -90,11 +107,10 @@ function registerConnectionListener() {
               await async function(){
                 const table_type = await settings.getString('azad_table_type');
                 if (table_type == 'transactions') {
-                  broadcast_to_content_pages({action: 'scrape_transactions'});
-                } else {
-                  console.log(`forwarding ${msg.toString()}`);
-                  broadcast_to_content_pages(msg);
+                  msg.action = 'scrape_transactions';
                 }
+                console.log(`forwarding ${msg.toString()}`);
+                broadcast_to_content_pages(msg);
               }();
               break;
             case 'check_feature_authorized':
@@ -122,8 +138,10 @@ function registerConnectionListener() {
               break;
           }
         });
+
         advertisePeriods();
         break;
+
       default:
         console.warn('unknown port name: ' + port.name);
     }
@@ -192,22 +210,18 @@ function registerRightClickActions() {
         const match = info?.linkUrl?.match(/.*orderID=([0-9A-Z-]*)$/);
         const order_id = match![1];
         if (match) {
-          Object.values(content_ports).forEach((port) => {
-            port.postMessage({
-              action: 'dump_order_detail',
-              order_id: order_id,
-            });
+          broadcast_to_content_pages({
+            action: 'dump_order_detail',
+            order_id: order_id,
           });
         }
       } else if (/search=/.test(info.linkUrl!)) {
         const match = info?.linkUrl?.match(/.*search=([0-9A-Z-]*)$/);
         const order_id = match![1];
         if (match) {
-          Object.values(content_ports).forEach((port) => {
-            port.postMessage({
-              action: 'dump_order_detail',
-              order_id: order_id,
-            });
+          broadcast_to_content_pages({
+            action: 'dump_order_detail',
+            order_id: order_id,
           });
         }
       }
