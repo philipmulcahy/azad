@@ -171,7 +171,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
 }
 
 export function get_years(orders_page_doc: HTMLDocument): number[] {
-  type Strategy = (orders_page_doc: HTMLDocument) => number[]; 
+  type Strategy = (orders_page_doc: HTMLDocument) => number[];
 
   const  strategy0: Strategy = function(doc: HTMLDocument) {
     const snapshot: Node[] = findMultipleNodeValues(

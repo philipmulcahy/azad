@@ -4,8 +4,8 @@ import * as notice from './notice';
 import * as urls from './url';
 
 function checkSigninRedirect(
-    response: Response,
-    original_url: string
+  response: Response,
+  original_url: string
 ): void {
   if (response.redirected && response.url.includes('signin')) {
      const msg = 'Got response that looks like a sign-in page' +
@@ -81,73 +81,73 @@ export function checkTooManyRedirects(url: string, req: XMLHttpRequest): boolean
 }
 
 export function forceLogOut(site_url: string) {
-    // Dear code reader,
-    // This function is a bit of a "try everything"
-    // strategy for getting the user logged out enough that
-    // any broken state will prevent problems such as infinite redirects
-    // and other Amazon site behaviour that blocks the extension from working.
-    // In any particular situation, some of the things we do here may be
-    // overkill, but each of the strategies have helped in certain situations.
+  // Dear code reader,
+  // This function is a bit of a "try everything"
+  // strategy for getting the user logged out enough that
+  // any broken state will prevent problems such as infinite redirects
+  // and other Amazon site behaviour that blocks the extension from working.
+  // In any particular situation, some of the things we do here may be
+  // overkill, but each of the strategies have helped in certain situations.
 
-    const no_www_site_url = site_url.replace(new RegExp('^www\\.'), '');
+  const no_www_site_url = site_url.replace(new RegExp('^www\\.'), '');
 
-    // Delete some cookies (this is delegated to the background script, because
-    // we're not allowed to do it in a content script.
-    const cookie_names = new Set(
-        document.cookie.split('; ').map( c => c.split('=')[0] )
+  // Delete some cookies (this is delegated to the background script, because
+  // we're not allowed to do it in a content script.
+  const cookie_names = new Set(
+    document.cookie.split('; ').map( c => c.split('=')[0] )
+  );
+
+  [
+    // no-www
+    'at-acbuk',
+    'lc-acbuk',
+    'sess-at-acbuk',
+    'sess-at-acbuk',
+    'session-id',
+    'session-id-time',
+    'session-token',
+    'sst-acbuk',
+    'ubid-acbuk',
+    'x-acbuk',
+    // www
+    'csm-hit',
+  ].forEach( name => cookie_names.add(name) );
+
+  cookie_names.forEach( (cookie_name: string) => {
+    [site_url, no_www_site_url].forEach( site_url =>
+      chrome.runtime.sendMessage(
+        {
+          action: 'remove_cookie',
+          cookie_name: cookie_name,
+          cookie_url: site_url
+        }
+      )
     );
+  });
 
-    [
-        // no-www
-        'at-acbuk',
-        'lc-acbuk',
-        'sess-at-acbuk',
-        'sess-at-acbuk',
-        'session-id',
-        'session-id-time',
-        'session-token',
-        'sst-acbuk',
-        'ubid-acbuk',
-        'x-acbuk',
-        // www
-        'csm-hit',
-    ].forEach( name => cookie_names.add(name) );
+  // Amazon stores some non-cookie state that appears to be used to
+  // regenerate some cookies.
+  localStorage.clear();
 
-    cookie_names.forEach( (cookie_name: string) => {
-        [site_url, no_www_site_url].forEach( site_url =>
-            chrome.runtime.sendMessage(
-                {
-                    action: 'remove_cookie',
-                    cookie_name: cookie_name,
-                    cookie_url: site_url
-                }
-            )
-        );
-    });
+  const logout_url = site_url + '/gp/flex/sign-out.html';
 
-    // Amazon stores some non-cookie state that appears to be used to
-    // regenerate some cookies.
-    localStorage.clear();
+  // Call the logout url directly.
+  fetch(logout_url).then(
+    () => console.log('fetched logout url'),
+    (err) => console.warn('fetch logout url failed: ' + err)
+  );
 
-    const logout_url = site_url + '/gp/flex/sign-out.html';
+  // Call the logout (redirected) page on this tab.
+  const logout_with_redirect_url = logout_url +
+    '?path=/' +
+    '&signIn=1&useRedirectOnSuccess=1' +
+    '&action=sign-out&ref_=nav_AccountFlyout_signout';
 
-    // Call the logout url directly.
-    fetch(logout_url).then(
-        () => console.log('fetched logout url'),
-        (err) => console.warn('fetch logout url failed: ' + err)
-    );
+  window.location.href = logout_with_redirect_url;
 
-    // Call the logout (redirected) page on this tab.
-    const logout_with_redirect_url = logout_url +
-        '?path=/' +
-        '&signIn=1&useRedirectOnSuccess=1' +
-        '&action=sign-out&ref_=nav_AccountFlyout_signout';
+  const msg = 'Logged out from Amazon queued as requested. ' +
+              'Please log back in and have another try: Good Luck!';
 
-    window.location.href = logout_with_redirect_url;
-
-    const msg = 'Logged out from Amazon queued as requested. ' +
-                'Please log back in and have another try: Good Luck!';
-
-    console.log(msg);
-    notice.showNotificationBar(msg, document);
+  console.log(msg);
+  notice.showNotificationBar(msg, document);
 }
