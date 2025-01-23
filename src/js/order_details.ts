@@ -152,7 +152,7 @@ function extractDetailFromDoc(
   };
 
   const order_date = function(): Date|null {
-    const def_string = header.date ?
+    const def_string = (header.date && !isNaN(header.date.getDate())) ?
       util.dateToDateIsoString(header.date):
       null;
     const d = extraction.by_regex(

@@ -4,6 +4,7 @@
 
 import * as azad_order from './order';
 import * as azad_table from './table';
+import * as business from './business';
 import * as csv from './csv';
 import * as extraction from './extraction';
 const lzjs = require('lzjs');
@@ -77,29 +78,30 @@ function resetScheduler(purpose: string): void {
 }
 
 async function getYears(): Promise<number[]> {
-  async function getPromise(): Promise<number[]> {
-    const url = 'https://' + SITE
-              + '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders';
 
-    try {
-      console.log('fetching', url, 'for getYears()');
-      const response = await signin.checkedFetch(url);
-      const html_text = await response.text();
-      const compressed_html = lzjs.compressToBase64(html_text);
-      console.log('compressed html follows');
-      console.log(compressed_html);
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html_text, 'text/html');
-      return extraction.get_years(doc);
-    } catch (exception) {
-      console.error('getYears() caught:', exception);
-      return [];
-    }
+  const isBusinessAcct = await business.isBusinessAccount();
+
+  const url = isBusinessAcct ?
+    business.getBaseOrdersPageURL():
+    urls.normalizeUrl(
+      '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders',
+      SITE);
+
+  try {
+    console.log('fetching', url, 'for getYears()');
+    const response = await signin.checkedFetch(url);
+    const html = await response.text();
+    // const compressed_html = lzjs.compressToBase64(html);  // TODO remove
+    // console.log('compressed html follows');               // TODO remove
+    // console.log(compressed_html);                         // TODO remove
+    const doc = util.parseStringToDOM(html);
+    const years: number[] = extraction.get_years(doc);
+    console.log('getYears() returning ', years);
+    return years
+  } catch (exception) {
+    console.error('getYears() caught:', exception);
+    return [];
   }
-
-  const years = await getPromise();
-  console.log('getYears() returning ', years);
-  return years;
 }
 
 async function latestYear(): Promise<number> {
