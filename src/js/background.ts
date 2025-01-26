@@ -17,9 +17,11 @@ export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
   'ciklnhigjmbmehniheaolibcchfmabfp', // EZP Alpha Tester Release
 ];
 
-const content_ports: Record<string, any> = {};
+const content_ports: Record<string, chrome.runtime.Port> = {};
+let control_port: msg.ControlPort | null = null;
+let advertised_periods: number[] = [];
 
-function broadcast_to_content_pages(msg: any) {
+function broadcast_to_content_pages(msg: any): void {
   Object.values(content_ports).forEach(
     (port) => {
       try {
@@ -31,20 +33,52 @@ function broadcast_to_content_pages(msg: any) {
   );
 }
 
-let control_port: msg.ControlPort | null = null;
+async function sendToOneContentPage(msg: any) {
+  async function getBestPort(): Promise<chrome.runtime.Port|null> {
 
-let advertised_periods: number[] = [];
+    const [activeTab] = await chrome.tabs.query({
+      active: true, lastFocusedWindow: true
+    });
 
-function getPortKey(port: chrome.runtime.Port): string {
-  const name = port?.name;
-  const tabId = port?.sender?.tab?.id?.toString() ?? '?';
-  const url = port?.sender?.url ?? '?';
-  const key = `${name}#${tabId}#${url}`;
-  return key;
+    // sorted for consistency
+    const keys = Object.keys(content_ports).sort((a,b) => {
+      if (a>b) { return 1; }
+      else if (b>a) { return -1; }
+      else { return 0; }
+    });
+
+    const ports = keys.map(k => content_ports[k]);
+
+    for (const port of ports) {
+      const sender: chrome.runtime.MessageSender = port.sender!;
+      const tab: chrome.tabs.Tab = sender.tab!;
+      if (tab.id == activeTab.id ) {
+        return port;
+      }
+    }
+
+    return ports.at(0) ?? null;
+  }
+
+  const target = await getBestPort();
+
+  if (target) {
+    target.postMessage(msg);
+  } else {
+    console.log('no appropriate content page message port found');
+  }
 }
 
 function registerConnectionListener() {
   chrome.runtime.onConnect.addListener((port) => {
+    function getPortKey(port: chrome.runtime.Port): string {
+      const name = port?.name;
+      const tabId = port?.sender?.tab?.id?.toString() ?? '?';
+      const url = port?.sender?.url ?? '?';
+      const key = `${name}#${tabId}#${url}`;
+      return key;
+    }
+
     console.log('new connection from ' + port.name);
     const portNamePrefix = port.name.split(':')[0];
 
@@ -57,6 +91,7 @@ function registerConnectionListener() {
 
           port.onDisconnect.addListener(() => {
             const key = getPortKey(port);
+
             if (key != null && typeof(key) != 'undefined') {
               console.log('removing disconnected port', key);
               delete content_ports[key];
@@ -86,7 +121,7 @@ function registerConnectionListener() {
                 break;
               case 'transactions':
                 console.log('forwarding transactions');
-                broadcast_to_content_pages(msg);
+                sendToOneContentPage(msg);
                 break;
               default:
                 console.debug('unknown action: ' + msg.action);
@@ -110,7 +145,7 @@ function registerConnectionListener() {
                   msg.action = 'scrape_transactions';
                 }
                 console.log(`forwarding ${msg.toString()}`);
-                broadcast_to_content_pages(msg);
+                sendToOneContentPage(msg);
               }();
               break;
             case 'check_feature_authorized':
@@ -178,13 +213,13 @@ function registerExternalConnectionListener() {
         end_date: end_date,
         sender_id: sender.id,
       };
-      broadcast_to_content_pages(msg);
+      sendToOneContentPage(msg);
       sendResponse({ status: 'ack' });
     } else {
       sendResponse({ status: 'unsupported' });
     }
 
-    // Incompletely documented, but seems to be needed to allow
+    // Incompletely documented, but returning true seems to be needed to allow
     // sendResponse calls to succeed.
     return true;
   });
@@ -253,7 +288,7 @@ function registerMessageListener() {
         chrome.tabs.create({ url: request.url });
         break;
       default:
-        console.debug('unknown action: ' + request.action);
+        console.trace('ignoring action: ' + request.action);
     }
   });
 }
