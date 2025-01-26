@@ -49,6 +49,7 @@ interface Store {
 // where chrome.storage.local is not available.
 function CreateMockStore(): Store {
   const _store: any[string] = {};
+
   return {
     get: function(key: string): Promise<any> {
       const value = _store[key];
@@ -91,7 +92,7 @@ export function registerCacheListenerInBackgroundPage() {
                .then( response => responseCallback(response) );
           break;
         default:
-          console.debug('unknown action:', request.action);
+          console.trace('ignoring action:', request.action);
           break;
       }
 
@@ -198,6 +199,7 @@ function CreateStore(): Store {
     // substitute that we can use to allow tests to proceed.
     return CreateMockStore();
   }
+
   return CreateRealStoreProxy();
 }
 
@@ -211,31 +213,31 @@ const store: Store = CreateStore();
 // Why? Because JSON.stringify and then JSON.parse
 // causes Date objects to be converted to strings.
 function restoreDates(obj: any) {
-    if (typeof(obj) == 'object' && obj != null) {
-        // restore any immediate child date values
-        Object.keys(obj)
-            .filter(key => key.endsWith('date'))
-            .filter(key => typeof(obj[key]) == 'string')
-            .forEach(key => {
-                const value = obj[key];
-                try {
-                    const date = new Date(value);
-                    obj[key] = date;
-                } catch(ex) {
-                    console.warn(
-                        'tried to create Date from ' + value + ' for ' + key);
-                }
-            });
-        // recurse
-        Object.values(obj).forEach(v => restoreDates(v));
-    }
+  if (typeof(obj) == 'object' && obj != null) {
+
+    // restore any immediate child date values
+    Object.keys(obj).filter(key => key.endsWith('date'))
+      .filter(key => typeof(obj[key]) == 'string')
+      .forEach(key => {
+        const value = obj[key];
+
+        try {
+          const date = new Date(value);
+          obj[key] = date;
+        } catch(ex) {
+          console.warn('tried to create Date from ' + value + ' for ' + key);
+        }
+      });
+
+    // recurse
+    Object.values(obj).forEach(v => restoreDates(v));
+  }
 }
 
 // Find broken parent promises and fix 'em.
 // Why? Because JSON.stringify/JSON.parse causes
 // Promises to be replaced with empty objects.
 function restoreParentPromises(obj: any) {
-
   function recursivelyRestore(obj: object, parent: object|null) {
     for (const [key, value] of Object.entries(obj)) {
       if (typeof value == 'object' && value != null) {
@@ -274,10 +276,12 @@ class LocalCacheImpl {
 
   reallySet(real_key: string, value: any): Promise<void> {
     const entry: {[key: string]: any;}  = {};
+
     entry[real_key] = JSON.stringify({
       timestamp: millisNow(),
       value: lzjs.compress(JSON.stringify(value)),
     });
+
     return store.set(real_key, entry[real_key]);
   }
 
@@ -285,7 +289,9 @@ class LocalCacheImpl {
     if (util.is_promise(value)) {
       value = await value;
     }
+
     const real_key: string = this.buildRealKey(key);
+
     try {
       this.reallySet(real_key, value);
     } catch(error) {
@@ -305,13 +311,17 @@ class LocalCacheImpl {
 
   async get(key: string): Promise<any> {
     const real_key: string = this.buildRealKey(key);
+
     try {
       const encoded = await store.get(real_key)!;
+
       if (encoded == null) { 
         console.debug('cachestuff.get did not find ', key);
         throw key + ' not found';
       }
+
       let packed: any = null;
+
       try {
         packed = JSON.parse(encoded);
       } catch (ex) {
@@ -320,11 +330,14 @@ class LocalCacheImpl {
         );
         throw ex;
       }
+
       if (!packed) {
         throw key + ' not found';
       }
+
       ++this.hit_count;
       const decompressed = lzjs.decompress(packed.value);
+
       try {
         const result: object = JSON.parse(decompressed);
         restoreDates(result);
@@ -337,6 +350,7 @@ class LocalCacheImpl {
         );
         throw ex;
       }
+
       return null;
     } catch(err) {
       console.debug('cachestuff.get caught ', err, ' for ', key);
@@ -350,9 +364,11 @@ class LocalCacheImpl {
 
   async getRealKeys(): Promise<string[]> {
     const all = await store.keys();
+
     const filtered = all.filter(
       key => key.startsWith(this.key_stem)
     );
+
     return filtered;
   }
 
@@ -360,6 +376,7 @@ class LocalCacheImpl {
     console.log('trimming cache');
     const real_keys: string[] = await this.getRealKeys();
     const timestamps_by_key: Record<string, number> = {};
+
     real_keys.forEach( async function(key) {
       try {
         const encoded = await store.get(key);
@@ -375,23 +392,30 @@ class LocalCacheImpl {
         console.debug('couldn\'t get timestamp for key: ' + key);
       }
     });
+
     const timestamps = Object.values(timestamps_by_key);
     timestamps.sort();
+
     const cutoff_timestamp = timestamps[
-      Math.floor(real_keys.length * 0.25)];
-      let removed_count = 0;
-      Object.keys(timestamps_by_key).forEach( key => {
-        if (timestamps_by_key[key] <= cutoff_timestamp) {
-          store.remove(key);
-          ++removed_count;
-        }
-      });
-      console.log('removed ' + removed_count + ' entries');
+      Math.floor(real_keys.length * 0.25)
+    ];
+
+    let removed_count = 0;
+
+    Object.keys(timestamps_by_key).forEach( key => {
+      if (timestamps_by_key[key] <= cutoff_timestamp) {
+        store.remove(key);
+        ++removed_count;
+      }
+    });
+
+    console.log('removed ' + removed_count + ' entries');
   }
 
   async clear(): Promise<void> {
     console.log('clearing cache');
     const keys = await this.getRealKeys();
+
     keys.forEach( key => {
       store.remove(key);
     });
@@ -407,10 +431,11 @@ export interface Cache {
 
 export function createLocalCache(cache_name: string): Cache {
   const cache = new LocalCacheImpl(cache_name);
+
   return {
     set: (key: string, value: any) => cache.set(key, value),
-      get: (key: string) => cache.get(key),
-      clear: () => cache.clear(),
-      hitCount: () => cache.hitCount(),
+    get: (key: string) => cache.get(key),
+    clear: () => cache.clear(),
+    hitCount: () => cache.hitCount(),
   };
 }

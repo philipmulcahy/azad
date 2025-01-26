@@ -1,71 +1,71 @@
 {
-    "manifest_version": 3,
-    "name": "Amazon Order History Reporter",
-    "content_security_policy": {
-        "extension_pages":
-            "script-src 'self'; object-src 'self'; connect-src https://extensionpay.com"
-    },
-    "permissions": [
-        "contextMenus",
-        "cookies",
-        "storage"
-    ],
-    "background": {
-        "service_worker": "background.bundle.js"
-    },
-    "host_permissions": [
-        "https://www.amazon.ae/",
-        "https://www.amazon.ca/",
-        "https://www.amazon.co.jp/",
-        "https://www.amazon.co.uk/",
-        "https://www.amazon.com.au/",
-        "https://www.amazon.com.be/",
-        "https://www.amazon.com.mx/",
-        "https://www.amazon.com/",
-        "https://www.amazon.de/",
-        "https://www.amazon.es/",
-        "https://www.amazon.fr/",
-        "https://www.amazon.in/",
-        "https://www.amazon.it/",
-        "https://www.amazon.nl/",
-        "https://www.amazon.sa/"
-    ],
-    "content_scripts": [
-        {
-            "matches": [
-                "https://www.amazon.ae/*",
-                "https://www.amazon.ca/*",
-                "https://www.amazon.co.jp/*",
-                "https://www.amazon.co.uk/*",
-                "https://www.amazon.com.au/*",
-                "https://www.amazon.com.be/*",
-                "https://www.amazon.com.mx/*",
-                "https://www.amazon.com/*",
-                "https://www.amazon.de/*",
-                "https://www.amazon.es/*",
-                "https://www.amazon.fr/*",
-                "https://www.amazon.in/*",
-                "https://www.amazon.it/*",
-                "https://www.amazon.nl/*",
-                "https://www.amazon.sa/*"
-            ],
-            "css": [
-                "jquery.dataTables.min.css",
-                "datatables_override.css",
-                "inject.css"
-            ],
-            "js": [
-                "inject.bundle.js"
-            ],
-            "all_frames": true
-        }
-    ],
-    "action": {
-        "default_title": "Amazon Order History Reporter",
-        "default_popup": "popup.html"
-    },
-    "icons": {
-        "48": "icon48.png",
-        "128": "icon128.png"
+  "manifest_version": 3,
+  "name": "Amazon Order History Reporter",
+  "content_security_policy": {
+    "extension_pages":
+      "script-src 'self'; object-src 'self'; connect-src https://extensionpay.com"
+  },
+  "permissions": [
+    "contextMenus",
+    "cookies",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.bundle.js"
+  },
+  "host_permissions": [
+    "https://www.amazon.ae/",
+    "https://www.amazon.ca/",
+    "https://www.amazon.co.jp/",
+    "https://www.amazon.co.uk/",
+    "https://www.amazon.com.au/",
+    "https://www.amazon.com.be/",
+    "https://www.amazon.com.mx/",
+    "https://www.amazon.com/",
+    "https://www.amazon.de/",
+    "https://www.amazon.es/",
+    "https://www.amazon.fr/",
+    "https://www.amazon.in/",
+    "https://www.amazon.it/",
+    "https://www.amazon.nl/",
+    "https://www.amazon.sa/"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.amazon.ae/*",
+        "https://www.amazon.ca/*",
+        "https://www.amazon.co.jp/*",
+        "https://www.amazon.co.uk/*",
+        "https://www.amazon.com.au/*",
+        "https://www.amazon.com.be/*",
+        "https://www.amazon.com.mx/*",
+        "https://www.amazon.com/*",
+        "https://www.amazon.de/*",
+        "https://www.amazon.es/*",
+        "https://www.amazon.fr/*",
+        "https://www.amazon.in/*",
+        "https://www.amazon.it/*",
+        "https://www.amazon.nl/*",
+        "https://www.amazon.sa/*"
+      ],
+      "css": [
+        "jquery.dataTables.min.css",
+        "datatables_override.css",
+        "inject.css"
+      ],
+      "js": [
+        "inject.bundle.js"
+      ],
+      "all_frames": true
     }
+  ],
+  "action": {
+    "default_title": "Amazon Order History Reporter",
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
 }
