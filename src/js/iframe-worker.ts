@@ -4,6 +4,13 @@ interface IFrameTask {
   url: string,
 }
 
+export function isInIframeWorker(): boolean {
+  const isInIframe = window.self !== window.top;
+  const url = document.URL;
+  const isInTransactionsPage = url.includes('/transactions');
+  return isInIframe && isInTransactionsPage;
+}
+
 // Called from the content page the iframe will be hosted by
 export function startTask(
   _taskSpec: IFrameTask

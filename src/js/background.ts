@@ -34,36 +34,49 @@ function broadcast_to_content_pages(msg: any): void {
 }
 
 async function sendToOneContentPage(msg: any) {
-  async function getBestPort(): Promise<chrome.runtime.Port|null> {
+  async function getBestContentPort(): Promise<chrome.runtime.Port|null> {
 
     const [activeTab] = await chrome.tabs.query({
       active: true, lastFocusedWindow: true
     });
 
     // sorted for consistency
-    const keys = Object.keys(content_ports).sort((a,b) => {
-      if (a>b) { return 1; }
-      else if (b>a) { return -1; }
-      else { return 0; }
-    });
+    const keys = Object.keys(content_ports)
+      .filter(k => k.startsWith('azad_inject:'))
+      .sort((a,b) => {
+        if (a>b) { return 1; }
+        else if (b>a) { return -1; }
+        else { return 0; }
+      });
+
+    console.log('getBestContentPort() keys:', keys);
 
     const ports = keys.map(k => content_ports[k]);
 
     for (const port of ports) {
       const sender: chrome.runtime.MessageSender = port.sender!;
       const tab: chrome.tabs.Tab = sender.tab!;
-      if (tab.id == activeTab.id ) {
-        return port;
+      try {
+        if (activeTab && tab.id == activeTab.id ) {
+          return port;
+        }
+      } catch (ex) {
+        console.warn(ex);
       }
     }
 
     return ports.at(0) ?? null;
   }
 
-  const target = await getBestPort();
+  const target = await getBestContentPort();
 
   if (target) {
-    target.postMessage(msg);
+    try {
+      target.postMessage(msg);
+    } catch (ex) {
+      console.warn(
+        'sendToOneContentPage caught', ex, 'when trying to post msg');
+    }
   } else {
     console.log('no appropriate content page message port found');
   }
@@ -71,7 +84,10 @@ async function sendToOneContentPage(msg: any) {
 
 function registerConnectionListener() {
   chrome.runtime.onConnect.addListener((port) => {
-    function getPortKey(port: chrome.runtime.Port): string {
+    console.log('new connection from ' + port.name);
+    const portNamePrefix = port.name.split(':')[0];
+
+    function getContentPortKey(port: chrome.runtime.Port): string {
       const name = port?.name;
       const tabId = port?.sender?.tab?.id?.toString() ?? '?';
       const url = port?.sender?.url ?? '?';
@@ -79,18 +95,16 @@ function registerConnectionListener() {
       return key;
     }
 
-    console.log('new connection from ' + port.name);
-    const portNamePrefix = port.name.split(':')[0];
-
     switch (portNamePrefix) {
       case 'azad_inject':
+      case 'azad_iframe_worker':
         {
-          const portKey = getPortKey(port);
+          const portKey = getContentPortKey(port);
           console.log('adding content port', portKey);
           content_ports[portKey] = port;
 
           port.onDisconnect.addListener(() => {
-            const key = getPortKey(port);
+            const key = getContentPortKey(port);
 
             if (key != null && typeof(key) != 'undefined') {
               console.log('removing disconnected port', key);
@@ -115,7 +129,7 @@ function registerConnectionListener() {
                     control_port?.postMessage(msg);
                   } catch (ex) {
                     console.debug(
-                      'cannot post stats message to non-existent control port');
+                      'cannot post stats msg to non-existent control port');
                   }
                 }
                 break;
@@ -131,7 +145,6 @@ function registerConnectionListener() {
         }
 
         break;
-
       case 'azad_control':
         control_port = port;
 
@@ -144,7 +157,7 @@ function registerConnectionListener() {
                 if (table_type == 'transactions') {
                   msg.action = 'scrape_transactions';
                 }
-                console.log(`forwarding ${msg.toString()}`);
+                console.debug('forwarding:', msg);
                 sendToOneContentPage(msg);
               }();
               break;

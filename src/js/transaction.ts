@@ -1,5 +1,6 @@
 import * as cacheStuff from './cachestuff';
-import * as iframe from './transaction_iframe';
+import * as iframeWorker from './iframe-worker';
+import * as transactionIframe from './transaction_iframe';
 import * as parent from './transaction_parent';
 
 
@@ -18,23 +19,16 @@ export interface Transaction {
 export async function initialisePage(
   getPort: () => Promise<chrome.runtime.Port | null>
 ) {
-  if (isInIframedTransactionsPage()) {
-    iframe.reallyScrapeAndPublish(getPort);
+  if (iframeWorker.isInIframeWorker()) {
+    transactionIframe.reallyScrapeAndPublish(getPort);
   }}
 
 export function clearCache() {
   getCache().clear();
 }
 
-export function isInIframedTransactionsPage(): boolean {
-  const isInIframe = window.self !== window.top;
-  const url = document.URL;
-  const isInTransactionsPage = url.includes('/transactions');
-  return isInIframe && isInTransactionsPage;
-}
-
 export function scrapeAndPublish(startDate: Date, endDate: Date) {
-  if (!isInIframedTransactionsPage()) {
+  if (!iframeWorker.isInIframeWorker()) {
     parent.plantIframe(startDate, endDate);
   }
 }
