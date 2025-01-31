@@ -15,8 +15,6 @@ import * as settings from './settings';
 import * as signin from './signin';
 import * as stats from './statistics';
 import * as transaction from './transaction';
-import * as transaction_iframe from './transaction_iframe';
-import * as transaction_parent from './transaction_parent';
 import * as urls from './url';
 import * as util from './util';
 
@@ -37,7 +35,7 @@ function getScheduler(): request_scheduler.IRequestScheduler {
   return scheduler!;
 }
 
-async function getBackgroundPort(): Promise<chrome.runtime.Port | null> {
+export async function getBackgroundPort(): Promise<chrome.runtime.Port | null> {
   if (!background_port) {
     await registerContentScript();
   }
@@ -263,6 +261,10 @@ async function registerContentScript() {
     );
   }
 
+  if (isIframeWorker) {
+    bg_port.postMessage({ action: 'get_iframe_task_instructions'});
+  }
+
   console.log('script registered');
 }
 
@@ -272,9 +274,7 @@ function handleMessageFromBackground(pageType: string, msg: any): void {
       handleMessageFromBackgroundToRootContentPage(msg);
       break;
     case 'azad_iframe_worker':
-      console.warn(
-        'got message from background script for azad_iframe_worker, ' +
-        'but we have no handlers for that page type');
+      iframeWorker.handleInstructionsResponse(msg);
       break;
     default:
       console.warn('unknown pageType:', pageType);
@@ -309,26 +309,14 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
           msg.sender_id);
       }
       break;
-    case 'scrape_transactions':
+    case 'start_iframe_worker':
       {
-        console.log('got scrape_transactions');
-        if (
-          msg.hasOwnProperty('start_date') &&
-          msg.hasOwnProperty('end_date')
-        ) {
-          const startDate = new Date(msg.start_date);
-          const endDate = new Date(msg.end_date);
-          transaction.scrapeAndPublish(startDate, endDate);
-        } else if (msg.hasOwnProperty('years')) {
-          const years = (msg.years as string[]).map(ys => +ys).sort();
-          const minYear = years.at(0)!;
-          const maxYear = years.at(-1)!;
-          const startDate = new Date(minYear, 0);
-          const endDate = new Date(maxYear, 11, 31, 23, 59, 59, 999);
-          transaction.scrapeAndPublish(startDate, endDate);
-        }
-
+        const url = urls.normalizeUrl(msg.url, urls.getSite());
+        iframeWorker.createIframe(url);
       }
+      break;
+    case 'remove_iframe_worker':
+      iframeWorker.removeIframeWorker();
       break;
     case 'transactions':
       console.log('got transactions', msg.transactions);
@@ -364,4 +352,3 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
 console.log('Amazon Order History Reporter starting');
 registerContentScript();
 advertisePeriods();
-transaction.initialisePage(getBackgroundPort);

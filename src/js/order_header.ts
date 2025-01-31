@@ -63,10 +63,6 @@ function reallyExtractOrderHeader(
   }
   const context = 'id:' + id;
 
-  if (id == '205-7845413-0039527') {
-    console.info('returning header for 205-7845413-0039527');
-  }
-
   let d: Date|null = null;
   try {
     const xpath = [

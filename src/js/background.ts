@@ -7,6 +7,7 @@ import * as util from './util';
 import * as extpay from './extpay_client';
 import * as msg from './message_types';
 import * as settings from './settings';
+import * as urls from './url';
 
 export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
   'apgfmdalhahnnfgmjejmhkeobobobhjd', // azad_test dev Philip@ball.local
@@ -20,6 +21,7 @@ export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
 const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
 let advertised_periods: number[] = [];
+let iframeWorkerTaskSpec: any = {}; 
 
 function broadcast_to_content_pages(msg: any): void {
   Object.values(content_ports).forEach(
@@ -32,8 +34,7 @@ function broadcast_to_content_pages(msg: any): void {
     }
   );
 }
-
-async function sendToOneContentPage(msg: any) {
+export async function sendToOneContentPage(msg: any) {
   async function getBestContentPort(): Promise<chrome.runtime.Port|null> {
 
     const [activeTab] = await chrome.tabs.query({
@@ -133,8 +134,12 @@ function registerConnectionListener() {
                   }
                 }
                 break;
+              case 'get_iframe_task_instructions':
+                port.postMessage(iframeWorkerTaskSpec);
+                break;
               case 'transactions':
                 console.log('forwarding transactions');
+                broadcast_to_content_pages({action: 'remove_iframe_worker'});
                 sendToOneContentPage(msg);
                 break;
               default:
@@ -156,9 +161,16 @@ function registerConnectionListener() {
                 const table_type = await settings.getString('azad_table_type');
                 if (table_type == 'transactions') {
                   msg.action = 'scrape_transactions';
+
+                  // No site prefix: background page doesn't know!
+                  const url = '/cpe/yourpayments/transactions';
+
+                  iframeWorkerTaskSpec = msg;
+                  sendToOneContentPage({action: 'start_iframe_worker', url, });
+                } else {
+                  console.debug('forwarding:', msg);
+                  sendToOneContentPage(msg);
                 }
-                console.debug('forwarding:', msg);
-                sendToOneContentPage(msg);
               }();
               break;
             case 'check_feature_authorized':
