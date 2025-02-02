@@ -113,20 +113,18 @@ function extractDetailFromDoc(
 ): IOrderDetails {
   const context = 'id:' + header.id;
   const who = function(): string {
-    if(header.who) {
+    if(header.who && header.who != '') {
       return header.who;
     }
 
     const doc_elem = doc.documentElement;
 
+    // physical 2025
     let x = extraction.getField(
       '//*[contains(@class,"displayAddressFullName")]',
       doc_elem,
       context
-    ); // physical 2025
-    if (header.id == '202-9896433-5799559') {
-      console.log('here!');
-    }
+    );
     if (x) return x;
 
     x = extraction.getField(
@@ -480,10 +478,6 @@ function extractDetailFromDoc(
     who: who(),
     invoice_url: invoice_url,
   };
-
-  if (header.id == '202-9896433-5799559') {
-    console.log('ici!');
-  }
 
   return details;
 }

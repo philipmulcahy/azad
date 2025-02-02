@@ -61,15 +61,6 @@ function appendCell(
       async function(): Promise<void> {
         const field_name: string | undefined = col_spec.value_promise_func_name;
         const id = (entity as any)?.impl?.header?.id ?? 'null id';
-        if (id == '202-9896433-5799559') {
-          if (field_name) {
-            if (['postage', 'who'].includes(field_name)) {
-              console.log('got 202-9896433-5799559');
-              const detail = await (entity as any).impl.detail_promise;
-              console.log(detail);
-            }
-          }
-        }
 
         if (typeof(field_name) == 'undefined') {
           const msg = 'empty field name not expected';
@@ -89,28 +80,6 @@ function appendCell(
 
         const dirtyValue = await value_promise;
         const value = null_converter(dirtyValue);
-        if (id == '202-9896433-5799559') {
-          if (field_name) {
-            if ([/*'postage',*/ 'who'].includes(field_name)) {
-              const w = (entity as any).who();
-              if (typeof(field) === 'function') {
-                const vp = field!.bind(entity)();
-                const v = await vp;
-                console.log(v);
-              }
-              if (typeof(field) === 'function') {
-                const vpf = field.bind(entity);
-                const vp = vpf();
-                const v = await vp;
-                console.log(v);
-              }
-              console.log('got 202-9896433-5799559');
-              const detail = await (entity as any).impl.detail_promise;
-              console.log(detail);
-            }
-          }
-          console.log('there!');
-        }
         td.innerText = value?.toString() ?? '';
         datatable_wrap.invalidate();
         return;
