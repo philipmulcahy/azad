@@ -54,9 +54,7 @@ export function extractItems(
     strategy4,
     strategy5,
   ];
-  if (order_header.id == '205-0768586-0310721') {
-    console.log('205-0768586-0310721 item extraction beginning');
-  }
+
   for (let i=0; i!=strategies.length; i+=1) {
     const strategy: ItemsExtractor = strategies[i];
     try {
