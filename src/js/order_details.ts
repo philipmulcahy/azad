@@ -112,31 +112,39 @@ function extractDetailFromDoc(
   doc: HTMLDocument,
 ): IOrderDetails {
   const context = 'id:' + header.id;
-  const who = function(){
-    if(header.who) {
+  const who = function(): string {
+    if(header.who && header.who != '') {
       return header.who;
     }
 
     const doc_elem = doc.documentElement;
 
+    // physical 2025
     let x = extraction.getField(
+      '//*[contains(@class,"displayAddressFullName")]',
+      doc_elem,
+      context
+    );
+    if (x) return x;
+
+    x = extraction.getField(
       // TODO: this seems brittle, depending on the precise path of the element.
       '//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
       doc_elem,
       context
     ); // US Digital
-    if(x) return x;
+    if (x) return x;
 
     x = extraction.getField('.//div[contains(@class,"recipient")]' +
       '//span[@class="trigger-text"]', doc_elem, context);
-    if(x) return x;
+    if (x) return x;
 
     x = extraction.getField(
       './/div[contains(text(),"Recipient")]',
       doc_elem,
       context
     );
-    if(x) return x;
+    if (x) return x;
 
     x = extraction.getField(
       '//li[contains(@class,"displayAddressFullName")]/text()',
@@ -144,7 +152,7 @@ function extractDetailFromDoc(
       context,
     );
 
-    if ( !x ) {
+    if (!x) {
       x = 'null';
     }
 
@@ -152,7 +160,7 @@ function extractDetailFromDoc(
   };
 
   const order_date = function(): Date|null {
-    const def_string = header.date ?
+    const def_string = (header.date && !isNaN(header.date.getDate())) ?
       util.dateToDateIsoString(header.date):
       null;
     const d = extraction.by_regex(

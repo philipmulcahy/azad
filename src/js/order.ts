@@ -198,8 +198,12 @@ class Order implements IOrder{
   total(): Promise<string> {
     return this._detail_dependent_promise(detail => detail.total);
   }
-  who(): Promise<string> {
-    return Promise.resolve(util.defaulted(this.impl.header.who, ''));
+  async who(): Promise<string> {
+    const details = await this.impl.detail_promise;
+    const who1: string = details?.details.who ?? '';
+    const who2: string = this.impl.header.who ?? '';
+    const who = util.defaulted(who1, who2);
+    return Promise.resolve(who);
   }
   async shipments(): Promise<shipment.IShipment[]> {
     if (this.impl.detail_promise) {

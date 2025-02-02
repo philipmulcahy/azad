@@ -62,67 +62,56 @@ function reallyExtractOrderHeader(
     throw error;
   }
   const context = 'id:' + id;
+
   let d: Date|null = null;
   try {
-    d = new Date(
-      date.normalizeDateString(
-        util.defaulted(
-          extraction.getField(
-              [
-                  'Commande effectuée',
-                  'Order placed',
-                  'Ordine effettuato',
-                  'Pedido realizado',
-                  'Subscription Charged on',
-              ].map(
-                  label => sprintf.sprintf(
-                      './/div[contains(span,"%s")]' +
-                      '/../div/span[contains(@class,"value")]',
-                      label
-                  )
-              ).join('|'),
-              elem,
-              context,
-          ),
-          ''
-        )
-      )
-    );
+    const xpath = [
+      'Commande effectuée',
+      'Order placed',
+      'Ordine effettuato',
+      'Pedido realizado',
+      'Subscription Charged on',
+    ].map(
+      label => `.//div[contains(span,"${label}")]/../div/span[contains(@class,"value") or contains(@class,"a-size-base")]`,
+    ).join('|');
+
+    const raw = extraction.getField(xpath, elem, context);
+    d = new Date(date.normalizeDateString(util.defaulted(raw, '')));
   } catch (ex) {
     console.warn('could not get order date for ' + id);
     throw ex;
   }
 
   const site: string = function() {
-      if (list_url) {
-          const list_url_match = list_url.match(
-              RegExp('.*//([^/]*)'));
-          if (list_url_match) {
-              return util.defaulted(list_url_match[1], '');
-          }
+    if (list_url) {
+      const list_url_match = list_url.match(
+        RegExp('.*//([^/]*)'));
+      if (list_url_match) {
+        return util.defaulted(list_url_match[1], '');
       }
-      return '';
+    }
+    return '';
   }();
         
         
   let detail_url: string = '';
   let payments_url: string = '';
   if (id && site) {
-      detail_url = urls.orderDetailUrlFromListElement(
-          elem, id, site
-      );
-      payments_url = urls.getOrderPaymentUrl(id, site);
+    detail_url = urls.orderDetailUrlFromListElement(
+      elem, id, site
+    );
+    payments_url = urls.getOrderPaymentUrl(id, site);
   }
         
   // This field is no longer always available, particularly for .com
   // We replace it (where we know the search pattern for the country)
   // with information from the order detail page.
   const total = extraction.getField('.//div[contains(span,"Total")]' +
-      '/../div/span[contains(@class,"value")]', elem, context);
+    '/../div/span[contains(@class,"value")]', elem, context);
   console.debug('total direct:', total);
 
   const who = extraction.getField('.//div[contains(@class,"recipient")]' +
-      '//span[@class="trigger-text"]', elem, context);
+    '//span[@class="trigger-text"]', elem, context);
 
   return {
     id: id,

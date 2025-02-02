@@ -7,6 +7,7 @@ import * as util from './util';
 import * as extpay from './extpay_client';
 import * as msg from './message_types';
 import * as settings from './settings';
+import * as urls from './url';
 
 export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
   'apgfmdalhahnnfgmjejmhkeobobobhjd', // azad_test dev Philip@ball.local
@@ -17,9 +18,12 @@ export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
   'ciklnhigjmbmehniheaolibcchfmabfp', // EZP Alpha Tester Release
 ];
 
-const content_ports: Record<string, any> = {};
+const content_ports: Record<string, chrome.runtime.Port> = {};
+let control_port: msg.ControlPort | null = null;
+let advertised_periods: number[] = [];
+let iframeWorkerTaskSpec: any = {}; 
 
-function broadcast_to_content_pages(msg: any) {
+function broadcast_to_content_pages(msg: any): void {
   Object.values(content_ports).forEach(
     (port) => {
       try {
@@ -30,17 +34,53 @@ function broadcast_to_content_pages(msg: any) {
     }
   );
 }
+export async function sendToOneContentPage(msg: any) {
+  async function getBestContentPort(): Promise<chrome.runtime.Port|null> {
 
-let control_port: msg.ControlPort | null = null;
+    const [activeTab] = await chrome.tabs.query({
+      active: true, lastFocusedWindow: true
+    });
 
-let advertised_periods: number[] = [];
+    // sorted for consistency
+    const keys = Object.keys(content_ports)
+      .filter(k => k.startsWith('azad_inject:'))
+      .sort((a,b) => {
+        if (a>b) { return 1; }
+        else if (b>a) { return -1; }
+        else { return 0; }
+      });
 
-function getPortKey(port: chrome.runtime.Port): string {
-  const name = port?.name;
-  const tabId = port?.sender?.tab?.id?.toString() ?? '?';
-  const url = port?.sender?.url ?? '?';
-  const key = `${name}#${tabId}#${url}`;
-  return key;
+    console.log('getBestContentPort() keys:', keys);
+
+    const ports = keys.map(k => content_ports[k]);
+
+    for (const port of ports) {
+      const sender: chrome.runtime.MessageSender = port.sender!;
+      const tab: chrome.tabs.Tab = sender.tab!;
+      try {
+        if (activeTab && tab.id == activeTab.id ) {
+          return port;
+        }
+      } catch (ex) {
+        console.warn(ex);
+      }
+    }
+
+    return ports.at(0) ?? null;
+  }
+
+  const target = await getBestContentPort();
+
+  if (target) {
+    try {
+      target.postMessage(msg);
+    } catch (ex) {
+      console.warn(
+        'sendToOneContentPage caught', ex, 'when trying to post msg');
+    }
+  } else {
+    console.log('no appropriate content page message port found');
+  }
 }
 
 function registerConnectionListener() {
@@ -48,15 +88,25 @@ function registerConnectionListener() {
     console.log('new connection from ' + port.name);
     const portNamePrefix = port.name.split(':')[0];
 
+    function getContentPortKey(port: chrome.runtime.Port): string {
+      const name = port?.name;
+      const tabId = port?.sender?.tab?.id?.toString() ?? '?';
+      const url = port?.sender?.url ?? '?';
+      const key = `${name}#${tabId}#${url}`;
+      return key;
+    }
+
     switch (portNamePrefix) {
       case 'azad_inject':
+      case 'azad_iframe_worker':
         {
-          const portKey = getPortKey(port);
+          const portKey = getContentPortKey(port);
           console.log('adding content port', portKey);
           content_ports[portKey] = port;
 
           port.onDisconnect.addListener(() => {
-            const key = getPortKey(port);
+            const key = getContentPortKey(port);
+
             if (key != null && typeof(key) != 'undefined') {
               console.log('removing disconnected port', key);
               delete content_ports[key];
@@ -80,13 +130,17 @@ function registerConnectionListener() {
                     control_port?.postMessage(msg);
                   } catch (ex) {
                     console.debug(
-                      'cannot post stats message to non-existent control port');
+                      'cannot post stats msg to non-existent control port');
                   }
                 }
                 break;
+              case 'get_iframe_task_instructions':
+                port.postMessage(iframeWorkerTaskSpec);
+                break;
               case 'transactions':
                 console.log('forwarding transactions');
-                broadcast_to_content_pages(msg);
+                broadcast_to_content_pages({action: 'remove_iframe_worker'});
+                sendToOneContentPage(msg);
                 break;
               default:
                 console.debug('unknown action: ' + msg.action);
@@ -96,7 +150,6 @@ function registerConnectionListener() {
         }
 
         break;
-
       case 'azad_control':
         control_port = port;
 
@@ -108,9 +161,16 @@ function registerConnectionListener() {
                 const table_type = await settings.getString('azad_table_type');
                 if (table_type == 'transactions') {
                   msg.action = 'scrape_transactions';
+
+                  // No site prefix: background page doesn't know!
+                  const url = '/cpe/yourpayments/transactions';
+
+                  iframeWorkerTaskSpec = msg;
+                  sendToOneContentPage({action: 'start_iframe_worker', url, });
+                } else {
+                  console.debug('forwarding:', msg);
+                  sendToOneContentPage(msg);
                 }
-                console.log(`forwarding ${msg.toString()}`);
-                broadcast_to_content_pages(msg);
               }();
               break;
             case 'check_feature_authorized':
@@ -178,13 +238,13 @@ function registerExternalConnectionListener() {
         end_date: end_date,
         sender_id: sender.id,
       };
-      broadcast_to_content_pages(msg);
+      sendToOneContentPage(msg);
       sendResponse({ status: 'ack' });
     } else {
       sendResponse({ status: 'unsupported' });
     }
 
-    // Incompletely documented, but seems to be needed to allow
+    // Incompletely documented, but returning true seems to be needed to allow
     // sendResponse calls to succeed.
     return true;
   });
@@ -253,7 +313,7 @@ function registerMessageListener() {
         chrome.tabs.create({ url: request.url });
         break;
       default:
-        console.debug('unknown action: ' + request.action);
+        console.trace('ignoring action: ' + request.action);
     }
   });
 }

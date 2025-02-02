@@ -54,6 +54,7 @@ export function extractItems(
     strategy4,
     strategy5,
   ];
+
   for (let i=0; i!=strategies.length; i+=1) {
     const strategy: ItemsExtractor = strategies[i];
     try {
