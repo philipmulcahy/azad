@@ -112,7 +112,7 @@ function extractDetailFromDoc(
   doc: HTMLDocument,
 ): IOrderDetails {
   const context = 'id:' + header.id;
-  const who = function(){
+  const who = function(): string {
     if(header.who) {
       return header.who;
     }
@@ -120,23 +120,33 @@ function extractDetailFromDoc(
     const doc_elem = doc.documentElement;
 
     let x = extraction.getField(
+      '//*[contains(@class,"displayAddressFullName")]',
+      doc_elem,
+      context
+    ); // physical 2025
+    if (header.id == '202-9896433-5799559') {
+      console.log('here!');
+    }
+    if (x) return x;
+
+    x = extraction.getField(
       // TODO: this seems brittle, depending on the precise path of the element.
       '//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
       doc_elem,
       context
     ); // US Digital
-    if(x) return x;
+    if (x) return x;
 
     x = extraction.getField('.//div[contains(@class,"recipient")]' +
       '//span[@class="trigger-text"]', doc_elem, context);
-    if(x) return x;
+    if (x) return x;
 
     x = extraction.getField(
       './/div[contains(text(),"Recipient")]',
       doc_elem,
       context
     );
-    if(x) return x;
+    if (x) return x;
 
     x = extraction.getField(
       '//li[contains(@class,"displayAddressFullName")]/text()',
@@ -144,7 +154,7 @@ function extractDetailFromDoc(
       context,
     );
 
-    if ( !x ) {
+    if (!x) {
       x = 'null';
     }
 
@@ -470,6 +480,10 @@ function extractDetailFromDoc(
     who: who(),
     invoice_url: invoice_url,
   };
+
+  if (header.id == '202-9896433-5799559') {
+    console.log('ici!');
+  }
 
   return details;
 }

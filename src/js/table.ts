@@ -31,12 +31,12 @@ function appendCell(
   tr: HTMLTableRowElement,
   entity: azad_entity.IEntity,
   col_spec: colspec.ColSpec,
-): Promise<null|void> {
+): Promise<void> {
   const td = document.createElement('td');
   td.textContent = 'pending';
   tr.appendChild(td);
 
-  const null_converter = function(x: any): any {
+  const null_converter = function(x: azad_entity.Value): azad_entity.Value {
     if (x) {
       if (
         typeof(x) === 'string' &&
@@ -55,12 +55,21 @@ function appendCell(
     }
   };
 
-  const value_written_promise: Promise<null|void> =
-    col_spec.render_func ?
-    col_spec?.render_func(entity, td) :
+  const value_written_promise = col_spec.render_func ?
+    (col_spec?.render_func(entity, td) ?? Promise.resolve()) as Promise<void> :
     (
-      () => {
+      async function(): Promise<void> {
         const field_name: string | undefined = col_spec.value_promise_func_name;
+        const id = (entity as any)?.impl?.header?.id ?? 'null id';
+        if (id == '202-9896433-5799559') {
+          if (field_name) {
+            if (['postage', 'who'].includes(field_name)) {
+              console.log('got 202-9896433-5799559');
+              const detail = await (entity as any).impl.detail_promise;
+              console.log(detail);
+            }
+          }
+        }
 
         if (typeof(field_name) == 'undefined') {
           const msg = 'empty field name not expected';
@@ -78,17 +87,35 @@ function appendCell(
           field.bind(entity)() :
           Promise.resolve(field);
 
-        return value_promise
-          .then(null_converter)
-          .then(
-            (value: string) => {
-              td.innerText = value;
-              datatable_wrap.invalidate();
-              return null;
+        const dirtyValue = await value_promise;
+        const value = null_converter(dirtyValue);
+        if (id == '202-9896433-5799559') {
+          if (field_name) {
+            if ([/*'postage',*/ 'who'].includes(field_name)) {
+              const w = (entity as any).who();
+              if (typeof(field) === 'function') {
+                const vp = field!.bind(entity)();
+                const v = await vp;
+                console.log(v);
+              }
+              if (typeof(field) === 'function') {
+                const vpf = field.bind(entity);
+                const vp = vpf();
+                const v = await vp;
+                console.log(v);
+              }
+              console.log('got 202-9896433-5799559');
+              const detail = await (entity as any).impl.detail_promise;
+              console.log(detail);
             }
-          );
+          }
+          console.log('there!');
+        }
+        td.innerText = value?.toString() ?? '';
+        datatable_wrap.invalidate();
+        return;
       }
-    )();
+    )() as Promise<void>;
 
   td.setAttribute(
     'class', td.getAttribute('class') + ' ' +

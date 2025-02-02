@@ -259,10 +259,12 @@ async function registerContentScript() {
         }
       }
     );
-  }
 
-  if (isIframeWorker) {
-    bg_port.postMessage({ action: 'get_iframe_task_instructions'});
+    if (isIframeWorker) {
+      bg_port.postMessage({ action: 'get_iframe_task_instructions'});
+    }
+  } else {
+    console.warn('no background port in registerContentScript()');
   }
 
   console.log('script registered');
