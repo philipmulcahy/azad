@@ -115,8 +115,21 @@ function registerConnectionListener() {
 
           port.onMessage.addListener((msg) => {
             switch (msg.action) {
+              case 'scrape_periods':
+                console.log(
+                  'a content script asked for an iframe to discover periods');
+
+                iframeWorkerTaskSpec = msg;
+
+                sendToOneContentPage({
+                  action: 'start_iframe_worker',
+                  url: msg.url
+                });
+
+                break;
               case 'advertise_periods':
                 console.log('forwarding advertise_periods', msg.period);
+                broadcast_to_content_pages({action: 'remove_iframe_worker'});
                 advertised_periods = [
                   ...Array.from(
                     new Set<number>(msg.periods)

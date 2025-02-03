@@ -36,6 +36,7 @@
 /////////////////////////////////////////////////
 
 import * as inject from './inject';
+import * as periods from './periods';
 import * as transaction from './transaction';
 import * as urls from './url';
 import * as util from './util';
@@ -46,11 +47,19 @@ interface IFrameTask {
   url: string,
 }
 
+export function isInIframe(): boolean {
+  const wellIsIt = window.self !== window.top;
+  return wellIsIt;
+}
+
 export function isInIframeWorker(): boolean {
-  const isInIframe = window.self !== window.top;
+  const inIframe = isInIframe();
   const url = document.URL;
-  const isInTransactionsPage = url.includes('/transactions');
-  return isInIframe && isInTransactionsPage;
+
+  const isInTransactionsPage = url.includes('/transactions') ||
+                               url.includes('/order-history');
+
+  return inIframe && isInTransactionsPage;
 }
 
 const IFRAME_ID = 'AZAD-IFRAME-WORKER';
@@ -87,7 +96,7 @@ export async function requestInstructions(
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null> 
 ): Promise<void> {
   const port = await getBackgroundPort();
-  if (port ) {
+  if (port) {
     port.postMessage({action: 'get_iframe_task_instructions'});
   } else {
     console.warn('got null background port in iframe-worker');
@@ -100,6 +109,9 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
   }
   const action = msg.action;
   switch (action) {
+    case 'scrape_periods':
+      periods.advertisePeriods(inject.getBackgroundPort); 
+      break;
     case 'scrape_transactions':
       {
         if (

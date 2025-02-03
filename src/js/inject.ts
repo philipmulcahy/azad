@@ -172,10 +172,11 @@ async function fetchShowAndSendItemsByRange(
 
 async function registerContentScript() {
   const portUID: string = new Date().getUTCMilliseconds().toString();
+  const isIframe = iframeWorker.isInIframe();
   const isIframeWorker = iframeWorker.isInIframeWorker();
   const url: string = document.URL;
 
-  if (isIframeWorker && !url.includes('/transactions')) {
+  if (isIframe && !isIframeWorker) {
     // This extension didn't make this iframe,
     // so it (the iframe) doesn't need to receive messages.
     return;
@@ -209,7 +210,7 @@ async function registerContentScript() {
     );
 
     if (isIframeWorker) {
-      bg_port.postMessage({ action: 'get_iframe_task_instructions'});
+      iframeWorker.requestInstructions(getBackgroundPort);
     }
   } else {
     console.warn('no background port in registerContentScript()');

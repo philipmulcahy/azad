@@ -1,5 +1,6 @@
 import * as business from './business';
 import * as extraction from './extraction';
+import * as iframeWorker from './iframe-worker';
 import * as signin from './signin';
 import * as urls from './url';
 import * as util from './util';
@@ -30,27 +31,46 @@ export async function getLatestYear(): Promise<number> {
   return all_years.at(-1) ?? -1;
 }
 
-async function advertisePeriods(
+export async function advertisePeriods(
   getBackgroundPort: ()=>Promise<chrome.runtime.Port|null>
-) {
+): Promise<void> {
   const periods = await getPeriods();
-  console.log('advertising periods', periods);
   const bg_port = await getBackgroundPort();
+  const inIframeWorker = iframeWorker.isInIframeWorker();
+
   if (bg_port) {
     try {
-      bg_port.postMessage({
-        action: 'advertise_periods',
-        periods: periods
-      });
+      console.error('philip forgot to turn off a debugging experiment');
+      // if (!periods && !iframeWorker.isInIframeWorker) {
+      if (!inIframeWorker) {
+        console.log(
+          'no periods found in unprocessed page: trying for an iframe worker');
+
+        const url = await getUrl();
+
+        bg_port.postMessage({
+          action: 'scrape_periods',
+          url: url, 
+        });
+      } else {
+        console.log('advertising periods', periods);
+
+        bg_port.postMessage({
+          action: 'advertise_periods',
+          periods: periods,
+        });
+      }
     } catch (ex) {
       console.warn(
-        'inject.advertisePeriods got: ', ex,
+        'periods.advertisePeriods got: ', ex,
         ', perhaps caused by disconnected bg_port?');
     }
+  } else {
+    console.warn('periods.advertisePeriods got no background port');
   }
 }
 
-async function extractYears(): Promise<number[]> {
+async function getUrl(): Promise<string> {
   const isBusinessAcct = await business.isBusinessAccount();
 
   const url = isBusinessAcct ?
@@ -58,6 +78,12 @@ async function extractYears(): Promise<number[]> {
     urls.normalizeUrl(
       '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders',
       urls.getSite());
+
+  return url;
+}
+
+async function extractYears(): Promise<number[]> {
+  const url = await getUrl();
 
   try {
     console.log('fetching', url, 'for getYears()');
@@ -79,5 +105,9 @@ export async function init(
 {
   const years = await extractYears();
   setYears(years);
-  advertisePeriods(getBackgroundPort);
+  const inIframe = iframeWorker.isInIframeWorker();
+
+  if (!inIframe) {
+    advertisePeriods(getBackgroundPort);
+  }
 };
