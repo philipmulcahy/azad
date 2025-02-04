@@ -41,11 +41,8 @@ export async function advertisePeriods(
   if (bg_port) {
     try {
       console.error('philip forgot to turn off a debugging experiment');
-      // if (!periods && !iframeWorker.isInIframeWorker) {
-      if (!inIframeWorker) {
-        console.log(
-          'no periods found in unprocessed page: trying for an iframe worker');
-
+      if (!periods && !inIframeWorker) {
+        console.log('no periods found in naked page -> try iframe worker');
         const url = await getUrl();
 
         bg_port.postMessage({
@@ -84,12 +81,25 @@ async function getUrl(): Promise<string> {
 
 async function extractYears(): Promise<number[]> {
   const url = await getUrl();
+  const inIframe = iframeWorker.isInIframeWorker();
+
+  async function getDoc(): Promise<Document> {
+    if (inIframe) {
+      // Wait a second to allow page javascript to render.
+      await new Promise(r => setTimeout(r, 1000));
+
+      return document;
+    } else {
+      console.log('fetching', url, 'for getYears()');
+      const response = await signin.checkedFetch(url);
+      const html = await response.text();
+      const doc = util.parseStringToDOM(html);
+      return doc;
+    }
+  }
 
   try {
-    console.log('fetching', url, 'for getYears()');
-    const response = await signin.checkedFetch(url);
-    const html = await response.text();
-    const doc = util.parseStringToDOM(html);
+    const doc = await getDoc();
     const years: number[] = extraction.get_years(doc);
     console.log('getYears() returning ', years);
     return years
