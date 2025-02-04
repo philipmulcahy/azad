@@ -40,7 +40,6 @@ export async function advertisePeriods(
 
   if (bg_port) {
     try {
-      console.error('philip forgot to turn off a debugging experiment');
       if (!periods && !inIframeWorker) {
         console.log('no periods found in naked page -> try iframe worker');
         const url = await getUrl();
