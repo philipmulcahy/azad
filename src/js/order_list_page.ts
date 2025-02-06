@@ -56,6 +56,7 @@ async function get_expected_order_count(
     scheduler,
     true,
   );
+
   return page_data.expected_order_count;
 }
 
@@ -200,31 +201,39 @@ function reallyTranslateOrdersPage(
 ): IOrdersPageData {
   const d = util.parseStringToDOM(evt.target.responseText);
   const context = 'Converting orders page';
+
   const countSpan = extraction.findSingleNodeValue(
     './/span[@class="num-orders"]', d.documentElement, context);
+
   if ( !countSpan ) {
     const msg = 'Error: cannot find order count elem in: '
     + evt.target.responseText;
     console.error(msg);
     throw(msg);
   }
+
   const textContent = countSpan.textContent;
   const splits = textContent!.split(' ');
+
   if (splits.length == 0) {
     const msg = 'Error: not enough parts';
     console.error(msg);
     throw(msg);
   }
   const expected_order_count: number = parseInt( splits[0], 10 );
+
   console.log(
     'Found ' + expected_order_count + ' orders for ' + period
   );
+
   if(isNaN(expected_order_count)) {
     console.warn(
       'Error: cannot find order count in ' + countSpan.textContent
     );
   }
+
   let ordersElem;
+
   try {
     // ordersElem = d.getElementById('ordersContainer');
     ordersElem = extraction.findSingleNodeValue(
@@ -238,12 +247,15 @@ function reallyTranslateOrdersPage(
     console.warn(msg);
     throw msg;
   }
+
   const order_elems: HTMLElement[] = extraction.findMultipleNodeValues(
     './/*[contains(concat(" ", normalize-space(@class), " "), " js-order-card ")]',
     ordersElem
   ).map( node => <HTMLElement>node );
+
   const serialized_order_elems = order_elems.map(
       elem => dom2json.toJSON(elem, getCachedAttributeNames())
+
   );
   if ( !serialized_order_elems.length ) {
     console.error(
@@ -251,15 +263,19 @@ function reallyTranslateOrdersPage(
       evt.target.responseURL
     );
   }
+
   const headers = order_elems.map(
     elem => order_header.extractOrderHeader(elem, evt.target.responseURL));
+
   const converted = {
     expected_order_count: expected_order_count,
     order_headers: headers, 
   };
+
   if (typeof(converted) == 'undefined') {
     console.error('we got a blank one!');
   }
+
   return converted;
 }
 
