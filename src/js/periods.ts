@@ -35,12 +35,13 @@ export async function advertisePeriods(
   getBackgroundPort: ()=>Promise<chrome.runtime.Port|null>
 ): Promise<void> {
   const periods = await getPeriods();
+  const noPeriods = periods.length == 0;
   const bg_port = await getBackgroundPort();
   const inIframeWorker = iframeWorker.isInIframeWorker();
 
   if (bg_port) {
     try {
-      if (!periods && !inIframeWorker) {
+      if (noPeriods && !inIframeWorker) {
         console.log('no periods found in naked page -> try iframe worker');
         const url = await getUrl();
 
