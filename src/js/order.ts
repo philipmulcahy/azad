@@ -324,7 +324,7 @@ export async function getOrdersByYear(
     );
     return orderss.flat();
   } catch (ex) {
-    console.error('getOrdersByYear blew up');
+    console.error('getOrdersByYear blew up', ex);
     return [];
   }
 }
