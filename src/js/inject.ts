@@ -10,6 +10,7 @@ import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
 const lzjs = require('lzjs');
 import * as notice from './notice';
+import * as periods from './periods';
 import * as request_scheduler from './request_scheduler';
 import * as settings from './settings';
 import * as signin from './signin';
@@ -76,39 +77,6 @@ function resetScheduler(purpose: string): void {
   setStatsTimeout();
 }
 
-async function getYears(): Promise<number[]> {
-
-  const isBusinessAcct = await business.isBusinessAccount();
-
-  const url = isBusinessAcct ?
-    business.getBaseOrdersPageURL():
-    urls.normalizeUrl(
-      '/gp/css/order-history?ie=UTF8&ref_=nav_youraccount_orders',
-      SITE);
-
-  try {
-    console.log('fetching', url, 'for getYears()');
-    const response = await signin.checkedFetch(url);
-    const html = await response.text();
-    // const compressed_html = lzjs.compressToBase64(html);  // TODO remove
-    // console.log('compressed html follows');               // TODO remove
-    // console.log(compressed_html);                         // TODO remove
-    const doc = util.parseStringToDOM(html);
-    const years: number[] = extraction.get_years(doc);
-    console.log('getYears() returning ', years);
-    return years
-  } catch (exception) {
-    console.error('getYears() caught:', exception);
-    return [];
-  }
-}
-
-async function latestYear(): Promise<number> {
-  const all_years = [...await getYears()];
-  all_years.sort();
-  return all_years.at(-1) ?? -1;
-}
-
 async function fetchAndShowOrdersByYears(
   years: number[]
 ): Promise<HTMLTableElement|undefined> {
@@ -126,7 +94,7 @@ async function fetchAndShowOrdersByYears(
 
   const purpose: string = years.join(', ');
   resetScheduler(purpose);
-  const latest_year: number = await latestYear();
+  const latest_year: number = await periods.getLatestYear();
 
   const order_promises = azad_order.getOrdersByYear(
     years,
@@ -158,7 +126,7 @@ async function fetchAndShowOrdersByRange(
     + util.dateToDateIsoString(end_date);
 
   resetScheduler(purpose);
-  const latest_year: number = await latestYear();
+  const latest_year: number = await periods.getLatestYear();
 
   const orders = azad_order.getOrdersByRange(
     start_date,
@@ -202,32 +170,13 @@ async function fetchShowAndSendItemsByRange(
   }
 }
 
-async function advertisePeriods() {
-  const years = await getYears();
-  console.log('advertising years', years);
-  const bg_port = await getBackgroundPort();
-  const periods = years.length == 0 ? [] : [1, 2, 3].concat(years);
-
-  if (bg_port) {
-    try {
-      bg_port.postMessage({
-        action: 'advertise_periods',
-        periods: periods
-      });
-    } catch (ex) {
-      console.warn(
-        'inject.advertisePeriods got: ', ex,
-        ', perhaps caused by disconnected bg_port?');
-    }
-  }
-}
-
 async function registerContentScript() {
   const portUID: string = new Date().getUTCMilliseconds().toString();
+  const isIframe = iframeWorker.isInIframe();
   const isIframeWorker = iframeWorker.isInIframeWorker();
   const url: string = document.URL;
 
-  if (isIframeWorker && !url.includes('/transactions')) {
+  if (isIframe && !isIframeWorker) {
     // This extension didn't make this iframe,
     // so it (the iframe) doesn't need to receive messages.
     return;
@@ -261,7 +210,7 @@ async function registerContentScript() {
     );
 
     if (isIframeWorker) {
-      bg_port.postMessage({ action: 'get_iframe_task_instructions'});
+      iframeWorker.requestInstructions(getBackgroundPort);
     }
   } else {
     console.warn('no background port in registerContentScript()');
@@ -353,4 +302,4 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
 
 console.log('Amazon Order History Reporter starting');
 registerContentScript();
-advertisePeriods();
+periods.init(getBackgroundPort);

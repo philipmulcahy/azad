@@ -42,11 +42,10 @@ export async function isBusinessAccount(): Promise<boolean> {
  * @returns URL
  */
 export async function getOrderHeadersSequencePageURL(
+  site: string,
   year: number,
   startIndex: number
 ): Promise<string> {
-  const site = urls.getSite();
-
   const btbGroupKey = await getBTBGroupKey();
 
   return urls.normalizeUrl(
@@ -67,17 +66,20 @@ export function getBaseOrdersPageURL() {
   return url;
 }
 
+let btbGroupKey: string = '';  // hyper-local cache
 async function getBTBGroupKey(): Promise<string> {
-  const doc = await getBaseOrdersPage();
+  if (btbGroupKey == '') {
+    const doc = await getBaseOrdersPage();
 
-  const groupKeyNode = extraction.findSingleNodeValue(
-    '//select[@name="selectedB2BGroupKey"]/option[starts-with(@value, "B2B:")]',
-    doc.documentElement,
-    'getBTBGroupKey',
-  ) as HTMLElement;
+    const groupKeyNode = extraction.findSingleNodeValue(
+      '//select[@name="selectedB2BGroupKey"]/option[starts-with(@value, "B2B:")]',
+      doc.documentElement,
+      'getBTBGroupKey',
+    ) as HTMLElement;
 
-  const groupKey = groupKeyNode.getAttribute('value') ?? '';
-  return groupKey;
+    btbGroupKey = groupKeyNode.getAttribute('value') ?? '';
+  }
+  return btbGroupKey;
 }
 
 async function getBaseOrdersPage(): Promise<HTMLDocument> {
