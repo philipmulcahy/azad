@@ -96,8 +96,15 @@ function id_from_tracking_page(evt: req.Event): string {
   const doc = util.parseStringToDOM(html_text);
   const body = doc.body;
   const xpath = "//div[contains(@class, 'pt-delivery-card-trackingId')]";
-  const id: string|null = extraction.getField(xpath, body, 'id_from_tracking_page');
-  return id!=undefined ? id : '';
+
+  const id: string|null = extraction.getField2(
+    [xpath],
+    body,
+    '',
+    'id_from_tracking_page'
+  );
+
+  return id;
 }
 
 async function get_tracking_id(
