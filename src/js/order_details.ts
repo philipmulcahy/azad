@@ -119,42 +119,23 @@ function extractDetailFromDoc(
 
     const doc_elem = doc.documentElement;
 
-    // physical 2025
-    let x = extraction.getField(
-      '//*[contains(@class,"displayAddressFullName")]',
-      doc_elem,
-      context
-    );
-    if (x) return x;
+    const x = extraction.getField2(
+      [
+        // Physical orders 2025.
+        './/*[contains(@class,"displayAddressFullName")]',
 
-    x = extraction.getField(
-      // TODO: this seems brittle, depending on the precise path of the element.
-      '//table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
-      doc_elem,
-      context
-    ); // US Digital
-    if (x) return x;
+        // TODO: seems brittle, depending on the precise path of the element.
+        // US Digital.
+        './/table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
 
-    x = extraction.getField('.//div[contains(@class,"recipient")]' +
-      '//span[@class="trigger-text"]', doc_elem, context);
-    if (x) return x;
-
-    x = extraction.getField(
-      './/div[contains(text(),"Recipient")]',
+        './/div[contains(@class,"recipient")]//span[@class="trigger-text"]',
+        './/div[contains(text(),"Recipient")]',
+        './/li[contains(@class,"displayAddressFullName")]/text()',
+      ],
       doc_elem,
-      context
-    );
-    if (x) return x;
-
-    x = extraction.getField(
-      '//li[contains(@class,"displayAddressFullName")]/text()',
-      doc_elem,
+      '',  // default value
       context,
     );
-
-    if (!x) {
-      x = 'null';
-    }
 
     return x;
   };
@@ -363,16 +344,19 @@ function extractDetailFromDoc(
         '//span[contains(@id, "totalTax-amount")]/text()',
       ],
       util.moneyRegEx(),
-      null,
+      '',
       doc.documentElement,
       context,
     );
+
     if ( !a ) {
-      a = extraction.getField(
-        './/tr[contains(td,"Tax Collected:")]',
+      a = extraction.getField2(
+        ['.//tr[contains(td,"Tax Collected:")]'],
         doc.documentElement,
+        '',
         context,
       );
+
       if (a) {
         // Result
         // 0: "Tax Collected: USD $0.00"
@@ -435,19 +419,24 @@ function extractDetailFromDoc(
   };
 
   const refund = function(): string {
-    const a = extraction.getField(
-      ['Refund', 'Totale rimborso'].map( //TODO other field names?
+    const a = extraction.getField2(
+      [
+        'Refund',
+        'Totale rimborso',
+      ].map(
         label => sprintf.sprintf(
           '//div[contains(@id,"od-subtotals")]//' +
           'span[contains(text(),"%s")]/' +
           'ancestor::div[1]/following-sibling::div/span',
           label
         )
-      ).join('|'),
+      ),
       doc.documentElement,
+      '',  // default
       context,
     );
-    return util.defaulted(a, '');
+
+    return a;
   };
 
   const invoice_url: string = function (): string {

@@ -75,7 +75,7 @@ function reallyExtractOrderHeader(
       label => `.//div[contains(span,"${label}")]/../div/span[contains(@class,"value") or contains(@class,"a-size-base")]`,
     ).join('|');
 
-    const raw = extraction.getField(xpath, elem, context);
+    const raw = extraction.getField2([xpath], elem, '', context);
     d = new Date(date.normalizeDateString(util.defaulted(raw, '')));
   } catch (ex) {
     console.warn('could not get order date for ' + id);
@@ -106,12 +106,21 @@ function reallyExtractOrderHeader(
   // This field is no longer always available, particularly for .com
   // We replace it (where we know the search pattern for the country)
   // with information from the order detail page.
-  const total = extraction.getField('.//div[contains(span,"Total")]' +
-    '/../div/span[contains(@class,"value")]', elem, context);
+  const total = extraction.getField2(
+    ['.//div[contains(span,"Total")]/../div/span[contains(@class,"value")]'],
+    elem,
+    '',
+    context
+  );
+
   console.debug('total direct:', total);
 
-  const who = extraction.getField('.//div[contains(@class,"recipient")]' +
-    '//span[@class="trigger-text"]', elem, context);
+  const who = extraction.getField2(
+    ['.//div[contains(@class,"recipient")]//span[@class="trigger-text"]'],
+    elem,
+    '',
+    context,
+  );
 
   return {
     id: id,
