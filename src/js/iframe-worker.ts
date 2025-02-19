@@ -1,37 +1,73 @@
 /* Copyright(c) 2025- Philip Mulcahy. */
 
 /////////////////////////////////////////////////
+// Get Transactions
+/////////////////////////////////////////////////
 //
-//  ┌─────┐┌──────────┐┌───────┐┌──────┐┌──────┐ 
-//  │POPUP││BACKGROUND││CONTENT││IFRAME││AMAZON│ 
-//  └─┬───┘└─────┬────┘└───┬───┘└───┬──┘└───┬──┘ 
-//    │          │         │        │       │   
-//    │ action!  │         │        │       │   
-//  1 ├────────►│││        │        │       │   
-//    │         │││ action!│        │       │   
-//  2 │         ││├──────►1│        │       │   
-//    │         │││        │ setup  │       │   
-//  3 │ remember│││        ├──────►1│       │   
-//    │ proposed│││        │        │       │   
-//    │ action  │││ what do│I do?   │       │   
-//  4 │         │││◄───────┼────────┤       │   
-//    │         │││        │        │       │   
-//    │         │││  here's│what    │       │   
-//  5 │         ││├────────┼───────►│ data? │   
-//  6 │          │         │        ├──────►│   
-//    │          │         │        │       │   
+//  ┌─────┐┌──────────┐┌───────┐┌──────┐┌──────┐
+//  │POPUP││BACKGROUND││CONTENT││IFRAME││AMAZON│
+//  └─┬───┘└─────┬────┘└───┬───┘└───┬──┘└───┬──┘
+//    │          │         │        │       │
+//    │ action!  │         │        │       │
+//  1 ├────────►│││        │        │       │
+//    │         │││ action!│        │       │
+//  2 │         ││├──────►1│        │       │
+//    │         │││        │ setup  │       │
+//  3 │ remember│││        ├──────►1│       │
+//    │ proposed│││        │        │       │
+//    │ action  │││ what do│I do?   │       │
+//  4 │         │││◄───────┼────────┤       │
+//    │         │││        │        │       │
+//    │         │││  here's│what    │       │
+//  5 │         ││├────────┼───────►│ data? │
+//  6 │          │         │        ├──────►│
+//    │          │         │        │       │
 //    │          │         │        │ data  │
-//  7 │          │      results     │◄──────┤   
-//  8 │          │◄────────┼────────┤       │   
-//    │          │         │        │       │   
-//    │          │ display │        │       │   
-//  9 │          ├───────►1│        │       │   
-//    │          │         │        │       │   
+//  7 │          │      results     │◄──────┤
+//  8 │          │◄────────┼────────┤       │
+//    │          │         │        │       │
+//    │          │ display │        │       │
+//  9 │          ├───────►1│        │       │
+//    │          │         │        │       │
 //    │          │ remove  │        │       │
 //    │          │ iframe  │        │       │
-// 10 │          ├───────►*│        │       │   
+// 10 │          ├───────►*│        │       │
 //
 // thanks https://asciiflow.com/
+//
+/////////////////////////////////////////////////
+// Get Years
+/////////////////////////////////////////////////
+//
+//  ┌─────┐┌──────────┐┌───────┐┌──────┐┌──────┐
+//  │POPUP││BACKGROUND││CONTENT││IFRAME││AMAZON│
+//  └─┬───┘└─────┬────┘└───┬───┘└───┬──┘└───┬──┘
+//    │          │         │        │       │
+//  1 │          │ action! │        │       │
+//    │         │││◄───────┤        │       │
+//    │         │││        │        │       │
+//    │         │││ action!│        │       │
+//  2 │         ││├──────►1│        │       │
+//    │         │││        │ setup  │       │
+//  3 │ remember│││        ├──────►1│       │
+//    │ proposed│││        │        │       │
+//    │ action  │││ what do│I do?   │       │
+//  4 │         │││◄───────┼────────┤       │
+//    │         │││        │        │       │
+//    │         │││  here's│what    │       │
+//  5 │         ││├────────┼───────►│ data? │
+//  6 │          │         │        ├──────►│
+//    │          │         │        │       │
+//    │          │         │        │ data  │
+//  7 │          │      results     │◄──────┤
+//  8 │          │◄────────┼────────┤       │
+//    │          │         │        │       │
+//    │ display  │         │        │       │
+//  9 │◄─────────┤         │        │       │
+//    │          │         │        │       │
+//    │          │ remove  │        │       │
+//    │          │ iframe  │        │       │
+// 10 │          ├───────►*│        │       │
 //
 /////////////////////////////////////////////////
 
@@ -93,7 +129,7 @@ export function createIframe(url: string): void {
 
 // (4) Called from iframe worker to background
 export async function requestInstructions(
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null> 
+  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>
 ): Promise<void> {
   const port = await getBackgroundPort();
   if (port) {
@@ -110,7 +146,7 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
   const action = msg.action;
   switch (action) {
     case 'scrape_periods':
-      periods.advertisePeriods(inject.getBackgroundPort); 
+      periods.advertisePeriods(inject.getBackgroundPort);
       break;
     case 'scrape_transactions':
       {
