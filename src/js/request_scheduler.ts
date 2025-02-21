@@ -51,7 +51,7 @@ class RequestTracker {
       const previous: number = counts.has(state) ? counts.get(state) as number : 0;
       counts.set(state, previous + 1);
     });
-    return counts; 
+    return counts;
   }
 
   allDone(): boolean {

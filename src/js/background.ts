@@ -21,7 +21,7 @@ export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
 const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
 let advertised_periods: number[] = [];
-let iframeWorkerTaskSpec: any = {}; 
+let iframeWorkerTaskSpec: any = {};
 
 function broadcast_to_content_pages(msg: any): void {
   Object.values(content_ports).forEach(
@@ -137,6 +137,22 @@ function registerConnectionListener() {
                 ].sort((a, b) => a - b);
                 advertisePeriods();
                 break;
+						  case 'fetch_url':
+								console.log('fetching url using iframe', msg.url, msg.guid);
+								iframeWorkerTaskSpec = {
+									guid: msg.guid,
+									url: msg.url,
+									xpath: msg.xpath,
+								};
+								sendToOneContentPage({
+									action: 'start_iframe_worker',
+									url: msg.url
+								});
+						  	break;
+							case 'fetch_url_response':
+								console.log('routing fetch_url response', msg.url, msg.guid);
+								broadcast_to_content_pages(msg);
+								break;
               case 'statistics_update':
                 if (control_port) {
                   try {

@@ -62,7 +62,7 @@ function CreateMockStore(): Store {
       _store[key] = value;
     },
     remove: async function(key: string): Promise<void> {
-      delete _store[key]; 
+      delete _store[key];
     },
   };
 }
@@ -75,7 +75,7 @@ export function registerCacheListenerInBackgroundPage() {
       switch(request.action) {
         case 'azad-cache-get':
           store.get(request.key).then( value => {
-            responseCallback(value); 
+            responseCallback(value);
             console.debug(
               'azad-cache-get responding to', request.key, 'with', value);
           });
@@ -315,7 +315,7 @@ class LocalCacheImpl {
     try {
       const encoded = await store.get(real_key)!;
 
-      if (encoded == null) { 
+      if (encoded == null) {
         console.debug('cachestuff.get did not find ', key);
         throw key + ' not found';
       }

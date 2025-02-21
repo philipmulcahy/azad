@@ -7,6 +7,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 import * as extraction from './extraction';
+import * as iframeWorker from './iframe-worker';
 import * as signin from './signin';
 import * as urls from './url';
 import * as util from './util';
@@ -68,31 +69,63 @@ export function getBaseOrdersPageURL() {
 
 let btbGroupKey: string = '';  // hyper-local cache
 async function getBTBGroupKey(): Promise<string> {
-  if (btbGroupKey == '') {
-    const doc = await getBaseOrdersPage();
+  type Strategy = (doc: HTMLDocument) => string;
 
+  function strategy0(doc: HTMLDocument): string {
     const groupKeyNode = extraction.findSingleNodeValue(
-      '//select[@name="selectedB2BGroupKey"]/option[starts-with(@value, "B2B:")]',
+      BTB_KEY_XPATH_0,
       doc.documentElement,
-      'getBTBGroupKey',
+      'getBTBGroupKey#0',
     ) as HTMLElement;
 
-    btbGroupKey = groupKeyNode.getAttribute('value') ?? '';
+    const value = groupKeyNode.getAttribute('value') ?? '';
+    const key = value.replace(/.*-/, '');
+    return key;
   }
+
+  function strategy1(doc: HTMLDocument): string {
+    const groupKeyNode = extraction.findSingleNodeValue(
+      BTB_KEY_XPATH_1,
+      doc.documentElement,
+      'getBTBGroupKey#1',
+    ) as HTMLElement;
+
+    return groupKeyNode.getAttribute('value') ?? '';
+  }
+
+	function keyFromDocument(doc: HTMLDocument): string {
+    const strategies = [strategy0, strategy1] as Strategy[];
+    for (const [i, strategy] of strategies.entries()) {
+      try {
+        const candidate: string = strategy(doc);
+        if (candidate) {
+          return candidate
+        }
+      } catch (ex) {
+        console.log('caught while trying a strategy in getBTBGroupKey:', ex);
+				return '';
+      }
+    }
+
+		return '';
+	}
+
+  if (btbGroupKey == '') {
+    const doc = await getBaseOrdersPage();
+	  btbGroupKey = keyFromDocument(doc);
+  }
+
   return btbGroupKey;
 }
 
+const BTB_KEY_XPATH_0 = '//option[contains(@value, "yoAllOrders-")]';
+const BTB_KEY_XPATH_1 = '//select[@name="selectedB2BGroupKey"]/option[starts-with(@value, "B2B:")]';
+const BTB_KEY_XPATHS = [BTB_KEY_XPATH_0, BTB_KEY_XPATH_1].join('|');
+
 async function getBaseOrdersPage(): Promise<HTMLDocument> {
   const baseUrl = getBaseOrdersPageURL();
-  const response = await signin.checkedFetch(baseUrl);
-
-  if (!response.ok) {
-    const msg = 'failed to fetch ' + baseUrl;
-    console.warn('msg');
-    throw msg;
-  }
-
-  const html = await response.text();
+	const response = await iframeWorker.fetchURL(baseUrl, BTB_KEY_XPATHS);
+	const html = response.html;
   const doc = util.parseStringToDOM(html);
   return doc;
 }

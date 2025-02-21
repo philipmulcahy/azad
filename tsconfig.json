@@ -12,6 +12,6 @@
     "noImplicitAny": true,
     "sourceMap": true,
     "skipLibCheck": true,
-    "target": "ES2018"
+    "target": "ES2020"
   }
 }

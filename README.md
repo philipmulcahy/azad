@@ -50,11 +50,11 @@ Check out [commercial_features.md](doc/commercial_features.md) for more detail. 
 ### Subscribe to Premium features
 ### I Subscribed but I am not getting premium features
 
-In order to subscribe, or even know there is a subscription option you probably paged past some text that explained how there are two ways to give to my chosen charity in order to support this extension.  
-The more prominent, older one is purely altruistic in nature, and does not give you access to the premium features, because I'd not figured out how to erect a paywall or even realised that it might be a good idea (commercial users used to contribute almost nothing).  
-The "subscription" option is a bit harder to find - because I wanted folks to read the notes about it (e.g. you get access to the premium features as they are, not necessarily as you would like them to be) before attempting to crucify me for bugs (there are some, and I put time into fixing them, but those motivated commercial users seem to mostly be content).  
+In order to subscribe, or even know there is a subscription option you probably paged past some text that explained how there are two ways to give to my chosen charity in order to support this extension.
+The more prominent, older one is purely altruistic in nature, and does not give you access to the premium features, because I'd not figured out how to erect a paywall or even realised that it might be a good idea (commercial users used to contribute almost nothing).
+The "subscription" option is a bit harder to find - because I wanted folks to read the notes about it (e.g. you get access to the premium features as they are, not necessarily as you would like them to be) before attempting to crucify me for bugs (there are some, and I put time into fixing them, but those motivated commercial users seem to mostly be content).
 If you are reading this, it is possible that you handed over your money to charity via the first option (thanks), instead of the second.
-Here are some screenshots (taken from v1.9.32, in September 2023) that show how to subscribe:  
+Here are some screenshots (taken from v1.9.32, in September 2023) that show how to subscribe:
 ![premium1_2.png](doc/img/premium1_2.png) ![premium2_2.png](doc/img/premium2_2.png)
 
 ### I subscribed, but I don't want it to renew

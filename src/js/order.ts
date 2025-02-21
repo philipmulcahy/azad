@@ -358,7 +358,7 @@ export async function getOrdersByRange(
       const orderss = await util.get_settled_and_discard_rejects(order_years);
       return orderss;
     } catch (ex) {
-      console.error('failed to get order_years'); 
+      console.error('failed to get order_years');
       return [[]];
     }
   }();

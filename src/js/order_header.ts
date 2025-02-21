@@ -92,8 +92,7 @@ function reallyExtractOrderHeader(
     }
     return '';
   }();
-        
-        
+
   let detail_url: string = '';
   let payments_url: string = '';
   if (id && site) {
@@ -102,7 +101,7 @@ function reallyExtractOrderHeader(
     );
     payments_url = urls.getOrderPaymentUrl(id, site);
   }
-        
+
   // This field is no longer always available, particularly for .com
   // We replace it (where we know the search pattern for the country)
   // with information from the order detail page.

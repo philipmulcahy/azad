@@ -47,7 +47,7 @@ export async function advertisePeriods(
 
         bg_port.postMessage({
           action: 'scrape_periods',
-          url: url, 
+          url: url,
         });
       } else {
         console.log('advertising periods', periods);

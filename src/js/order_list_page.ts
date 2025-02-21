@@ -32,7 +32,7 @@ async function get_page_data(
   const url = await urlGenerator(site, year, start_order_number);
 
   return req.makeAsyncRequest<IOrdersPageData>(
-    url, 
+    url,
     evt => translateOrdersPage(evt, year.toString()),
     scheduler,
     scheduling_priority,
@@ -269,7 +269,7 @@ function reallyTranslateOrdersPage(
 
   const converted = {
     expected_order_count: expected_order_count,
-    order_headers: headers, 
+    order_headers: headers,
   };
 
   if (typeof(converted) == 'undefined') {

@@ -212,8 +212,10 @@ function maybeShowMissingYearsMessage(got_some_years: boolean) {
     $('#azad_year_missing_message').append(
       '<span>No scrapeable years found. ' +
       'It is likely you don\'t have a tab open that ' +
-      'can see your amazon orders. It needs to be open on your chosen ' +
-      'amazon country site, <band</b> logged in to your account.</span>' +
+      'can see your amazon orders or it hasn\'t had enough time to find the ' +
+      'available years yet. ' +
+      'It needs to be open on your chosen ' +
+      'amazon country site, <b>and</b> logged in to your account.</span>' +
       '<br/>' +
       'See <a href="https://github.com/philipmulcahy/azad/issues/280">' +
       'this article</a> for more.') ;

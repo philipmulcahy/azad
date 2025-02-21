@@ -37,7 +37,7 @@ export class Statistics {
     const t: StringNumberMap = {};
     Object.keys(OStatsKey)
           .forEach((ks: string) => {
-      const k: StatsKey = OStatsKey[ks as keyof typeof OStatsKey]; 
+      const k: StatsKey = OStatsKey[ks as keyof typeof OStatsKey];
       const num: number = this._stats[k];
       t[ks] = num;
     });
@@ -48,7 +48,7 @@ export class Statistics {
     purpose: string
   ) {
     if (!port ) {
-      return;  
+      return;
     }
     try {
       const s = this.transmittable();

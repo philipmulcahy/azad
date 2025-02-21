@@ -95,10 +95,10 @@ class AzadRequest<T> {
                   + base.State[this._state]
                   + ' but expecting one of ['
                   + allowables.map(a => base.State[a]).join(',')
-                  + '] ' + this._url; 
+                  + '] ' + this._url;
         console.error(msg);
         throw msg;
-      } 
+      }
     } else {
       const allowable = allowable_existing_state as base.State;
       this.check_state([allowable]);
@@ -158,7 +158,7 @@ class AzadRequest<T> {
         reject(msg);
       };
       xhr.onload = (evt: any): void => {
-        console.debug('got response for', this._debug_context, this._url); 
+        console.debug('got response for', this._debug_context, this._url);
         if (!this._scheduler.isLive) {
           reject('scheduler no longer live');
         }
