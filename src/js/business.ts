@@ -93,7 +93,7 @@ async function getBTBGroupKey(): Promise<string> {
     return groupKeyNode.getAttribute('value') ?? '';
   }
 
-	function keyFromDocument(doc: HTMLDocument): string {
+  function keyFromDocument(doc: HTMLDocument): string {
     const strategies = [strategy0, strategy1] as Strategy[];
     for (const [i, strategy] of strategies.entries()) {
       try {
@@ -103,16 +103,16 @@ async function getBTBGroupKey(): Promise<string> {
         }
       } catch (ex) {
         console.log('caught while trying a strategy in getBTBGroupKey:', ex);
-				return '';
+        return '';
       }
     }
 
-		return '';
-	}
+    return '';
+  }
 
   if (btbGroupKey == '') {
     const doc = await getBaseOrdersPage();
-	  btbGroupKey = keyFromDocument(doc);
+    btbGroupKey = keyFromDocument(doc);
   }
 
   return btbGroupKey;
@@ -124,8 +124,8 @@ const BTB_KEY_XPATHS = [BTB_KEY_XPATH_0, BTB_KEY_XPATH_1].join('|');
 
 async function getBaseOrdersPage(): Promise<HTMLDocument> {
   const baseUrl = getBaseOrdersPageURL();
-	const response = await iframeWorker.fetchURL(baseUrl, BTB_KEY_XPATHS);
-	const html = response.html;
+  const response = await iframeWorker.fetchURL(baseUrl, BTB_KEY_XPATHS);
+  const html = response.html;
   const doc = util.parseStringToDOM(html);
   return doc;
 }

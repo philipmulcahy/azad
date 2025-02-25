@@ -110,53 +110,80 @@ import * as inject from './inject';
 import * as periods from './periods';
 import * as transaction from './transaction';
 import * as urls from './url';
-import * as util from './util';	
+import * as util from './util';
 import { v4 as uuidv4 } from 'uuid';
 
-export function isInIframe(): boolean {
+export function isIframe(): boolean {
   const wellIsIt = window.self !== window.top;
   return wellIsIt;
 }
 
-export function isInIframeWorker(): boolean {
-  const inIframe = isInIframe();
+export function isWorker(): boolean {
+  const inIframe = isIframe();
   const url = document.URL;
 
-  const isInTransactionsPage = url.includes('/transactions') ||
-                               url.includes('/order-history');
+  const relevantPage = url.includes('/transactions') ||
+                       url.includes('/order-history') ||
+                       url.includes('/gp/css/order-history');
 
-  return inIframe && isInTransactionsPage;
+  return inIframe && relevantPage;
 }
 
 const IFRAME_ID = 'AZAD-IFRAME-WORKER';
 
+// (10) Removee this iframe, by asking (via background) our parent to do so.
+function removeThisIframe(): void {
+  if (!isWorker()) {
+    console.error('only an iframe can ask for its own removal');
+    return;
+  }
+
+  const msg = {
+    action: 'relay_to_parent',
+    msg: {
+      action: 'remove_iframe_worker',
+      url: document.URL,
+    },
+  };
+}
+
 // (10) Remove existing iframe if one exists.
-export function removeIframeWorker(): void {
-  if (isInIframeWorker()) {
-    console.error('cannot start iframe task from an iframe');
+export function removeIframeWorker(url: string): void {
+  if (isIframe()) {
+    console.error('cannot remove worker iframe from an iframe');
     return;
   }
 
   const iframe = document.getElementById(IFRAME_ID);
 
-  if (iframe) {
-    const url = iframe.getAttribute('url');
-    iframe.remove();
-    console.log('removed iframe', url);
-  } else {
+  if (!iframe) {
+    console.warn('removeIframeWorker: could not find iframe');
+    return;
+  }
+
+  if (!iframe) {
     console.warn('failed to find an iframe to remove');
   }
+
+  const iframeUrl = iframe?.getAttribute('url') ?? '';
+
+  if (iframeUrl != url) {
+    console.error('removeIframeWorker URL mismatch', iframeUrl, url);
+    return;
+  }
+
+  iframe.remove();
+  console.log('removed iframe', url);
 }
 
 // (3) Called from the content page the iframe will be hosted by
 export function createIframe(url: string): void {
-  if (isInIframeWorker()) {
+  if (isWorker()) {
     console.error('cannot start iframe task from an iframe');
   }
 
   console.log('starting iframe worker:', url);
 
-  removeIframeWorker();
   const iframe = document.createElement('iframe') as HTMLIFrameElement;
   iframe.setAttribute('src', url);
   iframe.setAttribute('id', IFRAME_ID);
@@ -170,6 +197,7 @@ export async function requestInstructions(
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>
 ): Promise<void> {
   const port = await getBackgroundPort();
+
   if (port) {
     port.postMessage({action: 'get_iframe_task_instructions'});
   } else {
@@ -178,8 +206,8 @@ export async function requestInstructions(
 }
 
 export type FetchResponse = {
-	url: string,
-	html: string,
+  url: string,
+  html: string,
 };
 
 /**
@@ -194,49 +222,56 @@ export async function fetchURL(
   url: string,
   xpath: string,
 ): Promise<FetchResponse> {
-	const guid: string = uuidv4();
-	const port: chrome.runtime.Port = await inject.getBackgroundPort() as chrome.runtime.Port;
+  const guid: string = uuidv4();
 
-	const requestMsg = {
-		url,
-		xpath,
-		guid,
+  const requestMsg = {
+    action: 'fetch_url',
+    url,
+    xpath,
+    guid,
   };
-	
-	const result = new Promise<FetchResponse>(function (resolve, reject) {
-		port.onMessage.addListener((msg) => {
-			const action = msg.action;
-			if (action != 'fetch_url_response') {
-				return;
-			}
 
-			const responseGuid = msg.guid;
-			if (responseGuid != guid) {
-				return;
-			}
+  const result = new Promise<FetchResponse>(async function (resolve, reject) {
+    const port: chrome.runtime.Port = await inject.getBackgroundPort() as chrome.runtime.Port;
 
-			if (msg.status != 'OK') {
-				reject(msg.status);
-				return;
-			}
-			
-			resolve({
-				url,
-				html: msg.html,
-			});
+    port.onMessage.addListener((msg) => {
+      if (msg.action != 'fetch_url_response') {
+        return;
+      }
+
+      if (msg.responseGuid != guid) {
+        return;
+      }
+
+      if (msg.status != 'OK') {
+        reject(msg.status);
+        return;
+      }
+
+      resolve({
+        url,
+        html: msg.html,
+      });
     })
-	});
+  });
 
-	port.postMessage(requestMsg);
-	return result;
+  try {
+    const port: chrome.runtime.Port = await inject.getBackgroundPort() as chrome.runtime.Port;
+    port.postMessage(requestMsg);
+  } catch (ex) {
+    console.error('failed to post message to background script', ex);
+  }
+
+  return result;
 }
 
 export async function handleInstructionsResponse(msg: any): Promise<void> {
-  if (!isInIframeWorker()) {
+  if (!isWorker()) {
     console.error('cannot start iframe task from outside an iframe');
   }
 
   const action = msg.action;
+
   switch (action) {
     case 'scrape_periods':
       periods.advertisePeriods(inject.getBackgroundPort);
@@ -268,28 +303,29 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
         }
       }
       break;
-		case 'fetch_url':
+    case 'fetch_url':
       {
-				const url: string = msg.url;
+        const url: string = msg.url;
         const completionXPath: string = msg.xpath;
         const guid: string = msg.guid;
-				let html = '';
-				let status = 'OK';
+        let html = '';
+        let status = 'OK';
 
-				try {
-					html = await fetchUrl(url, completionXPath);
-				} catch (ex) {
-					status = ex as string;
-				}
+        try {
+          html = await getBakedHtml(url, completionXPath);
+        } catch (ex) {
+          status = ex as string;
+        }
 
-				const port = await inject.getBackgroundPort() as chrome.runtime.Port;
-				port.postMessage({
-					action: 'fetch_url_response',
-					url,
-					guid,
-					status,
-				});
-			}
+        const port = await inject.getBackgroundPort() as chrome.runtime.Port;
+        port.postMessage({
+          action: 'fetch_url_response',
+          url,
+          html,
+          guid,
+          status,
+        });
+      }
       break;
     default:
       console.warn(
@@ -319,10 +355,10 @@ async function waitForXPathToMatch(
     console.log('elapsedMillis', elapsedMillis);
 
     const match = extraction.findSingleNodeValue(
-			xpath,
-			doc.documentElement,
-			'waitForXPathToMatch'
-		);
+      xpath,
+      doc.documentElement,
+      'waitForXPathToMatch'
+    );
 
     if (match != null) {
       console.log('waitForXpathToMatch matched');
@@ -330,7 +366,7 @@ async function waitForXPathToMatch(
     }
   };
 
-	console.warn('waitForXPathToMatch timing out');
+  console.warn('waitForXPathToMatch timing out');
   return false;
 }
 
@@ -345,20 +381,19 @@ async function waitForXPathToMatch(
  * @returns string: "baked" html.
  * @throws string: comments on failure.
  */
-async function fetchUrl(
-	url: string,
-	completionXPath: string,
+async function getBakedHtml(
+  url: string,
+  completionXPath: string,
 ): Promise<string> {
-	if (document.URL != url) {
-		console.error(
-			'instructions to this iframe expected url', url,
-			'but it is actually', document.URL
-		);
-		return '';
-	}
+  if (document.URL != url) {
+    console.error(
+      'instructions to this iframe expected url', url,
+      'but it is actually', document.URL
+    );
+    return '';
+  }
 
-	const matched = await waitForXPathToMatch(document, completionXPath);
-	const port = await inject.getBackgroundPort();
-	const html = document.documentElement.outerHTML;
-	return html;
+  const matched = await waitForXPathToMatch(document, completionXPath);
+  const bakedHtml = document.documentElement.outerHTML;
+  return bakedHtml;
 }

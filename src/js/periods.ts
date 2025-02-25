@@ -37,7 +37,7 @@ export async function advertisePeriods(
   const periods = await getPeriods();
   const noPeriods = periods.length == 0;
   const bg_port = await getBackgroundPort();
-  const inIframeWorker = iframeWorker.isInIframeWorker();
+  const inIframeWorker = iframeWorker.isWorker();
 
   if (bg_port) {
     try {
@@ -81,13 +81,12 @@ async function getUrl(): Promise<string> {
 
 async function extractYears(): Promise<number[]> {
   const url = await getUrl();
-  const inIframe = iframeWorker.isInIframeWorker();
+  const inIframe = iframeWorker.isWorker();
 
   async function getDoc(): Promise<Document> {
     if (inIframe) {
       // Wait a second to allow page javascript to render.
       await new Promise(r => setTimeout(r, 1000));
-
       return document;
     } else {
       console.log('fetching', url, 'for getYears()');
@@ -115,7 +114,7 @@ export async function init(
 {
   const years = await extractYears();
   setYears(years);
-  const inIframe = iframeWorker.isInIframeWorker();
+  const inIframe = iframeWorker.isWorker();
 
   if (!inIframe) {
     advertisePeriods(getBackgroundPort);

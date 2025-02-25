@@ -36,9 +36,40 @@ function getScheduler(): request_scheduler.IRequestScheduler {
   return scheduler!;
 }
 
+function getPageType(): string {
+  const isWorker = iframeWorker.isWorker();
+
+  return isWorker ?
+    'azad_iframe_worker' :
+    'azad_inject';
+}
+
+async function initialiseBackgroundPort(): Promise<void> {
+  const isWorker = iframeWorker.isWorker();
+  const isIframe = iframeWorker.isIframe();
+
+  if (isIframe && !isWorker) {
+    // This extension didn't make this iframe,
+    // so it (the iframe) doesn't need to receive messages.
+    return;
+  }
+
+  const portUID: string = new Date().getUTCMilliseconds().toString();
+  const pageType = getPageType();
+  const portName = `${pageType}:${portUID}`;
+
+  // @ts-ignore null IS allowed as first arg to connect.
+  background_port = chrome.runtime.connect(null, {name: portName});
+
+  background_port.onDisconnect.addListener( _port => {
+    background_port = null;
+  });
+
+}
+
 export async function getBackgroundPort(): Promise<chrome.runtime.Port | null> {
   if (!background_port) {
-    await registerContentScript();
+    await initialiseBackgroundPort();
   }
 
   return background_port;
@@ -170,32 +201,9 @@ async function fetchShowAndSendItemsByRange(
   }
 }
 
-async function registerContentScript() {
-  const portUID: string = new Date().getUTCMilliseconds().toString();
-  const isIframe = iframeWorker.isInIframe();
-  const isIframeWorker = iframeWorker.isInIframeWorker();
-  const url: string = document.URL;
-
-  if (isIframe && !isIframeWorker) {
-    // This extension didn't make this iframe,
-    // so it (the iframe) doesn't need to receive messages.
-    return;
-  }
-
-  const pageType = isIframeWorker ?
-    'azad_iframe_worker' :
-    'azad_inject';
-
-  const portName = `${pageType}:${portUID}`;
-
-  // @ts-ignore null IS allowed as first arg to connect.
-  background_port = chrome.runtime.connect(null, {name: portName});
-
-  background_port.onDisconnect.addListener( _port => {
-    background_port = null;
-  });
-
+async function registerContentScript(isIframeWorker: boolean) {
   const bg_port = await getBackgroundPort();
+  const pageType = getPageType();
 
   if (bg_port) {
     bg_port.onMessage.addListener(
@@ -267,13 +275,14 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       }
       break;
     case 'remove_iframe_worker':
-      iframeWorker.removeIframeWorker();
+      const url = msg.url;
+      iframeWorker.removeIframeWorker(url);
       break;
     case 'transactions':
       console.log('got transactions', msg.transactions);
 
       (async ()=>{
-        if (!iframeWorker.isInIframeWorker()) {
+        if (!iframeWorker.isWorker()) {
           await azad_table.displayTransactions(msg.transactions, true);
         }
       })();
@@ -300,6 +309,15 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
   }
 }
 
-console.log('Amazon Order History Reporter starting');
-registerContentScript();
-periods.init(getBackgroundPort);
+function initialiseContentScript() {
+  console.log('Amazon Order History Reporter content script initialising');
+  const isWorker = iframeWorker.isWorker();
+  registerContentScript(isWorker);
+
+  const inIframe = iframeWorker.isIframe();
+  if (!inIframe) {
+    periods.init(getBackgroundPort);
+  }
+}
+
+initialiseContentScript();

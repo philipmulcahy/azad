@@ -34,6 +34,7 @@ function broadcast_to_content_pages(msg: any): void {
     }
   );
 }
+
 export async function sendToOneContentPage(msg: any) {
   async function getBestContentPort(): Promise<chrome.runtime.Port|null> {
 
@@ -51,7 +52,6 @@ export async function sendToOneContentPage(msg: any) {
       });
 
     console.log('getBestContentPort() keys:', keys);
-
     const ports = keys.map(k => content_ports[k]);
 
     for (const port of ports) {
@@ -80,6 +80,29 @@ export async function sendToOneContentPage(msg: any) {
     }
   } else {
     console.log('no appropriate content page message port found');
+  }
+}
+
+async function relayToParentOfIframe(
+  sender: chrome.runtime.MessageSender,
+  msg: any,
+) {
+  const tabId = sender?.tab?.id?.toString() ?? '?';
+  const url = sender?.url ?? '?';
+
+  const rootKeys = Object.keys(content_ports)
+      .filter(k => k.startsWith('azad_inject:'));
+
+  const rootPorts = rootKeys.map(k => content_ports[k]);
+
+  const sameTabPorts = rootPorts.filter(
+    p => p.sender?.tab?.id?.toString() ?? '?' == tabId);
+
+  const target = sameTabPorts[0] ?? null;
+  if (target) {
+    target.postMessage(msg);
+  } else {
+    console.warn('relayToParentOfIframe: no parent port found.');
   }
 }
 
@@ -129,30 +152,35 @@ function registerConnectionListener() {
                 break;
               case 'advertise_periods':
                 console.log('forwarding advertise_periods', msg.period);
-                broadcast_to_content_pages({action: 'remove_iframe_worker'});
+
                 advertised_periods = [
                   ...Array.from(
                     new Set<number>(msg.periods)
                   ),
                 ].sort((a, b) => a - b);
+
                 advertisePeriods();
                 break;
-						  case 'fetch_url':
-								console.log('fetching url using iframe', msg.url, msg.guid);
-								iframeWorkerTaskSpec = {
-									guid: msg.guid,
-									url: msg.url,
-									xpath: msg.xpath,
-								};
-								sendToOneContentPage({
-									action: 'start_iframe_worker',
-									url: msg.url
-								});
-						  	break;
-							case 'fetch_url_response':
-								console.log('routing fetch_url response', msg.url, msg.guid);
-								broadcast_to_content_pages(msg);
-								break;
+              case 'fetch_url':
+                iframeWorkerTaskSpec = {
+                  action: 'fetch_url',
+                  guid: msg.guid,
+                  url: msg.url,
+                  xpath: msg.xpath,
+                };
+
+                console.log('initiating fetch_url using iframe', msg);
+
+                sendToOneContentPage({
+                  action: 'start_iframe_worker',
+                  url: msg.url
+                });
+
+                break;
+              case 'fetch_url_response':
+                console.log('routing fetch_url response', msg.url, msg.guid);
+                broadcast_to_content_pages(msg);
+                break;
               case 'statistics_update':
                 if (control_port) {
                   try {
@@ -162,14 +190,19 @@ function registerConnectionListener() {
                       'cannot post stats msg to non-existent control port');
                   }
                 }
+
                 break;
               case 'get_iframe_task_instructions':
                 port.postMessage(iframeWorkerTaskSpec);
                 break;
               case 'transactions':
                 console.log('forwarding transactions');
-                broadcast_to_content_pages({action: 'remove_iframe_worker'});
                 sendToOneContentPage(msg);
+                break;
+              case 'relay_to_parent':
+                if (port.sender) {
+                  relayToParentOfIframe(port.sender, msg);
+                }
                 break;
               default:
                 console.debug('unknown action: ' + msg.action);
