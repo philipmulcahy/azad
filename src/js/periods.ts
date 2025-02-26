@@ -86,7 +86,7 @@ async function extractYears(): Promise<number[]> {
   async function getDoc(): Promise<Document> {
     if (inIframe) {
       // Wait a second to allow page javascript to render.
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 2000));
       return document;
     } else {
       console.log('fetching', url, 'for getYears()');

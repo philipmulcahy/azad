@@ -131,20 +131,35 @@ export function isWorker(): boolean {
 
 const IFRAME_ID = 'AZAD-IFRAME-WORKER';
 
-// (10) Removee this iframe, by asking (via background) our parent to do so.
-function removeThisIframe(): void {
+async function relayToParent(msg: any) {
   if (!isWorker()) {
-    console.error('only an iframe can ask for its own removal');
+    console.error(
+      'Only an iframe worker can ask for a message to be relayed to its ' +
+      'parent.');
+
     return;
   }
 
-  const msg = {
+  const wrappedMsg = {
     action: 'relay_to_parent',
-    msg: {
-      action: 'remove_iframe_worker',
-      url: document.URL,
-    },
+    msg,
   };
+
+  const port = await inject.getBackgroundPort();
+
+  if (!port) {
+    console.warn('relayToParent has no port to post to');
+  }
+
+  port?.postMessage(wrappedMsg);
+}
+
+// (10) Removee this iframe, by asking (via background) our parent to do so.
+function removeThisIframe(): void {
+  relayToParent({
+    action: 'remove_iframe_worker',
+    url: document.URL,
+  });
 }
 
 // (10) Remove existing iframe if one exists.
@@ -239,7 +254,7 @@ export async function fetchURL(
         return;
       }
 
-      if (msg.responseGuid != guid) {
+      if (msg.guid != guid) {
         return;
       }
 
@@ -317,8 +332,7 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
           status = ex as string;
         }
 
-        const port = await inject.getBackgroundPort() as chrome.runtime.Port;
-        port.postMessage({
+        relayToParent({
           action: 'fetch_url_response',
           url,
           html,
@@ -354,17 +368,22 @@ async function waitForXPathToMatch(
     elapsedMillis += INCREMENT_MILLIS;
     console.log('elapsedMillis', elapsedMillis);
 
-    const match = extraction.findSingleNodeValue(
-      xpath,
-      doc.documentElement,
-      'waitForXPathToMatch'
-    );
+    try {
+      const match = extraction.findSingleNodeValue(
+        xpath,
+        doc.documentElement,
+        'waitForXPathToMatch'
+      );
 
-    if (match != null) {
-      console.log('waitForXpathToMatch matched');
-      return true;
+      if (match != null) {
+        console.log('waitForXpathToMatch matched');
+        return true;
+      }
+    } catch (_ex) {
+      // Do nothing: I should not have had findSingleNodeValue throw when it
+      // doesn't find stuff.
     }
-  };
+  }
 
   console.warn('waitForXPathToMatch timing out');
   return false;

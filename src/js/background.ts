@@ -23,16 +23,19 @@ let control_port: msg.ControlPort | null = null;
 let advertised_periods: number[] = [];
 let iframeWorkerTaskSpec: any = {};
 
-function broadcast_to_content_pages(msg: any): void {
-  Object.values(content_ports).forEach(
-    (port) => {
-      try {
-        port.postMessage(msg);
-      } catch (ex) {
-        console.warn('error when sending msg to content port', ex);
-      }
+function broadcastToRootContentPages(msg: any): void {
+  const rootKeys = Object.keys(content_ports).filter(
+    k => k.startsWith('azad_inject'));
+
+  const rootPorts = rootKeys.map(rk => content_ports[rk]);
+
+  for (const port of rootPorts) {
+    try {
+      port.postMessage(msg);
+    } catch (ex) {
+      console.warn('error when sending msg to content port', ex);
     }
-  );
+  } 
 }
 
 export async function sendToOneContentPage(msg: any) {
@@ -100,7 +103,7 @@ async function relayToParentOfIframe(
 
   const target = sameTabPorts[0] ?? null;
   if (target) {
-    target.postMessage(msg);
+    target.postMessage(msg.msg);
   } else {
     console.warn('relayToParentOfIframe: no parent port found.');
   }
@@ -177,10 +180,6 @@ function registerConnectionListener() {
                 });
 
                 break;
-              case 'fetch_url_response':
-                console.log('routing fetch_url response', msg.url, msg.guid);
-                broadcast_to_content_pages(msg);
-                break;
               case 'statistics_update':
                 if (control_port) {
                   try {
@@ -247,13 +246,13 @@ function registerConnectionListener() {
               extpay.display_login_page();
               break;
             case 'clear_cache':
-              broadcast_to_content_pages(msg);
+              broadcastToRootContentPages(msg);
               break;
             case 'force_logout':
-              broadcast_to_content_pages(msg);
+              broadcastToRootContentPages(msg);
               break;
             case 'abort':
-              broadcast_to_content_pages(msg);
+              broadcastToRootContentPages(msg);
               break;
             default:
               console.warn('unknown action: ' + msg.action);
@@ -332,7 +331,7 @@ function registerRightClickActions() {
         const match = info?.linkUrl?.match(/.*orderID=([0-9A-Z-]*)$/);
         const order_id = match![1];
         if (match) {
-          broadcast_to_content_pages({
+          broadcastToRootContentPages({
             action: 'dump_order_detail',
             order_id: order_id,
           });
@@ -341,7 +340,7 @@ function registerRightClickActions() {
         const match = info?.linkUrl?.match(/.*search=([0-9A-Z-]*)$/);
         const order_id = match![1];
         if (match) {
-          broadcast_to_content_pages({
+          broadcastToRootContentPages({
             action: 'dump_order_detail',
             order_id: order_id,
           });
@@ -434,7 +433,7 @@ function registerVersionUpdateListener() {
     // get going on https://github.com/philipmulcahy/azad/issues/231
     // until that's fixed, users will sometimes need to manually clear their
     // caches.
-    broadcast_to_content_pages({ action: 'clear_cache' });
+    broadcastToRootContentPages({ action: 'clear_cache' });
   });
 }
 
