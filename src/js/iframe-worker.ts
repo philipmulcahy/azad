@@ -362,12 +362,7 @@ async function waitForXPathToMatch(
   const DEADLINE_MILLIS = 10 * 1000;
   const INCREMENT_MILLIS = 500;
 
-  while (elapsedMillis <= DEADLINE_MILLIS) {
-    console.log('waitForXPathToMatch waiting', INCREMENT_MILLIS);
-    await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
-    elapsedMillis += INCREMENT_MILLIS;
-    console.log('elapsedMillis', elapsedMillis);
-
+  function matched(): boolean {
     try {
       const match = extraction.findSingleNodeValue(
         xpath,
@@ -383,6 +378,24 @@ async function waitForXPathToMatch(
       // Do nothing: I should not have had findSingleNodeValue throw when it
       // doesn't find stuff.
     }
+    return false;
+  }
+
+  while (elapsedMillis <= DEADLINE_MILLIS) {
+    console.log('waitForXPathToMatch waiting', INCREMENT_MILLIS);
+    await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
+    elapsedMillis += INCREMENT_MILLIS;
+    console.log('elapsedMillis', elapsedMillis);
+
+    if (matched()) {
+      return true;
+    }
+  }
+
+  // One last time after the timer has expired, because there's no guarantee
+  // that we've tested even once so far.
+  if (matched() ) {
+    return true;
   }
 
   console.warn('waitForXPathToMatch timing out');

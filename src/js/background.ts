@@ -60,6 +60,7 @@ export async function sendToOneContentPage(msg: any) {
     for (const port of ports) {
       const sender: chrome.runtime.MessageSender = port.sender!;
       const tab: chrome.tabs.Tab = sender.tab!;
+
       try {
         if (activeTab && tab.id == activeTab.id ) {
           return port;
@@ -109,6 +110,131 @@ async function relayToParentOfIframe(
   }
 }
 
+function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
+  try {
+		switch (msg.action) {
+			case 'scrape_periods':
+				console.log(
+					'a content script asked for an iframe to discover periods');
+
+				iframeWorkerTaskSpec = msg;
+
+				sendToOneContentPage({
+					action: 'start_iframe_worker',
+					url: msg.url
+				});
+
+				break;
+			case 'advertise_periods':
+				console.log('forwarding advertise_periods', msg.period);
+
+				advertised_periods = [
+					...Array.from(
+						new Set<number>(msg.periods)
+					),
+				].sort((a, b) => a - b);
+
+				advertisePeriods();
+				break;
+			case 'fetch_url':
+				iframeWorkerTaskSpec = {
+					action: 'fetch_url',
+					guid: msg.guid,
+					url: msg.url,
+					xpath: msg.xpath,
+				};
+
+				console.log('initiating fetch_url using iframe', msg);
+
+				sendToOneContentPage({
+					action: 'start_iframe_worker',
+					url: msg.url
+				});
+
+				break;
+			case 'statistics_update':
+				if (control_port) {
+					try {
+						control_port?.postMessage(msg);
+					} catch (ex) {
+						console.debug(
+							'cannot post stats msg to non-existent control port');
+					}
+				}
+
+				break;
+			case 'get_iframe_task_instructions':
+				port.postMessage(iframeWorkerTaskSpec);
+				break;
+			case 'transactions':
+				console.log('forwarding transactions');
+				sendToOneContentPage(msg);
+				break;
+			case 'relay_to_parent':
+				if (port.sender) {
+					relayToParentOfIframe(port.sender, msg);
+				}
+				break;
+			default:
+				console.debug('unknown action: ' + msg.action);
+				break;
+		}
+  } catch(e) {
+		console.error(
+      'handleMessageFromContentScript caught', e, 'while handling', msg);
+  }
+}
+
+async function handleMessageFromControl(msg: any) {
+	try {
+		switch (msg.action) {
+			case 'scrape_years':
+			case 'scrape_range':
+				await async function(){
+					const table_type = await settings.getString('azad_table_type');
+					if (table_type == 'transactions') {
+						msg.action = 'scrape_transactions';
+
+						// No site prefix: background page doesn't know!
+						const url = '/cpe/yourpayments/transactions';
+
+						iframeWorkerTaskSpec = msg;
+						sendToOneContentPage({action: 'start_iframe_worker', url, });
+					} else {
+						console.debug('forwarding:', msg);
+						sendToOneContentPage(msg);
+					}
+				}();
+				break;
+			case 'check_feature_authorized':
+				handleAuthorisationRequest(msg.feature_id, control_port);
+				break;
+			case 'show_payment_ui':
+				console.log('got show_payment_ui request');
+				extpay.display_payment_ui();
+				break;
+			case 'show_extpay_login_ui':
+				console.log('got show_extpay_login_ui request');
+				extpay.display_login_page();
+				break;
+			case 'clear_cache':
+				broadcastToRootContentPages(msg);
+				break;
+			case 'force_logout':
+				broadcastToRootContentPages(msg);
+				break;
+			case 'abort':
+				broadcastToRootContentPages(msg);
+				break;
+			default:
+				console.warn('unknown action: ' + msg.action);
+				break;
+		}
+  } catch(e) {
+		console.error('handleMessageFromControl caught', e, 'while handling', msg);
+  }
+}
+
 function registerConnectionListener() {
   chrome.runtime.onConnect.addListener((port) => {
     console.log('new connection from ' + port.name);
@@ -140,73 +266,7 @@ function registerConnectionListener() {
           });
 
           port.onMessage.addListener((msg) => {
-            switch (msg.action) {
-              case 'scrape_periods':
-                console.log(
-                  'a content script asked for an iframe to discover periods');
-
-                iframeWorkerTaskSpec = msg;
-
-                sendToOneContentPage({
-                  action: 'start_iframe_worker',
-                  url: msg.url
-                });
-
-                break;
-              case 'advertise_periods':
-                console.log('forwarding advertise_periods', msg.period);
-
-                advertised_periods = [
-                  ...Array.from(
-                    new Set<number>(msg.periods)
-                  ),
-                ].sort((a, b) => a - b);
-
-                advertisePeriods();
-                break;
-              case 'fetch_url':
-                iframeWorkerTaskSpec = {
-                  action: 'fetch_url',
-                  guid: msg.guid,
-                  url: msg.url,
-                  xpath: msg.xpath,
-                };
-
-                console.log('initiating fetch_url using iframe', msg);
-
-                sendToOneContentPage({
-                  action: 'start_iframe_worker',
-                  url: msg.url
-                });
-
-                break;
-              case 'statistics_update':
-                if (control_port) {
-                  try {
-                    control_port?.postMessage(msg);
-                  } catch (ex) {
-                    console.debug(
-                      'cannot post stats msg to non-existent control port');
-                  }
-                }
-
-                break;
-              case 'get_iframe_task_instructions':
-                port.postMessage(iframeWorkerTaskSpec);
-                break;
-              case 'transactions':
-                console.log('forwarding transactions');
-                sendToOneContentPage(msg);
-                break;
-              case 'relay_to_parent':
-                if (port.sender) {
-                  relayToParentOfIframe(port.sender, msg);
-                }
-                break;
-              default:
-                console.debug('unknown action: ' + msg.action);
-                break;
-            }
+						handleMessageFromContentScript(msg, port);
           });
         }
 
@@ -215,49 +275,7 @@ function registerConnectionListener() {
         control_port = port;
 
         port.onMessage.addListener(async (msg) => {
-          switch (msg.action) {
-            case 'scrape_years':
-            case 'scrape_range':
-              await async function(){
-                const table_type = await settings.getString('azad_table_type');
-                if (table_type == 'transactions') {
-                  msg.action = 'scrape_transactions';
-
-                  // No site prefix: background page doesn't know!
-                  const url = '/cpe/yourpayments/transactions';
-
-                  iframeWorkerTaskSpec = msg;
-                  sendToOneContentPage({action: 'start_iframe_worker', url, });
-                } else {
-                  console.debug('forwarding:', msg);
-                  sendToOneContentPage(msg);
-                }
-              }();
-              break;
-            case 'check_feature_authorized':
-              handleAuthorisationRequest(msg.feature_id, control_port);
-              break;
-            case 'show_payment_ui':
-              console.log('got show_payment_ui request');
-              extpay.display_payment_ui();
-              break;
-            case 'show_extpay_login_ui':
-              console.log('got show_extpay_login_ui request');
-              extpay.display_login_page();
-              break;
-            case 'clear_cache':
-              broadcastToRootContentPages(msg);
-              break;
-            case 'force_logout':
-              broadcastToRootContentPages(msg);
-              break;
-            case 'abort':
-              broadcastToRootContentPages(msg);
-              break;
-            default:
-              console.warn('unknown action: ' + msg.action);
-              break;
-          }
+					handleMessageFromControl(msg);
         });
 
         advertisePeriods();
@@ -293,12 +311,14 @@ function registerExternalConnectionListener() {
       const end_date = new Date();
       const start_date = util.subtract_months(end_date, month_count);
       console.log('sending scrape_range', start_date, end_date);
+
       const msg = {
         action: 'scrape_range_and_dump_items',
         start_date: start_date,
         end_date: end_date,
         sender_id: sender.id,
       };
+
       sendToOneContentPage(msg);
       sendResponse({ status: 'ack' });
     } else {
@@ -330,6 +350,7 @@ function registerRightClickActions() {
       if (/orderID=/.test(info.linkUrl!)) {
         const match = info?.linkUrl?.match(/.*orderID=([0-9A-Z-]*)$/);
         const order_id = match![1];
+
         if (match) {
           broadcastToRootContentPages({
             action: 'dump_order_detail',
@@ -339,6 +360,7 @@ function registerRightClickActions() {
       } else if (/search=/.test(info.linkUrl!)) {
         const match = info?.linkUrl?.match(/.*search=([0-9A-Z-]*)$/);
         const order_id = match![1];
+
         if (match) {
           broadcastToRootContentPages({
             action: 'dump_order_detail',
@@ -402,10 +424,13 @@ async function handleAuthorisationRequest(
   control_port: msg.ControlPort | null
 ): Promise<void> {
   const ext_pay_authorised = await extpay.check_authorised();
+
   const authorised = feature_id == 'premium_preview' ?
     ext_pay_authorised :
     false;
+
   settings.storeBoolean('preview_features_enabled', authorised);
+
   try {
     control_port?.postMessage({
       action: 'authorisation_status',

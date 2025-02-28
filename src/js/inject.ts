@@ -311,10 +311,12 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
 
 function initialiseContentScript() {
   console.log('Amazon Order History Reporter content script initialising');
+
   const isWorker = iframeWorker.isWorker();
   registerContentScript(isWorker);
 
   const inIframe = iframeWorker.isIframe();
+
   if (!inIframe) {
     periods.init(getBackgroundPort);
   }
