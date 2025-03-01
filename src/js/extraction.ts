@@ -182,6 +182,29 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
   return ['UNKNOWN'];
 }
 
+/*
+ * Iterate through strategies, executing its elements until one returns a T,
+ * catching and swallowing any exceptions.
+ * If no element returns a T, then return defaultValue.
+*/
+export function firstMatchingStrategy<T>(
+	strategies: Array<()=>T|null>,
+	defaultValue: T
+) {
+	for (const strategy of strategies) {
+		try {
+			const candidate = strategy();
+			if (candidate != null) {
+				return candidate;
+			}
+		} catch (_ex) {
+		  // Do nothing.
+		}
+  }
+
+	return defaultValue;
+}
+
 export function get_years(orders_page_doc: HTMLDocument): number[] {
   type Strategy = (orders_page_doc: HTMLDocument) => number[];
 

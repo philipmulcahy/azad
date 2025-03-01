@@ -202,8 +202,8 @@ async function fetchShowAndSendItemsByRange(
 }
 
 async function registerContentScript(isIframeWorker: boolean) {
-  const bg_port = await getBackgroundPort();
   const pageType = getPageType();
+  const bg_port = await getBackgroundPort();
 
   if (bg_port) {
     bg_port.onMessage.addListener(
@@ -276,6 +276,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       break;
     case 'remove_iframe_worker':
       const url = msg.url;
+      const guid = msg.guid;
       iframeWorker.removeIframeWorker(url);
       break;
     case 'transactions':
@@ -317,9 +318,27 @@ function initialiseContentScript() {
 
   const inIframe = iframeWorker.isIframe();
 
-  if (!inIframe) {
-    periods.init(getBackgroundPort);
+  // if (!inIframe) {
+  //   periods.init(getBackgroundPort);
+  // }
+}
+
+async function crazyTest() {
+  const isWorker = iframeWorker.isWorker();
+  if (isWorker) {
+    return;
+  }
+  const pageReadyXpath = '//span[@class="num-orders"]';
+  const url = 'https://www.amazon.co.uk/your-orders/orders?timeFilter=year-2025&startIndex=20';
+  try {
+    const response = await iframeWorker.fetchURL(url, pageReadyXpath);
+    const doc = util.parseStringToDOM(response.html);
+    const node = extraction.findSingleNodeValue(pageReadyXpath, doc.documentElement, 'crazyTest');
+    console.log('crazyTest got', node);
+  } catch (ex) {
+    console.error('crazy test caught', ex);
   }
 }
 
 initialiseContentScript();
+crazyTest();

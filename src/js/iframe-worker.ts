@@ -122,14 +122,17 @@ export function isWorker(): boolean {
   const inIframe = isIframe();
   const url = document.URL;
 
+  // ${YOUR-DEITY} help us if iframes that aren't ours
+  // start popping up that match these patterns.
   const relevantPage = url.includes('/transactions') ||
+                       url.includes('/your-orders/orders') ||
                        url.includes('/order-history') ||
                        url.includes('/gp/css/order-history');
 
   return inIframe && relevantPage;
 }
 
-const IFRAME_ID = 'AZAD-IFRAME-WORKER';
+const IFRAME_CLASS = 'AZAD-IFRAME-WORKER';
 
 async function relayToParent(msg: any) {
   if (!isWorker()) {
@@ -169,26 +172,18 @@ export function removeIframeWorker(url: string): void {
     return;
   }
 
-  const iframe = document.getElementById(IFRAME_ID);
+  const iframes = document.getElementsByClassName(IFRAME_CLASS);
 
-  if (!iframe) {
-    console.warn('removeIframeWorker: could not find iframe');
-    return;
+  for (const iframe of iframes) {
+    const iframeUrl = iframe?.getAttribute('src') ?? '';
+
+    if (iframeUrl == url) {
+      iframe.remove();
+      console.log('removed iframe', url);
+    } else {
+      console.error('removeIframeWorker URL mismatch', iframeUrl, url);
+    }
   }
-
-  if (!iframe) {
-    console.warn('failed to find an iframe to remove');
-  }
-
-  const iframeUrl = iframe?.getAttribute('url') ?? '';
-
-  if (iframeUrl != url) {
-    console.error('removeIframeWorker URL mismatch', iframeUrl, url);
-    return;
-  }
-
-  iframe.remove();
-  console.log('removed iframe', url);
 }
 
 // (3) Called from the content page the iframe will be hosted by
@@ -201,7 +196,7 @@ export function createIframe(url: string): void {
 
   const iframe = document.createElement('iframe') as HTMLIFrameElement;
   iframe.setAttribute('src', url);
-  iframe.setAttribute('id', IFRAME_ID);
+  iframe.setAttribute('class', IFRAME_CLASS);
   iframe.style.width = '1px';
   iframe.style.height = '1px';
   document.body.insertBefore(iframe, document.body.firstChild);
@@ -273,6 +268,7 @@ export async function fetchURL(
   try {
     const port: chrome.runtime.Port = await inject.getBackgroundPort() as chrome.runtime.Port;
     port.postMessage(requestMsg);
+		console.log('fetchURL requested', url, xpath);
   } catch (ex) {
     console.error('failed to post message to background script', ex);
   }
@@ -310,11 +306,14 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
           const maxYear = years.at(-1)!;
           const startDate = new Date(minYear, 0);
           const endDate = new Date(maxYear, 11, 31, 23, 59, 59, 999);
-          transaction.reallyScrapeAndPublish(
+
+          await transaction.reallyScrapeAndPublish(
             inject.getBackgroundPort,
             startDate,
             endDate,
           );
+
+          await removeThisIframe();
         }
       }
       break;
@@ -332,13 +331,15 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
           status = ex as string;
         }
 
-        relayToParent({
+        await relayToParent({
           action: 'fetch_url_response',
           url,
           html,
           guid,
           status,
         });
+
+        await removeThisIframe();
       }
       break;
     default:
@@ -361,6 +362,7 @@ async function waitForXPathToMatch(
   let elapsedMillis: number = 0;
   const DEADLINE_MILLIS = 10 * 1000;
   const INCREMENT_MILLIS = 500;
+	const url = doc.documentURI;
 
   function matched(): boolean {
     try {
@@ -371,7 +373,7 @@ async function waitForXPathToMatch(
       );
 
       if (match != null) {
-        console.log('waitForXpathToMatch matched');
+        console.log('waitForXpathToMatch matched', url, xpath);
         return true;
       }
     } catch (_ex) {
@@ -382,10 +384,10 @@ async function waitForXPathToMatch(
   }
 
   while (elapsedMillis <= DEADLINE_MILLIS) {
-    console.log('waitForXPathToMatch waiting', INCREMENT_MILLIS);
+    console.log('waitForXPathToMatch waiting', INCREMENT_MILLIS, url, xpath);
     await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
     elapsedMillis += INCREMENT_MILLIS;
-    console.log('elapsedMillis', elapsedMillis);
+    console.log('elapsedMillis', elapsedMillis, url, xpath);
 
     if (matched()) {
       return true;
@@ -398,7 +400,7 @@ async function waitForXPathToMatch(
     return true;
   }
 
-  console.warn('waitForXPathToMatch timing out');
+  console.warn('waitForXPathToMatch timing out', url, xpath);
   return false;
 }
 

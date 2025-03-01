@@ -3,6 +3,7 @@
 import * as business from './business';
 import * as dom2json from './dom2json';
 import * as extraction from './extraction';
+import * as iframeWorker from './iframe-worker';
 import * as notice from './notice';
 import * as order_header from './order_header';
 import * as req from './request';
@@ -24,21 +25,34 @@ async function get_page_data(
   year: number,
   start_order_number: number, // zero based
   urlGenerator: headerPageUrlGenerator,
-  scheduling_priority: string,
-  scheduler: request_scheduler.IRequestScheduler,
-  nocache_top_level: boolean,
+  _scheduling_priority: string,
+  _scheduler: request_scheduler.IRequestScheduler,
+  _nocache_top_level: boolean,
 ): Promise<IOrdersPageData> {
-  const nocache: boolean = (start_order_number==0) ? true : nocache_top_level;
+  // const nocache: boolean = (start_order_number==0) ? true : nocache_top_level;
   const url = await urlGenerator(site, year, start_order_number);
+  // const pageReadyXpath = '//*[contains(@class, "yohtmlc-order-id")]';
+  const pageReadyXpath = '//span[@class="num-orders"]';
+  const response = await iframeWorker.fetchURL(url, pageReadyXpath);
 
-  return req.makeAsyncRequest<IOrdersPageData>(
-    url,
-    evt => translateOrdersPage(evt, year.toString()),
-    scheduler,
-    scheduling_priority,
-    nocache,
-    'order_list_page.get_page_data: ' + start_order_number,  // debug_context
-  );
+  const evt = {
+    target: {
+      responseText: response.html,
+      responseURL: response.url,
+    }
+  };
+
+  const pageData = translateOrdersPage(evt, year.toString());
+  return pageData;
+
+  // return req.makeAsyncRequest<IOrdersPageData>(
+  //   url,
+  //   evt => translateOrdersPage(evt, year.toString()),
+  //   scheduler,
+  //   scheduling_priority,
+  //   nocache,
+  //   'order_list_page.get_page_data: ' + start_order_number,  // debug_context
+  // );
 }
 
 async function get_expected_order_count(

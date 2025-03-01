@@ -12,27 +12,33 @@ import * as signin from './signin';
 import * as urls from './url';
 import * as util from './util';
 
+let _isBusinessAccount: boolean|null = null;
+
 /**
  * If this returns false, you have no need of any of the other functions in
  * this module.
  * @returns true if the account that doc
  */
 export async function isBusinessAccount(): Promise<boolean> {
-  const doc = await getBaseOrdersPage();
+	if (_isBusinessAccount == null) {
+		const doc = await getBaseOrdersPage();
 
-  const hasBusinessAccountPicker = extraction.findMultipleNodeValues(
-    '//*[@class="abnav-accountfor"]',
-    doc.body,
-    'determining if we are scraping a business account',
-  ).length != 0;
+		const hasBusinessAccountPicker = extraction.findMultipleNodeValues(
+			'//*[@class="abnav-accountfor"]',
+			doc.body,
+			'determining if we are scraping a business account',
+		).length != 0;
 
-  const hasBusinessLogo = extraction.findMultipleNodeValues(
-    '//*[@aria-label="Amazon Business"]',
-    doc.body,
-    'determining if we are scraping a business account',
-  ).length != 0;
+		const hasBusinessLogo = extraction.findMultipleNodeValues(
+			'//*[@aria-label="Amazon Business"]',
+			doc.body,
+			'determining if we are scraping a business account',
+		).length != 0;
 
-  return hasBusinessAccountPicker || hasBusinessLogo;
+	  _isBusinessAccount = hasBusinessAccountPicker || hasBusinessLogo;
+  }
+
+	return _isBusinessAccount;
 }
 
 /**
@@ -120,7 +126,12 @@ async function getBTBGroupKey(): Promise<string> {
 
 const BTB_KEY_XPATH_0 = '//option[contains(@value, "yoAllOrders-")]';
 const BTB_KEY_XPATH_1 = '//select[@name="selectedB2BGroupKey"]/option[starts-with(@value, "B2B:")]';
-const BTB_KEY_XPATHS = [BTB_KEY_XPATH_0, BTB_KEY_XPATH_1].join('|');
+const BTB_KEY_XPATH_2 = '//div[contains(@class, "yohtmlc-order-id")]';
+const BTB_KEY_XPATHS = [
+  BTB_KEY_XPATH_0,
+  BTB_KEY_XPATH_1,
+  BTB_KEY_XPATH_2,
+].join('|');
 
 async function getBaseOrdersPage(): Promise<HTMLDocument> {
   const baseUrl = getBaseOrdersPageURL();
