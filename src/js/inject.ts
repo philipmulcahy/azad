@@ -318,11 +318,12 @@ function initialiseContentScript() {
 
   const inIframe = iframeWorker.isIframe();
 
-  // if (!inIframe) {
-  //   periods.init(getBackgroundPort);
-  // }
+  if (!inIframe) {
+    periods.init(getBackgroundPort);
+  }
 }
 
+// TOOD remove this function before someone hurts themselves on it.
 async function crazyTest() {
   const isWorker = iframeWorker.isWorker();
   if (isWorker) {
@@ -341,4 +342,4 @@ async function crazyTest() {
 }
 
 initialiseContentScript();
-crazyTest();
+// crazyTest();
