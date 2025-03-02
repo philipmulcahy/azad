@@ -288,7 +288,7 @@ async function reallyDisplay(
       id => { order_map[id] = order; }
     );
   });
-  
+
   const table_type = await settings.getString('azad_table_type');
   const cols = table_config.getCols(table_type);
 
@@ -338,7 +338,7 @@ async function reallyDisplayTransactions(
 
   util.clearBody();
   banner.addBanner();
-  
+
   const table_type = await settings.getString('azad_table_type');
   const cols = table_config.getCols(table_type);
 

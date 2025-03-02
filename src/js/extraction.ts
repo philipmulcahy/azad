@@ -182,6 +182,29 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
   return ['UNKNOWN'];
 }
 
+/*
+ * Iterate through strategies, executing its elements until one returns a T,
+ * catching and swallowing any exceptions.
+ * If no element returns a T, then return defaultValue.
+*/
+export function firstMatchingStrategy<T>(
+  strategies: Array<()=>T|null>,
+  defaultValue: T
+) {
+  for (const strategy of strategies) {
+    try {
+      const candidate = strategy();
+      if (candidate != null) {
+        return candidate;
+      }
+    } catch (_ex) {
+      // Do nothing.
+    }
+  }
+
+  return defaultValue;
+}
+
 export function get_years(orders_page_doc: HTMLDocument): number[] {
   type Strategy = (orders_page_doc: HTMLDocument) => number[];
 
@@ -316,12 +339,12 @@ export function findSingleNodeValue(
     return node;
   } catch (ex) {
     const msg = (
-	  	'findSingleNodeValue didn\'t match: ' + xpath
-	) + (
-		context ?
-			('; Context:' + context) :
-			''
-	) + '; ' + JSON.stringify(ex);
+      'findSingleNodeValue didn\'t match: ' + xpath
+  ) + (
+    context ?
+      ('; Context:' + context) :
+      ''
+  ) + '; ' + JSON.stringify(ex);
     throw msg;
   }
 }
@@ -331,30 +354,30 @@ export function findMultipleNodeValues(
   elem: HTMLElement,
   context: string = 'unknown',
 ): Node[] {
-	try {
-		const snapshot = elem.ownerDocument!.evaluate(
-			xpath,
-			elem,
-			null,
-			getXPathResult().ORDERED_NODE_SNAPSHOT_TYPE,
-			null
-		);
+  try {
+    const snapshot = elem.ownerDocument!.evaluate(
+      xpath,
+      elem,
+      null,
+      getXPathResult().ORDERED_NODE_SNAPSHOT_TYPE,
+      null
+    );
 
-		const values: Node[] = [];
-		let i;
+    const values: Node[] = [];
+    let i;
 
-		for(i = 0; i !== snapshot.snapshotLength; i += 1) {
-			const node: Node|null = snapshot.snapshotItem(i);
+    for(i = 0; i !== snapshot.snapshotLength; i += 1) {
+      const node: Node|null = snapshot.snapshotItem(i);
 
-			if (node) {
-				values.push(node);
-			}
-		}
+      if (node) {
+        values.push(node);
+      }
+    }
 
-		return values;
-	} catch( ex ) {
-		throw 'Unknown exception from findMultipleNodeValues: ' + context + ' ' + (ex as string).toString();
-	}
+    return values;
+  } catch( ex ) {
+    throw 'Unknown exception from findMultipleNodeValues: ' + context + ' ' + (ex as string).toString();
+  }
 }
 
 function getXPathResult() {

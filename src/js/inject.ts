@@ -36,9 +36,40 @@ function getScheduler(): request_scheduler.IRequestScheduler {
   return scheduler!;
 }
 
+function getPageType(): string {
+  const isWorker = iframeWorker.isWorker();
+
+  return isWorker ?
+    'azad_iframe_worker' :
+    'azad_inject';
+}
+
+async function initialiseBackgroundPort(): Promise<void> {
+  const isWorker = iframeWorker.isWorker();
+  const isIframe = iframeWorker.isIframe();
+
+  if (isIframe && !isWorker) {
+    // This extension didn't make this iframe,
+    // so it (the iframe) doesn't need to receive messages.
+    return;
+  }
+
+  const portUID: string = new Date().getUTCMilliseconds().toString();
+  const pageType = getPageType();
+  const portName = `${pageType}:${portUID}`;
+
+  // @ts-ignore null IS allowed as first arg to connect.
+  background_port = chrome.runtime.connect(null, {name: portName});
+
+  background_port.onDisconnect.addListener( _port => {
+    background_port = null;
+  });
+
+}
+
 export async function getBackgroundPort(): Promise<chrome.runtime.Port | null> {
   if (!background_port) {
-    await registerContentScript();
+    await initialiseBackgroundPort();
   }
 
   return background_port;
@@ -170,31 +201,8 @@ async function fetchShowAndSendItemsByRange(
   }
 }
 
-async function registerContentScript() {
-  const portUID: string = new Date().getUTCMilliseconds().toString();
-  const isIframe = iframeWorker.isInIframe();
-  const isIframeWorker = iframeWorker.isInIframeWorker();
-  const url: string = document.URL;
-
-  if (isIframe && !isIframeWorker) {
-    // This extension didn't make this iframe,
-    // so it (the iframe) doesn't need to receive messages.
-    return;
-  }
-
-  const pageType = isIframeWorker ?
-    'azad_iframe_worker' :
-    'azad_inject';
-
-  const portName = `${pageType}:${portUID}`;
-
-  // @ts-ignore null IS allowed as first arg to connect.
-  background_port = chrome.runtime.connect(null, {name: portName});
-
-  background_port.onDisconnect.addListener( _port => {
-    background_port = null;
-  });
-
+async function registerContentScript(isIframeWorker: boolean) {
+  const pageType = getPageType();
   const bg_port = await getBackgroundPort();
 
   if (bg_port) {
@@ -267,13 +275,15 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       }
       break;
     case 'remove_iframe_worker':
-      iframeWorker.removeIframeWorker();
+      const url = msg.url;
+      const guid = msg.guid;
+      iframeWorker.removeIframeWorker(url);
       break;
     case 'transactions':
       console.log('got transactions', msg.transactions);
 
       (async ()=>{
-        if (!iframeWorker.isInIframeWorker()) {
+        if (!iframeWorker.isWorker()) {
           await azad_table.displayTransactions(msg.transactions, true);
         }
       })();
@@ -296,10 +306,40 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       resetScheduler('aborted');
       break;
     default:
-      console.warn('unknown action: ' + msg.action);
+      console.debug('inject.ts ignoring msg.action: ' + msg.action);
   }
 }
 
-console.log('Amazon Order History Reporter starting');
-registerContentScript();
-periods.init(getBackgroundPort);
+function initialiseContentScript() {
+  console.log('Amazon Order History Reporter content script initialising');
+
+  const isWorker = iframeWorker.isWorker();
+  registerContentScript(isWorker);
+
+  const inIframe = iframeWorker.isIframe();
+
+  if (!inIframe) {
+    periods.init(getBackgroundPort);
+  }
+}
+
+// TOOD remove this function before someone hurts themselves on it.
+async function crazyTest() {
+  const isWorker = iframeWorker.isWorker();
+  if (isWorker) {
+    return;
+  }
+  const pageReadyXpath = '//span[@class="num-orders"]';
+  const url = 'https://www.amazon.co.uk/your-orders/orders?timeFilter=year-2025&startIndex=20';
+  try {
+    const response = await iframeWorker.fetchURL(url, pageReadyXpath);
+    const doc = util.parseStringToDOM(response.html);
+    const node = extraction.findSingleNodeValue(pageReadyXpath, doc.documentElement, 'crazyTest');
+    console.log('crazyTest got', node);
+  } catch (ex) {
+    console.error('crazy test caught', ex);
+  }
+}
+
+initialiseContentScript();
+// crazyTest();

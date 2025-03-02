@@ -34,33 +34,53 @@ function reallyExtractOrderHeader(
   elem: HTMLElement,
   list_url: string
 ): IOrderHeader {
-  let id: string = 'UNKNOWN_ORDER_ID';
-  try {
-    id = [
+  const strategy0 = function(): string {
+    const id = [
         ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
     ].filter( el => el.hasAttribute('href') )
      .map( el => el.getAttribute('href') )
      .map( href => href.match(/.*(?:orderID=|orderNumber%3D)([A-Z0-9-]*).*/) )
      .filter( match => match )[0][1];
-     if (!id) {
-       const id_node: Node = extraction.findSingleNodeValue(
-         '//a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
-         elem,
-         'unknown order id',
-       );
-       const id_elem: HTMLElement = <HTMLElement>id_node;
-       const more_than_id: string|null = id_elem.getAttribute('href');
-       if (more_than_id) {
-         const match = more_than_id.match(/.*orderID=([^?]*)/);
-         if (match && match.length > 1) {
-           id = match[1];
-         }
-       }
-     }
-  } catch (error) {
-    console.warn('could not parse order id from order list page');
-    throw error;
+
+    return id.toString();
   }
+
+  const strategy1 = function() {
+    const id_node: Node = extraction.findSingleNodeValue(
+      './/a[contains(@class, "a-button-text") and contains(@href, "orderID=")]/text()[normalize-space(.)="Order details"]/parent::*',
+      elem,
+      'unknown order id',
+    );
+
+    const id_elem: HTMLElement = <HTMLElement>id_node;
+    const more_than_id: string|null = id_elem.getAttribute('href');
+
+    if (more_than_id) {
+      const match = more_than_id.match(/.*orderID=([^?]*)/);
+      if (match && match.length > 1) {
+        return match[1];
+      }
+    }
+
+    return null;
+  }
+
+  const strategy2 = function() {
+    const id_node = extraction.findSingleNodeValue(
+      './/div[contains(@class, "yohtmlc-order-id")]/span[@dir="ltr"]',
+      elem,
+      '2025 order id',
+    );
+
+    const id = id_node.textContent;
+    return id;
+  }
+
+  const id = extraction.firstMatchingStrategy(
+    [strategy0, strategy1, strategy2],
+    '???-???????-???????',
+  );
+
   const context = 'id:' + id;
 
   let d: Date|null = null;
@@ -92,8 +112,7 @@ function reallyExtractOrderHeader(
     }
     return '';
   }();
-        
-        
+
   let detail_url: string = '';
   let payments_url: string = '';
   if (id && site) {
@@ -102,7 +121,7 @@ function reallyExtractOrderHeader(
     );
     payments_url = urls.getOrderPaymentUrl(id, site);
   }
-        
+
   // This field is no longer always available, particularly for .com
   // We replace it (where we know the search pattern for the country)
   // with information from the order detail page.

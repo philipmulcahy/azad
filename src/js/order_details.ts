@@ -85,26 +85,26 @@ export async function extractDetailPromise(
 }
 
 async function get_items(
-	header: order_header.IOrderHeader,
+  header: order_header.IOrderHeader,
   order_detail_page_elem: HTMLElement,
-	shipments: shipment.IShipment[],
+  shipments: shipment.IShipment[],
   scheduler: request_scheduler.IRequestScheduler,
-	context: string,
+  context: string,
 ): Promise<item.IItem[]> {
-	let items: item.IItem[] = [];
+  let items: item.IItem[] = [];
   if ( shipments.length != 0 ) {
-		items = shipments.map(s => s.items).flat();
-	}
-	if ( items.length == 0 ) {
+    items = shipments.map(s => s.items).flat();
+  }
+  if ( items.length == 0 ) {
     // Try the "legacy" item extraction strategy.
-		items = await item.extractItems(
-			order_detail_page_elem,
-			header,
+    items = await item.extractItems(
+      order_detail_page_elem,
+      header,
       scheduler,
-			context,
-		);
-	}
-	return items;
+      context,
+    );
+  }
+  return items;
 }
 
 function extractDetailFromDoc(

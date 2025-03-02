@@ -7,9 +7,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 import * as extraction from './extraction';
+import * as iframeWorker from './iframe-worker';
 import * as signin from './signin';
 import * as urls from './url';
 import * as util from './util';
+
+let _isBusinessAccount: boolean|null = null;
 
 /**
  * If this returns false, you have no need of any of the other functions in
@@ -17,21 +20,25 @@ import * as util from './util';
  * @returns true if the account that doc
  */
 export async function isBusinessAccount(): Promise<boolean> {
-  const doc = await getBaseOrdersPage();
+  if (_isBusinessAccount == null) {
+    const doc = await getBaseOrdersPage();
 
-  const hasBusinessAccountPicker = extraction.findMultipleNodeValues(
-    '//*[@class="abnav-accountfor"]',
-    doc.body,
-    'determining if we are scraping a business account',
-  ).length != 0;
+    const hasBusinessAccountPicker = extraction.findMultipleNodeValues(
+      '//*[@class="abnav-accountfor"]',
+      doc.body,
+      'determining if we are scraping a business account',
+    ).length != 0;
 
-  const hasBusinessLogo = extraction.findMultipleNodeValues(
-    '//*[@aria-label="Amazon Business"]',
-    doc.body,
-    'determining if we are scraping a business account',
-  ).length != 0;
+    const hasBusinessLogo = extraction.findMultipleNodeValues(
+      '//*[@aria-label="Amazon Business"]',
+      doc.body,
+      'determining if we are scraping a business account',
+    ).length != 0;
 
-  return hasBusinessAccountPicker || hasBusinessLogo;
+    _isBusinessAccount = hasBusinessAccountPicker || hasBusinessLogo;
+  }
+
+  return _isBusinessAccount;
 }
 
 /**
@@ -68,31 +75,68 @@ export function getBaseOrdersPageURL() {
 
 let btbGroupKey: string = '';  // hyper-local cache
 async function getBTBGroupKey(): Promise<string> {
-  if (btbGroupKey == '') {
-    const doc = await getBaseOrdersPage();
+  type Strategy = (doc: HTMLDocument) => string;
 
+  function strategy0(doc: HTMLDocument): string {
     const groupKeyNode = extraction.findSingleNodeValue(
-      '//select[@name="selectedB2BGroupKey"]/option[starts-with(@value, "B2B:")]',
+      BTB_KEY_XPATH_0,
       doc.documentElement,
-      'getBTBGroupKey',
+      'getBTBGroupKey#0',
     ) as HTMLElement;
 
-    btbGroupKey = groupKeyNode.getAttribute('value') ?? '';
+    const value = groupKeyNode.getAttribute('value') ?? '';
+    const key = value.replace(/.*-/, '');
+    return key;
   }
+
+  function strategy1(doc: HTMLDocument): string {
+    const groupKeyNode = extraction.findSingleNodeValue(
+      BTB_KEY_XPATH_1,
+      doc.documentElement,
+      'getBTBGroupKey#1',
+    ) as HTMLElement;
+
+    return groupKeyNode.getAttribute('value') ?? '';
+  }
+
+  function keyFromDocument(doc: HTMLDocument): string {
+    const strategies = [strategy0, strategy1] as Strategy[];
+    for (const [i, strategy] of strategies.entries()) {
+      try {
+        const candidate: string = strategy(doc);
+        if (candidate) {
+          return candidate
+        }
+      } catch (ex) {
+        console.log('caught while trying a strategy in getBTBGroupKey:', ex);
+        return '';
+      }
+    }
+
+    return '';
+  }
+
+  if (btbGroupKey == '') {
+    const doc = await getBaseOrdersPage();
+    btbGroupKey = keyFromDocument(doc);
+  }
+
   return btbGroupKey;
 }
 
+const BTB_KEY_XPATH_0 = '//option[contains(@value, "yoAllOrders-")]';
+const BTB_KEY_XPATH_1 = '//select[@name="selectedB2BGroupKey"]/option[starts-with(@value, "B2B:")]';
+const BTB_KEY_XPATH_2 = '//div[contains(@class, "yohtmlc-order-id")]';
+const BTB_KEY_XPATHS = [
+  BTB_KEY_XPATH_0,
+  BTB_KEY_XPATH_1,
+  BTB_KEY_XPATH_2,
+].join('|');
+
 async function getBaseOrdersPage(): Promise<HTMLDocument> {
   const baseUrl = getBaseOrdersPageURL();
-  const response = await signin.checkedFetch(baseUrl);
-
-  if (!response.ok) {
-    const msg = 'failed to fetch ' + baseUrl;
-    console.warn('msg');
-    throw msg;
-  }
-
-  const html = await response.text();
+  const response = await iframeWorker.fetchURL(baseUrl, BTB_KEY_XPATHS);
+  const html = response.html;
   const doc = util.parseStringToDOM(html);
   return doc;
 }

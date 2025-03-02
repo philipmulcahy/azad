@@ -101,10 +101,10 @@ export function orderFromTestData(
     );
     const header: order_header.IOrderHeader = order_header.extractOrderHeader(
       list_elem,
-      order_dump.list_url, 
+      order_dump.list_url,
     );
     const order: azad_order.IOrder|null = azad_order.create(
-      header, 
+      header,
       scheduler,
       (_d: Date|null) => true,  // DateFilter
     );

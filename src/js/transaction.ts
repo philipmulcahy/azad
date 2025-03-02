@@ -29,14 +29,19 @@ export async function reallyScrapeAndPublish(
   endDate: Date,
 ) {
   const transactions = await extractAllTransactions();
+
   const filtered = filterTransactionsByDateRange(
     transactions, startDate, endDate);
+
+  const url = document.URL;
   const port = await getPort();
+
   try {
     if (port) {
       port.postMessage({
         action: 'transactions',
         transactions: filtered,
+        url: url,
       });
     }
   } catch (ex) {

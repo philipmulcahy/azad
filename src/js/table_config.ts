@@ -16,7 +16,7 @@ import * as util from './util';
 export function getCols(table_type: string): Promise<colspec.ColSpec[]> {
   const waits: Promise<any>[] = [];
   const results: colspec.ColSpec[] = [];
-  
+
   // TODO: this should be a(n) map/object and lookup func.
   const cols: colspec.ColSpec[] = (table_type == 'orders') ?
     ORDER_COLS :
@@ -367,7 +367,7 @@ const ITEM_COLS: colspec.ColSpec[] = [
     is_numeric: false,
   }, {
     field_name: 'description',
-    render_func: 
+    render_func:
       function (entity: azad_entity.IEntity, td: HTMLElement): Promise<null> {
         const item = entity as azad_item.IItem;
         td.innerHTML = util.safe_new_tab_link(item.url, item.description);

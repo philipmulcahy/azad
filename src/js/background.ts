@@ -21,19 +21,25 @@ export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
 const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
 let advertised_periods: number[] = [];
-let iframeWorkerTaskSpec: any = {}; 
 
-function broadcast_to_content_pages(msg: any): void {
-  Object.values(content_ports).forEach(
-    (port) => {
-      try {
-        port.postMessage(msg);
-      } catch (ex) {
-        console.warn('error when sending msg to content port', ex);
-      }
+// Map iframe URL to task spec message.
+const iframeWorkerTaskSpecs = new Map<string, any>();
+
+function broadcastToRootContentPages(msg: any): void {
+  const rootKeys = Object.keys(content_ports).filter(
+    k => k.startsWith('azad_inject'));
+
+  const rootPorts = rootKeys.map(rk => content_ports[rk]);
+
+  for (const port of rootPorts) {
+    try {
+      port.postMessage(msg);
+    } catch (ex) {
+      console.warn('error when sending msg to content port', ex);
     }
-  );
+  } 
 }
+
 export async function sendToOneContentPage(msg: any) {
   async function getBestContentPort(): Promise<chrome.runtime.Port|null> {
 
@@ -51,12 +57,12 @@ export async function sendToOneContentPage(msg: any) {
       });
 
     console.log('getBestContentPort() keys:', keys);
-
     const ports = keys.map(k => content_ports[k]);
 
     for (const port of ports) {
       const sender: chrome.runtime.MessageSender = port.sender!;
       const tab: chrome.tabs.Tab = sender.tab!;
+
       try {
         if (activeTab && tab.id == activeTab.id ) {
           return port;
@@ -80,6 +86,163 @@ export async function sendToOneContentPage(msg: any) {
     }
   } else {
     console.log('no appropriate content page message port found');
+  }
+}
+
+async function relayToParentOfIframe(
+  sender: chrome.runtime.MessageSender,
+  msg: any,
+) {
+  const tabId = sender?.tab?.id?.toString() ?? '?';
+  const url = sender?.url ?? '?';
+
+  const rootKeys = Object.keys(content_ports)
+      .filter(k => k.startsWith('azad_inject:'));
+
+  const rootPorts = rootKeys.map(k => content_ports[k]);
+
+  const sameTabPorts = rootPorts.filter(
+    p => p.sender?.tab?.id?.toString() ?? '?' == tabId);
+
+  const target = sameTabPorts[0] ?? null;
+  if (target) {
+    target.postMessage(msg.msg);
+  } else {
+    console.warn('relayToParentOfIframe: no parent port found.');
+  }
+}
+
+function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
+  try {
+    switch (msg.action) {
+      case 'scrape_periods':
+        console.log(
+          'a content script asked for an iframe to discover periods');
+
+        iframeWorkerTaskSpecs.set(msg.url, msg);
+
+        sendToOneContentPage({
+          action: 'start_iframe_worker',
+          url: msg.url
+        });
+
+        break;
+      case 'advertise_periods':
+        console.log('forwarding advertise_periods', msg.period);
+
+        advertised_periods = [
+          ...Array.from(
+            new Set<number>(msg.periods)
+          ),
+        ].sort((a, b) => a - b);
+
+        advertisePeriods();
+        break;
+      case 'fetch_url':
+        iframeWorkerTaskSpecs.set(
+          msg.url,
+          {
+            action: 'fetch_url',
+            guid: msg.guid,
+            url: msg.url,
+            xpath: msg.xpath,
+          }
+        );
+
+        console.log('initiating fetch_url using iframe', msg);
+
+        sendToOneContentPage({
+          action: 'start_iframe_worker',
+          url: msg.url
+        });
+
+        break;
+      case 'statistics_update':
+        if (control_port) {
+          try {
+            control_port?.postMessage(msg);
+          } catch (ex) {
+            console.debug(
+              'cannot post stats msg to non-existent control port');
+          }
+        }
+
+        break;
+      case 'get_iframe_task_instructions':
+        if (!iframeWorkerTaskSpecs.has(msg.url)) {
+          console.error('I have no instruction for url:', msg.url);
+          break;
+        }
+
+        const instructions = iframeWorkerTaskSpecs.get(msg.url);
+        port.postMessage(instructions);
+        break;
+      case 'transactions':
+        console.log('forwarding transactions');
+        sendToOneContentPage(msg);
+        break;
+      case 'relay_to_parent':
+        if (port.sender) {
+          relayToParentOfIframe(port.sender, msg);
+        }
+        break;
+      default:
+        console.debug('unknown action: ' + msg.action);
+        break;
+    }
+  } catch(e) {
+    console.error(
+      'handleMessageFromContentScript caught', e, 'while handling', msg);
+  }
+}
+
+async function handleMessageFromControl(msg: any) {
+  try {
+    switch (msg.action) {
+      case 'scrape_years':
+      case 'scrape_range':
+        await async function(){
+          const table_type = await settings.getString('azad_table_type');
+          if (table_type == 'transactions') {
+            msg.action = 'scrape_transactions';
+
+            // No site prefix: background page doesn't know!
+            const url = '/cpe/yourpayments/transactions';
+
+            iframeWorkerTaskSpecs.set(url, msg);
+            sendToOneContentPage({action: 'start_iframe_worker', url, });
+          } else {
+            console.debug('forwarding:', msg);
+            sendToOneContentPage(msg);
+          }
+        }();
+        break;
+      case 'check_feature_authorized':
+        handleAuthorisationRequest(msg.feature_id, control_port);
+        break;
+      case 'show_payment_ui':
+        console.log('got show_payment_ui request');
+        extpay.display_payment_ui();
+        break;
+      case 'show_extpay_login_ui':
+        console.log('got show_extpay_login_ui request');
+        extpay.display_login_page();
+        break;
+      case 'clear_cache':
+        broadcastToRootContentPages(msg);
+        break;
+      case 'force_logout':
+        broadcastToRootContentPages(msg);
+        break;
+      case 'abort':
+        broadcastToRootContentPages(msg);
+        break;
+      default:
+        console.warn('unknown action: ' + msg.action);
+        break;
+    }
+  } catch(e) {
+    console.error('handleMessageFromControl caught', e, 'while handling', msg);
   }
 }
 
@@ -114,51 +277,7 @@ function registerConnectionListener() {
           });
 
           port.onMessage.addListener((msg) => {
-            switch (msg.action) {
-              case 'scrape_periods':
-                console.log(
-                  'a content script asked for an iframe to discover periods');
-
-                iframeWorkerTaskSpec = msg;
-
-                sendToOneContentPage({
-                  action: 'start_iframe_worker',
-                  url: msg.url
-                });
-
-                break;
-              case 'advertise_periods':
-                console.log('forwarding advertise_periods', msg.period);
-                broadcast_to_content_pages({action: 'remove_iframe_worker'});
-                advertised_periods = [
-                  ...Array.from(
-                    new Set<number>(msg.periods)
-                  ),
-                ].sort((a, b) => a - b);
-                advertisePeriods();
-                break;
-              case 'statistics_update':
-                if (control_port) {
-                  try {
-                    control_port?.postMessage(msg);
-                  } catch (ex) {
-                    console.debug(
-                      'cannot post stats msg to non-existent control port');
-                  }
-                }
-                break;
-              case 'get_iframe_task_instructions':
-                port.postMessage(iframeWorkerTaskSpec);
-                break;
-              case 'transactions':
-                console.log('forwarding transactions');
-                broadcast_to_content_pages({action: 'remove_iframe_worker'});
-                sendToOneContentPage(msg);
-                break;
-              default:
-                console.debug('unknown action: ' + msg.action);
-                break;
-            }
+            handleMessageFromContentScript(msg, port);
           });
         }
 
@@ -167,49 +286,7 @@ function registerConnectionListener() {
         control_port = port;
 
         port.onMessage.addListener(async (msg) => {
-          switch (msg.action) {
-            case 'scrape_years':
-            case 'scrape_range':
-              await async function(){
-                const table_type = await settings.getString('azad_table_type');
-                if (table_type == 'transactions') {
-                  msg.action = 'scrape_transactions';
-
-                  // No site prefix: background page doesn't know!
-                  const url = '/cpe/yourpayments/transactions';
-
-                  iframeWorkerTaskSpec = msg;
-                  sendToOneContentPage({action: 'start_iframe_worker', url, });
-                } else {
-                  console.debug('forwarding:', msg);
-                  sendToOneContentPage(msg);
-                }
-              }();
-              break;
-            case 'check_feature_authorized':
-              handleAuthorisationRequest(msg.feature_id, control_port);
-              break;
-            case 'show_payment_ui':
-              console.log('got show_payment_ui request');
-              extpay.display_payment_ui();
-              break;
-            case 'show_extpay_login_ui':
-              console.log('got show_extpay_login_ui request');
-              extpay.display_login_page();
-              break;
-            case 'clear_cache':
-              broadcast_to_content_pages(msg);
-              break;
-            case 'force_logout':
-              broadcast_to_content_pages(msg);
-              break;
-            case 'abort':
-              broadcast_to_content_pages(msg);
-              break;
-            default:
-              console.warn('unknown action: ' + msg.action);
-              break;
-          }
+          handleMessageFromControl(msg);
         });
 
         advertisePeriods();
@@ -234,7 +311,7 @@ function registerExternalConnectionListener() {
 
     if (!ALLOWED_EXTENSION_IDS.includes(sender.id)) {
       console.log(
-        `  Message Ignored: Sender (${sender.id}) is not Whitlisted..`,
+        `Message Ignored: Sender (${sender.id}) is not Whitlisted..`,
         message
       );
       return; // don't allow access
@@ -245,12 +322,14 @@ function registerExternalConnectionListener() {
       const end_date = new Date();
       const start_date = util.subtract_months(end_date, month_count);
       console.log('sending scrape_range', start_date, end_date);
+
       const msg = {
         action: 'scrape_range_and_dump_items',
         start_date: start_date,
         end_date: end_date,
         sender_id: sender.id,
       };
+
       sendToOneContentPage(msg);
       sendResponse({ status: 'ack' });
     } else {
@@ -282,8 +361,9 @@ function registerRightClickActions() {
       if (/orderID=/.test(info.linkUrl!)) {
         const match = info?.linkUrl?.match(/.*orderID=([0-9A-Z-]*)$/);
         const order_id = match![1];
+
         if (match) {
-          broadcast_to_content_pages({
+          broadcastToRootContentPages({
             action: 'dump_order_detail',
             order_id: order_id,
           });
@@ -291,8 +371,9 @@ function registerRightClickActions() {
       } else if (/search=/.test(info.linkUrl!)) {
         const match = info?.linkUrl?.match(/.*search=([0-9A-Z-]*)$/);
         const order_id = match![1];
+
         if (match) {
-          broadcast_to_content_pages({
+          broadcastToRootContentPages({
             action: 'dump_order_detail',
             order_id: order_id,
           });
@@ -354,10 +435,13 @@ async function handleAuthorisationRequest(
   control_port: msg.ControlPort | null
 ): Promise<void> {
   const ext_pay_authorised = await extpay.check_authorised();
+
   const authorised = feature_id == 'premium_preview' ?
     ext_pay_authorised :
     false;
+
   settings.storeBoolean('preview_features_enabled', authorised);
+
   try {
     control_port?.postMessage({
       action: 'authorisation_status',
@@ -385,7 +469,7 @@ function registerVersionUpdateListener() {
     // get going on https://github.com/philipmulcahy/azad/issues/231
     // until that's fixed, users will sometimes need to manually clear their
     // caches.
-    broadcast_to_content_pages({ action: 'clear_cache' });
+    broadcastToRootContentPages({ action: 'clear_cache' });
   });
 }
 

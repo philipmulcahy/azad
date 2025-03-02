@@ -9,7 +9,7 @@ Existing subscribers have access to these features without further payment
 (for remainder of their subscription period).
 
 UPDATE 2023-09-07
-v1.9.31 went live today, including shipment/tracking information. 
+v1.9.31 went live today, including shipment/tracking information.
 
 UPDATE 2023-08-19
 Commercial features batch 1 (ASIN, 1/2/3 months) is about to be unrestricted.

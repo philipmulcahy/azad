@@ -63,7 +63,7 @@ function testOneOrderTarget(
     return Promise.reject('could not create order');
   }
 
-  const order = maybe_order as azad_order.IOrder; 
+  const order = maybe_order as azad_order.IOrder;
 
   // 2023-07 reinstate legacy items property.
   (order as any)['items'] = () => azad_order.get_legacy_items(order);
