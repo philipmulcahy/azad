@@ -21,7 +21,9 @@ export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
 const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
 let advertised_periods: number[] = [];
-let iframeWorkerTaskSpec: any = {};
+
+// Map iframe URL to task spec message.
+const iframeWorkerTaskSpecs = new Map<string, any>();
 
 function broadcastToRootContentPages(msg: any): void {
   const rootKeys = Object.keys(content_ports).filter(
@@ -112,126 +114,135 @@ async function relayToParentOfIframe(
 
 function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
   try {
-		switch (msg.action) {
-			case 'scrape_periods':
-				console.log(
-					'a content script asked for an iframe to discover periods');
+    switch (msg.action) {
+      case 'scrape_periods':
+        console.log(
+          'a content script asked for an iframe to discover periods');
 
-				iframeWorkerTaskSpec = msg;
+        iframeWorkerTaskSpecs.set(msg.url, msg);
 
-				sendToOneContentPage({
-					action: 'start_iframe_worker',
-					url: msg.url
-				});
+        sendToOneContentPage({
+          action: 'start_iframe_worker',
+          url: msg.url
+        });
 
-				break;
-			case 'advertise_periods':
-				console.log('forwarding advertise_periods', msg.period);
+        break;
+      case 'advertise_periods':
+        console.log('forwarding advertise_periods', msg.period);
 
-				advertised_periods = [
-					...Array.from(
-						new Set<number>(msg.periods)
-					),
-				].sort((a, b) => a - b);
+        advertised_periods = [
+          ...Array.from(
+            new Set<number>(msg.periods)
+          ),
+        ].sort((a, b) => a - b);
 
-				advertisePeriods();
-				break;
-			case 'fetch_url':
-				iframeWorkerTaskSpec = {
-					action: 'fetch_url',
-					guid: msg.guid,
-					url: msg.url,
-					xpath: msg.xpath,
-				};
+        advertisePeriods();
+        break;
+      case 'fetch_url':
+        iframeWorkerTaskSpecs.set(
+          msg.url,
+          {
+            action: 'fetch_url',
+            guid: msg.guid,
+            url: msg.url,
+            xpath: msg.xpath,
+          }
+        );
 
-				console.log('initiating fetch_url using iframe', msg);
+        console.log('initiating fetch_url using iframe', msg);
 
-				sendToOneContentPage({
-					action: 'start_iframe_worker',
-					url: msg.url
-				});
+        sendToOneContentPage({
+          action: 'start_iframe_worker',
+          url: msg.url
+        });
 
-				break;
-			case 'statistics_update':
-				if (control_port) {
-					try {
-						control_port?.postMessage(msg);
-					} catch (ex) {
-						console.debug(
-							'cannot post stats msg to non-existent control port');
-					}
-				}
+        break;
+      case 'statistics_update':
+        if (control_port) {
+          try {
+            control_port?.postMessage(msg);
+          } catch (ex) {
+            console.debug(
+              'cannot post stats msg to non-existent control port');
+          }
+        }
 
-				break;
-			case 'get_iframe_task_instructions':
-				port.postMessage(iframeWorkerTaskSpec);
-				break;
-			case 'transactions':
-				console.log('forwarding transactions');
-				sendToOneContentPage(msg);
-				break;
-			case 'relay_to_parent':
-				if (port.sender) {
-					relayToParentOfIframe(port.sender, msg);
-				}
-				break;
-			default:
-				console.debug('unknown action: ' + msg.action);
-				break;
-		}
+        break;
+      case 'get_iframe_task_instructions':
+        if (!iframeWorkerTaskSpecs.has(msg.url)) {
+          console.error('I have no instruction for url:', msg.url);
+          break;
+        }
+
+        const instructions = iframeWorkerTaskSpecs.get(msg.url);
+        port.postMessage(instructions);
+        break;
+      case 'transactions':
+        console.log('forwarding transactions');
+        sendToOneContentPage(msg);
+        break;
+      case 'relay_to_parent':
+        if (port.sender) {
+          relayToParentOfIframe(port.sender, msg);
+        }
+        break;
+      default:
+        console.debug('unknown action: ' + msg.action);
+        break;
+    }
   } catch(e) {
-		console.error(
+    console.error(
       'handleMessageFromContentScript caught', e, 'while handling', msg);
   }
 }
 
 async function handleMessageFromControl(msg: any) {
-	try {
-		switch (msg.action) {
-			case 'scrape_years':
-			case 'scrape_range':
-				await async function(){
-					const table_type = await settings.getString('azad_table_type');
-					if (table_type == 'transactions') {
-						msg.action = 'scrape_transactions';
+  try {
+    switch (msg.action) {
+      case 'scrape_years':
+      case 'scrape_range':
+        await async function(){
+          const table_type = await settings.getString('azad_table_type');
+          if (table_type == 'transactions') {
+            msg.action = 'scrape_transactions';
 
-						// No site prefix: background page doesn't know!
-						const url = '/cpe/yourpayments/transactions';
+            // No site prefix: background page doesn't know!
+            const url = '/cpe/yourpayments/transactions';
 
-						iframeWorkerTaskSpec = msg;
-						sendToOneContentPage({action: 'start_iframe_worker', url, });
-					} else {
-						console.debug('forwarding:', msg);
-						sendToOneContentPage(msg);
-					}
-				}();
-				break;
-			case 'check_feature_authorized':
-				handleAuthorisationRequest(msg.feature_id, control_port);
-				break;
-			case 'show_payment_ui':
-				console.log('got show_payment_ui request');
-				extpay.display_payment_ui();
-				break;
-			case 'show_extpay_login_ui':
-				console.log('got show_extpay_login_ui request');
-				extpay.display_login_page();
-				break;
-			case 'clear_cache':
-				broadcastToRootContentPages(msg);
-				break;
-			case 'force_logout':
-				broadcastToRootContentPages(msg);
-				break;
-			case 'abort':
-				broadcastToRootContentPages(msg);
-				break;
-			default:
-				console.warn('unknown action: ' + msg.action);
-				break;
-		}
+            iframeWorkerTaskSpecs.set(url, msg);
+            sendToOneContentPage({action: 'start_iframe_worker', url, });
+          } else {
+            console.debug('forwarding:', msg);
+            sendToOneContentPage(msg);
+          }
+        }();
+        break;
+      case 'check_feature_authorized':
+        handleAuthorisationRequest(msg.feature_id, control_port);
+        break;
+      case 'show_payment_ui':
+        console.log('got show_payment_ui request');
+        extpay.display_payment_ui();
+        break;
+      case 'show_extpay_login_ui':
+        console.log('got show_extpay_login_ui request');
+        extpay.display_login_page();
+        break;
+      case 'clear_cache':
+        broadcastToRootContentPages(msg);
+        break;
+      case 'force_logout':
+        broadcastToRootContentPages(msg);
+        break;
+      case 'abort':
+        broadcastToRootContentPages(msg);
+        break;
+      default:
+        console.warn('unknown action: ' + msg.action);
+        break;
+    }
   } catch(e) {
-		console.error('handleMessageFromControl caught', e, 'while handling', msg);
+    console.error('handleMessageFromControl caught', e, 'while handling', msg);
   }
 }
 
@@ -266,7 +277,7 @@ function registerConnectionListener() {
           });
 
           port.onMessage.addListener((msg) => {
-						handleMessageFromContentScript(msg, port);
+            handleMessageFromContentScript(msg, port);
           });
         }
 
@@ -275,7 +286,7 @@ function registerConnectionListener() {
         control_port = port;
 
         port.onMessage.addListener(async (msg) => {
-					handleMessageFromControl(msg);
+          handleMessageFromControl(msg);
         });
 
         advertisePeriods();
@@ -300,7 +311,7 @@ function registerExternalConnectionListener() {
 
     if (!ALLOWED_EXTENSION_IDS.includes(sender.id)) {
       console.log(
-        `  Message Ignored: Sender (${sender.id}) is not Whitlisted..`,
+        `Message Ignored: Sender (${sender.id}) is not Whitlisted..`,
         message
       );
       return; // don't allow access

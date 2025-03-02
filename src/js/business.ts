@@ -20,25 +20,25 @@ let _isBusinessAccount: boolean|null = null;
  * @returns true if the account that doc
  */
 export async function isBusinessAccount(): Promise<boolean> {
-	if (_isBusinessAccount == null) {
-		const doc = await getBaseOrdersPage();
+  if (_isBusinessAccount == null) {
+    const doc = await getBaseOrdersPage();
 
-		const hasBusinessAccountPicker = extraction.findMultipleNodeValues(
-			'//*[@class="abnav-accountfor"]',
-			doc.body,
-			'determining if we are scraping a business account',
-		).length != 0;
+    const hasBusinessAccountPicker = extraction.findMultipleNodeValues(
+      '//*[@class="abnav-accountfor"]',
+      doc.body,
+      'determining if we are scraping a business account',
+    ).length != 0;
 
-		const hasBusinessLogo = extraction.findMultipleNodeValues(
-			'//*[@aria-label="Amazon Business"]',
-			doc.body,
-			'determining if we are scraping a business account',
-		).length != 0;
+    const hasBusinessLogo = extraction.findMultipleNodeValues(
+      '//*[@aria-label="Amazon Business"]',
+      doc.body,
+      'determining if we are scraping a business account',
+    ).length != 0;
 
-	  _isBusinessAccount = hasBusinessAccountPicker || hasBusinessLogo;
+    _isBusinessAccount = hasBusinessAccountPicker || hasBusinessLogo;
   }
 
-	return _isBusinessAccount;
+  return _isBusinessAccount;
 }
 
 /**

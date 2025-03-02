@@ -306,7 +306,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       resetScheduler('aborted');
       break;
     default:
-      console.warn('unknown action: ' + msg.action);
+      console.debug('inject.ts ignoring msg.action: ' + msg.action);
   }
 }
 

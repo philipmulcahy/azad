@@ -209,7 +209,10 @@ export async function requestInstructions(
   const port = await getBackgroundPort();
 
   if (port) {
-    port.postMessage({action: 'get_iframe_task_instructions'});
+    port.postMessage({
+      action: 'get_iframe_task_instructions',
+      url: document.documentURI
+    });
   } else {
     console.warn('got null background port in iframe-worker');
   }
@@ -268,7 +271,7 @@ export async function fetchURL(
   try {
     const port: chrome.runtime.Port = await inject.getBackgroundPort() as chrome.runtime.Port;
     port.postMessage(requestMsg);
-		console.log('fetchURL requested', url, xpath);
+    console.log('fetchURL requested', url, xpath);
   } catch (ex) {
     console.error('failed to post message to background script', ex);
   }
@@ -320,26 +323,32 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
     case 'fetch_url':
       {
         const url: string = msg.url;
-        const completionXPath: string = msg.xpath;
-        const guid: string = msg.guid;
-        let html = '';
-        let status = 'OK';
+        if (url != document.documentURI) {
+          console.debug(
+            'fetch_url wants', url, 'but this iframe has', document.documentURI
+          );
+        } else {
+          const completionXPath: string = msg.xpath;
+          const guid: string = msg.guid;
+          let html = '';
+          let status = 'OK';
 
-        try {
-          html = await getBakedHtml(url, completionXPath);
-        } catch (ex) {
-          status = ex as string;
+          try {
+            html = await getBakedHtml(url, completionXPath);
+          } catch (ex) {
+            status = ex as string;
+          }
+
+          await relayToParent({
+            action: 'fetch_url_response',
+            url,
+            html,
+            guid,
+            status,
+          });
+
+          await removeThisIframe();
         }
-
-        await relayToParent({
-          action: 'fetch_url_response',
-          url,
-          html,
-          guid,
-          status,
-        });
-
-        await removeThisIframe();
       }
       break;
     default:
@@ -362,7 +371,7 @@ async function waitForXPathToMatch(
   let elapsedMillis: number = 0;
   const DEADLINE_MILLIS = 10 * 1000;
   const INCREMENT_MILLIS = 500;
-	const url = doc.documentURI;
+  const url = doc.documentURI;
 
   function matched(): boolean {
     try {
@@ -420,14 +429,21 @@ async function getBakedHtml(
   completionXPath: string,
 ): Promise<string> {
   if (document.URL != url) {
-    console.error(
-      'instructions to this iframe expected url', url,
-      'but it is actually', document.URL
-    );
-    return '';
+    const msg = 
+      'fetch_url instructions to this iframe expected url: ' +  url +
+      'but it is actually: ' + document.URL;
+
+    console.error(msg);
+    throw msg;
   }
 
   const matched = await waitForXPathToMatch(document, completionXPath);
   const bakedHtml = document.documentElement.outerHTML;
+
+  if (bakedHtml == '') {
+    console.warn(
+      'getBakedHtml returning empty string for', url, completionXPath);
+  }
+
   return bakedHtml;
 }

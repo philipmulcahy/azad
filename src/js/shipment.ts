@@ -226,10 +226,10 @@ function get_refund(shipment_elem: HTMLElement): string {
 
 function is_delivered(shipment_elem: HTMLElement): Delivered {
   const attr = shipment_elem.getAttribute('class');
-	if ((attr as string).includes('shipment-is-delivered')) {
-		return Delivered.YES;
+  if ((attr as string).includes('shipment-is-delivered')) {
+    return Delivered.YES;
   }
-	return Delivered.UNKNOWN;
+  return Delivered.UNKNOWN;
 }
 
 function get_status(shipment_elem: HTMLElement): string {

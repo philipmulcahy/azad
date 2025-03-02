@@ -12,11 +12,6 @@ import * as sprintf from 'sprintf-js';
 import * as urls from './url';
 import * as util from './util';
 
-export interface IOrdersPageData {
-  expected_order_count: number;
-  order_headers: order_header.IOrderHeader[];
-}
-
 type headerPageUrlGenerator = (
   site: string, year: number, startOrderIndex: number) => Promise<string>;
 
@@ -28,11 +23,10 @@ async function get_page_data(
   _scheduling_priority: string,
   _scheduler: request_scheduler.IRequestScheduler,
   _nocache_top_level: boolean,
-): Promise<IOrdersPageData> {
+): Promise<order_header.IOrderHeader[]> {
   // const nocache: boolean = (start_order_number==0) ? true : nocache_top_level;
   const url = await urlGenerator(site, year, start_order_number);
-  // const pageReadyXpath = '//*[contains(@class, "yohtmlc-order-id")]';
-  const pageReadyXpath = '//span[@class="num-orders"]';
+  const pageReadyXpath = '//*[contains(@class, "yohtmlc-order-id")]';
   const response = await iframeWorker.fetchURL(url, pageReadyXpath);
 
   const evt = {
@@ -55,24 +49,67 @@ async function get_page_data(
   // );
 }
 
-async function get_expected_order_count(
+async function getExpectedOrderCount(
   site: string,
   year: number,
   urlGenerator: headerPageUrlGenerator,
-  scheduler: request_scheduler.IRequestScheduler,
 ): Promise<number> {
-  const page_data = await get_page_data(
-    site,
-    year,
-    0,  // first order; therefore first page
-    urlGenerator,
-    '00000',  // want this to happen ASAP
-    scheduler,
-    true,
+  const url = await urlGenerator(site, year, 0);
+  const pageReadyXpath = '//span[@class="num-orders"]';
+  const response = await iframeWorker.fetchURL(url, pageReadyXpath);
+  const d = util.parseStringToDOM(response.html);
+  const context = 'getExpectedOrderCount';
+
+  const countSpan = extraction.findSingleNodeValue(
+    '//span[@class="num-orders"]', d.documentElement, context);
+
+  if ( !countSpan ) {
+    const msg = 'Error: cannot find order count elem in: ' + response.html;
+    console.error(msg);
+    throw(msg);
+  }
+
+  const textContent = countSpan.textContent;
+  const splits = textContent!.split(' ');
+
+  if (splits.length == 0) {
+    const msg = 'Error: not enough parts';
+    console.error(msg);
+    throw(msg);
+  }
+  const expected_order_count: number = parseInt( splits[0], 10 );
+
+  console.log(
+    'Found ' + expected_order_count + ' orders for ' + year.toString()
   );
 
-  return page_data.expected_order_count;
+  if(isNaN(expected_order_count)) {
+    console.warn(
+      'Error: cannot find order count in ' + countSpan.textContent
+    );
+  }
+
+  return expected_order_count;
 }
+
+// async function get_expected_order_count(
+//   site: string,
+//   year: number,
+//   urlGenerator: headerPageUrlGenerator,
+//   scheduler: request_scheduler.IRequestScheduler,
+// ): Promise<number> {
+//   const page_data = await get_page_data(
+//     site,
+//     year,
+//     0,  // first order; therefore first page
+//     urlGenerator,
+//     '00000',  // want this to happen ASAP
+//     scheduler,
+//     true,
+//   );
+
+//   return page_data.expected_order_count;
+// }
 
 async function get_page_of_headers(
   site: string,
@@ -91,7 +128,8 @@ async function get_page_of_headers(
     scheduler,
     nocache_top_level,
   );
-  return page_data.order_headers;
+
+  return page_data;
 }
 
 export async function get_headers(
@@ -103,8 +141,8 @@ export async function get_headers(
   async function fetch_headers_for_template(
     urlGenerator: headerPageUrlGenerator
   ) : Promise<order_header.IOrderHeader[]> {
-    const expected_order_count = await get_expected_order_count(
-      site, year, urlGenerator, scheduler);
+    const expected_order_count = await getExpectedOrderCount(
+      site, year, urlGenerator);
 
     const header_promises: Promise<order_header.IOrderHeader[]>[] = [];
 
@@ -199,7 +237,7 @@ function generateQueryString(
 function translateOrdersPage(
   evt: any,
   period: string,  // log description of the period we are fetching orders for.
-): IOrdersPageData {
+): order_header.IOrderHeader[] {
   try {
     const opd = reallyTranslateOrdersPage(evt, period);
     return opd;
@@ -212,39 +250,8 @@ function translateOrdersPage(
 function reallyTranslateOrdersPage(
   evt: any,
   period: string,  // log description of the period we are fetching orders for.
-): IOrdersPageData {
+): order_header.IOrderHeader[] {
   const d = util.parseStringToDOM(evt.target.responseText);
-  const context = 'Converting orders page';
-
-  const countSpan = extraction.findSingleNodeValue(
-    './/span[@class="num-orders"]', d.documentElement, context);
-
-  if ( !countSpan ) {
-    const msg = 'Error: cannot find order count elem in: '
-    + evt.target.responseText;
-    console.error(msg);
-    throw(msg);
-  }
-
-  const textContent = countSpan.textContent;
-  const splits = textContent!.split(' ');
-
-  if (splits.length == 0) {
-    const msg = 'Error: not enough parts';
-    console.error(msg);
-    throw(msg);
-  }
-  const expected_order_count: number = parseInt( splits[0], 10 );
-
-  console.log(
-    'Found ' + expected_order_count + ' orders for ' + period
-  );
-
-  if(isNaN(expected_order_count)) {
-    console.warn(
-      'Error: cannot find order count in ' + countSpan.textContent
-    );
-  }
 
   let ordersElem;
 
@@ -253,7 +260,7 @@ function reallyTranslateOrdersPage(
     ordersElem = extraction.findSingleNodeValue(
       '//div[contains(@class, "your-orders-content-container") or @id="ordersContainer"]',
       d.documentElement,
-      'finding order list container') as HTMLElement;
+      'finding order list container for:' + period) as HTMLElement;
   } catch(err) {
     const msg = 'Error: maybe you\'re not logged into ' +
                 'https://' + urls.getSite() + '/gp/css/order-history ' +
@@ -273,7 +280,7 @@ function reallyTranslateOrdersPage(
   );
   if ( !serialized_order_elems.length ) {
     console.error(
-      'no order elements in converted order list page: ' +
+      'no order elements in converted order list page for ' + period + ': ' +
       evt.target.responseURL
     );
   }
@@ -281,16 +288,7 @@ function reallyTranslateOrdersPage(
   const headers = order_elems.map(
     elem => order_header.extractOrderHeader(elem, evt.target.responseURL));
 
-  const converted = {
-    expected_order_count: expected_order_count,
-    order_headers: headers,
-  };
-
-  if (typeof(converted) == 'undefined') {
-    console.error('we got a blank one!');
-  }
-
-  return converted;
+  return headers;
 }
 
 function getCachedAttributeNames() {
