@@ -22,7 +22,7 @@ const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
 let advertised_periods: number[] = [];
 
-// Map iframe URL to task spec message.
+// Map iframe URL path (no site) to task spec message.
 const iframeWorkerTaskSpecs = new Map<string, any>();
 
 function broadcastToRootContentPages(msg: any): void {
@@ -119,7 +119,7 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         console.log(
           'a content script asked for an iframe to discover periods');
 
-        iframeWorkerTaskSpecs.set(msg.url, msg);
+        iframeWorkerTaskSpecs.set(urls.stripSite(msg.url), msg);
 
         sendToOneContentPage({
           action: 'start_iframe_worker',
@@ -140,7 +140,7 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         break;
       case 'fetch_url':
         iframeWorkerTaskSpecs.set(
-          msg.url,
+          urls.stripSite(msg.url),
           {
             action: 'fetch_url',
             guid: msg.guid,
@@ -169,13 +169,17 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
 
         break;
       case 'get_iframe_task_instructions':
-        if (!iframeWorkerTaskSpecs.has(msg.url)) {
-          console.error('I have no instruction for url:', msg.url);
-          break;
-        }
+        {
+          const path = urls.stripSite(msg.url);
 
-        const instructions = iframeWorkerTaskSpecs.get(msg.url);
-        port.postMessage(instructions);
+          if (!iframeWorkerTaskSpecs.has(path)) {
+            console.error('I have no instruction for url:', path);
+            break;
+          }
+
+          const instructions = iframeWorkerTaskSpecs.get(path);
+          port.postMessage(instructions);
+        }
         break;
       case 'transactions':
         console.log('forwarding transactions');
@@ -206,7 +210,7 @@ async function handleMessageFromControl(msg: any) {
           if (table_type == 'transactions') {
             msg.action = 'scrape_transactions';
 
-            // No site prefix: background page doesn't know!
+            // No site prefix: background page doesn't know about prefixes!
             const url = '/cpe/yourpayments/transactions';
 
             iframeWorkerTaskSpecs.set(url, msg);
