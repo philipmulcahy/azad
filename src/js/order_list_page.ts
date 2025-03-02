@@ -132,6 +132,22 @@ async function get_page_of_headers(
   return page_data;
 }
 
+function dedupeHeaders(headers: order_header.IOrderHeader[]): order_header.IOrderHeader[] {
+  const deduped: order_header.IOrderHeader[] = [];
+  const seen = new Set<string>();
+
+  for (const h of headers) {
+    if (seen.has(h.id)) {
+      continue;
+    }
+
+    seen.add(h.id);
+    deduped.push(h);
+  }
+
+  return deduped;
+}
+
 export async function get_headers(
   site: string,
   year: number,
@@ -169,7 +185,7 @@ export async function get_headers(
         headers.length);
     }
 
-    return headers;
+    return dedupeHeaders(headers);
   }
 
   const isBusinessAcct: boolean = await business.isBusinessAccount();
