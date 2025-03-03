@@ -30,6 +30,12 @@ export function stripSite(url: string): string {
   return stripped;
 }
 
+export function stripHashSuffix(url: string): string {
+  const removeRegEx = new RegExp('#[/0-9A-Za-z]+$');
+  const trimmed = url.replace(removeRegEx, '');
+  return trimmed;
+}
+
 export function orderDetailUrlFromListElement(
   elem: HTMLElement,
   orderId: string,

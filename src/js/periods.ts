@@ -81,20 +81,14 @@ async function getUrl(): Promise<string> {
 
 async function extractYears(): Promise<number[]> {
   const url = await getUrl();
-  const inIframe = iframeWorker.isWorker();
 
   async function getDoc(): Promise<Document> {
-    if (inIframe) {
-      // Wait a second to allow page javascript to render.
-      await new Promise(r => setTimeout(r, 2000));
-      return document;
-    } else {
-      console.log('fetching', url, 'for getYears()');
-      const response = await signin.checkedFetch(url);
-      const html = await response.text();
-      const doc = util.parseStringToDOM(html);
-      return doc;
-    }
+    console.log('fetching', url, 'for getYears()');
+    const readyXPath = '//option[contains(@id, "timeFilterDropdown")]';
+    const response = await iframeWorker.fetchURL(url, readyXPath);
+    const html = response.html;
+    const doc = util.parseStringToDOM(html);
+    return doc;
   }
 
   try {
@@ -114,9 +108,5 @@ export async function init(
 {
   const years = await extractYears();
   setYears(years);
-  const inIframe = iframeWorker.isWorker();
-
-  if (!inIframe) {
-    advertisePeriods(getBackgroundPort);
-  }
+  advertisePeriods(getBackgroundPort);
 };

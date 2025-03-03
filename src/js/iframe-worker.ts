@@ -396,7 +396,7 @@ async function waitForXPathToMatch(
     console.log('waitForXPathToMatch waiting', INCREMENT_MILLIS, url, xpath);
     await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
     elapsedMillis += INCREMENT_MILLIS;
-    console.log('elapsedMillis', elapsedMillis, url, xpath);
+    console.log('waitForXPathToMatch elapsedMillis', elapsedMillis, url, xpath);
 
     if (matched()) {
       return true;

@@ -3,11 +3,11 @@
 'use strict';
 
 import * as cachestuff from './cachestuff';
-import * as util from './util';
 import * as extpay from './extpay_client';
 import * as msg from './message_types';
 import * as settings from './settings';
 import * as urls from './url';
+import * as util from './util';
 
 export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
   'apgfmdalhahnnfgmjejmhkeobobobhjd', // azad_test dev Philip@ball.local
@@ -22,8 +22,40 @@ const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
 let advertised_periods: number[] = [];
 
+
 // Map iframe URL path (no site) to task spec message.
-const iframeWorkerTaskSpecs = new Map<string, any>();
+function getTaskKey(url: string): string {
+  return urls.stripHashSuffix(urls.stripSite(url));
+}
+
+class IframeWorkerTaskMap {
+  _map: Map<string, any>;
+
+  constructor() {
+    this._map = new Map<string, any>();
+  }
+
+  has(url: string): boolean {
+    const key = getTaskKey(url);
+    return this._map.has(key);
+  }
+
+  get(url: string): any {
+    const key = getTaskKey(url);
+    return this._map.get(key);
+  }
+
+  set(url: string, instructions: any) {
+    const key = getTaskKey(url);
+    this._map.set(key, instructions);
+  }
+
+  keys(): string[] {
+    return [...this._map.keys()];
+  }
+}
+
+const iframeWorkerTaskSpecs = new IframeWorkerTaskMap();
 
 function broadcastToRootContentPages(msg: any): void {
   const rootKeys = Object.keys(content_ports).filter(
@@ -106,6 +138,7 @@ async function relayToParentOfIframe(
 
   const target = sameTabPorts[0] ?? null;
   if (target) {
+    console.log('relaying msg to parent', msg.msg.action);
     target.postMessage(msg.msg);
   } else {
     console.warn('relayToParentOfIframe: no parent port found.');
@@ -114,12 +147,13 @@ async function relayToParentOfIframe(
 
 function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
   try {
+    console.log('handleMessageFromContentScript handling', msg.action);
     switch (msg.action) {
       case 'scrape_periods':
         console.log(
           'a content script asked for an iframe to discover periods');
 
-        iframeWorkerTaskSpecs.set(urls.stripSite(msg.url), msg);
+        iframeWorkerTaskSpecs.set(msg.url, msg);
 
         sendToOneContentPage({
           action: 'start_iframe_worker',
@@ -140,7 +174,7 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         break;
       case 'fetch_url':
         iframeWorkerTaskSpecs.set(
-          urls.stripSite(msg.url),
+          msg.url,
           {
             action: 'fetch_url',
             guid: msg.guid,
@@ -170,14 +204,12 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         break;
       case 'get_iframe_task_instructions':
         {
-          const path = urls.stripSite(msg.url);
-
-          if (!iframeWorkerTaskSpecs.has(path)) {
-            console.error('I have no instruction for url:', path);
+          if (!iframeWorkerTaskSpecs.has(msg.url)) {
+            console.error('I have no instruction for url:', msg.url);
             break;
           }
 
-          const instructions = iframeWorkerTaskSpecs.get(path);
+          const instructions = iframeWorkerTaskSpecs.get(msg.url);
           port.postMessage(instructions);
         }
         break;
@@ -202,10 +234,11 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
 
 async function handleMessageFromControl(msg: any) {
   try {
+    console.log('handleMessageFromControl handling', msg);
     switch (msg.action) {
       case 'scrape_years':
       case 'scrape_range':
-        await async function(){
+        await async function() {
           const table_type = await settings.getString('azad_table_type');
           if (table_type == 'transactions') {
             msg.action = 'scrape_transactions';
