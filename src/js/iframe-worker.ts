@@ -159,59 +159,60 @@ async function relayToParent(msg: any) {
 
 // (10) Removee this iframe, by asking (via background) our parent to do so.
 function removeThisIframe(): void {
+  const guid = window.name;
+
   relayToParent({
     action: 'remove_iframe_worker',
     url: document.URL,
+    guid,
   });
+
+  console.log(`removeThisIframe ${guid}`);
 }
 
 // (10) Remove existing iframe if one exists.
-export function removeIframeWorker(url: string): void {
+export function removeIframeWorker(guid: string): void {
   if (isIframe()) {
-    console.error('cannot remove worker iframe from an iframe');
+    console.error('cannot remove worker iframe from an iframe', guid);
     return;
   }
 
-  const iframes = document.getElementsByClassName(IFRAME_CLASS);
-
-  for (const iframe of iframes) {
-    const iframeUrl = iframe?.getAttribute('src') ?? '';
-
-    if (iframeUrl == url) {
-      iframe.remove();
-      console.log('removed iframe', url);
-    } else {
-      console.error('removeIframeWorker URL mismatch', iframeUrl, url);
-    }
+  const candidates: HTMLCollectionOf<Element> = document.getElementsByClassName(IFRAME_CLASS);
+  if (candidates.hasOwnProperty(guid)) {
+    candidates?.namedItem(guid)?.remove();
+    console.log(`removed iframe ${guid}`);
   }
 }
 
 // (3) Called from the content page the iframe will be hosted by
-export function createIframe(url: string): void {
+export function createIframe(url: string, guid: string): void {
   if (isWorker()) {
-    console.error('cannot start iframe task from an iframe');
+    console.error('cannot start iframe task from an iframe', guid);
   }
 
   console.log('starting iframe worker:', url);
 
   const iframe = document.createElement('iframe') as HTMLIFrameElement;
   iframe.setAttribute('src', url);
+  iframe.setAttribute('name', guid);
   iframe.setAttribute('class', IFRAME_CLASS);
   iframe.style.width = '1px';
   iframe.style.height = '1px';
   document.body.insertBefore(iframe, document.body.firstChild);
+  console.log('createIframe created', guid);
 }
 
 // (4) Called from iframe worker to background
 export async function requestInstructions(
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>
 ): Promise<void> {
+  const guid = window.name;
   const port = await getBackgroundPort();
 
   if (port) {
     port.postMessage({
       action: 'get_iframe_task_instructions',
-      url: document.documentURI
+      guid
     });
   } else {
     console.warn('got null background port in iframe-worker');
@@ -271,7 +272,7 @@ export async function fetchURL(
   try {
     const port: chrome.runtime.Port = await inject.getBackgroundPort() as chrome.runtime.Port;
     port.postMessage(requestMsg);
-    console.log('fetchURL requested', url, xpath);
+    console.log('fetchURL requested', url, xpath, guid);
   } catch (ex) {
     console.error('failed to post message to background script', ex);
   }
@@ -322,10 +323,9 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
       break;
     case 'fetch_url':
       {
-        const url: string = msg.url;
-        if (url != document.documentURI) {
+        if (msg.url != document.documentURI) {
           console.debug(
-            'fetch_url wants', url, 'but this iframe has', document.documentURI
+            'fetch_url wants', msg.url, 'but this iframe has', document.documentURI
           );
         } else {
           const completionXPath: string = msg.xpath;
@@ -334,14 +334,14 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
           let status = 'OK';
 
           try {
-            html = await getBakedHtml(url, completionXPath);
+            html = await getBakedHtml(msg.url, completionXPath);
           } catch (ex) {
             status = ex as string;
           }
 
           await relayToParent({
             action: 'fetch_url_response',
-            url,
+            url: msg.url,
             html,
             guid,
             status,

@@ -271,13 +271,11 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
     case 'start_iframe_worker':
       {
         const url = urls.normalizeUrl(msg.url, urls.getSite());
-        iframeWorker.createIframe(url);
+        iframeWorker.createIframe(url, msg.guid);
       }
       break;
     case 'remove_iframe_worker':
-      const url = msg.url;
-      const guid = msg.guid;
-      iframeWorker.removeIframeWorker(url);
+      iframeWorker.removeIframeWorker(msg.guid);
       break;
     case 'transactions':
       console.log('got transactions', msg.transactions);

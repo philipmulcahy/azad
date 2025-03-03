@@ -8,6 +8,7 @@ import * as msg from './message_types';
 import * as settings from './settings';
 import * as urls from './url';
 import * as util from './util';
+import { v4 as uuidv4 } from 'uuid';
 
 export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
   'apgfmdalhahnnfgmjejmhkeobobobhjd', // azad_test dev Philip@ball.local
@@ -22,12 +23,6 @@ const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
 let advertised_periods: number[] = [];
 
-
-// Map iframe URL path (no site) to task spec message.
-function getTaskKey(url: string): string {
-  return urls.stripHashSuffix(urls.stripSite(url));
-}
-
 class IframeWorkerTaskMap {
   _map: Map<string, any>;
 
@@ -35,19 +30,16 @@ class IframeWorkerTaskMap {
     this._map = new Map<string, any>();
   }
 
-  has(url: string): boolean {
-    const key = getTaskKey(url);
-    return this._map.has(key);
+  has(guid: string): boolean {
+    return this._map.has(guid);
   }
 
-  get(url: string): any {
-    const key = getTaskKey(url);
-    return this._map.get(key);
+  get(guid: string): any {
+    return this._map.get(guid);
   }
 
-  set(url: string, instructions: any) {
-    const key = getTaskKey(url);
-    this._map.set(key, instructions);
+  set(guid: string, instructions: any) {
+    this._map.set(guid, instructions);
   }
 
   keys(): string[] {
@@ -138,7 +130,7 @@ async function relayToParentOfIframe(
 
   const target = sameTabPorts[0] ?? null;
   if (target) {
-    console.log('relaying msg to parent', msg.msg.action);
+    console.log('relaying msg to parent', msg.msg.action, msg.msg);
     target.postMessage(msg.msg);
   } else {
     console.warn('relayToParentOfIframe: no parent port found.');
@@ -150,15 +142,20 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
     console.log('handleMessageFromContentScript handling', msg.action);
     switch (msg.action) {
       case 'scrape_periods':
-        console.log(
-          'a content script asked for an iframe to discover periods');
+        {
+          console.log(
+            'a content script asked for an iframe to discover periods');
 
-        iframeWorkerTaskSpecs.set(msg.url, msg);
+          const guid = uuidv4();
+          msg.guid = guid;
+          iframeWorkerTaskSpecs.set(guid, msg);
 
-        sendToOneContentPage({
-          action: 'start_iframe_worker',
-          url: msg.url
-        });
+          sendToOneContentPage({
+            action: 'start_iframe_worker',
+            url: msg.url,
+            guid,
+          });
+        }
 
         break;
       case 'advertise_periods':
@@ -173,21 +170,17 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         advertisePeriods();
         break;
       case 'fetch_url':
-        iframeWorkerTaskSpecs.set(
-          msg.url,
-          {
-            action: 'fetch_url',
-            guid: msg.guid,
-            url: msg.url,
-            xpath: msg.xpath,
-          }
-        );
-
         console.log('initiating fetch_url using iframe', msg);
+
+        iframeWorkerTaskSpecs.set(
+          msg.guid,
+          msg,
+        );
 
         sendToOneContentPage({
           action: 'start_iframe_worker',
-          url: msg.url
+          guid: msg.guid,
+          url: msg.url,
         });
 
         break;
@@ -204,14 +197,15 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         break;
       case 'get_iframe_task_instructions':
         {
-          if (!iframeWorkerTaskSpecs.has(msg.url)) {
-            console.error('I have no instruction for url:', msg.url);
+          if (!iframeWorkerTaskSpecs.has(msg.guid)) {
+            console.error('I have no instruction for guid:', msg.guid);
             break;
           }
 
-          const instructions = iframeWorkerTaskSpecs.get(msg.url);
+          const instructions = iframeWorkerTaskSpecs.get(msg.guid);
           port.postMessage(instructions);
         }
+
         break;
       case 'transactions':
         console.log('forwarding transactions');
@@ -221,6 +215,7 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         if (port.sender) {
           relayToParentOfIframe(port.sender, msg);
         }
+
         break;
       default:
         console.debug('unknown action: ' + msg.action);
@@ -240,19 +235,23 @@ async function handleMessageFromControl(msg: any) {
       case 'scrape_range':
         await async function() {
           const table_type = await settings.getString('azad_table_type');
+
           if (table_type == 'transactions') {
+            const guid = uuidv4();
             msg.action = 'scrape_transactions';
+            msg.guid = guid;
 
             // No site prefix: background page doesn't know about prefixes!
             const url = '/cpe/yourpayments/transactions';
 
-            iframeWorkerTaskSpecs.set(url, msg);
-            sendToOneContentPage({action: 'start_iframe_worker', url, });
+            iframeWorkerTaskSpecs.set(guid, msg);
+            sendToOneContentPage({action: 'start_iframe_worker', url, guid});
           } else {
             console.debug('forwarding:', msg);
             sendToOneContentPage(msg);
           }
         }();
+
         break;
       case 'check_feature_authorized':
         handleAuthorisationRequest(msg.feature_id, control_port);
