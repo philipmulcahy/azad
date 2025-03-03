@@ -15,40 +15,6 @@ import * as util from './util';
 type headerPageUrlGenerator = (
   site: string, year: number, startOrderIndex: number) => Promise<string>;
 
-async function get_page_data(
-  site: string,
-  year: number,
-  start_order_number: number, // zero based
-  urlGenerator: headerPageUrlGenerator,
-  _scheduling_priority: string,
-  _scheduler: request_scheduler.IRequestScheduler,
-  _nocache_top_level: boolean,
-): Promise<order_header.IOrderHeader[]> {
-  // const nocache: boolean = (start_order_number==0) ? true : nocache_top_level;
-  const url = await urlGenerator(site, year, start_order_number);
-  const pageReadyXpath = '//*[contains(@class, "yohtmlc-order-id")]';
-  const response = await iframeWorker.fetchURL(url, pageReadyXpath);
-
-  const evt = {
-    target: {
-      responseText: response.html,
-      responseURL: response.url,
-    }
-  };
-
-  const pageData = translateOrdersPage(evt, year.toString());
-  return pageData;
-
-  // return req.makeAsyncRequest<IOrdersPageData>(
-  //   url,
-  //   evt => translateOrdersPage(evt, year.toString()),
-  //   scheduler,
-  //   scheduling_priority,
-  //   nocache,
-  //   'order_list_page.get_page_data: ' + start_order_number,  // debug_context
-  // );
-}
-
 async function getExpectedOrderCount(
   site: string,
   year: number,
@@ -77,6 +43,7 @@ async function getExpectedOrderCount(
     console.error(msg);
     throw(msg);
   }
+
   const expected_order_count: number = parseInt( splits[0], 10 );
 
   console.log(
@@ -92,44 +59,25 @@ async function getExpectedOrderCount(
   return expected_order_count;
 }
 
-// async function get_expected_order_count(
-//   site: string,
-//   year: number,
-//   urlGenerator: headerPageUrlGenerator,
-//   scheduler: request_scheduler.IRequestScheduler,
-// ): Promise<number> {
-//   const page_data = await get_page_data(
-//     site,
-//     year,
-//     0,  // first order; therefore first page
-//     urlGenerator,
-//     '00000',  // want this to happen ASAP
-//     scheduler,
-//     true,
-//   );
-
-//   return page_data.expected_order_count;
-// }
-
 async function get_page_of_headers(
   site: string,
   year: number,
   urlGenerator: headerPageUrlGenerator,
   start_order_number: number, // zero based
-  scheduler: request_scheduler.IRequestScheduler,
-  nocache_top_level: boolean,
 ): Promise<order_header.IOrderHeader[]> {
-  const page_data = await get_page_data(
-    site,
-    year,
-    start_order_number,
-    urlGenerator,
-    '2',  // want headers before details, but after order count
-    scheduler,
-    nocache_top_level,
-  );
+  const url = await urlGenerator(site, year, start_order_number);
+  const pageReadyXpath = '//*[contains(@class, "yohtmlc-order-id")]';
+  const response = await iframeWorker.fetchURL(url, pageReadyXpath);
 
-  return page_data;
+  const evt = {
+    target: {
+      responseText: response.html,
+      responseURL: response.url,
+    }
+  };
+
+  const pageData = translateOrdersPage(evt, year.toString());
+  return pageData;
 }
 
 function dedupeHeaders(headers: order_header.IOrderHeader[]): order_header.IOrderHeader[] {
@@ -151,8 +99,6 @@ function dedupeHeaders(headers: order_header.IOrderHeader[]): order_header.IOrde
 export async function get_headers(
   site: string,
   year: number,
-  scheduler: request_scheduler.IRequestScheduler,
-  nocache_top_level: boolean,
 ): Promise<order_header.IOrderHeader[]> {
   async function fetch_headers_for_template(
     urlGenerator: headerPageUrlGenerator
@@ -168,7 +114,7 @@ export async function get_headers(
       );
 
       const page_of_headers = get_page_of_headers(
-        site, year, urlGenerator, iorder, scheduler, nocache_top_level
+        site, year, urlGenerator, iorder,
       );
 
       header_promises.push(page_of_headers);
@@ -199,7 +145,6 @@ export async function get_headers(
     }
 
   const headers = await fetch_headers_for_template(urlGenerator);
-
   return headers;
 }
 
@@ -245,7 +190,7 @@ function generateQueryString(
     {
       site: site,
       year: year,
-      startOrderPos: startOrderPos
+      startOrderPos: startOrderPos,
     }
   );
 }
@@ -272,28 +217,35 @@ function reallyTranslateOrdersPage(
   let ordersElem;
 
   try {
-    // ordersElem = d.getElementById('ordersContainer');
     ordersElem = extraction.findSingleNodeValue(
-      '//div[contains(@class, "your-orders-content-container") or @id="ordersContainer"]',
+      '//div[contains(@class, "your-orders-content-container") '
+      + 'or @id="ordersContainer" '
+      + 'or @id="yourOrderInfoSection"]',
       d.documentElement,
-      'finding order list container for:' + period) as HTMLElement;
+      'finding order list container for:' + period
+    ) as HTMLElement;
   } catch(err) {
     const msg = 'Error: maybe you\'re not logged into ' +
                 'https://' + urls.getSite() + '/gp/css/order-history ' +
                 err;
+
     console.warn(msg);
     throw msg;
   }
 
   const order_elems: HTMLElement[] = extraction.findMultipleNodeValues(
-    './/*[contains(concat(" ", normalize-space(@class), " "), " js-order-card ")]',
-    ordersElem
+    './/*['
+    + 'contains(concat(" ", normalize-space(@class), " "), " js-order-card ") '  // 2025 consumer accounts.
+    + 'or @id="orderCard"'  // 2025 business accounts (Amazon seems relaxed about id uniqueness).
+    + ']',
+    ordersElem,
   ).map( node => <HTMLElement>node );
 
   const serialized_order_elems = order_elems.map(
       elem => dom2json.toJSON(elem, getCachedAttributeNames())
 
   );
+
   if ( !serialized_order_elems.length ) {
     console.error(
       'no order elements in converted order list page for ' + period + ': ' +

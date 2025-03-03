@@ -293,14 +293,11 @@ class Order implements IOrder{
 async function fetchYear(
   year: number,
   scheduler: request_scheduler.IRequestScheduler,
-  nocache_top_level: boolean,
   date_filter: date.DateFilter,
 ): Promise<IOrder[]> {
   const headers: order_header.IOrderHeader[] = await olp.get_headers(
     urls.getSite(),
     year,
-    scheduler,
-    nocache_top_level,
   );
   return headers.map(h => create(h, scheduler, date_filter))
                 .filter(o => o) as IOrder[];
@@ -317,8 +314,7 @@ export async function getOrdersByYear(
       years.map(
         function(year: number): Promise<IOrder[]> {
           const nocache_top_level = (year == latest_year);
-          return fetchYear(
-            year, scheduler, nocache_top_level, date_filter);
+          return fetchYear(year, scheduler, date_filter);
         }
       )
     );
@@ -348,10 +344,9 @@ export async function getOrdersByRange(
   const order_years = years.map(
     year => {
       const nocache_top_level = latest_year == year;
-      return fetchYear(year, scheduler, nocache_top_level, date_filter);
+      return fetchYear(year, scheduler, date_filter);
     }
   );
-
 
   const orderss = await async function() {
     try {

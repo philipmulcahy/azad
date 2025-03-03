@@ -55,16 +55,25 @@ export async function getOrderHeadersSequencePageURL(
 ): Promise<string> {
   const btbGroupKey = await getBTBGroupKey();
 
-  return urls.normalizeUrl(
-    '/gp/your-account/order-history' +
-    '?opt=ab' +
-    `&selectedB2BGroupKey=${btbGroupKey}` +
-    '&digitalOrders=1' +
-    '&unifiedOrders=1' +
-    `&orderFilter=year-${year}` +
-    `&startIndex=${startIndex}`,
-    site
+  // return urls.normalizeUrl(
+  //   '/gp/your-account/order-history' +
+  //   '?opt=ab' +
+  //   `&selectedB2BGroupKey=${btbGroupKey}` +
+  //   '&digitalOrders=1' +
+  //   '&unifiedOrders=1' +
+  //   `&orderFilter=year-${year}` +
+  //   `&startIndex=${startIndex}`,
+  //   site
+  // );
+
+  const pageNumber = (startIndex / 10) + 1;
+
+  const url = urls.normalizeUrl(
+    `/gp/css/order-history?ref_=abn_yadd_ad_your_orders#time/${year}/pagination/${pageNumber}/`,
+    site,
   );
+
+  return Promise.resolve(url);
 }
 
 export function getBaseOrdersPageURL() {
