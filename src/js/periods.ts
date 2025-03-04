@@ -1,6 +1,7 @@
 import * as business from './business';
 import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
+import * as pageType from './page_type';
 import * as signin from './signin';
 import * as urls from './url';
 import * as util from './util';
@@ -37,7 +38,7 @@ export async function advertisePeriods(
   const periods = await getPeriods();
   const noPeriods = periods.length == 0;
   const bg_port = await getBackgroundPort();
-  const inIframeWorker = iframeWorker.isWorker();
+  const inIframeWorker = pageType.isWorker();
 
   if (bg_port) {
     try {

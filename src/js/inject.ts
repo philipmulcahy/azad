@@ -11,6 +11,8 @@ import * as iframeWorker from './iframe-worker';
 const lzjs = require('lzjs');
 import * as notice from './notice';
 import * as periods from './periods';
+import * as pageType from './page_type';
+import * as ports from './ports';
 import * as request_scheduler from './request_scheduler';
 import * as settings from './settings';
 import * as signin from './signin';
@@ -20,7 +22,6 @@ import * as urls from './url';
 import * as util from './util';
 
 let scheduler: request_scheduler.IRequestScheduler | null = null;
-let background_port: chrome.runtime.Port | null = null;
 let years: number[] = [];
 let stats_timeout: NodeJS.Timeout | null = null;
 
@@ -36,48 +37,9 @@ function getScheduler(): request_scheduler.IRequestScheduler {
   return scheduler!;
 }
 
-function getPageType(): string {
-  const isWorker = iframeWorker.isWorker();
-
-  return isWorker ?
-    'azad_iframe_worker' :
-    'azad_inject';
-}
-
-async function initialiseBackgroundPort(): Promise<void> {
-  const isWorker = iframeWorker.isWorker();
-  const isIframe = iframeWorker.isIframe();
-
-  if (isIframe && !isWorker) {
-    // This extension didn't make this iframe,
-    // so it (the iframe) doesn't need to receive messages.
-    return;
-  }
-
-  const portUID: string = new Date().getUTCMilliseconds().toString();
-  const pageType = getPageType();
-  const portName = `${pageType}:${portUID}`;
-
-  // @ts-ignore null IS allowed as first arg to connect.
-  background_port = chrome.runtime.connect(null, {name: portName});
-
-  background_port.onDisconnect.addListener( _port => {
-    background_port = null;
-  });
-
-}
-
-export async function getBackgroundPort(): Promise<chrome.runtime.Port | null> {
-  if (!background_port) {
-    await initialiseBackgroundPort();
-  }
-
-  return background_port;
-}
-
 function setStatsTimeout() {
   const sendStatsMsg = async () => {
-    const bg_port = await getBackgroundPort();
+    const bg_port = await ports.getBackgroundPort();
 
     if (bg_port) {
       _stats.publish(bg_port, getScheduler().purpose());
@@ -104,7 +66,7 @@ function resetScheduler(purpose: string): void {
   }
 
   _stats.clear();
-  scheduler = request_scheduler.create(purpose, getBackgroundPort, _stats);
+  scheduler = request_scheduler.create(purpose, ports.getBackgroundPort, _stats);
   setStatsTimeout();
 }
 
@@ -202,14 +164,14 @@ async function fetchShowAndSendItemsByRange(
 }
 
 async function registerContentScript(isIframeWorker: boolean) {
-  const pageType = getPageType();
-  const bg_port = await getBackgroundPort();
+  const pgType = pageType.getPageType();
+  const bg_port = await ports.getBackgroundPort();
 
   if (bg_port) {
     bg_port.onMessage.addListener(
       msg => {
         try {
-          handleMessageFromBackground(pageType, msg);
+          handleMessageFromBackground(pgType, msg);
         } catch (ex) {
           console.error('message handler blew up with ' + ex +
                         ' while trying to process ' + msg);
@@ -218,7 +180,7 @@ async function registerContentScript(isIframeWorker: boolean) {
     );
 
     if (isIframeWorker) {
-      iframeWorker.requestInstructions(getBackgroundPort);
+      iframeWorker.requestInstructions(ports.getBackgroundPort);
     }
   } else {
     console.warn('no background port in registerContentScript()');
@@ -281,7 +243,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       console.log('got transactions', msg.transactions);
 
       (async ()=>{
-        if (!iframeWorker.isWorker()) {
+        if (!pageType.isWorker()) {
           await azad_table.displayTransactions(msg.transactions, true);
         }
       })();
@@ -311,19 +273,19 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
 function initialiseContentScript() {
   console.log('Amazon Order History Reporter content script initialising');
 
-  const isWorker = iframeWorker.isWorker();
+  const isWorker = pageType.isWorker();
   registerContentScript(isWorker);
 
-  const inIframe = iframeWorker.isIframe();
+  const inIframe = pageType.isIframe();
 
   if (!inIframe) {
-    periods.init(getBackgroundPort);
+    periods.init(ports.getBackgroundPort);
   }
 }
 
 // TOOD remove this function before someone hurts themselves on it.
 async function crazyTest() {
-  const isWorker = iframeWorker.isWorker();
+  const isWorker = pageType.isWorker();
   if (isWorker) {
     return;
   }

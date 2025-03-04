@@ -185,17 +185,46 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
 /*
  * Iterate through strategies, executing its elements until one returns a T,
  * catching and swallowing any exceptions.
- * If no element returns a T, then return defaultValue.
+ * Null, empty strings and isNaN values are considered as bad as exceptions.
+ * If no element returns a valid T, then return defaultValue.
 */
 export function firstMatchingStrategy<T>(
   strategies: Array<()=>T|null>,
   defaultValue: T
-) {
+): T {
+  function isValid(t: T|null): boolean {
+    if (t == null) {
+      return false;
+    }
+
+    if (t == '') {
+      return false;
+    }
+
+    if (typeof(t) == 'undefined') {
+      return false;
+    }
+
+    if (typeof(t) == 'number') {
+      if (isNaN(t)) {
+        return false;
+      }
+    }
+
+    if (t instanceof Date) {
+      if (isNaN(t.getTime())) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   for (const strategy of strategies) {
     try {
       const candidate = strategy();
-      if (candidate != null) {
-        return candidate;
+      if (isValid(candidate)) {
+        return candidate as T;
       }
     } catch (_ex) {
       // Do nothing.

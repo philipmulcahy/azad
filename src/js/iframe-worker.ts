@@ -107,35 +107,18 @@
 
 import * as extraction from './extraction';
 import * as inject from './inject';
+import * as pageType from './page_type';
 import * as periods from './periods';
+import * as ports from './ports';
 import * as transaction from './transaction';
 import * as urls from './url';
 import * as util from './util';
 import { v4 as uuidv4 } from 'uuid';
 
-export function isIframe(): boolean {
-  const wellIsIt = window.self !== window.top;
-  return wellIsIt;
-}
-
-export function isWorker(): boolean {
-  const inIframe = isIframe();
-  const url = document.URL;
-
-  // ${YOUR-DEITY} help us if iframes that aren't ours
-  // start popping up that match these patterns.
-  const relevantPage = url.includes('/transactions') ||
-                       url.includes('/your-orders/orders') ||
-                       url.includes('/order-history') ||
-                       url.includes('/gp/css/order-history');
-
-  return inIframe && relevantPage;
-}
-
 const IFRAME_CLASS = 'AZAD-IFRAME-WORKER';
 
 async function relayToParent(msg: any) {
-  if (!isWorker()) {
+  if (!pageType.isWorker()) {
     console.error(
       'Only an iframe worker can ask for a message to be relayed to its ' +
       'parent.');
@@ -148,7 +131,7 @@ async function relayToParent(msg: any) {
     msg,
   };
 
-  const port = await inject.getBackgroundPort();
+  const port = await ports.getBackgroundPort();
 
   if (!port) {
     console.warn('relayToParent has no port to post to');
@@ -172,7 +155,7 @@ function removeThisIframe(): void {
 
 // (10) Remove existing iframe if one exists.
 export function removeIframeWorker(guid: string): void {
-  if (isIframe()) {
+  if (pageType.isIframe()) {
     console.error('cannot remove worker iframe from an iframe', guid);
     return;
   }
@@ -186,7 +169,7 @@ export function removeIframeWorker(guid: string): void {
 
 // (3) Called from the content page the iframe will be hosted by
 export function createIframe(url: string, guid: string): void {
-  if (isWorker()) {
+  if (pageType.isWorker()) {
     console.error('cannot start iframe task from an iframe', guid);
   }
 
@@ -246,7 +229,7 @@ export async function fetchURL(
   };
 
   const result = new Promise<FetchResponse>(async function (resolve, reject) {
-    const port: chrome.runtime.Port = await inject.getBackgroundPort() as chrome.runtime.Port;
+    const port: chrome.runtime.Port = await ports.getBackgroundPort() as chrome.runtime.Port;
 
     port.onMessage.addListener((msg) => {
       if (msg.action != 'fetch_url_response') {
@@ -270,7 +253,7 @@ export async function fetchURL(
   });
 
   try {
-    const port: chrome.runtime.Port = await inject.getBackgroundPort() as chrome.runtime.Port;
+    const port: chrome.runtime.Port = await ports.getBackgroundPort() as chrome.runtime.Port;
     port.postMessage(requestMsg);
     console.log('fetchURL requested', url, xpath, guid);
   } catch (ex) {
@@ -281,7 +264,7 @@ export async function fetchURL(
 }
 
 export async function handleInstructionsResponse(msg: any): Promise<void> {
-  if (!isWorker()) {
+  if (!pageType.isWorker()) {
     console.error('cannot start iframe task from outside an iframe');
   }
 
@@ -289,7 +272,7 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
 
   switch (action) {
     case 'scrape_periods':
-      periods.advertisePeriods(inject.getBackgroundPort);
+      periods.advertisePeriods(ports.getBackgroundPort);
       break;
     case 'scrape_transactions':
       {
@@ -300,7 +283,7 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
           const startDate = new Date(msg.start_date);
           const endDate = new Date(msg.end_date);
           transaction.reallyScrapeAndPublish(
-            inject.getBackgroundPort,
+            ports.getBackgroundPort,
             startDate,
             endDate,
           );
@@ -312,7 +295,7 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
           const endDate = new Date(maxYear, 11, 31, 23, 59, 59, 999);
 
           await transaction.reallyScrapeAndPublish(
-            inject.getBackgroundPort,
+            ports.getBackgroundPort,
             startDate,
             endDate,
           );
