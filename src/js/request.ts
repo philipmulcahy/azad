@@ -13,6 +13,88 @@ interface IResponse<T> {
   query: string
 }
 
+interface IFetcher {
+  execute(): Promise<Event>;
+}
+
+function MakeXHRTask(
+  url: string,
+  scheduler: request_scheduler.IRequestScheduler, 
+): IFetcher {
+  const xhr = new XMLHttpRequest();
+  console.log('opening xhr on ' + url);
+  xhr.open('GET', url, true);
+
+  const eventPromise = new Promise<Event>( (resolve, reject) => {
+    xhr.onerror = (): void => {
+      if (!signin.checkTooManyRedirects(url, xhr) ) {
+        console.log('Unknown error fetching ', url);
+      }
+
+      const msg = 'got error from XMLHttpRequest';
+      reject(msg);
+    };
+
+    xhr.onload = (evt: ProgressEvent<EventTarget>): void => {
+      console.debug('got response for', url);
+
+      if (!scheduler.isLive) {
+        reject('scheduler no longer live');
+      }
+
+      try {
+        if (
+          xhr.responseURL.includes('/signin?') || xhr.status == 404
+        ) {
+          const msg = `Got sign-in redirect or 404 from: ${url} ${xhr.status}`;
+          console.warn(msg);
+
+          if ( !scheduler.get_signin_warned() ) {
+            signin.alertPartiallyLoggedOutAndOpenLoginTab(url);
+            scheduler.set_signin_warned();
+          }
+
+          reject(msg);
+          return;
+        } else if ( xhr.status != 200 ) {
+          const msg = 'Got HTTP' + xhr.status + ' fetching ' + url;
+          console.warn(msg);
+          reject(msg);
+          return;
+        } else {
+          const msg = 'Finished ' + url;
+          console.debug(msg);
+          resolve(evt as any as Event);
+          return;
+        }
+      } catch (ex) {
+        const msg = 'req handling caught unexpected: ' + ex;
+        console.error(msg);
+        reject(msg);
+        return;
+      }
+      reject('I don\'t know how I got here, but I shouldn\'t have');
+    };
+
+    xhr.timeout = 20000;  // 20 seconds
+
+    xhr.ontimeout = (_evt: any): void => {
+      if (scheduler.isLive()) {
+        const msg = 'Timed out while fetching: ' + url;
+        console.warn(msg);
+        reject(msg);
+      }
+    };
+  });
+
+  return {
+    execute: () => {
+      xhr.send();
+      return eventPromise;
+    },
+  }
+}
+
 export type Event = {
   target: {
     responseText: string;
