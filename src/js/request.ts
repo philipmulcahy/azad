@@ -222,105 +222,33 @@ class AzadRequest<T> {
     return this.C_Send();
   }
 
-  C_Send(): Promise<void> {
+  async C_Send(): Promise<void> {
+    this.check_state(base.State.DEQUEUED);
     const url_map = this._scheduler.overlay_url_map();
 
     if (Object.keys(url_map).length != 0) {
       return this.L_Overlaid();
     } else {
-      return this.C_SendXHR();
+      this.change_state(base.State.SENT);
+      const fetcher = MakeXHRTask(this._url, this._scheduler);
+      try {
+        const evt = await fetcher.execute();
+        setTimeout(() => this.E_Response(evt));
+      } catch (ex) {
+        if (typeof(ex) == 'string') {
+          if (ex.toUpperCase().startsWith('TIMED OUT')) {
+            setTimeout(() => this.F_TimedOut());
+          } else {
+            setTimeout(() => this.G_Failed(ex as string));
+          }
+        } else {
+          setTimeout(() => this.G_Failed('unknown reason'));
+        }
+      }
     }
   }
 
-  async C_SendXHR(): Promise<void> {
-    this.check_state(base.State.DEQUEUED);
-    this.change_state(base.State.SENT);
-    const xhr = new XMLHttpRequest();
-    console.log('opening xhr on ' + this._url);
-    xhr.open('GET', this._url, true);
-
-    return new Promise<void>( (resolve, reject) => {
-      xhr.onerror = (): void => {
-        if (!signin.checkTooManyRedirects(this._url, xhr) ) {
-          console.log(
-            'Unknown error fetching ', this._debug_context, this._url);
-        }
-
-        const msg = 'got error from XMLHttpRequest';
-        setTimeout(() => this.G_Failed(msg));
-        reject(msg);
-      };
-
-      xhr.onload = (evt: any): void => {
-        console.debug('got response for', this._debug_context, this._url);
-
-        if (!this._scheduler.isLive) {
-          reject('scheduler no longer live');
-        }
-
-        try {
-          if (
-            xhr.responseURL.includes('/signin?') || xhr.status == 404
-          ) {
-            console.log(
-              'Got sign-in redirect or 404 from: ',
-              this._debug_context, this._url, xhr.status);
-
-            const msg = 'got sign-in redirect or 404';
-            setTimeout(() => this.G_Failed(msg));
-
-            if ( !this._scheduler.get_signin_warned() ) {
-              signin.alertPartiallyLoggedOutAndOpenLoginTab(this._url);
-              this._scheduler.set_signin_warned();
-            }
-
-            reject(msg);
-            return;
-          } else if ( xhr.status != 200 ) {
-            const msg = 'Got HTTP' + xhr.status + ' fetching ' + this._url;
-            console.warn(msg);
-            setTimeout(() => this.G_Failed(msg));
-            reject(msg);
-            return;
-          } else {
-            const msg = 'Finished ' + this._debug_context + ' ' + this._url;
-            console.debug(msg);
-            setTimeout( () => this.E_Response(evt) );
-            resolve();
-            return;
-          }
-        } catch (ex) {
-          const msg = 'req handling caught unexpected: '
-                    + this._debug_context + ex;
-
-          console.error(msg);
-          setTimeout( () => this.G_Failed(msg) );
-          reject(msg);
-          return;
-        }
-        reject('I don\'t know how I got here, but I shouldn\'t have');
-      };
-
-      xhr.timeout = 20000;  // 20 seconds
-
-      xhr.ontimeout = (_evt: any): void => {
-        if (this._scheduler.isLive()) {
-          const msg = 'Timed out while fetching: '
-                    + this._debug_context
-                    + this._url;
-
-          console.warn(msg);
-          setTimeout( () => this.F_TimedOut() );
-          reject(msg);
-        }
-      };
-
-      xhr.send();
-    });
-  }
-
   async L_Overlaid(): Promise<void> {
-    this.check_state(base.State.DEQUEUED);
     const url_map: request_scheduler.string_string_map
                    = this._scheduler.overlay_url_map();
 
