@@ -102,7 +102,7 @@ export type Event = {
   }
 };
 
-export type EventConverter<T> = (evt: Event) => T;
+type EventConverter<T> = (evt: Event) => T;
 
 // Embedding this code in AzadRequest.constructor means initialisation order
 // nightmares - at least we keep the mess isolated by doing it in a dedicated
@@ -126,7 +126,7 @@ function make_promise_with_callbacks<T>(): {
   };
 }
 
-export class AzadRequest<T> {
+class AzadRequest<T> {
   _state: base.State = base.State.NEW;
   _url: string;
   _event_converter: EventConverter<T>;
