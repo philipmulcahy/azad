@@ -21,75 +21,76 @@ function MakeXHRTask(
   url: string,
   scheduler: request_scheduler.IRequestScheduler, 
 ): IFetcher {
-  const xhr = new XMLHttpRequest();
-  console.log('opening xhr on ' + url);
-  xhr.open('GET', url, true);
-
-  const eventPromise = new Promise<Event>( (resolve, reject) => {
-    xhr.onerror = (): void => {
-      if (!signin.checkTooManyRedirects(url, xhr) ) {
-        console.log('Unknown error fetching ', url);
-      }
-
-      const msg = 'got error from XMLHttpRequest';
-      reject(msg);
-    };
-
-    xhr.onload = (evt: ProgressEvent<EventTarget>): void => {
-      console.debug('got response for', url);
-
-      if (!scheduler.isLive) {
-        reject('scheduler no longer live');
-      }
-
-      try {
-        if (
-          xhr.responseURL.includes('/signin?') || xhr.status == 404
-        ) {
-          const msg = `Got sign-in redirect or 404 from: ${url} ${xhr.status}`;
-          console.warn(msg);
-
-          if ( !scheduler.get_signin_warned() ) {
-            signin.alertPartiallyLoggedOutAndOpenLoginTab(url);
-            scheduler.set_signin_warned();
-          }
-
-          reject(msg);
-          return;
-        } else if ( xhr.status != 200 ) {
-          const msg = 'Got HTTP' + xhr.status + ' fetching ' + url;
-          console.warn(msg);
-          reject(msg);
-          return;
-        } else {
-          const msg = 'Finished ' + url;
-          console.debug(msg);
-          resolve(evt as any as Event);
-          return;
-        }
-      } catch (ex) {
-        const msg = 'req handling caught unexpected: ' + ex;
-        console.error(msg);
-        reject(msg);
-        return;
-      }
-      reject('I don\'t know how I got here, but I shouldn\'t have');
-    };
-
-    xhr.timeout = 20000;  // 20 seconds
-
-    xhr.ontimeout = (_evt: any): void => {
-      if (scheduler.isLive()) {
-        const msg = 'Timed out while fetching: ' + url;
-        console.warn(msg);
-        reject(msg);
-      }
-    };
-  });
-
   return {
     execute: () => {
-      xhr.send();
+      const eventPromise = new Promise<Event>( (resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        console.log('opening xhr on ' + url);
+        xhr.open('GET', url, true);
+
+        xhr.onerror = (): void => {
+          if (!signin.checkTooManyRedirects(url, xhr) ) {
+            console.log('Unknown error fetching ', url);
+          }
+
+          const msg = 'got error from XMLHttpRequest';
+          reject(msg);
+        };
+
+        xhr.onload = (evt: ProgressEvent<EventTarget>): void => {
+          console.debug('got response for', url);
+
+          if (!scheduler.isLive) {
+            reject('scheduler no longer live');
+          }
+
+          try {
+            if (
+              xhr.responseURL.includes('/signin?') || xhr.status == 404
+            ) {
+              const msg = `Got sign-in redirect or 404 from: ${url} ${xhr.status}`;
+              console.warn(msg);
+
+              if ( !scheduler.get_signin_warned() ) {
+                signin.alertPartiallyLoggedOutAndOpenLoginTab(url);
+                scheduler.set_signin_warned();
+              }
+
+              reject(msg);
+              return;
+            } else if ( xhr.status != 200 ) {
+              const msg = 'Got HTTP' + xhr.status + ' fetching ' + url;
+              console.warn(msg);
+              reject(msg);
+              return;
+            } else {
+              const msg = 'Finished ' + url;
+              console.debug(msg);
+              resolve(evt as any as Event);
+              return;
+            }
+          } catch (ex) {
+            const msg = 'req handling caught unexpected: ' + ex;
+            console.error(msg);
+            reject(msg);
+            return;
+          }
+          reject('I don\'t know how I got here, but I shouldn\'t have');
+        };
+
+        xhr.timeout = 20000;  // 20 seconds
+
+        xhr.ontimeout = (_evt: any): void => {
+          if (scheduler.isLive()) {
+            const msg = 'Timed out while fetching: ' + url;
+            console.warn(msg);
+            reject(msg);
+          }
+        };
+
+        xhr.send();
+      });
+
       return eventPromise;
     },
   }
@@ -129,6 +130,7 @@ function make_promise_with_callbacks<T>(): {
 class AzadRequest<T> {
   _state: base.State = base.State.NEW;
   _url: string;
+  _fetcher: IFetcher;
   _event_converter: EventConverter<T>;
   _scheduler: request_scheduler.IRequestScheduler;
   _priority: string;
@@ -140,6 +142,7 @@ class AzadRequest<T> {
 
   constructor(
     url: string,
+    fetcher: IFetcher,
     event_converter: EventConverter<T>,
     scheduler: request_scheduler.IRequestScheduler,
     priority: string,
@@ -147,6 +150,7 @@ class AzadRequest<T> {
     debug_context: string,
   ) {
     this._url = urls.normalizeUrl(url, urls.getSite());
+    this._fetcher = fetcher;
     this._event_converter = event_converter;
     this._scheduler = scheduler;
     this._priority = priority;
@@ -230,9 +234,8 @@ class AzadRequest<T> {
       return this.L_Overlaid();
     } else {
       this.change_state(base.State.SENT);
-      const fetcher = MakeXHRTask(this._url, this._scheduler);
       try {
-        const evt = await fetcher.execute();
+        const evt = await this._fetcher.execute();
         setTimeout(() => this.E_Response(evt));
       } catch (ex) {
         if (typeof(ex) == 'string') {
@@ -403,8 +406,11 @@ export async function makeAsyncRequest<T>(
   nocache: boolean,
   debug_context: string,
 ): Promise<T> {
+  const fetcher = MakeXHRTask(url, scheduler);
+
   const req = new AzadRequest(
     url,
+    fetcher,
     event_converter,
     scheduler,
     priority,
