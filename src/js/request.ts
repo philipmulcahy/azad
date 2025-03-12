@@ -48,7 +48,7 @@ function MakeXHRTask(
             if (
               xhr.responseURL.includes('/signin?') || xhr.status == 404
             ) {
-              const msg = `Got sign-in redirect or 404 from: ${url} ${xhr.status}`;
+              const msg = `Got sign-in redirect or 404: ${url} ${xhr.status}`;
               console.warn(msg);
 
               if ( !scheduler.get_signin_warned() ) {
