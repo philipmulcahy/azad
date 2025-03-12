@@ -398,7 +398,7 @@ class AzadRequest<T> {
   }
 }
 
-export async function makeAsyncRequest<T>(
+export async function makeAsyncStaticRequest<T>(
   url: string,
   event_converter: EventConverter<T>,
   scheduler: request_scheduler.IRequestScheduler,

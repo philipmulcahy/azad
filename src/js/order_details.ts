@@ -68,7 +68,7 @@ export async function extractDetailPromise(
   const debug_context = 'order_detail';
 
   try {
-    const details_promise = req.makeAsyncRequest(
+    const details_promise = req.makeAsyncStaticRequest(
       url,
       event_converter,
       scheduler,

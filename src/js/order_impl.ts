@@ -66,7 +66,7 @@ export class OrderImpl {
     }
 
     try {
-      return await req.makeAsyncRequest<Payments>(
+      return await req.makeAsyncStaticRequest<Payments>(
         url,
         event_converter,
         scheduler,

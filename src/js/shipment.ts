@@ -112,7 +112,7 @@ async function get_tracking_id(
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<string> {
   try {
-    const decorated_id = await req.makeAsyncRequest(
+    const decorated_id = await req.makeAsyncStaticRequest(
       amazon_tracking_url,
       id_from_tracking_page,
       scheduler,
