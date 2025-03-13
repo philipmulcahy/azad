@@ -39,12 +39,8 @@ function getScheduler(): request_scheduler.IRequestScheduler {
 
 function setStatsTimeout() {
   const sendStatsMsg = async () => {
-    const bg_port = await ports.getBackgroundPort();
-
-    if (bg_port) {
-      _stats.publish(bg_port, getScheduler().purpose());
-      azad_table.updateProgressBar(_stats);
-    }
+    await _stats.publish(ports.getBackgroundPort, getScheduler().purpose());
+    azad_table.updateProgressBar(_stats);
   };
 
   if (stats_timeout) {

@@ -26,13 +26,16 @@ export class Statistics {
     const count: number = this._stats[key];
     this._stats[key] = count + 1;
   }
+
   decrement(key: StatsKey): void {
     const count: number = this._stats[key];
     this._stats[key] = count - 1;
   }
+
   get(key: StatsKey) {return this._stats[key];}
   set(key: StatsKey, value: number) {this._stats[key] = value;}
   clear(): void { this._stats = new Statistics()._stats; }
+
   transmittable(): StringNumberMap {
     const t: StringNumberMap = {};
     Object.keys(OStatsKey)
@@ -43,15 +46,19 @@ export class Statistics {
     });
     return t;
   }
-  publish(
-    port: chrome.runtime.Port | null,
+
+  async publish(
+    getPort: () => Promise<chrome.runtime.Port | null>,
     purpose: string
   ) {
-    if (!port ) {
-      return;
-    }
     try {
       const s = this.transmittable();
+      const port = await getPort();
+
+      if (!port ) {
+        return;
+      }
+
       port.postMessage({
           action: 'statistics_update',
           statistics: s,
