@@ -104,6 +104,7 @@ function makeDynamicFetchTask(
   return {
     execute: async function(): Promise<Event>{
       const response = await iframeWorker.fetchURL(url, readyXPath);
+
       return {
         target: {
           responseText: response.html,
