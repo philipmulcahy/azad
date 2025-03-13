@@ -1,6 +1,7 @@
 /* Copyright(c) 2023 Philip Mulcahy. */
 
 import * as base from './request_base';
+import * as iframeWorker from './iframe-worker';
 import * as request_scheduler from './request_scheduler';
 import * as stats from './statistics';
 import * as signin from './signin';
@@ -17,7 +18,7 @@ interface IFetcher {
   execute(): Promise<Event>;
 }
 
-function MakeXHRTask(
+function makeXHRTask(
   url: string,
   scheduler: request_scheduler.IRequestScheduler, 
 ): IFetcher {
@@ -92,6 +93,23 @@ function MakeXHRTask(
       });
 
       return eventPromise;
+    },
+  }
+}
+
+function makeDynamicFetchTask(
+  url: string,
+  readyXPath: string,
+): IFetcher {
+  return {
+    execute: async function(): Promise<Event>{
+      const response = await iframeWorker.fetchURL(url, readyXPath);
+      return {
+        target: {
+          responseText: response.html,
+          responseURL: url,
+        }
+      };
     },
   }
 }
@@ -406,7 +424,33 @@ export async function makeAsyncStaticRequest<T>(
   nocache: boolean,
   debug_context: string,
 ): Promise<T> {
-  const fetcher = MakeXHRTask(url, scheduler);
+  const fetcher = makeXHRTask(url, scheduler);
+
+  const req = new AzadRequest(
+    url,
+    fetcher,
+    event_converter,
+    scheduler,
+    priority,
+    nocache,
+    debug_context,
+  );
+
+  scheduler.register(req);
+  const response = await req.response();
+  return response.result;
+}
+
+export async function makeAsyncDynamicRequest<T>(
+  url: string,
+  event_converter: EventConverter<T>,
+  readyXPath: string,
+  scheduler: request_scheduler.IRequestScheduler,
+  priority: string,
+  nocache: boolean,
+  debug_context: string,
+): Promise<T> {
+  const fetcher = makeDynamicFetchTask(url,readyXPath);
 
   const req = new AzadRequest(
     url,
