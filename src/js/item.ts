@@ -107,7 +107,7 @@ function getCategoryForProduct(
   product_url: string,
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<string> {
-  return req.makeAsyncRequest<string>(
+  return req.makeAsyncStaticRequest<string>(
     product_url,
     (evt) => {
       const productPage = util.parseStringToDOM(evt.target.responseText)

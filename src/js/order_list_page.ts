@@ -7,6 +7,7 @@ import * as iframeWorker from './iframe-worker';
 import * as notice from './notice';
 import * as order_header from './order_header';
 import * as req from './request';
+import * as request from './request';
 import * as request_scheduler from './request_scheduler';
 import * as sprintf from 'sprintf-js';
 import * as urls from './url';
@@ -64,19 +65,23 @@ async function get_page_of_headers(
   year: number,
   urlGenerator: headerPageUrlGenerator,
   start_order_number: number, // zero based
+  scheduler: request_scheduler.IRequestScheduler,
 ): Promise<order_header.IOrderHeader[]> {
   const url = await urlGenerator(site, year, start_order_number);
   const pageReadyXpath = '//*[contains(@class, "yohtmlc-order-id")]';
-  const response = await iframeWorker.fetchURL(url, pageReadyXpath);
+  const nocache = start_order_number == 0;
+  const priority = nocache ? '00000' : '2';
 
-  const evt = {
-    target: {
-      responseText: response.html,
-      responseURL: response.url,
-    }
-  };
+  const pageData = request.makeAsyncDynamicRequest(
+    url,
+    (evt) => translateOrdersPage(evt, year.toString()),
+    pageReadyXpath,
+    scheduler,
+    '',
+    nocache,
+    'order_list_page.get_page_of_headers: ' + start_order_number,  // debug_context
+  );
 
-  const pageData = translateOrdersPage(evt, year.toString());
   return pageData;
 }
 
@@ -99,6 +104,7 @@ function dedupeHeaders(headers: order_header.IOrderHeader[]): order_header.IOrde
 export async function get_headers(
   site: string,
   year: number,
+  scheduler: request_scheduler.IRequestScheduler,
 ): Promise<order_header.IOrderHeader[]> {
   async function fetch_headers_for_template(
     urlGenerator: headerPageUrlGenerator
@@ -114,7 +120,7 @@ export async function get_headers(
       );
 
       const page_of_headers = get_page_of_headers(
-        site, year, urlGenerator, iorder,
+        site, year, urlGenerator, iorder, scheduler,
       );
 
       header_promises.push(page_of_headers);

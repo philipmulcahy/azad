@@ -124,10 +124,7 @@ class RequestScheduler {
     this._get_background_port = get_background_port;
     this._stats = statistics;
     console.log('constructing new RequestScheduler');
-
-    get_background_port().then( bp => {
-      this.stats().publish(bp, 'starting scrape');
-    });
+    this.stats().publish(get_background_port, 'starting scrape');
   }
 
   purpose(): string { return this._purpose; }
@@ -208,7 +205,7 @@ class RequestScheduler {
       async () => {
         this._executeSomeIfPossible();
         const port = await this._get_background_port();
-        this._stats.publish(port, this._purpose);
+        this._stats.publish(this._get_background_port, this._purpose);
         this._checkDone();
       }
     );

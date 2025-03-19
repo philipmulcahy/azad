@@ -298,6 +298,7 @@ async function fetchYear(
   const headers: order_header.IOrderHeader[] = await olp.get_headers(
     urls.getSite(),
     year,
+    scheduler,
   );
   return headers.map(h => create(h, scheduler, date_filter))
                 .filter(o => o) as IOrder[];
