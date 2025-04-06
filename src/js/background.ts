@@ -391,30 +391,32 @@ function registerRightClickActions() {
     // to run.
     console.log(ex);
   }
+
   chrome.contextMenus.onClicked.addListener((info) => {
     console.log('context menu item: ' + info.menuItemId + ' clicked;');
+
     if (info.menuItemId == 'save_order_debug_info') {
-      if (/orderID=/.test(info.linkUrl!)) {
-        const match = info?.linkUrl?.match(/.*orderID=([0-9A-Z-]*)$/);
-        const order_id = match![1];
+      for (const paramName of ['orderID', 'search']) {
+        const regex = new RegExp(`^.*${paramName}=([0-9A-Z-]*)(?:&.*)?$`);
+        const match = info?.linkUrl?.match(regex);
 
         if (match) {
+          const order_id = match[1];
+
+          console.log(`requesting dump_order_detail for  ${order_id}`);
+
           broadcastToRootContentPages({
             action: 'dump_order_detail',
             order_id: order_id,
           });
-        }
-      } else if (/search=/.test(info.linkUrl!)) {
-        const match = info?.linkUrl?.match(/.*search=([0-9A-Z-]*)$/);
-        const order_id = match![1];
 
-        if (match) {
-          broadcastToRootContentPages({
-            action: 'dump_order_detail',
-            order_id: order_id,
-          });
+          return;
         }
       }
+
+      console.warn(
+        `failed to find an order id in ${info?.linkUrl}, ` +
+        'so cannot dump order detail');
     }
   });
 }
@@ -451,6 +453,7 @@ function registerMessageListener() {
 function advertisePeriods() {
   if (control_port) {
     console.log('advertising periods', advertised_periods);
+
     try {
       control_port.postMessage({
         action: 'advertise_periods',
@@ -485,6 +488,7 @@ async function handleAuthorisationRequest(
     });
   } catch(ex) {
     const e = ex!.toString();
+
     if (!(e as string).includes('disconnected')) {
       throw ex;
     }
@@ -499,12 +503,12 @@ function registerVersionUpdateListener() {
         " AZAD cache entries incompatible with the new version: let's clear" +
         ' them out.'
     );
-    // The (big) problem with this implementation is that the cache is in the
-    // Amazon sites' cache areas, which means we can only get to them when
-    // we've got an injected tab open. I think this problem means we need to
-    // get going on https://github.com/philipmulcahy/azad/issues/231
-    // until that's fixed, users will sometimes need to manually clear their
-    // caches.
+
+    // The (big) problem with this implementation is that the cache used to be
+    // in the Amazon sites' cache areas (#231), the legacy of which means we
+    // can only get to them when we've got an injected tab open.
+    // Until we do the clearance from the background worker, users will
+    // sometimes need to manually clear their caches.
     broadcastToRootContentPages({ action: 'clear_cache' });
   });
 }
