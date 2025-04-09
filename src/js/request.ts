@@ -122,7 +122,7 @@ export type Event = {
   }
 };
 
-type EventConverter<T> = (evt: Event) => T;
+export type EventConverter<T> = (evt: Event) => T;
 
 // Embedding this code in AzadRequest.constructor means initialisation order
 // nightmares - at least we keep the mess isolated by doing it in a dedicated

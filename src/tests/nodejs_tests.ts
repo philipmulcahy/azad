@@ -132,6 +132,10 @@ function runAllOrderTests():  Promise<ITestResult[]> {
   const order_test_targets = order_data.discoverTestData();
   const order_test_results_promise = Promise.all(
     order_test_targets
+      .filter(target => target.order_id == '202-0527784-8125937')  // @philipmulcahy
+      // .filter(target => target.order_id == '114-9161811-0719428')  // @jadeglaze
+      // .filter(target => target.order_id == '111-5315398-4208260')  // @jadeglaze
+
       // .filter(target => target.order_id == '002-9651082-1715432')
       // .filter(target => target.order_id == '026-5653597-4769168')  // @philipmulcahy
       // .filter(target => target.order_id == '111-7327625-5652241')  // @alfredoagg
