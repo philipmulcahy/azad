@@ -5,6 +5,7 @@
 import * as base from './request_base';
 import * as binary_heap from './binary_heap';
 import * as cachestuff from './cachestuff';
+import * as request_base from './request_base';
 import * as stats from './statistics';
 
 export type string_string_map = {[key: string]: string};
@@ -16,13 +17,9 @@ export type PrioritisedTask = {task: Task, priority: string};
 export type IdentifiedTask = {task: PrioritisedTask, id: number};
 
 export interface IRequestScheduler {
-  // Let the scheduler know about the request, but it won't be able to do
-  // anything with it except keep track of it.
-  register(request: base.UntypedRequest): void;
-
   // Ask the scheduler to do some work, but not before it's done higher
   // priority tasks that are submitted before execution starts.
-  schedule(task: PrioritisedTask): void;
+  schedule(task: PrioritisedTask, stateful: request_base.UntypedRequest): void;
 
   // Prevent the scheduler from doing any more work, or accepting any more.
   abort(): void;
@@ -130,14 +127,11 @@ class RequestScheduler {
   purpose(): string { return this._purpose; }
   overlay_url_map(): string_string_map { return this._overlay_url_map; }
 
-  register(request: base.UntypedRequest): void {
-    this._tracker.register(request);
-  }
-
-  schedule(task: PrioritisedTask) {
+  schedule(task: PrioritisedTask, stateful: request_base.UntypedRequest) {
     const id = this._sequence_number;
     this._sequence_number += 1;
     const id_task: IdentifiedTask = {task: task, id: id};
+    this._tracker.register(stateful);
     this._queue.push(id_task);
     this.stats().set(stats.OStatsKey.QUEUED_COUNT, this.queue_size());
     console.debug(

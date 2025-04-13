@@ -391,7 +391,10 @@ export async function get_legacy_items(order: IOrder)
   return result;
 }
 
-export async function assembleDiagnostics(order: IOrder)
+export async function assembleDiagnostics(
+  order: IOrder,
+  getScheduler: () => request_scheduler.IRequestScheduler,
+)
   : Promise<Record<string, any>>
 {
   const sync_order = await order.sync();
@@ -442,7 +445,7 @@ export async function assembleDiagnostics(order: IOrder)
   diagnostics['item_data'] = await get_item_data(sync_order);
 
   async function get_tracking_data(
-    order: ISyncOrder
+    order: ISyncOrder,
   ): Promise<Record<string, string>> {
     const urls = order.shipments
                       .map(s => s.tracking_link);
@@ -453,9 +456,18 @@ export async function assembleDiagnostics(order: IOrder)
   diagnostics['tracking_data'] = await get_tracking_data(sync_order);
 
   return Promise.all([
-    single_fetch.checkedStaticFetch( util.defaulted(sync_order.list_url, '') )
-      .then( response => response.text() )
-      .then( text => { diagnostics['list_html'] = text; } ),
+    single_fetch.checkedDynamicFetch(
+      util.defaulted(sync_order.list_url, ''),  // url
+
+      // ready_xpath: TODO - derive from mainline scraping code, DRY!
+      '//div[@id="orderCard"]//div[@id="orderCardHeader"]|//div[contains(@class, "order-card")]',
+
+      getScheduler,
+    )
+      .then( text => { 
+        getScheduler().abort();
+        diagnostics['list_html'] = text; 
+      } ),
     single_fetch.checkedStaticFetch( util.defaulted(sync_order.detail_url, '') )
       .then( response => response.text() )
       .then( text => { diagnostics['detail_html'] = text; } ),

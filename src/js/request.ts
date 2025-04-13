@@ -52,7 +52,7 @@ function makeXHRTask(
               const msg = `Got sign-in redirect or 404: ${url} ${xhr.status}`;
               console.warn(msg);
 
-              if ( !scheduler.get_signin_warned() ) {
+              if (!scheduler.get_signin_warned()) {
                 signin.alertPartiallyLoggedOutAndOpenLoginTab(url);
                 scheduler.set_signin_warned();
               }
@@ -220,10 +220,13 @@ class AzadRequest<T> {
     this.check_state(base.State.NEW);
     this.change_state(base.State.ENQUEUED);
 
-    this._scheduler.schedule({
-      task: ()=>{ return this.B_Dequeued(); },
-      priority: this._priority
-    });
+    this._scheduler.schedule(
+      {
+        task: ()=>{ return this.B_Dequeued(); },
+          priority: this._priority
+      },
+      this
+    )
   }
 
   async B_Dequeued(): Promise<void> {
@@ -437,7 +440,6 @@ export async function makeAsyncStaticRequest<T>(
     debug_context,
   );
 
-  scheduler.register(req);
   const response = await req.response();
   return response.result;
 }
@@ -451,7 +453,7 @@ export async function makeAsyncDynamicRequest<T>(
   nocache: boolean,
   debug_context: string,
 ): Promise<T> {
-  const fetcher = makeDynamicFetchTask(url,readyXPath);
+  const fetcher = makeDynamicFetchTask(url, readyXPath);
 
   const req = new AzadRequest(
     url,
@@ -463,7 +465,6 @@ export async function makeAsyncDynamicRequest<T>(
     debug_context,
   );
 
-  scheduler.register(req);
   const response = await req.response();
   return response.result;
 }

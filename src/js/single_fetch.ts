@@ -25,11 +25,12 @@ export function checkedStaticFetch(url: string): Promise<Response> {
 export async function checkedDynamicFetch(
   url: string,
   readyXPath: string,
-  scheduler: request_scheduler.IRequestScheduler
+  getScheduler: () => request_scheduler.IRequestScheduler
 ) : Promise<string>
 {
   const stats = new statistics.Statistics;  // not going to be reported!
   const converter: request.EventConverter<string> = (evt: request.Event) => evt.target.responseText;
+  const scheduler = await getScheduler();
 
   const txt = await request.makeAsyncDynamicRequest(
     url,
