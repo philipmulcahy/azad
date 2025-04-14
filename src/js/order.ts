@@ -458,6 +458,7 @@ export async function assembleDiagnostics(
   return Promise.all([
     single_fetch.checkedDynamicFetch(
       util.defaulted(sync_order.list_url, ''),  // url
+      'orderListHtmlForDebug',
 
       // ready_xpath: TODO - derive from mainline scraping code, DRY!
       '//div[@id="orderCard"]//div[@id="orderCardHeader"]|//div[contains(@class, "order-card")]',

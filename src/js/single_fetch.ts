@@ -24,23 +24,32 @@ export function checkedStaticFetch(url: string): Promise<Response> {
 
 export async function checkedDynamicFetch(
   url: string,
+  requestType: string,
   readyXPath: string,
   getScheduler: () => request_scheduler.IRequestScheduler
 ) : Promise<string>
 {
+  console.log(`checkedDynamicFetch(${url}, ${requestType}, ${readyXPath}, ...) starting`);
   const stats = new statistics.Statistics;  // not going to be reported!
   const converter: request.EventConverter<string> = (evt: request.Event) => evt.target.responseText;
   const scheduler = await getScheduler();
 
-  const txt = await request.makeAsyncDynamicRequest(
-    url,
-    converter,
-    readyXPath,
-    scheduler,
-    '0',  // priority
-    true,  // nocache
-    `single_fetch.checkedDynamicFetch(${url}...`,
-  );
+  try {
+    const txt = await request.makeAsyncDynamicRequest(
+      url,
+      requestType,
+      converter,
+      readyXPath,
+      scheduler,
+      '0',  // priority
+      true,  // nocache
+      `single_fetch.checkedDynamicFetch(${url}...`,
+    );
 
-  return txt;
+    console.log(`checkedDynamicFetch(${url}, ${requestType}, ${readyXPath}, ...) complete`);
+    return txt;
+  } catch (ex) {
+    console.warn(`checkedDynamicFetch(${url}, ${requestType}, ${readyXPath}, ...) failed: ${ex}`);
+    return JSON.stringify(ex);
+  }
 }

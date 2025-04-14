@@ -74,6 +74,7 @@ async function get_page_of_headers(
 
   const pageData = request.makeAsyncDynamicRequest(
     url,
+    'get_page_of_headers',
     (evt) => translateOrdersPage(evt, year.toString()),
     pageReadyXpath,
     scheduler,

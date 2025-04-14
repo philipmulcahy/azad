@@ -114,6 +114,7 @@ async function get_tracking_id(
   try {
     const decorated_id = await req.makeAsyncStaticRequest(
       amazon_tracking_url,
+      'get_tracking_id',
       id_from_tracking_page,
       scheduler,
       '9999',

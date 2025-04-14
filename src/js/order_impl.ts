@@ -68,6 +68,7 @@ export class OrderImpl {
     try {
       return await req.makeAsyncStaticRequest<Payments>(
         url,
+        'fetch_payments',
         event_converter,
         scheduler,
         util.defaulted(this.header.id, '9999'), // priority

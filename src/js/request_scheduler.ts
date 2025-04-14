@@ -199,7 +199,7 @@ class RequestScheduler {
       async () => {
         this._executeSomeIfPossible();
         const port = await this._get_background_port();
-        this._stats.publish(this._get_background_port, this._purpose);
+        this.stats().publish(this._get_background_port, this._purpose);
         this._checkDone();
       }
     );
