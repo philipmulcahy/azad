@@ -9,7 +9,7 @@
         "init": "npm install --init",
         "clean": "rm -rf azad*.zip build/* build-node/*",
         "build": "node utils/build.js",
-        "doc": " typedoc --out ./doc/ ./src/js/",
+        "doc": "npx typedoc --entryPointStrategy Expand src/js",
         "lint": "tsc --strict --alwaysStrict --noEmit --noUnusedParameters --noImplicitReturns --noImplicitOverride --noImplicitThis --noFallthroughCasesInSwitch",
         "eslint": "eslint --ignore-path .gitignore --ext .js,.ts .",
         "package": "utils/package.sh",
