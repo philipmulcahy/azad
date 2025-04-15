@@ -12,6 +12,7 @@ import * as datatable_wrap from './datatable_wrap';
 import * as diagnostic_download from './diagnostic_download';
 import * as notice from './notice';
 import * as progress_bar from './progress_bar';
+import * as request_scheduler from './request_scheduler';
 import * as settings from './settings';
 import * as transaction from './transaction';
 import * as stats from './statistics';
@@ -455,7 +456,10 @@ export async function display(
   return table_promise;
 }
 
-export function dumpOrderDiagnostics(order_id: string) {
+export function dumpOrderDiagnostics(
+  order_id: string,
+  getScheduler: () => request_scheduler.IRequestScheduler,
+) {
   console.log('dumpOrderDiagnostics: ' + order_id);
   const order = order_map[order_id];
 
@@ -463,7 +467,7 @@ export function dumpOrderDiagnostics(order_id: string) {
     const utc_today = new Date().toISOString().substr(0,10);
     const file_name = order_id + '_' + utc_today + '.json';
 
-    azad_order.assembleDiagnostics(order).then(
+    azad_order.assembleDiagnostics(order, getScheduler).then(
       diagnostics => diagnostic_download.save_json_to_file(
         diagnostics,
         file_name

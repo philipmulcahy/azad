@@ -43,6 +43,7 @@ function getASites(): string[] {
     const sites: string[] = getSiteDirs()
         .filter((de: fs.Dirent) => dirHasDirs(de, ['expected', 'input']))
         .map((de: fs.Dirent) => de.name);
+
     return sites;
 }
 
@@ -59,16 +60,20 @@ export function orderFromTestData(
 ): azad_order.IOrder | null {
     const path = sitePath(site) + '/input/' + order_id + '_' +
                  collection_date + '.json';
+
     const json: string = fs.readFileSync(path, 'utf8');
     const order_dump = JSON.parse(json);
     const url_map: request_scheduler.string_string_map = {};
+
     // TODO Contrive a way for www.amazon.com and similar to be replaced
     //      with www.azadexample.com.
     url_map[order_dump.list_url] = order_dump.list_html;
     url_map[order_dump.detail_url] = order_dump.detail_html;
     url_map[order_dump.payments_url] = order_dump.invoice_html;
+
     ['item_data', 'tracking_data'].forEach( map_type => {
       const data = order_dump[map_type] as Record<string, string>;
+
       if (data) {
         Object.entries(data).forEach( entry => {
           const url = entry[0];
@@ -77,13 +82,17 @@ export function orderFromTestData(
         });
       }
     });
+
     const scheduler = request_scheduler.create_overlaid(
       'testing', url_map, ()=>Promise.resolve(null), statistics);
+
     const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;
+
     const order_elems = extraction.findMultipleNodeValues(
         './/*[contains(concat(" ", normalize-space(@class), " "), " order ")]',
         list_doc.body
     );
+
     const list_elem: HTMLElement = <HTMLElement>(
         (order_elems as HTMLElement[]).filter(
             (el: HTMLElement) => {
@@ -99,19 +108,23 @@ export function orderFromTestData(
             }
         )[0]
     );
+
     const header: order_header.IOrderHeader = order_header.extractOrderHeader(
       list_elem,
       order_dump.list_url,
     );
+
     const order: azad_order.IOrder|null = azad_order.create(
       header,
       scheduler,
       (_d: Date|null) => true,  // DateFilter
     );
+
     if (typeof(order) === 'undefined') {
       throw new Error(
         'null order not expected, but sometimes these things happen');
     }
+
     return order;
 }
 

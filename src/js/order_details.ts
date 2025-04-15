@@ -70,6 +70,7 @@ export async function extractDetailPromise(
   try {
     const details_promise = req.makeAsyncStaticRequest(
       url,
+      'extractDetailPromise',
       event_converter,
       scheduler,
       util.defaulted(header.id, '9999'),

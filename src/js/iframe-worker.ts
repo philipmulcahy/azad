@@ -70,7 +70,7 @@
 // 10 │          ├───────►*│        │       │
 //
 /////////////////////////////////////////////////
-// Get Processed HTML
+// Get Processed/Cooked HTML
 /////////////////////////////////////////////////
 //
 //  ┌─────┐┌──────────┐┌───────┐┌──────┐┌──────┐
@@ -97,7 +97,7 @@
 //  8 │          │◄────────┼────────┤       │
 //    │          │         │        │       │
 //    │          │ results │        │       │
-//  9 │          ├───────►*┤        │       │
+//  9 │          ├───────►*│        │       │
 //    │          │         │        │       │
 //    │          │ remove  │        │       │
 //    │          │ iframe  │        │       │
@@ -365,7 +365,7 @@ async function waitForXPathToMatch(
       );
 
       if (match != null) {
-        console.log('waitForXpathToMatch matched', url, xpath);
+        console.log(`waitForXpathToMatch matched ${url} ${xpath}`);
         return true;
       }
     } catch (_ex) {
@@ -376,12 +376,13 @@ async function waitForXPathToMatch(
   }
 
   while (elapsedMillis <= DEADLINE_MILLIS) {
-    console.log('waitForXPathToMatch waiting', INCREMENT_MILLIS, url, xpath);
+    console.log(`waitForXPathToMatch waiting ${INCREMENT_MILLIS} ${url} ${xpath}`);
     await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
     elapsedMillis += INCREMENT_MILLIS;
-    console.log('waitForXPathToMatch elapsedMillis', elapsedMillis, url, xpath);
+    console.log(`waitForXPathToMatch elapsedMillis ${elapsedMillis}, ${url}, ${xpath}`);
 
     if (matched()) {
+      console.log(`waitForXPathToMatch complete ${url} ${xpath}`);
       return true;
     }
   }
@@ -420,12 +421,15 @@ async function getBakedHtml(
     throw msg;
   }
 
+  console.log(`getBakedHtml(${url}, ${completionXPath}) starting`);
   const matched = await waitForXPathToMatch(document, completionXPath);
   const bakedHtml = document.documentElement.outerHTML;
 
   if (bakedHtml == '') {
     console.warn(
       'getBakedHtml returning empty string for', url, completionXPath);
+  } else {
+    console.log(`getBakedHtml(${url}, ${completionXPath}) complete`);
   }
 
   return bakedHtml;

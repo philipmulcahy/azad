@@ -13,6 +13,7 @@ import * as order_impl from './order_impl';
 import * as signin from './signin';
 import * as shipment from './shipment';
 import * as request_scheduler from './request_scheduler';
+import * as single_fetch from './single_fetch';
 import * as urls from './url';
 import * as util from './util';
 
@@ -358,10 +359,12 @@ export async function getOrdersByRange(
       return [[]];
     }
   }();
+
   const orders: IOrder[] = orderss.flat();
 
   const f_in_date_window = async function(order: IOrder): Promise<boolean> {
     const order_date = await order.date();
+
     if (order_date) {
       return start_date <= order_date && order_date <= end_date;
     } else {
@@ -388,7 +391,10 @@ export async function get_legacy_items(order: IOrder)
   return result;
 }
 
-export async function assembleDiagnostics(order: IOrder)
+export async function assembleDiagnostics(
+  order: IOrder,
+  getScheduler: () => request_scheduler.IRequestScheduler,
+)
   : Promise<Record<string, any>>
 {
   const sync_order = await order.sync();
@@ -418,7 +424,7 @@ export async function assembleDiagnostics(order: IOrder)
     const data: Record<string, string> = {};
     const done_promises = urls.filter(url => url != '' && url != null)
                               .map( async url => {
-      const response = await signin.checkedFetch(url);
+      const response = await single_fetch.checkedStaticFetch(url);
       const html = await response.text();
       data[url] = html;
       return;
@@ -439,7 +445,7 @@ export async function assembleDiagnostics(order: IOrder)
   diagnostics['item_data'] = await get_item_data(sync_order);
 
   async function get_tracking_data(
-    order: ISyncOrder
+    order: ISyncOrder,
   ): Promise<Record<string, string>> {
     const urls = order.shipments
                       .map(s => s.tracking_link);
@@ -450,18 +456,38 @@ export async function assembleDiagnostics(order: IOrder)
   diagnostics['tracking_data'] = await get_tracking_data(sync_order);
 
   return Promise.all([
-    signin.checkedFetch( util.defaulted(sync_order.list_url, '') )
-      .then( response => response.text() )
-      .then( text => { diagnostics['list_html'] = text; } ),
-    signin.checkedFetch( util.defaulted(sync_order.detail_url, '') )
+    single_fetch.checkedDynamicFetch(
+      util.defaulted(sync_order.list_url, ''),  // url
+      'orderListHtmlForDebug',
+
+      // ready_xpath: TODO - derive from mainline scraping code, DRY!
+      '//div[@id="orderCard"]//div[@id="orderCardHeader"]|//div[contains(@class, "order-card")]',
+
+      getScheduler,
+    ).then(
+      text => { 
+        diagnostics['list_html'] = text; 
+      },
+      err => {
+        console.warn(`list_html fetch for order diagnostics failed: ${err}`);
+        diagnostics['list_html'] = JSON.stringify(err);
+      }
+    ),
+
+    single_fetch.checkedStaticFetch( util.defaulted(sync_order.detail_url, '') )
       .then( response => response.text() )
       .then( text => { diagnostics['detail_html'] = text; } ),
-    signin.checkedFetch( util.defaulted(sync_order.payments_url, '') )
+
+    single_fetch.checkedStaticFetch( util.defaulted(sync_order.payments_url, '') )
       .then( response => response.text() )
-      .then( text => { diagnostics['invoice_html'] = text; } )
+      .then( text => { diagnostics['invoice_html'] = text; } ),
   ]).then(
-    () => diagnostics,
+    () => {
+      getScheduler().abort();
+      return diagnostics;
+    },
     error_msg => {
+      getScheduler().abort();
       notice.showNotificationBar(error_msg, document);
       return diagnostics;
     }
