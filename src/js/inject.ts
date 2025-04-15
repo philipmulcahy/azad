@@ -201,6 +201,7 @@ function handleMessageFromBackground(pageType: string, msg: any): void {
 function handleMessageFromBackgroundToRootContentPage(msg: any): void {
   switch(msg.action) {
     case 'dump_order_detail':
+      resetScheduler('dump_order_detail');
       azad_table.dumpOrderDiagnostics(msg.order_id, getScheduler);
       break;
     case 'scrape_years':

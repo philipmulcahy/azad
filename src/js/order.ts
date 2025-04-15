@@ -464,20 +464,30 @@ export async function assembleDiagnostics(
       '//div[@id="orderCard"]//div[@id="orderCardHeader"]|//div[contains(@class, "order-card")]',
 
       getScheduler,
-    )
-      .then( text => { 
-        getScheduler().abort();
+    ).then(
+      text => { 
         diagnostics['list_html'] = text; 
-      } ),
+      },
+      err => {
+        console.warn(`list_html fetch for order diagnostics failed: ${err}`);
+        diagnostics['list_html'] = JSON.stringify(err);
+      }
+    ),
+
     single_fetch.checkedStaticFetch( util.defaulted(sync_order.detail_url, '') )
       .then( response => response.text() )
       .then( text => { diagnostics['detail_html'] = text; } ),
+
     single_fetch.checkedStaticFetch( util.defaulted(sync_order.payments_url, '') )
       .then( response => response.text() )
-      .then( text => { diagnostics['invoice_html'] = text; } )
+      .then( text => { diagnostics['invoice_html'] = text; } ),
   ]).then(
-    () => diagnostics,
+    () => {
+      getScheduler().abort();
+      return diagnostics;
+    },
     error_msg => {
+      getScheduler().abort();
       notice.showNotificationBar(error_msg, document);
       return diagnostics;
     }
