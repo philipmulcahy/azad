@@ -465,22 +465,22 @@ export async function assembleDiagnostics(
 
       getScheduler,
     ).then(
-      text => { 
+      (text: string) => {
         diagnostics['list_html'] = text; 
       },
-      err => {
+      (err: any) => {
         console.warn(`list_html fetch for order diagnostics failed: ${err}`);
         diagnostics['list_html'] = JSON.stringify(err);
       }
     ),
 
     single_fetch.checkedStaticFetch( util.defaulted(sync_order.detail_url, '') )
-      .then( response => response.text() )
-      .then( text => { diagnostics['detail_html'] = text; } ),
+      .then( (response: Response) => response.text() )
+      .then( (text: string) => { diagnostics['detail_html'] = text; } ),
 
     single_fetch.checkedStaticFetch( util.defaulted(sync_order.payments_url, '') )
-      .then( response => response.text() )
-      .then( text => { diagnostics['invoice_html'] = text; } ),
+      .then( (response: Response) => response.text() )
+      .then( (text: string) => { diagnostics['invoice_html'] = text; } ),
   ]).then(
     () => {
       getScheduler().abort();
