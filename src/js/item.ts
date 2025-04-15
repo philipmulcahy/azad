@@ -109,6 +109,7 @@ function getCategoryForProduct(
 ): Promise<string> {
   return req.makeAsyncStaticRequest<string>(
     product_url,
+    'getCategoryForProduct',
     (evt) => {
       const productPage = util.parseStringToDOM(evt.target.responseText)
                               .documentElement;

@@ -52,7 +52,7 @@ function makeXHRTask(
               const msg = `Got sign-in redirect or 404: ${url} ${xhr.status}`;
               console.warn(msg);
 
-              if ( !scheduler.get_signin_warned() ) {
+              if (!scheduler.get_signin_warned()) {
                 signin.alertPartiallyLoggedOutAndOpenLoginTab(url);
                 scheduler.set_signin_warned();
               }
@@ -122,7 +122,7 @@ export type Event = {
   }
 };
 
-type EventConverter<T> = (evt: Event) => T;
+export type EventConverter<T> = (evt: Event) => T;
 
 // Embedding this code in AzadRequest.constructor means initialisation order
 // nightmares - at least we keep the mess isolated by doing it in a dedicated
@@ -149,6 +149,7 @@ function make_promise_with_callbacks<T>(): {
 class AzadRequest<T> {
   _state: base.State = base.State.NEW;
   _url: string;
+  _request_type: string;
   _fetcher: IFetcher;
   _event_converter: EventConverter<T>;
   _scheduler: request_scheduler.IRequestScheduler;
@@ -161,6 +162,7 @@ class AzadRequest<T> {
 
   constructor(
     url: string,
+    request_type: string,  // contributes to cache key
     fetcher: IFetcher,
     event_converter: EventConverter<T>,
     scheduler: request_scheduler.IRequestScheduler,
@@ -169,6 +171,7 @@ class AzadRequest<T> {
     debug_context: string,
   ) {
     this._url = urls.normalizeUrl(url, urls.getSite());
+    this._request_type = request_type;
     this._fetcher = fetcher;
     this._event_converter = event_converter;
     this._scheduler = scheduler;
@@ -182,6 +185,10 @@ class AzadRequest<T> {
     this._state = base.State.NEW;
     setTimeout(() => this.A_Enqueue());
     console.debug('AzadRequest NEW ' + this._url);
+  }
+
+  key(): string {
+    return `${this._request_type}#${this._url}`; 
   }
 
   state(): base.State { return this._state; }
@@ -220,10 +227,13 @@ class AzadRequest<T> {
     this.check_state(base.State.NEW);
     this.change_state(base.State.ENQUEUED);
 
-    this._scheduler.schedule({
-      task: ()=>{ return this.B_Dequeued(); },
-      priority: this._priority
-    });
+    this._scheduler.schedule(
+      {
+        task: ()=>{ return this.B_Dequeued(); },
+          priority: this._priority
+      },
+      this
+    )
   }
 
   async B_Dequeued(): Promise<void> {
@@ -233,7 +243,7 @@ class AzadRequest<T> {
     try {
       const cached = await this._scheduler
                                .cache()
-                               .get(this._url) as (T | null | undefined);
+                               .get(this.key()) as (T | null | undefined);
 
       if (cached != null) {
         return this.D_CacheHit(cached);
@@ -379,7 +389,7 @@ class AzadRequest<T> {
 
   async J_Cached(converted: T) {
     this.check_state(base.State.CONVERTED);
-    await this._scheduler.cache().set(this._url, converted);
+    await this._scheduler.cache().set(this.key(), converted);
     this.change_state(base.State.CACHED);
     setTimeout(() => this.IJK_Success(converted), 0);
   }
@@ -419,6 +429,7 @@ class AzadRequest<T> {
 
 export async function makeAsyncStaticRequest<T>(
   url: string,
+  request_type: string,
   event_converter: EventConverter<T>,
   scheduler: request_scheduler.IRequestScheduler,
   priority: string,
@@ -429,6 +440,7 @@ export async function makeAsyncStaticRequest<T>(
 
   const req = new AzadRequest(
     url,
+    request_type,
     fetcher,
     event_converter,
     scheduler,
@@ -437,13 +449,13 @@ export async function makeAsyncStaticRequest<T>(
     debug_context,
   );
 
-  scheduler.register(req);
   const response = await req.response();
   return response.result;
 }
 
 export async function makeAsyncDynamicRequest<T>(
   url: string,
+  request_type: string,
   event_converter: EventConverter<T>,
   readyXPath: string,
   scheduler: request_scheduler.IRequestScheduler,
@@ -451,19 +463,26 @@ export async function makeAsyncDynamicRequest<T>(
   nocache: boolean,
   debug_context: string,
 ): Promise<T> {
-  const fetcher = makeDynamicFetchTask(url,readyXPath);
+  console.log(`makeAsyncDynamicRequest(${url}, ${request_type}, ...) starting`);
+  const fetcher = makeDynamicFetchTask(url, readyXPath);
+  
+  try {
+    const req = new AzadRequest(
+      url,
+      request_type,
+      fetcher,
+      event_converter,
+      scheduler,
+      priority,
+      nocache,
+      debug_context,
+    );
 
-  const req = new AzadRequest(
-    url,
-    fetcher,
-    event_converter,
-    scheduler,
-    priority,
-    nocache,
-    debug_context,
-  );
-
-  scheduler.register(req);
-  const response = await req.response();
-  return response.result;
+    const response = await req.response();
+    console.log(`makeAsyncDynamicRequest(${url}, ${request_type}, ...) complete`);
+    return response.result;
+  } catch(ex) {
+    console.warn(`makeAsyncDynamicRequest(${url}, ${request_type}, ...) failed: ${ex}`);
+    throw ex;
+  }
 }

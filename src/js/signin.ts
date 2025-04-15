@@ -3,7 +3,7 @@
 import * as notice from './notice';
 import * as urls from './url';
 
-function checkSigninRedirect(
+export function checkSigninRedirect(
   response: Response,
   original_url: string
 ): void {
@@ -17,22 +17,6 @@ function checkSigninRedirect(
      notice.showNotificationBar(msg, document);
      throw msg;
   }
-}
-
-export function checkedFetch(url: string): Promise<Response> {
-  return fetch(url).then(
-    (response: Response) => {
-      checkSigninRedirect(response, url);
-      console.log('fetched', url);
-      return response;
-    },
-    err => {
-      const msg = 'Got error while fetching debug data for: ' + url + ' ' + err;
-      console.warn(msg);
-      notice.showNotificationBar(msg, document);
-      throw err;
-    }
-  );
 }
 
 export function alertPartiallyLoggedOutAndOpenLoginTab(url: string): void {
