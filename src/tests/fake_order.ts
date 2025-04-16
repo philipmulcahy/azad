@@ -88,9 +88,7 @@ export function orderFromTestData(
 
     const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;
 
-    const order_elems_xpath = `.//*[${['order', 'order-card']
-      .map(x => `contains(concat(" ", normalize-space(@class), " "), "${x} ")`)
-      .join(' or ')}]`
+    const order_elems_xpath = './/div[contains(concat(" ", normalize-space(@class), " "), "order ") or contains(concat(" ", normalize-space(@class), " "), "order-card ") or @id="orderCard"]';
 
     const order_elems = extraction.findMultipleNodeValues(
       order_elems_xpath,
