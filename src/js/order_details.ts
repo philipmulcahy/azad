@@ -171,9 +171,9 @@ function extractDetailFromDoc(
         '//span[contains(@id,"grand-total-amount")]/text()',
 
         '//div[contains(@id,"od-subtotals")]//' +
-        '*[contains(text(),"Grand Total") ' +
-        'or contains(text(),"Montant total TTC")' +
-        'or contains(text(),"Total général du paiement")' +
+        '*[.//text()[contains(.,"Grand Total")] ' +
+        'or .//text()[contains(.,"Montant total TTC")]' +
+        'or .//text()[contains(.,"Total général du paiement")]' +
         ']/parent::div/following-sibling::div/span',
 
         '//span[contains(text(),"Grand Total:")]' +
@@ -216,7 +216,7 @@ function extractDetailFromDoc(
     const a = extraction.by_regex(
       [
         '//div[contains(@id,"od-subtotals")]//' +
-        'span[contains(text(),"Gift") or contains(text(),"Importo Buono Regalo")]/' +
+        'span[.//text()[contains(.,"Gift")] or .//text()[contains(.,"Importo Buono Regalo")]]/' +
         'parent::div/following-sibling::div/span',
 
         '//span[contains(@id, "giftCardAmount-amount")]/text()', // Whole foods or Amazon Fresh.
@@ -250,7 +250,7 @@ function extractDetailFromDoc(
           ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
             label => sprintf.sprintf(
               '//div[contains(@id,"od-subtotals")]//' +
-              'span[contains(text(),"%s")]/' +
+              'span[.//text()[contains(.,"%s")]]/' +
               'parent::div/following-sibling::div/span',
               label
             )
@@ -272,7 +272,7 @@ function extractDetailFromDoc(
           ['FREE Shipping'].map(
             label => sprintf.sprintf(
               '//div[contains(@id,"od-subtotals")]//' +
-              'span[contains(text(),"%s")]/' +
+              'span[.//text()[contains(.,"%s")]]/' +
               'parent::div/following-sibling::div/span',
               label
             )
@@ -341,7 +341,7 @@ function extractDetailFromDoc(
     let a = extraction.by_regex(
       [
         '//div[text() = "Tax Collected:"]/following-sibling::div/text()',
-        '//span[contains(text(),"Estimated tax to be collected:")]/../../div[2]/span/text()',
+        '//span[.//text()[contains(.,"Estimated tax to be collected:")]]/../../div[2]/span/text()',
         '//span[contains(@id, "totalTax-amount")]/text()',
       ],
       util.moneyRegEx(),
@@ -427,7 +427,7 @@ function extractDetailFromDoc(
       ].map(
         label => sprintf.sprintf(
           '//div[contains(@id,"od-subtotals")]//' +
-          'span[contains(text(),"%s")]/' +
+          'span[.//text()[contains(.,"%s")]]/' +
           'ancestor::div[1]/following-sibling::div/span',
           label
         )

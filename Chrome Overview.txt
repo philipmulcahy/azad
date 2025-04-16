@@ -32,6 +32,12 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.7
+--------------
+#321 Lots of numeric fields broken (.com business accounts only?)
+  * apparently fixed - with amazing help from jadeglaze and ronindesign.
+#325 Amazon has been rolling out dynamic html for order list pages and azad has been responding, but I forgot to teach it how to capture the html for order debug json files. You may not care this is fixed, but you will when you want me to fix a bug that's hurting you.
+
 Changes 1.16.6
 --------------
 #309 Data not being retrieved from many business accounts.

@@ -225,9 +225,11 @@ export function firstMatchingStrategy<T>(
       const candidate = strategy();
       if (isValid(candidate)) {
         return candidate as T;
+      } else {
+        console.debug(`${strategy.name} returned invalid candidate: moving to next strategy or default`);
       }
     } catch (_ex) {
-      // Do nothing.
+      console.debug(`${strategy.name} blew up: moving to next strategy or default`);
     }
   }
 

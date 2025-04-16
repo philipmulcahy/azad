@@ -13,6 +13,7 @@ for KEY in $(cat keys.txt); do
   jq ".${KEY}" $JSON_FILE \
     | perl -pe 's/\\"/"/g' \
     | perl -pe 's/\\n/\n/g' \
+    | perl -pe 's/\\t/\t/g' \
     > ${KEY}.html;
 done
 
