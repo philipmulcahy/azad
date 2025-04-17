@@ -83,6 +83,14 @@ async function get_page_of_headers(
     'order_list_page.get_page_of_headers: ' + start_order_number,  // debug_context
   );
 
+  pageData.then(
+    headers => {
+      const ids: string = headers.map(h => h.id).join(', ');
+      console.debug(`get_page_of_headers fetched ${url} and discovered these order ids: ${ids}`);
+    },
+    err => console.warn(`get_page_of_headers blew up while fetching or processing: ${err}`)
+  );
+
   return pageData;
 }
 
