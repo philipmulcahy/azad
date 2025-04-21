@@ -169,8 +169,6 @@ const BASE_URL_TEMPLATE = 'https://%(site)s/your-orders/orders?' + [
   'startIndex=%(startOrderPos)s'
 ].join('&');
 
-// https://www.amazon.co.uk/gp/css/order-history?timeFilter=year-2025&startIndex=0
-
 const TEMPLATE_BY_SITE: Map<string, string> = new Map<string, string>([
   ['www.amazon.co.jp', BASE_URL_TEMPLATE],
   ['www.amazon.co.uk', BASE_URL_TEMPLATE],
