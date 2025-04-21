@@ -131,7 +131,8 @@ export function clearBody(): void {
         function(elem: Element) {
             if( !(
                 elem.hasAttribute('class') &&
-                elem.getAttribute('class')!.includes('order_reporter_')
+                elem.getAttribute('class')!.includes('order_reporter_') &&
+                elem.getAttribute('class')!.includes('azad')
             )) {
                 document.body.removeChild(elem);
             }

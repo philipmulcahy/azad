@@ -67,3 +67,20 @@
 .azad_hidden {
     display: none;
 }
+
+#azad-iframe-container {
+  display: inline-grid;
+  border: solid PowderBlue;
+  border-width: 2px;
+}
+
+.azad-iframe-worker-box {
+  border: solid Orange;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.azad-iframe-worker {
+  width: 1px;
+  height: 1px;
+}

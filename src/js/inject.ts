@@ -169,8 +169,8 @@ async function registerContentScript(isIframeWorker: boolean) {
         try {
           handleMessageFromBackground(pgType, msg);
         } catch (ex) {
-          console.error('message handler blew up with ' + ex +
-                        ' while trying to process ' + msg);
+          console.error(`msg handler caught ${ex} while processing ${msg}`
+          );
         }
       }
     );
