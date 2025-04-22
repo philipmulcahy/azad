@@ -17,10 +17,10 @@ export function addBanner(): void {
       <br/>
       Until them, you can follow progress by...
       <ul>
-        <li>using the orange and blue progress_bar bar above.</li>
+        <li>observing the orange and blue progress_bar bar above.</li>
         <li>
           opening the control popup and looking at the task state counts.
-          These are shown on the right hand side of the pane, next to the
+          The counts are shown on the right hand side of the pane, next to the
           orange status box.
         </li>
     </td>

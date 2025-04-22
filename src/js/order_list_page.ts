@@ -23,7 +23,10 @@ async function getExpectedOrderCount(
 ): Promise<number> {
   const url = await urlGenerator(site, year, 0);
   const pageReadyXpath = '//span[@class="num-orders"]';
-  const response = await iframeWorker.fetchURL(url, pageReadyXpath);
+
+  const response = await iframeWorker.fetchURL(
+    url, pageReadyXpath, 'get expected order count');
+
   const d = util.parseStringToDOM(response.html);
   const context = 'getExpectedOrderCount';
 

@@ -115,7 +115,9 @@ import * as urls from './url';
 import * as util from './util';
 import { v4 as uuidv4 } from 'uuid';
 
-const IFRAME_CLASS = 'AZAD-IFRAME-WORKER';
+const IFRAME_CLASS = 'azad-iframe-worker';
+const IFRAME_CONTAINER_CLASS = 'azad-iframe-worker-container';
+const IFRAME_BOX_ID = 'azad-iframe-box';
 
 async function relayToParent(msg: any) {
   if (!pageType.isWorker()) {
@@ -140,48 +142,61 @@ async function relayToParent(msg: any) {
   port?.postMessage(wrappedMsg);
 }
 
-// (10) Removee this iframe, by asking (via background) our parent to do so.
-function removeThisIframe(): void {
-  const guid = window.name;
-
-  relayToParent({
-    action: 'remove_iframe_worker',
-    url: document.URL,
-    guid,
-  });
-
-  console.log(`removeThisIframe ${guid}`);
-}
-
-// (10) Remove existing iframe if one exists.
-export function removeIframeWorker(guid: string): void {
-  if (pageType.isIframe()) {
-    console.error('cannot remove worker iframe from an iframe', guid);
-    return;
-  }
-
-  const candidates: HTMLCollectionOf<Element> = document.getElementsByClassName(IFRAME_CLASS);
-  if (candidates.hasOwnProperty(guid)) {
-    candidates?.namedItem(guid)?.remove();
-    console.log(`removed iframe ${guid}`);
-  }
-}
-
 // (3) Called from the content page the iframe will be hosted by
-export function createIframe(url: string, guid: string): void {
+export function createIframe(
+  url: string,
+  guid: string,
+  purpose: string,  // only for display/debug: not for control.
+): void {
   if (pageType.isWorker()) {
     console.error('cannot start iframe task from an iframe', guid);
   }
 
   console.log('starting iframe worker:', url);
 
-  const iframe = document.createElement('iframe') as HTMLIFrameElement;
-  iframe.setAttribute('src', url);
-  iframe.setAttribute('name', guid);
+  const container = document.createElement('div') as HTMLDivElement;
+  container.setAttribute('class', IFRAME_CONTAINER_CLASS);
+  getIframeContainer().appendChild(container);
+
+  const appendChild = function(
+    parent: Node, type: string, cls: string, text: string|null
+  ): HTMLElement {
+    const child = document.createElement(type);
+    child.setAttribute('class', cls);
+
+    if (text) {
+      child.innerText = text;
+    }
+
+    parent.appendChild(child);
+    return child;
+  }
+
+  appendChild(
+    container,
+    'div',
+    'azad-iframe-worker-title',
+    `Azad dynamic task: ${purpose}`
+  );
+
+  appendChild(
+    appendChild(container, 'div', '', null),  // ugly - parent embedded in call!
+    'a',
+    'azad-iframe-worker-url',
+    url
+  ).setAttribute('href', url);
+
+  appendChild(container, 'div', 'azad-iframe-worker-guid', guid);
+
+  // Q: Why not use the appendChild helper function as for the children above?
+  // A: Because we'd lose control over when the embedded scripts start, and 
+  // they'd get confused (by, for example, not being able to see their guid).
+  const iframe = document.createElement('iframe');
   iframe.setAttribute('class', IFRAME_CLASS);
-  iframe.style.width = '1px';
-  iframe.style.height = '1px';
-  document.body.insertBefore(iframe, document.body.firstChild);
+  iframe.setAttribute('name', guid);
+  iframe.setAttribute('src', url);
+  container.appendChild(iframe);  // this seems to be when scripts start running
+
   console.log('createIframe created', guid);
 }
 
@@ -207,6 +222,52 @@ export type FetchResponse = {
   html: string,
 };
 
+// (10) Remove existing iframe if one exists.
+// Assumes that we are in the parent/enclosing content page.
+export function removeIframeWorker(guid: string): void {
+  if (pageType.isIframe()) {
+    console.error('cannot remove worker iframe from an iframe', guid);
+    return;
+  }
+
+  const candidates: HTMLCollectionOf<Element>
+    = document.getElementsByClassName(IFRAME_CLASS);
+  
+  if (candidates.hasOwnProperty(guid)) {
+    const iframe = candidates?.namedItem(guid) as HTMLIFrameElement;
+    const container = iframe.parentNode as HTMLDivElement;
+    const box = container.parentNode as HTMLDivElement;
+    iframe.remove();
+    container.remove();
+    console.log(`removed iframe ${guid}`);
+  }
+
+  removeIframeContainerIfPresentAndEmpty();
+}
+
+// (10) Removee this iframe, by asking (via background) our parent to do so.
+// Assumes that we are in an iframe worker.
+function removeThisIframe(): void {
+  if (!pageType.isIframe()) {
+    console.error(
+      'Cannot request removal if an iframe worker if we are not inside ' +
+      '_that_ worker.'
+    );
+
+    return;
+  }
+
+  const guid = window.name;
+
+  relayToParent({
+    action: 'remove_iframe_worker',
+    url: document.URL,
+    guid,
+  });
+
+  console.log(`removeThisIframe ${guid}`);
+}
+
 /**
  * Use an iframe to fetch a URL, wait for its javascript to run (enough), and
  * then respond with the mutated HTML.
@@ -218,6 +279,7 @@ export type FetchResponse = {
 export async function fetchURL(
   url: string,
   xpath: string,
+  purpose: string,
 ): Promise<FetchResponse> {
   const guid: string = uuidv4();
 
@@ -226,6 +288,7 @@ export async function fetchURL(
     url,
     xpath,
     guid,
+    purpose,
   };
 
   const result = new Promise<FetchResponse>(async function (resolve, reject) {
@@ -337,6 +400,38 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
     default:
       console.warn(
         'iframe-worker.handleInstructionsResponse cannot handle', msg);
+  }
+}
+
+/**
+ * Return the div that contains any iframe workers.
+ * If it doesn't already exist, create it.
+ * @returns HTMLDivElement
+ */
+function getIframeContainer(): HTMLDivElement {
+  const existing = document.getElementById(IFRAME_BOX_ID);
+
+  if (existing) {
+    return existing as HTMLDivElement;
+  }
+
+  const newOne: HTMLDivElement = document.createElement('div');
+  newOne.setAttribute('id', IFRAME_BOX_ID);
+  document.body.insertBefore(newOne, document.body.firstChild);
+
+  return newOne;
+}
+
+function removeIframeContainerIfPresentAndEmpty(): void {
+  const existing = document.getElementById(IFRAME_BOX_ID);
+
+  if (existing) {
+    const empty = existing.children.length == 0;
+
+    if (empty) {
+      existing.remove();
+      console.log('removed iframe worker box');
+    }
   }
 }
 
