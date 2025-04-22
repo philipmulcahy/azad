@@ -144,7 +144,10 @@ const BTB_KEY_XPATHS = [
 
 async function getBaseOrdersPage(): Promise<HTMLDocument> {
   const baseUrl = getBaseOrdersPageURL();
-  const response = await iframeWorker.fetchURL(baseUrl, BTB_KEY_XPATHS);
+
+  const response = await iframeWorker.fetchURL(
+    baseUrl, BTB_KEY_XPATHS, 'get base orders page url');
+
   const html = response.html;
   const doc = util.parseStringToDOM(html);
   return doc;

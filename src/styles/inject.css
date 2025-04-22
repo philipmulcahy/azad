@@ -68,19 +68,35 @@
     display: none;
 }
 
-#azad-iframe-container {
-  display: inline-grid;
-  border: solid PowderBlue;
-  border-width: 2px;
+#azad-iframe-box {
+  display: grid;
+  grid-template-columns: auto auto auto;
+
+  border: solid CornflowerBlue;
+  border-width: 5px;
 }
 
-.azad-iframe-worker-box {
+.azad-iframe-worker-container {
   border: solid Orange;
   border-width: 2px;
-  padding: 2px;
+  padding: 3px;
 }
+
 
 .azad-iframe-worker {
   width: 1px;
   height: 1px;
+}
+
+.azad-iframe-worker-title {
+  color: orange;
+  font-weight: bold;
+}
+
+.azad-iframe-worker-url {
+  color: navy;
+}
+
+.azad-iframe-worker-guid {
+  color: silver;
 }

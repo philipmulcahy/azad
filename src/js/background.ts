@@ -148,12 +148,14 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
 
           const guid = uuidv4();
           msg.guid = guid;
+          const purpose = 'scrape years';
           iframeWorkerTaskSpecs.set(guid, msg);
 
           sendToOneContentPage({
             action: 'start_iframe_worker',
             url: msg.url,
             guid,
+            purpose,
           });
         }
 
@@ -177,10 +179,13 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
           msg,
         );
 
+        const purpose = msg.purpose ?? 'fetch url';
+
         sendToOneContentPage({
           action: 'start_iframe_worker',
           guid: msg.guid,
           url: msg.url,
+          purpose,
         });
 
         break;
@@ -238,6 +243,7 @@ async function handleMessageFromControl(msg: any) {
 
           if (table_type == 'transactions') {
             const guid = uuidv4();
+            const purpose = 'scrape transactions';
             msg.action = 'scrape_transactions';
             msg.guid = guid;
 
@@ -245,7 +251,7 @@ async function handleMessageFromControl(msg: any) {
             const url = '/cpe/yourpayments/transactions';
 
             iframeWorkerTaskSpecs.set(guid, msg);
-            sendToOneContentPage({action: 'start_iframe_worker', url, guid});
+            sendToOneContentPage({action: 'start_iframe_worker', url, guid, purpose});
           } else {
             console.debug('forwarding:', msg);
             sendToOneContentPage(msg);

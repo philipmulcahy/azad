@@ -206,10 +206,11 @@ function showYearButtons(years: number[]) {
   $('.azad_year_button').on('click', handleYearClick);
 }
 
-function maybeShowMissingYearsMessage(got_some_years: boolean) {
-  $('#azad_year_missing_message *').remove();
-  if (!got_some_years) {
-    $('#azad_year_missing_message').append(
+function maybeShowMissingYearsMessage(gotSomeYears: boolean) {
+  document
+    .getElementById('azad_year_missing_message')!
+    .innerHTML = gotSomeYears ?
+      '' :
       '<span>No scrapeable years found. ' +
       'It is likely you don\'t have a tab open that ' +
       'can see your amazon orders or it hasn\'t had enough time to find the ' +
@@ -218,8 +219,7 @@ function maybeShowMissingYearsMessage(got_some_years: boolean) {
       'amazon country site, <b>and</b> logged in to your account.</span>' +
       '<br/>' +
       'See <a href="https://github.com/philipmulcahy/azad/issues/280">' +
-      'this article</a> for more.') ;
-  }
+      'this article</a> for more.';
 }
 
 async function showMonthsButtons(month_counts: number[]): Promise<void> {

@@ -230,7 +230,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
     case 'start_iframe_worker':
       {
         const url = urls.normalizeUrl(msg.url, urls.getSite());
-        iframeWorker.createIframe(url, msg.guid);
+        iframeWorker.createIframe(url, msg.guid, msg.purpose);
       }
       break;
     case 'remove_iframe_worker':
@@ -280,23 +280,4 @@ function initialiseContentScript() {
   }
 }
 
-// TOOD remove this function before someone hurts themselves on it.
-async function crazyTest() {
-  const isWorker = pageType.isWorker();
-  if (isWorker) {
-    return;
-  }
-  const pageReadyXpath = '//span[@class="num-orders"]';
-  const url = 'https://www.amazon.co.uk/your-orders/orders?timeFilter=year-2025&startIndex=20';
-  try {
-    const response = await iframeWorker.fetchURL(url, pageReadyXpath);
-    const doc = util.parseStringToDOM(response.html);
-    const node = extraction.findSingleNodeValue(pageReadyXpath, doc.documentElement, 'crazyTest');
-    console.log('crazyTest got', node);
-  } catch (ex) {
-    console.error('crazy test caught', ex);
-  }
-}
-
 initialiseContentScript();
-// crazyTest();

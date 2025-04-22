@@ -143,7 +143,11 @@ async function relayToParent(msg: any) {
 }
 
 // (3) Called from the content page the iframe will be hosted by
-export function createIframe(url: string, guid: string): void {
+export function createIframe(
+  url: string,
+  guid: string,
+  purpose: string,  // only for display/debug: not for control.
+): void {
   if (pageType.isWorker()) {
     console.error('cannot start iframe task from an iframe', guid);
   }
@@ -152,17 +156,46 @@ export function createIframe(url: string, guid: string): void {
 
   const container = document.createElement('div') as HTMLDivElement;
   container.setAttribute('class', IFRAME_CONTAINER_CLASS);
-
-  const iframe = document.createElement('iframe') as HTMLIFrameElement;
-  iframe.setAttribute('src', url);
-  iframe.setAttribute('name', guid);
-  iframe.setAttribute('class', IFRAME_CLASS);
-
-  container.append(url)
-  container.append(document.createElement('br'));
-  container.append(guid);
-  container.appendChild(iframe);
   getIframeContainer().appendChild(container);
+
+  const appendChild = function(
+    parent: Node, type: string, cls: string, text: string|null
+  ): HTMLElement {
+    const child = document.createElement(type);
+    child.setAttribute('class', cls);
+
+    if (text) {
+      child.innerText = text;
+    }
+
+    parent.appendChild(child);
+    return child;
+  }
+
+  appendChild(
+    container,
+    'div',
+    'azad-iframe-worker-title',
+    `Azad dynamic task: ${purpose}`
+  );
+
+  appendChild(
+    appendChild(container, 'div', '', null),  // ugly - parent embedded in call!
+    'a',
+    'azad-iframe-worker-url',
+    url
+  ).setAttribute('href', url);
+
+  appendChild(container, 'div', 'azad-iframe-worker-guid', guid);
+
+  // Q: Why not use the appendChild helper function as for the children above?
+  // A: Because we'd lose control over when the embedded scripts start, and 
+  // they'd get confused (by, for example, not being able to see their guid).
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('class', IFRAME_CLASS);
+  iframe.setAttribute('name', guid);
+  iframe.setAttribute('src', url);
+  container.appendChild(iframe);  // this seems to be when scripts start running
 
   console.log('createIframe created', guid);
 }
@@ -246,6 +279,7 @@ function removeThisIframe(): void {
 export async function fetchURL(
   url: string,
   xpath: string,
+  purpose: string,
 ): Promise<FetchResponse> {
   const guid: string = uuidv4();
 
@@ -254,6 +288,7 @@ export async function fetchURL(
     url,
     xpath,
     guid,
+    purpose,
   };
 
   const result = new Promise<FetchResponse>(async function (resolve, reject) {
