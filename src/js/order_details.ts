@@ -384,7 +384,7 @@ function extractDetailFromDoc(
       [
         ['GST', 'HST'].map(
           label => sprintf.sprintf(
-            '//div[contains(@id,"od-subtotals")]//span[contains(text(),"%s") and not(contains(.,"Before"))]/parent::div/following-sibling::div/span',
+            '//div[contains(@id,"od-subtotals")]//span[contains(text(),"%s") and not(contains(.,"Before"))]/ancestor::div[position()=1]/following-sibling::div/span',
             label
           )
         ).join('|'),
@@ -404,7 +404,7 @@ function extractDetailFromDoc(
       [
         ['PST', 'RST', 'QST'].map(
           label => sprintf.sprintf(
-            '//div[contains(@id,"od-subtotals")]//span[contains(text(),"%s") and not(contains(.,"Before"))]/parent::div/following-sibling::div/span',
+            '//div[contains(@id,"od-subtotals")]//span[contains(text(),"%s") and not(contains(.,"Before"))]/ancestor::div[position()=1]/following-sibling::div/span',
             label
           )
         ).join('|'),
