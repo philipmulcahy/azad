@@ -169,8 +169,8 @@ async function registerContentScript(isIframeWorker: boolean) {
         try {
           handleMessageFromBackground(pgType, msg);
         } catch (ex) {
-          console.error('message handler blew up with ' + ex +
-                        ' while trying to process ' + msg);
+          console.error(`msg handler caught ${ex} while processing ${msg}`
+          );
         }
       }
     );
@@ -230,7 +230,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
     case 'start_iframe_worker':
       {
         const url = urls.normalizeUrl(msg.url, urls.getSite());
-        iframeWorker.createIframe(url, msg.guid);
+        iframeWorker.createIframe(url, msg.guid, msg.purpose);
       }
       break;
     case 'remove_iframe_worker':

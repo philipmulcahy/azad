@@ -86,7 +86,10 @@ async function extractYears(): Promise<number[]> {
   async function getDoc(): Promise<Document> {
     console.log('fetching', url, 'for getYears()');
     const readyXPath = '//option[contains(@id, "timeFilterDropdown")]';
-    const response = await iframeWorker.fetchURL(url, readyXPath);
+
+    const response = await iframeWorker.fetchURL(
+      url, readyXPath, 'extract available years');
+
     const html = response.html;
     const doc = util.parseStringToDOM(html);
     return doc;

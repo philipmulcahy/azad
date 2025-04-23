@@ -100,10 +100,11 @@ function makeXHRTask(
 function makeDynamicFetchTask(
   url: string,
   readyXPath: string,
+  purpose: string,
 ): IFetcher {
   return {
     execute: async function(): Promise<Event>{
-      const response = await iframeWorker.fetchURL(url, readyXPath);
+      const response = await iframeWorker.fetchURL(url, readyXPath, purpose);
 
       return {
         target: {
@@ -464,7 +465,7 @@ export async function makeAsyncDynamicRequest<T>(
   debug_context: string,
 ): Promise<T> {
   console.log(`makeAsyncDynamicRequest(${url}, ${request_type}, ...) starting`);
-  const fetcher = makeDynamicFetchTask(url, readyXPath);
+  const fetcher = makeDynamicFetchTask(url, readyXPath, debug_context);
   
   try {
     const req = new AzadRequest(
