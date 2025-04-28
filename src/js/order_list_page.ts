@@ -145,25 +145,29 @@ export async function get_headers(
 
     if (headers.length != expected_order_count) {
       console.error(
-        'expected ', expected_order_count, ' orders, but only found ',
-        headers.length);
+        `expected ${expected_order_count} orders, ` +
+        `but only got ${headers.length}`
+      );
     }
 
-    return dedupeHeaders(headers);
+    return headers;
   }
 
   const isBusinessAcct: boolean = await business.isBusinessAccount();
 
-  const urlGenerator: headerPageUrlGenerator = isBusinessAcct ?
-    business.getOrderHeadersSequencePageURL :
-    function(site, year, index) {
-      const template = selectTemplate(site);
-      const url = generateQueryString(site, year, index, template);
-      return Promise.resolve(url);
-    }
+  const urlGenerators: headerPageUrlGenerator[] = isBusinessAcct ?
+    [business.getOrderHeadersSequencePageURL] :
+    selectTemplates(site).map(
+      template => function(site, year, index) {
+        const url = generateQueryString(site, year, index, template);
+        return Promise.resolve(url);
+      }
+    );
 
-  const headers = await fetch_headers_for_template(urlGenerator);
-  return headers;
+  const pheaderss = urlGenerators.map(ug => fetch_headers_for_template(ug));
+  const headerss = await util.get_settled_and_discard_rejects(pheaderss);
+  const headers = headerss.flat();
+  return dedupeHeaders(headers);
 }
 
 const BASE_URL_TEMPLATE = 'https://%(site)s/your-orders/orders?' + [
@@ -172,24 +176,34 @@ const BASE_URL_TEMPLATE = 'https://%(site)s/your-orders/orders?' + [
   'startIndex=%(startOrderPos)s'
 ].join('&');
 
-// https://www.amazon.co.uk/gp/css/order-history?timeFilter=year-2025&startIndex=0
+const BASE_DIGITAL_URL_TEMPLATE = 'https://www.amazon.com/gp/legacy/order-history?' + [
+  'opt=ab',
+  'orderFilter=year-%(year)s',
+  'startIndex=%(startOrderPos)s',
+  'unifiedOrders=0',
+  'digitalOrders=1',
+  '_encoding=UTF8',
+  'returnTo=',
+].join('&');
 
-const TEMPLATE_BY_SITE: Map<string, string> = new Map<string, string>([
-  ['www.amazon.co.jp', BASE_URL_TEMPLATE],
-  ['www.amazon.co.uk', BASE_URL_TEMPLATE],
-  ['www.amazon.com.au', BASE_URL_TEMPLATE],
-  ['www.amazon.de', BASE_URL_TEMPLATE + '&language=en_GB'],
-  ['www.amazon.es', BASE_URL_TEMPLATE + '&language=en_GB'],
-  ['www.amazon.in', BASE_URL_TEMPLATE + '&language=en_GB'],
-  ['www.amazon.it', BASE_URL_TEMPLATE + '&language=en_GB'],
-  ['www.amazon.ca', BASE_URL_TEMPLATE + '&language=en_US'],
-  ['www.amazon.fr', BASE_URL_TEMPLATE + '&language=en_GB'],
-  ['www.amazon.com', BASE_URL_TEMPLATE + '&language=en_US'],
-  ['www.amazon.com.mx', BASE_URL_TEMPLATE + '&language=en_US'],
-  ['other', BASE_URL_TEMPLATE + '&language=en_US'],
+const TEMPLATE_BY_SITE: Map<string, string[]> = new Map<string, string[]>([
+  ['www.amazon.ca', [BASE_URL_TEMPLATE + '&language=en_US']],
+  ['www.amazon.co.jp', [BASE_URL_TEMPLATE]],
+  ['www.amazon.co.uk', [BASE_URL_TEMPLATE]],
+  ['www.amazon.com', [
+    BASE_URL_TEMPLATE + '&language=en_US',
+    BASE_DIGITAL_URL_TEMPLATE + '&language=en_US']],
+  ['www.amazon.com.au', [BASE_URL_TEMPLATE]],
+  ['www.amazon.com.mx', [BASE_URL_TEMPLATE + '&language=en_US']],
+  ['www.amazon.de', [BASE_URL_TEMPLATE + '&language=en_GB']],
+  ['www.amazon.es', [BASE_URL_TEMPLATE + '&language=en_GB']],
+  ['www.amazon.fr', [BASE_URL_TEMPLATE + '&language=en_GB']],
+  ['www.amazon.in', [BASE_URL_TEMPLATE + '&language=en_GB']],
+  ['www.amazon.it', [BASE_URL_TEMPLATE + '&language=en_GB']],
+  ['other', [BASE_URL_TEMPLATE + '&language=en_US']],
 ]);
 
-function selectTemplate(site: string): string {
+function selectTemplates(site: string): string[] {
   if (TEMPLATE_BY_SITE.has(site)) {
     return TEMPLATE_BY_SITE.get(site)!;
   } else {
