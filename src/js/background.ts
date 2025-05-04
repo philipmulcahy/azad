@@ -5,6 +5,7 @@
 import * as cachestuff from './cachestuff';
 import * as extpay from './extpay_client';
 import * as msg from './message_types';
+import * as remoteLog from './remote_log';
 import * as settings from './settings';
 import * as urls from './url';
 import * as util from './util';
@@ -221,6 +222,17 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
           relayToParentOfIframe(port.sender, msg);
         }
 
+        break;
+
+      case 'remote_log_with_user_id':
+        (
+          async () => {
+            const userId = await extpay.getLoginId();
+            const logMsg = msg.log_msg;
+            logMsg.userid = userId;
+            await remoteLog.log(logMsg);
+          }
+        )();
         break;
       default:
         console.debug('unknown action: ' + msg.action);

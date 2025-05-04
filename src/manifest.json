@@ -3,7 +3,7 @@
   "name": "Amazon Order History Reporter",
   "content_security_policy": {
     "extension_pages":
-      "script-src 'self'; object-src 'self'; connect-src https://extensionpay.com"
+      "script-src 'self'; object-src 'self'; connect-src https://extensionpay.com https://mulcahyfamily.org"
   },
   "permissions": [
     "contextMenus",
@@ -28,7 +28,8 @@
     "https://www.amazon.in/",
     "https://www.amazon.it/",
     "https://www.amazon.nl/",
-    "https://www.amazon.sa/"
+    "https://www.amazon.sa/",
+    "https://mulcahyfamily.org/"
   ],
   "content_scripts": [
     {
