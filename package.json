@@ -23,6 +23,7 @@
         "url": "git@github.com:philipmulcahy/azad.git"
     },
     "devDependencies": {
+        "@types/node-forge": "^1.3.11",
         "@typescript-eslint/eslint-plugin": "^6.5.0",
         "@typescript-eslint/parser": "^6.5.0",
         "clean-webpack-plugin": "^4.0.0",
@@ -54,6 +55,7 @@
         "lzjs": "^1.3.0",
         "mocha": "^10.2.0",
         "moment": "^2.29.4",
+        "node-forge": "^1.3.11",
         "serialize-javascript": "^6.0.1",
         "sprintf-js": "^1.1.2",
         "sprintf.js": "^0.1.4",
