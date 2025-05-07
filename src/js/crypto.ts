@@ -1,3 +1,7 @@
+/* Copyright(c) 2025 Philip Mulcahy. */
+
+'use strict';
+
 import * as forge from 'node-forge';
 
 const publicKey = forge.pki.publicKeyFromPem(`
@@ -15,7 +19,11 @@ lBgeVOGJe38B8cVmEV2a3WD3KLsvt740eFD3lcxccJVMNuS11/oOLplxBbG9/CU3
 `);
 
 export function encrypt(text: string): string {
-  // const publicKey = keyPair.publicKey;
-  const encrypted = publicKey.encrypt(text);
-  return forge.util.encode64(encrypted);
+  const encrypted = publicKey.encrypt(
+    text,
+    'RSAES-PKCS1-V1_5',
+  );
+
+  const encrypted64 = forge.util.encode64(encrypted);
+  return encrypted64;
 }
