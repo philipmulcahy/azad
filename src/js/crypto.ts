@@ -28,5 +28,5 @@ export function encrypt(text: string): string {
 
   const encrypted64 = forge.util.encode64(encrypted);
   const urlsafe = usb64.encode(Buffer.from(encrypted64, 'utf-8'));
-  return encrypted64;
+  return urlsafe;
 }
