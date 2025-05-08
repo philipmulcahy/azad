@@ -3,6 +3,8 @@
 'use strict';
 
 import * as forge from 'node-forge';
+import * as usb64 from 'urlsafe-base64';
+import {Buffer} from 'buffer';
 
 const publicKey = forge.pki.publicKeyFromPem(`
 -----BEGIN RSA PUBLIC KEY-----
@@ -25,5 +27,6 @@ export function encrypt(text: string): string {
   );
 
   const encrypted64 = forge.util.encode64(encrypted);
+  const urlsafe = usb64.encode(Buffer.from(encrypted64, 'utf-8'));
   return encrypted64;
 }

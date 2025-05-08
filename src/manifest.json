@@ -28,7 +28,8 @@
     "https://www.amazon.in/",
     "https://www.amazon.it/",
     "https://www.amazon.nl/",
-    "https://www.amazon.sa/"
+    "https://www.amazon.sa/",
+    "https://mulcahyfamily.org/"
   ],
   "content_scripts": [
     {

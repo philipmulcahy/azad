@@ -332,7 +332,7 @@ async function reallyDisplay(
     action: 'remote_log_with_user_id',
     log_msg: {
       operation: 'reallyDisplay',
-      status: 'reallyDisplay',
+      status: 'complete',
       rowCount: (table.rows.length).toString(),
     },
   });

@@ -3,6 +3,7 @@
 'use strict';
 
 import * as cachestuff from './cachestuff';
+import * as crypto from './crypto';
 import * as extpay from './extpay_client';
 import * as msg from './message_types';
 import * as remoteLog from './remote_log';
@@ -228,8 +229,9 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         (
           async () => {
             const userId = await extpay.getLoginId();
+            const encryptedUserId = crypto.encrypt(userId);
             const logMsg = msg.log_msg;
-            logMsg.userid = userId;
+            logMsg.userid = encryptedUserId;
             await remoteLog.log(logMsg);
           }
         )();
