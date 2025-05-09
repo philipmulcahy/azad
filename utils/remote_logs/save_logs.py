@@ -4,9 +4,13 @@ import base64
 from collections import namedtuple
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
+import contextlib
+import datetime
 import functools
+import hashlib
 import itertools
 import re
+import sqlite3
 import subprocess
 import sys
 
@@ -36,6 +40,19 @@ def decrypt(cyphertext_us64):
             ).decode('utf-8')
 
     return plaintext
+
+QueryLog = namedtuple(
+    'QueryLog',
+    [
+        'log_line',
+        'file',
+        'server',
+        'client_ip',
+        'date',
+        'method',
+        'path',
+        'params'
+    ])
 
 
 """
@@ -76,19 +93,6 @@ def get_log_lines():
     #                                                                         method
     #                                                                                    path&params
 
-    QueryLog = namedtuple(
-            'QueryLog',
-            [
-                'log_line',
-                'file',
-                'server',
-                'client_ip',
-                'date',
-                'method',
-                'path',
-                'params'
-            ])
-
     def make_log_object(line):
         match = log_line_re.match(line)
 
@@ -106,7 +110,7 @@ def get_log_lines():
                 try:
                     return decrypt(value)
                 except Exception as err:
-                    sys.stderr.write(str(err) + '\n')
+                    sys.stderr.write(f'caught {str(err)} while decrypting {key}\n')
 
             return value
 
@@ -139,5 +143,66 @@ def get_log_lines():
 
 # print(test_plaintext)
 
-for l in get_log_lines():
-    print(l)
+def save_events_to_database(log_lines: list[QueryLog]) -> None:
+    # CREATE TABLE events (
+    #   hash TEXT PRIMARY KEY,
+    #   timestamp TEXT,
+    #   userid TEXT,
+    #   client TEXT,
+    #   operation TEXT,
+    #   status TEXT,
+    #   rowcount INTEGER,
+    #   logline TEXT
+    # );
+
+    LogRow = namedtuple(
+          'LogRow',
+          [
+              'hash',
+              'timestamp',
+              'userid',
+              'client',
+              'operation',
+              'status',
+              'rowcount',
+              'logline'
+          ]
+    )
+
+    def row_from_query_log(ql: QueryLog) -> LogRow:
+        return LogRow(
+            hash=hashlib.blake2b(
+                ql.log_line.encode('utf-8'),
+                digest_size=32).hexdigest(),  # 256 bits
+            timestamp=datetime.datetime.strptime(ql.date, '%d/%b/%Y:%H:%M:%S').isoformat(),
+            userid=ql.params['userid'],
+            client=ql.client_ip,
+            operation=ql.params['operation'],
+            status=ql.params['status'],
+            rowcount=int(ql.params['rowCount']),
+            logline=ql.log_line,
+        )
+
+    with contextlib.closing(sqlite3.connect(
+            '/Users/philip/Desktop/azad_local/remote_log_db/remote_log.db'
+            )) as con:
+        cur = con.cursor();
+
+        def insert_if_not_present(row: LogRow):
+            present = cur.execute(f'SELECT 1 FROM events WHERE hash="{row.hash}"').fetchone()
+            if present:
+                sys.stderr.write(f'db already has {row.hash}\n')
+            else:
+                sys.stderr.write(f'adding {row.hash} to db\n')
+                cur.executemany('INSERT INTO events VALUES(?, ?, ?, ?, ?, ?, ?, ?)', [tuple(row)])
+            con.commit()
+
+        for line in log_lines:
+            row = row_from_query_log(line)
+            insert_if_not_present(row)
+
+def copy_new_rows_to_database():
+    lines = list(get_log_lines())
+    save_events_to_database(lines)
+
+copy_new_rows_to_database()

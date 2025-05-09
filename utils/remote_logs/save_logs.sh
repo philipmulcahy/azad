@@ -14,6 +14,6 @@ source ${VENV}/bin/activate
 
 ${VENV}/bin/pip install -r requirements.txt
 
-$VENV/bin/python analyse_logs.py
+$VENV/bin/python save_logs.py
 
 deactivate
