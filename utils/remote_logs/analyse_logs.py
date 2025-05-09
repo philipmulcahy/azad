@@ -25,9 +25,10 @@ Params:
 
 Returns: plaintext string
 """
-def decrypt(cyphertext64):
+def decrypt(cyphertext_us64):
     key = get_private_key()
-    cyphertext = base64.urlsafe_b64decode(cyphertext64 + '=')
+    cyphertext64 = base64.urlsafe_b64decode(cyphertext_us64 + '=')
+    cyphertext = base64.b64decode(cyphertext64)
 
     plaintext = key.decrypt(
             cyphertext,
@@ -49,11 +50,10 @@ def get_log_lines():
             [
                 'ssh',
                 'purple.local',
-                'egrep',
+                grep,
                 '-H',
-                '"(mulcahyfamily.org).*reallyDisplay"',
-                # '"(www.enoughsaved.uk|mulcahyfamily.org)"',
-                '/var/log/apache2/other_vhosts*',
+                '"azad-extension.co.uk.*reallyDisplay"',
+                filepattern,
             ],
             stdout=subprocess.PIPE,
         )
@@ -62,9 +62,9 @@ def get_log_lines():
         return (line for line in log_lines)
 
     log_lines = itertools.chain(
-        get_log_lines('grep',  '/var/log/apache2/other_vhosts.log'),
-        get_log_lines('grep',  '/var/log/apache2/other_vhosts.log.1'),
-        get_log_lines('zgrep',  '/var/log/apache2/other_vhosts*.gz'),
+        get_log_lines('grep',  '/var/log/apache2/other_vhosts_access.log'),
+        get_log_lines('grep',  '/var/log/apache2/other_vhosts_access.log.1'),
+        get_log_lines('zgrep',  '/var/log/apache2/other_vhosts_access.log.*.gz'),
     )
 
     log_line_re = re.compile(
@@ -135,6 +135,9 @@ def get_log_lines():
         if (ql := make_log_object(line))
     )
 
+# test_plaintext = decrypt('YzhVUHZOS3NwTlhXdUZ2SFdxb3ZQQzhsUjg0ODFaMmZYbTRYOFkyOFAwWlhGOXEwQWFFQmw2TDRKRTBVV3lnRjJ0eXNCNDJNbEJtM3R5eUV1Z0VIMU80by8rL0tLeFNDamFHS2twU2JrM04zVzZ4SVVDZVJ5OFBWNWR6enJlZjI3NytJb3lOY1RFYyt4Y2p3a0I0Snljb2crSUFsR25BNEhtdUo0NHZ4ajhRZ2VnUCs3N0hzSit4SFlqQVgwcFJpNW0yUkRFQmtQY3Q5c3hPTVh0MUFZYnlqVzZFK1M5M3FueU9hZ0Y4S0sxOVhXclorVWZ4bTJTRHJrN2YwWHEyZ2cvb1A1M2RoS1dFalNnWVpQR3MvSzVZQngwM3d1Mk5YQTNab3hyT293U0wvNGZtTUhldzFUcDlyU2xqR0s3YkV3WWt4aVZaWkdLd0NOVThGbm5QbEhQWndhOHpMeHpKR25idy81Q001NTVwem9sQWNyZ01nMmQwU2x2MUJleWRqaThYWG5ML3Qzbk9TTll6WHMrbjkxRmkvdEtsYzNTaEhyQzJqMEVNREJVbC9nWEplOVovei9aS09rMjdtamhnUlNxLzcvcWphSlZGb3MxNkFJelNnVzl2a2MvTDRmeXA2NUd5Q0lWNS94M0hMaXJhV1M0STNDWkpTZmUzeW9Za1o==')
+
+# print(test_plaintext)
 
 for l in get_log_lines():
     print(l)

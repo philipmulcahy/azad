@@ -2,9 +2,7 @@
 
 'use strict';
 
-import * as extpay from './extpay_client';
-
-const URL_STEM = 'https://mulcahyfamily.org';
+const URL_STEM = 'https://azad-extension.co.uk/logs';
 
 export async function log(
   msg: { [index: string]: string },
