@@ -4,6 +4,7 @@
 'use strict';
 
 import './cache_tests';
+import './crypto_tests';
 import './date_tests';
 import './extraction_tests';
 import './numeric_parse_tests';

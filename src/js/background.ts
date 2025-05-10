@@ -3,8 +3,10 @@
 'use strict';
 
 import * as cachestuff from './cachestuff';
+import * as crypto from './crypto';
 import * as extpay from './extpay_client';
 import * as msg from './message_types';
+import * as remoteLog from './remote_log';
 import * as settings from './settings';
 import * as urls from './url';
 import * as util from './util';
@@ -221,6 +223,18 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
           relayToParentOfIframe(port.sender, msg);
         }
 
+        break;
+
+      case 'remote_log_with_user_id':
+        (
+          async () => {
+            const userId = await extpay.getLoginId();
+            const encryptedUserId = crypto.encrypt(userId);
+            const logMsg = msg.log_msg;
+            logMsg.userid = encryptedUserId;
+            await remoteLog.log(logMsg);
+          }
+        )();
         break;
       default:
         console.debug('unknown action: ' + msg.action);
