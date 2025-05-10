@@ -92,12 +92,12 @@ async function fetchAndShowOrdersByYears(
     (_date: Date|null) => true,  // DateFilter predicate
   );
 
-  return azad_table.display(order_promises, true);
+  return azad_table.display(order_promises, true, ports.getBackgroundPort);
 }
 
 async function fetchAndShowOrdersByRange(
   start_date: Date, end_date: Date,
-  beautiful_table: boolean
+  beautiful_table: boolean,
 ): Promise<HTMLTableElement|undefined> {
   console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);
 
@@ -130,7 +130,7 @@ async function fetchAndShowOrdersByRange(
     },
   );
 
-  return azad_table.display(orders, beautiful_table);
+  return azad_table.display(orders, beautiful_table, ports.getBackgroundPort);
 }
 
 async function fetchShowAndSendItemsByRange(
@@ -145,7 +145,7 @@ async function fetchShowAndSendItemsByRange(
   const table: (HTMLTableElement|undefined) = await fetchAndShowOrdersByRange(
     start_date,
     end_date,
-    false
+    false,
   );
 
   await settings.storeBoolean('show_items_not_orders', original_items_setting);
@@ -214,7 +214,11 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       {
         const start_date: Date = new Date(msg.start_date);
         const end_date: Date = new Date(msg.end_date);
-        fetchAndShowOrdersByRange(start_date, end_date, true);
+        fetchAndShowOrdersByRange(
+          start_date,
+          end_date,
+          true,
+        );
       }
       break;
     case 'scrape_range_and_dump_items':
@@ -224,7 +228,8 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
         fetchShowAndSendItemsByRange(
           startDate,
           endDate,
-          msg.sender_id);
+          msg.sender_id,
+        );
       }
       break;
     case 'start_iframe_worker':
@@ -241,7 +246,11 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
 
       (async ()=>{
         if (!pageType.isWorker()) {
-          await azad_table.displayTransactions(msg.transactions, true);
+          await azad_table.displayTransactions(
+            msg.transactions,
+            true,
+            ports.getBackgroundPort,
+          );
         }
       })();
 
@@ -249,6 +258,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
     case 'clear_cache':
       getScheduler().cache().clear();
       transaction.clearCache();
+      periods.clearCache();
       notice.showNotificationBar(
         'Amazon Order History Reporter Chrome' +
           ' Extension\n\n' +

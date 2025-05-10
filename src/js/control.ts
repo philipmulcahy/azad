@@ -131,6 +131,7 @@ function handleAuthorisationMessage(authorised: boolean): void {
   const authorised_html = authorised ?
     'Preview/Premium features <b>enabled</b>' :
     'Preview/Premium features <b>disabled</b>';
+
   $('#azad_extensionpay_status').html(authorised_html);
 }
 

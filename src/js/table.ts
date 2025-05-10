@@ -273,6 +273,7 @@ async function addTable(
 async function reallyDisplay(
   orders: azad_order.IOrder[],
   beautiful: boolean,
+  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
 ): Promise<HTMLTableElement> {
   console.log('amazon_order_history_table.reallyDisplay starting');
 
@@ -311,22 +312,30 @@ async function reallyDisplay(
       util.removeButton('data table');
       util.addButton(
         'plain table',
-        function() { display(Promise.resolve(orders), false); },
+        function() { display(Promise.resolve(orders), false, getBackgroundPort); },
         'azad_table_button'
       );
-      addOrdersCsvButton(orders);
+      addOrdersCsvButton(orders, getBackgroundPort);
       datatable_wrap.init(cols);
     } else {
       util.removeButton('plain table');
       util.addButton(
         'data table',
-        function() { display(Promise.resolve(orders), true); },
+        function() { display(Promise.resolve(orders), true, getBackgroundPort); },
         'azad_table_button'
       );
-      addOrdersCsvButton(orders);
+      addOrdersCsvButton(orders, getBackgroundPort);
     }
   });
 
+  (await getBackgroundPort())?.postMessage({
+    action: 'remote_log_with_user_id',
+    log_msg: {
+      operation: 'reallyDisplay',
+      status: 'complete',
+      rowCount: (table.rows.length).toString(),
+    },
+  });
   console.log('azad.reallyDisplay returning');
   return table;
 }
@@ -334,6 +343,7 @@ async function reallyDisplay(
 async function reallyDisplayTransactions(
   transactions: transaction.Transaction[],
   beautiful: boolean,
+  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
 ): Promise<HTMLTableElement> {
   console.log('amazon_order_history_table.reallyDisplay starting');
 
@@ -357,19 +367,19 @@ async function reallyDisplayTransactions(
       util.removeButton('data table');
       util.addButton(
         'plain table',
-        () => reallyDisplayTransactions(transactions, false),
+        () => reallyDisplayTransactions(transactions, false, getBackgroundPort),
         'azad_table_button'
       );
-      addTransactionsCsvButton(transactions);
+      addTransactionsCsvButton(transactions, getBackgroundPort);
       datatable_wrap.init(cols);
     } else {
       util.removeButton('plain table');
       util.addButton(
         'data table',
-        () => reallyDisplayTransactions(transactions, true),
+        () => reallyDisplayTransactions(transactions, true, getBackgroundPort),
         'azad_table_button'
       );
-      addTransactionsCsvButton(transactions);
+      addTransactionsCsvButton(transactions, getBackgroundPort);
     }
   });
 
@@ -381,7 +391,10 @@ function addProgressBar(): void {
   progress_indicator = progress_bar.addProgressBar(document.body);
 }
 
-function addOrdersCsvButton(orders: azad_order.IOrder[]): void
+function addOrdersCsvButton(
+  orders: azad_order.IOrder[],
+  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
+): void
 {
   const title = "download spreadsheet ('.csv')";
 
@@ -390,7 +403,8 @@ function addOrdersCsvButton(orders: azad_order.IOrder[]): void
     async function() {
       const table: HTMLTableElement = await display(
         Promise.resolve(orders),
-        false
+        false,
+        getBackgroundPort,
       );
 
       const show_totals: boolean = await settings.getBoolean(
@@ -403,15 +417,17 @@ function addOrdersCsvButton(orders: azad_order.IOrder[]): void
   );
 }
 
-function addTransactionsCsvButton(transactions: transaction.Transaction[]): void
-{
+function addTransactionsCsvButton(
+  transactions: transaction.Transaction[],
+  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
+): void {
   const title = "download spreadsheet ('.csv')";
 
   util.addButton(
     title,
     async function() {
       const table: HTMLTableElement = await displayTransactions(
-        transactions, false
+        transactions, false, getBackgroundPort,
       );
 
       const show_totals: boolean = await settings.getBoolean(
@@ -427,6 +443,7 @@ function addTransactionsCsvButton(transactions: transaction.Transaction[]): void
 export async function display(
   orders_promise: Promise<azad_order.IOrder[]>,
   beautiful: boolean,
+  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
 ): Promise<HTMLTableElement> {
   const orders = await orders_promise;
   console.log('amazon_order_history_table.display starting');
@@ -445,6 +462,7 @@ export async function display(
   const table_promise: Promise<HTMLTableElement> = reallyDisplay(
     orders,
     beautiful,
+    getBackgroundPort,
   );
 
   console.log(
@@ -508,6 +526,7 @@ export function updateProgressBar(statistics: stats.Statistics): void {
 export async function displayTransactions(
   transactions: transaction.Transaction[],
   beautiful: boolean,
+  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
 ): Promise<HTMLTableElement> {
   if (transactions.length >= 500) {
     beautiful = false;
@@ -523,6 +542,7 @@ export async function displayTransactions(
   const table_promise: Promise<HTMLTableElement> = reallyDisplayTransactions(
     transactions,
     beautiful,
+    getBackgroundPort,
   );
 
   console.log(

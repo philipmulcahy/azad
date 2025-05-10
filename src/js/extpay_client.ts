@@ -38,3 +38,8 @@ export async function display_payment_ui() {
 export async function display_login_page() {
   getExtPay().openLoginPage();
 }
+
+export async function getLoginId(): Promise<string> {
+  const user = await getExtPay().getUser(); 
+  return user.email;
+}

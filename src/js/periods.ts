@@ -1,4 +1,5 @@
 import * as business from './business';
+import * as cacheStuff from './cachestuff';
 import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
 import * as pageType from './page_type';
@@ -15,6 +16,14 @@ const yearsPromise = new Promise<number[]>((resolve, _reject) => {
     resolve(years);
   }
 });
+
+function getCache() {
+  return cacheStuff.createLocalCache('PERIODS');
+}
+
+export function clearCache() {
+  getCache().clear();
+}
 
 function getYears(): Promise<number[]> {
   return yearsPromise;
@@ -81,6 +90,14 @@ async function getUrl(): Promise<string> {
 }
 
 async function extractYears(): Promise<number[]> {
+  const years_key = 'YEARS'
+
+  const cached = util.defaulted<number []>(await getCache().get(years_key), []);
+  if (cached.length != 0) {
+    console.log('extractYears() returning cached value', cached);
+    return cached;
+  }
+
   const url = await getUrl();
 
   async function getDoc(): Promise<Document> {
@@ -98,10 +115,11 @@ async function extractYears(): Promise<number[]> {
   try {
     const doc = await getDoc();
     const years: number[] = extraction.get_years(doc);
-    console.log('getYears() returning ', years);
-    return years
+    console.log('extractYears() returning ', years);
+    getCache().set(years_key, years);
+    return years;
   } catch (exception) {
-    console.error('getYears() caught:', exception);
+    console.error('extractYears() caught:', exception);
     return [];
   }
 }
