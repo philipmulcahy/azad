@@ -5,7 +5,7 @@ const lzjs = require('lzjs');
 import * as transaction from './transaction';
 import * as util from './util';
 
-export function getCache() {
+function getCache() {
   return cacheStuff.createLocalCache('TRANSACTIONS');
 }
 
@@ -253,7 +253,7 @@ function maybeClickNextPage(): void {
 }
 
 async function getTransactionsFromCache(): Promise<transaction.Transaction[]> {
-  const compressed = await transaction.getCache().get(CACHE_KEY);
+  const compressed = await getCache().get(CACHE_KEY);
   if (!compressed) {
     return [];
   }
@@ -265,7 +265,7 @@ async function getTransactionsFromCache(): Promise<transaction.Transaction[]> {
 function putTransactionsInCache(ts: transaction.Transaction[]) {
   const s = JSON.stringify(ts);
   const compressed = lzjs.compress(s);
-  transaction.getCache().set(CACHE_KEY, compressed);
+  getCache().set(CACHE_KEY, compressed);
 }
 
 function restoreDateObjects(

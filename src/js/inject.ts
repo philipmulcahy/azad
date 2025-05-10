@@ -258,6 +258,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
     case 'clear_cache':
       getScheduler().cache().clear();
       transaction.clearCache();
+      periods.clearCache();
       notice.showNotificationBar(
         'Amazon Order History Reporter Chrome' +
           ' Extension\n\n' +
