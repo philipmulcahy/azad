@@ -331,11 +331,12 @@ async function reallyDisplay(
   (await getBackgroundPort())?.postMessage({
     action: 'remote_log_with_user_id',
     log_msg: {
-      operation: 'reallyDisplay',
+      operation: `display.${table_type}`,
       status: 'complete',
       rowCount: (table.rows.length).toString(),
     },
   });
+
   console.log('azad.reallyDisplay returning');
   return table;
 }
@@ -350,12 +351,15 @@ async function reallyDisplayTransactions(
   util.clearBody();
   banner.addBanner();
 
-  const table_type = await settings.getString('azad_table_type');
-  const cols = table_config.getCols(table_type);
+  const tableType = await settings.getString('azad_table_type');
+  const cols = table_config.getCols(tableType);
 
-  const table_promise = (table_type == 'transactions') ?
-    addTransactionTable(document, transactions, cols) :
-    (() => {throw('unsupported table_type: ' + table_type);})();
+  if (tableType != 'transactions') {
+    throw('unsupported tableType: ' + tableType);
+  }
+
+  const table_promise =
+    addTransactionTable(document, transactions, cols);
 
   // Wait for table to be there before doing more html stuff.
   const table = await table_promise;
@@ -381,6 +385,15 @@ async function reallyDisplayTransactions(
       );
       addTransactionsCsvButton(transactions, getBackgroundPort);
     }
+  });
+
+  (await getBackgroundPort())?.postMessage({
+    action: 'remote_log_with_user_id',
+    log_msg: {
+      operation: `display.${tableType}`,
+      status: 'complete',
+      rowCount: (table.rows.length).toString(),
+    },
   });
 
   console.log('azad.reallyDisplay returning');

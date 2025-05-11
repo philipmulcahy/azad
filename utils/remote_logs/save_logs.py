@@ -69,7 +69,7 @@ def get_log_lines():
                 'purple.local',
                 grep,
                 '-H',
-                '"azad-extension.co.uk.*reallyDisplay"',
+                '"azad-extension.co.uk.*operation"',
                 filepattern,
             ],
             stdout=subprocess.PIPE,
