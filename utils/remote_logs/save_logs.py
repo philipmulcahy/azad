@@ -170,16 +170,31 @@ def save_events_to_database(log_lines: list[QueryLog]) -> None:
     )
 
     def row_from_query_log(ql: QueryLog) -> LogRow:
+        timestamp = datetime.datetime.strptime(
+                ql.date, '%d/%b/%Y:%H:%M:%S').isoformat()
+
+        userid = ql.params['userid']
+        operation = ql.params['operation']
+        status = ql.params['status']
+        rowcount = ql.params['rowCount']
+
+        # logline contains the source log file name, which gets rotated, so
+        # must be excluded to avoid semantically duplicate records.
+        hash_string = f'{timestamp}#{userid}#{operation}#{status}#{rowcount}'
+
+        hashcode=hashlib.blake2b(
+            hash_string.encode('utf-8'),
+            digest_size=32, # 256 bits
+            ).hexdigest()
+
         return LogRow(
-            hash=hashlib.blake2b(
-                ql.log_line.encode('utf-8'),
-                digest_size=32).hexdigest(),  # 256 bits
-            timestamp=datetime.datetime.strptime(ql.date, '%d/%b/%Y:%H:%M:%S').isoformat(),
-            userid=ql.params['userid'],
+            hash=hashcode,
+            timestamp=timestamp,
+            userid=userid,
             client=ql.client_ip,
-            operation=ql.params['operation'],
-            status=ql.params['status'],
-            rowcount=int(ql.params['rowCount']),
+            operation=operation,
+            status=status,
+            rowcount=rowcount,
             logline=ql.log_line,
         )
 
@@ -189,12 +204,17 @@ def save_events_to_database(log_lines: list[QueryLog]) -> None:
         cur = con.cursor();
 
         def insert_if_not_present(row: LogRow):
-            present = cur.execute(f'SELECT 1 FROM events WHERE hash="{row.hash}"').fetchone()
+            present = cur.execute(
+                    f'SELECT 1 FROM events WHERE hash="{row.hash}"').fetchone()
+
             if present:
                 sys.stderr.write(f'db already has {row.hash}\n')
             else:
                 sys.stderr.write(f'adding {row.hash} to db\n')
-                cur.executemany('INSERT INTO events VALUES(?, ?, ?, ?, ?, ?, ?, ?)', [tuple(row)])
+                cur.executemany(
+                        'INSERT INTO events VALUES(?, ?, ?, ?, ?, ?, ?, ?)',
+                        [tuple(row)])
+
             con.commit()
 
         for line in log_lines:
