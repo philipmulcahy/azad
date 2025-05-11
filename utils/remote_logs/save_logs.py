@@ -85,13 +85,13 @@ def get_log_lines():
     )
 
     log_line_re = re.compile(
-            r'([^:]*):([a-zA-Z0-9.:]+).*(\d+\.\d+\.\d+\.\d+).*\[(.*) \+\d+\].*(GET|HEAD) ([^ ]+)')
+            r'([^:]*):([a-zA-Z0-9.:-]+).*?(\d+\.\d+\.\d+\.\d+).*?\[(.*) \+\d+\].*?(GET|HEAD) ([^ ]+)')
     #         file
     #                 server
-    #                                   client
-    #                                                           date
-    #                                                                         method
-    #                                                                                    path&params
+    #                                      client
+    #                                                              date
+    #                                                                              method
+    #                                                                                         path&params
 
     def make_log_object(line):
         match = log_line_re.match(line)
