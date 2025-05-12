@@ -2,10 +2,10 @@
 
 import * as azad_item from '../js/item';
 import * as azad_order from '../js/order';
-import * as extraction from '../js/extraction';
 import * as fs from 'fs';
 const jsdom = require('jsdom');
 import * as order_data from './fake_order';
+import * as periods from '../js/periods';
 const process = require('process');
 import * as util from '../js/util';
 
@@ -18,7 +18,7 @@ interface ITestResult {
 function testOneGetYearsTarget(html_file_path: string): ITestResult {
   const html_text = fs.readFileSync(html_file_path, 'utf8');
   const doc = new jsdom.JSDOM(html_text).window.document;
-  const years: number[] = extraction.get_years(doc);
+  const years: number[] = periods.get_years(doc);
   return {
     test_id: 'GET_YEAR_NUMBERS_' + html_file_path,
     passed: years.length > 5 && years.length < 25,
