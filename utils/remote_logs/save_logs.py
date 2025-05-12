@@ -146,41 +146,47 @@ def get_log_lines():
 def save_events_to_database(log_lines: list[QueryLog]) -> None:
     # CREATE TABLE events (
     #   hash TEXT PRIMARY KEY,
-    #   timestamp TEXT,
+    #   event_timestamp TEXT,
+    #   insert_timestamp TEXT,
     #   userid TEXT,
     #   client TEXT,
     #   operation TEXT,
     #   status TEXT,
     #   rowcount INTEGER,
-    #   logline TEXT
+    #   logline TEXT,
+    #   logfile TEXT,
     # );
 
     LogRow = namedtuple(
           'LogRow',
           [
               'hash',
-              'timestamp',
+              'event_timestamp',
+              'insert_timestamp',
               'userid',
               'client',
               'operation',
               'status',
               'rowcount',
-              'logline'
+              'logline',
+              'logfile',
           ]
     )
 
     def row_from_query_log(ql: QueryLog) -> LogRow:
-        timestamp = datetime.datetime.strptime(
+        event_timestamp = datetime.datetime.strptime(
                 ql.date, '%d/%b/%Y:%H:%M:%S').isoformat()
 
+        now = datetime.datetime.now().isoformat()
         userid = ql.params['userid']
         operation = ql.params['operation']
         status = ql.params['status']
         rowcount = ql.params['rowCount']
+        logfile = ql.file
 
         # logline contains the source log file name, which gets rotated, so
         # must be excluded to avoid semantically duplicate records.
-        hash_string = f'{timestamp}#{userid}#{operation}#{status}#{rowcount}'
+        hash_string = f'{event_timestamp}#{userid}#{operation}#{status}#{rowcount}'
 
         hashcode=hashlib.blake2b(
             hash_string.encode('utf-8'),
@@ -189,13 +195,15 @@ def save_events_to_database(log_lines: list[QueryLog]) -> None:
 
         return LogRow(
             hash=hashcode,
-            timestamp=timestamp,
+            event_timestamp=event_timestamp,
+            insert_timestamp=now,
             userid=userid,
             client=ql.client_ip,
             operation=operation,
             status=status,
             rowcount=rowcount,
             logline=ql.log_line,
+            logfile=logfile
         )
 
     with contextlib.closing(sqlite3.connect(
@@ -212,7 +220,7 @@ def save_events_to_database(log_lines: list[QueryLog]) -> None:
             else:
                 sys.stderr.write(f'adding {row.hash} to db\n')
                 cur.executemany(
-                        'INSERT INTO events VALUES(?, ?, ?, ?, ?, ?, ?, ?)',
+                        'INSERT INTO events VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                         [tuple(row)])
 
             con.commit()
