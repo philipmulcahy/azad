@@ -66,6 +66,8 @@ def get_log_lines():
         ssh_grep = subprocess.Popen(
             [
                 'ssh',
+                '-l', 'logs',
+                '-i', '/Users/philip/.ssh/logs_readonly',
                 'purple.local',
                 grep,
                 '-H',
