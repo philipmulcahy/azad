@@ -1,10 +1,11 @@
-*.swp
 .DS_Store
-azad.zip
+*.swp
 azad_*.zip
+azad.zip
 build
 build-node
 docs
 node_modules
 src/tests/azad_test_data
 tmp
+utils/remote_logs/.venv
