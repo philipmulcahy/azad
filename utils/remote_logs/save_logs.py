@@ -54,7 +54,6 @@ QueryLog = namedtuple(
         'params'
     ])
 
-
 """
 Params: none
 Returns: generator of parsed log entries, with decrypted userids
@@ -218,7 +217,8 @@ def save_events_to_database(log_lines: list[QueryLog]) -> None:
                     f'SELECT 1 FROM events WHERE hash="{row.hash}"').fetchone()
 
             if present:
-                sys.stderr.write(f'db already has {row.hash}\n')
+                pass
+                # sys.stderr.write(f'db already has {row.hash}\n')
             else:
                 sys.stderr.write(f'adding {row.hash} to db\n')
                 cur.executemany(
