@@ -27,14 +27,25 @@ async function getExpectedOrderCount(
   const response = await iframeWorker.fetchURL(
     url, pageReadyXpath, 'get expected order count');
 
-  const d = util.parseStringToDOM(response.html);
+  const doc = util.parseStringToDOM(response.html);
+
+  const expectedOrderCount = getExpectedOrderCountFromHeaderDoc(
+    doc, response.url);
+
+  return expectedOrderCount;
+}
+
+function getExpectedOrderCountFromHeaderDoc(
+  doc: HTMLDocument,
+  url: string,  // for logging only
+): number {
   const context = 'getExpectedOrderCount';
 
   const countSpan = extraction.findSingleNodeValue(
-    '//span[@class="num-orders"]', d.documentElement, context);
+    '//span[@class="num-orders"]', doc.documentElement, context);
 
   if ( !countSpan ) {
-    const msg = 'Error: cannot find order count elem in: ' + response.html;
+    const msg = `Error: cannot find order count elem in: ${url}`;
     console.error(msg);
     throw(msg);
   }
@@ -48,19 +59,19 @@ async function getExpectedOrderCount(
     throw(msg);
   }
 
-  const expected_order_count: number = parseInt( splits[0], 10 );
+  const expectedOrderCount: number = parseInt(splits[0], 10);
 
   console.log(
-    'Found ' + expected_order_count + ' orders for ' + year.toString()
+    `Found ${expectedOrderCount} orders in ${url}`
   );
 
-  if(isNaN(expected_order_count)) {
+  if(isNaN(expectedOrderCount)) {
     console.warn(
       'Error: cannot find order count in ' + countSpan.textContent
     );
   }
 
-  return expected_order_count;
+  return expectedOrderCount;
 }
 
 async function get_page_of_headers(
@@ -69,7 +80,8 @@ async function get_page_of_headers(
   urlGenerator: headerPageUrlGenerator,
   start_order_number: number, // zero based
   scheduler: request_scheduler.IRequestScheduler,
-): Promise<order_header.IOrderHeader[]> {
+  updateExpectedOrderCount: (count: number)=>void,
+): Promise<OrderHeaderPageData> {
   const url = await urlGenerator(site, year, start_order_number);
   const pageReadyXpath = '//*[contains(@class, "yohtmlc-order-id")]';
   const nocache = start_order_number == 0;
@@ -83,21 +95,27 @@ async function get_page_of_headers(
     scheduler,
     '',
     nocache,
-    'order_list_page.get_page_of_headers: ' + start_order_number,  // debug_context
-  );
+    `order_list_page.get_page_of_headers: ${start_order_number}`,  // debug_context
+  ) as Promise<OrderHeaderPageData>;
 
   pageData.then(
-    headers => {
+    pageData => {
+      updateExpectedOrderCount(pageData.expectedOrderCount);
+      const headers = pageData.headers;
       const ids: string = headers.map(h => h.id).join(', ');
-      console.debug(`get_page_of_headers fetched ${url} and discovered these order ids: ${ids}`);
+      console.debug(
+        `get_page_of_headers fetched ${url} and discovered these ids: ${ids}`);
     },
-    err => console.warn(`get_page_of_headers blew up while fetching or processing: ${err}`)
+    err => console.warn(
+      `get_page_of_headers blew up while fetching or processing: ${err}`)
   );
 
   return pageData;
 }
 
-function dedupeHeaders(headers: order_header.IOrderHeader[]): order_header.IOrderHeader[] {
+function dedupeHeaders(
+  headers: order_header.IOrderHeader[]
+): order_header.IOrderHeader[] {
   const deduped: order_header.IOrderHeader[] = [];
   const seen = new Set<string>();
 
@@ -120,28 +138,39 @@ export async function get_headers(
 ): Promise<order_header.IOrderHeader[]> {
   async function fetch_headers_for_template(
     urlGenerator: headerPageUrlGenerator
-  ) : Promise<order_header.IOrderHeader[]> {
-    const expected_order_count = await getExpectedOrderCount(
+  ): Promise<order_header.IOrderHeader[]> {
+    let expected_order_count = await getExpectedOrderCount(
       site, year, urlGenerator);
 
-    const header_promises: Promise<order_header.IOrderHeader[]>[] = [];
+    function updateExpectedOrderCount(count: number): void {
+      if (count > expected_order_count) {
+        console.warn(`updating expected order count: ${count}`);
+      }
 
-    for(let iorder = 0; iorder < expected_order_count; iorder += 10) {
+      expected_order_count = count;
+    }
+
+    const headerPromises: Promise<OrderHeaderPageData>[] = [];
+
+    function notEnoughPagesRequested(): boolean {
+      const expectedPageCount = Math.floor((expected_order_count-1)/10)+1;
+      return headerPromises.length < expectedPageCount;
+    }
+
+    for(let iorder = 0; notEnoughPagesRequested(); iorder += 10) {
       console.log(
         'creating header page request for order: ' + iorder + ' onwards'
       );
 
-      const page_of_headers = get_page_of_headers(
-        site, year, urlGenerator, iorder, scheduler,
+      const headersPageData = get_page_of_headers(
+        site, year, urlGenerator, iorder, scheduler, updateExpectedOrderCount,
       );
 
-      header_promises.push(page_of_headers);
+      headerPromises.push(headersPageData);
     }
 
-    const pages_of_headers = await util.get_settled_and_discard_rejects(
-      header_promises);
-
-    const headers = pages_of_headers.flat();
+    const pages = await util.get_settled_and_discard_rejects(headerPromises);
+    const headers = pages.map(data => data.headers).flat();
 
     if (headers.length != expected_order_count) {
       console.error(
@@ -227,10 +256,15 @@ function generateQueryString(
   );
 }
 
+type OrderHeaderPageData = {
+  headers: order_header.IOrderHeader[],
+  expectedOrderCount: number,
+};
+
 function translateOrdersPage(
   evt: any,
   period: string,  // log description of the period we are fetching orders for.
-): order_header.IOrderHeader[] {
+): OrderHeaderPageData {
   try {
     const opd = reallyTranslateOrdersPage(evt, period);
     return opd;
@@ -243,9 +277,9 @@ function translateOrdersPage(
 function reallyTranslateOrdersPage(
   evt: any,
   period: string,  // log description of the period we are fetching orders for.
-): order_header.IOrderHeader[] {
-  const d = util.parseStringToDOM(evt.target.responseText);
-
+): OrderHeaderPageData {
+  const doc = util.parseStringToDOM(evt.target.responseText);
+  const expectedOrderCount = getExpectedOrderCountFromHeaderDoc(doc, evt.target.url);
   let ordersElem;
 
   try {
@@ -253,7 +287,7 @@ function reallyTranslateOrdersPage(
       '//div[contains(@class, "your-orders-content-container") '
       + 'or @id="ordersContainer" '
       + 'or @id="yourOrderInfoSection"]',
-      d.documentElement,
+      doc.documentElement,
       'finding order list container for:' + period
     ) as HTMLElement;
   } catch(err) {
@@ -288,7 +322,10 @@ function reallyTranslateOrdersPage(
   const headers = order_elems.map(
     elem => order_header.extractOrderHeader(elem, evt.target.responseURL));
 
-  return headers;
+  return {
+    headers,
+    expectedOrderCount,
+  };
 }
 
 function getCachedAttributeNames() {
