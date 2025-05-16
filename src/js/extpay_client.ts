@@ -39,6 +39,12 @@ export async function display_login_page() {
   getExtPay().openLoginPage();
 }
 
+export async function display_console() {
+  chrome.tabs.create(
+    {'url': 'https://billing.stripe.com/p/login/14A7sLeQueW49eA0N6eAg00'}
+  );
+}
+
 export async function getLoginId(): Promise<string> {
   const user = await getExtPay().getUser(); 
   return user.email;

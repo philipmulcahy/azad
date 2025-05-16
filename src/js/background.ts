@@ -284,6 +284,10 @@ async function handleMessageFromControl(msg: any) {
         console.log('got show_extpay_login_ui request');
         extpay.display_login_page();
         break;
+      case 'show_extpay_console':
+        console.log('got show_extpay_console request');
+        extpay.display_console();
+        break;
       case 'clear_cache':
         broadcastToRootContentPages(msg);
         break;

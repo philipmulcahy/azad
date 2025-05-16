@@ -145,6 +145,7 @@ function registerActionButtons() {
         console.warn('clear cache clicked, but I have no background port');
       }
     });
+
     $('#azad_force_logout').on('click', () => {
       console.log('force logout clicked');
       if (background_port) {
@@ -154,14 +155,17 @@ function registerActionButtons() {
         console.warn('force logout clicked, but I have no background port');
       }
     });
+
     $('#azad_stop').on('click', () => {
       console.log('stop clicked');
       handleStopClick();
     });
+
     $('#azad_hide_controls').on('click', () => {
       console.log('closing popup');
       window.close();
     });
+
     $('#azad_payment_ui_button').on('click', () => {
       if (background_port) {
         console.log('show payment UI clicked');
@@ -170,12 +174,22 @@ function registerActionButtons() {
         console.warn('show payment UI clicked, but I have no background port');
       }
     });
+
     $('#azad_extpay_login_button').on('click', () => {
       if (background_port) {
         console.log('show payment UI clicked');
         background_port.postMessage({action: 'show_extpay_login_ui'});
       } else {
         console.warn('show extpay log-in UI clicked, but I have no background port');
+      }
+    });
+
+    $('#azad_extpay_console_button').on('click', () => {
+      if (background_port) {
+        console.log('show extpay console clicked');
+        background_port.postMessage({action: 'show_extpay_console'});
+      } else {
+        console.warn('show extpay console clicked, but I have no background port');
       }
     });
   } catch(ex) {
