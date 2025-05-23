@@ -1,0 +1,12 @@
+# date, userid, count
+./readonly_query.sh \
+  "SELECT substr(event_timestamp,1,10), userid, count(*) from events where userid not like '%mulcahy%' group by 1, 2 order by 1, 2;"
+
+
+# date, count
+./remote_logs/readonly_query.sh \
+  "SELECT substr(event_timestamp,1,10), count(*) from events where userid not like '%mulcahy%' group by 1 order by 1;"
+
+# userid, count
+./remote_logs/readonly_query.sh \
+  "SELECT userid, count(*) from events where userid not like '%mulcahy%' group by 1 order by 1;"
