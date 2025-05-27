@@ -141,6 +141,8 @@ If you have log files, debug info, or screenshots to send but don't want them to
 * If you command a scrape and only then open the console, you'll probably only get the last few hundred lines of log. I think this is to save memory, so remember to follow these instructions in their entirety.
 * RIGHT-click on the log pane and select "Save as..."
 * Save the file as desired.
+* If you're sending me (Philip) your log file, you should not attach it to a github ticket for all to see if you have scraped amazon transactions during the logged session, because it might well contain personally identifiable information (PII).
+* Instead, send it to azadextension@gmail.com with the github ticket number somewhere in the subject line. This will avoid any of your PII being exposed for the world to see. Also please post a note on the github ticket to let me know to look out for it: I don't habitually look at project email unless I know there's something there for me: it's too full of proposals to buy the extension by folks who want to serve malware.
 
 #### How to save and send an order debug json file
 
