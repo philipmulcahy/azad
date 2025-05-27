@@ -142,12 +142,16 @@ export async function get_headers(
     let expected_order_count = await getExpectedOrderCount(
       site, year, urlGenerator);
 
+    console.log(`setting expected order count to ${expected_order_count}`);
+
     function updateExpectedOrderCount(count: number): void {
       if (count > expected_order_count) {
-        console.warn(`updating expected order count: ${count}`);
-      }
+        console.log(
+          'updating expected order count ' +
+          `from ${expected_order_count} to ${count}`);
 
-      expected_order_count = count;
+        expected_order_count = count;
+      }
     }
 
     const headerPromises: Promise<OrderHeaderPageData>[] = [];
@@ -175,7 +179,7 @@ export async function get_headers(
     if (headers.length != expected_order_count) {
       console.error(
         `expected ${expected_order_count} orders, ` +
-        `but only got ${headers.length}`
+        `but got ${headers.length}`
       );
     }
 
