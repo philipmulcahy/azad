@@ -32,6 +32,12 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.10
+---------------
+#320 If amazon provide inconsistent order counts as the scrape progresses, attempt to fetch the greatest number of orders they admit to.
+#331 Secure logging: record which table type has been scraped.
+#335 Add button to access Stripe console for premium subscribers: maybe an easier way to cancel. Caution: ExtPay are not keen on this yet.
+
 Changes 1.16.9
 --------------
 #331 Secure remote logging of logged-in premium subscriber usage (no amazon account details).
