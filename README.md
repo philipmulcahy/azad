@@ -134,7 +134,7 @@ If you have log files, debug info, or screenshots to send but don't want them to
 
 #### How to save a log file
 
-* On the screen showing the report, press Ctrl+Shift+I (Option+Shift+I on MacOs) to open Chrome Developer Tools
+* On the screen showing the report, press Ctrl+Shift+I (Cmd-Opt-I on MacOs) to open Chrome Developer Tools
 * The Console log might appear at the bottom of the screen, but if it doesn't press "Console" (near to top of the tools pane)
 * Once the console is open, select all logging levels: <img width="220" alt="image" src="https://github.com/philipmulcahy/azad/assets/1668892/a6e2e647-019c-4f72-8ec7-2d1b45a9097e">
 * Do your thing with the extension, reproducing whatever behaviour you want to capture.
