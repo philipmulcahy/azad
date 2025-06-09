@@ -2,7 +2,7 @@
 export default {
   testEnvironment: "node",
   roots: [
-    "src/tests/",
+    "src/tests/jest",
   ],
   transform: {
     "^.+.tsx?$": ["ts-jest",{}],
