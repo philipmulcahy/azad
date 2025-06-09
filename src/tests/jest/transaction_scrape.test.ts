@@ -1,4 +1,4 @@
-import { extractPageOfTransactions, Transaction } from '../js/transaction';
+import { extractPageOfTransactions, Transaction } from '../../js/transaction';
 const jsdom = require('jsdom');
 import * as fs from 'fs';
 
