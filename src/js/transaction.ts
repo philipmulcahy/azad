@@ -59,10 +59,10 @@ function filterTransactionsByDateRange(
   return transactions.filter(t => t.date >= start && t.date <= end);
 }
 
-function extractPageOfTransactions(): transaction.Transaction[] {
+export function extractPageOfTransactions(doc: Document): transaction.Transaction[] {
   const dateElems: Element[] = extraction.findMultipleNodeValues(
     '//div[contains(@class, "transaction-date-container")]',
-    document.documentElement,
+    doc.documentElement,
     'transaction date extraction',
   ) as Element[];
 
@@ -79,7 +79,7 @@ async function retryingExtractPageOfTransactions(): Promise<transaction.Transact
     await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
     elapsedMillis += INCREMENT_MILLIS;
     console.log('elapsedMillis', elapsedMillis);
-    const page = extractPageOfTransactions();
+    const page = extractPageOfTransactions(document);
     console.log(`got ${page.length} transactions`);
 
     if (page.length == 20) {
@@ -90,7 +90,7 @@ async function retryingExtractPageOfTransactions(): Promise<transaction.Transact
       // in case amazon code was still running when we sampled.
       console.log(`waiting (once) before scraping one last time`);
       await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
-      const finalTry = extractPageOfTransactions();
+      const finalTry = extractPageOfTransactions(document);
       console.log(`got ${finalTry.length} transactions`);
       return finalTry;
     }

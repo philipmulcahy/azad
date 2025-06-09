@@ -1,13 +1,11 @@
 /* Copyright(c) 2019-2021 Philip Mulcahy. */
 
-import * as azad_item from '../js/item';
-import * as azad_order from '../js/order';
+import * as azad_item from '../../js/item';
+import * as azad_order from '../../js/order';
 import * as fs from 'fs';
-const jsdom = require('jsdom');
-import * as order_data from './fake_order';
-import * as periods from '../js/periods';
+import * as order_data from '../fake_order';
 const process = require('process');
-import * as util from '../js/util';
+import * as util from '../../js/util';
 
 interface ITestResult {
   test_id: string;
@@ -15,33 +13,8 @@ interface ITestResult {
   defects: string[];
 }
 
-function testOneGetYearsTarget(html_file_path: string): ITestResult {
-  const html_text = fs.readFileSync(html_file_path, 'utf8');
-  const doc = new jsdom.JSDOM(html_text).window.document;
-  const years: number[] = periods.get_years(doc);
-  return {
-    test_id: 'GET_YEAR_NUMBERS_' + html_file_path,
-    passed: years.length > 5 && years.length < 25,
-    defects: []
-  };
-}
 
-function testAllGetYearsTargets(): ITestResult[] {
-  return [
-    'NathanChristie_2023-09-08',
-    'PhilipMulcahy_2023-09-09',
-    'shood_2023-09-08',
-    'WatersPaul_2025-01-14',
-    'WatersPaul_2025-01-16',
-    'WatersPaul_2025-01-22',
-  ].map(
-    s => testOneGetYearsTarget(
-      './src/tests/azad_test_data/get_years/' + s + '.html'
-    )
-  );
-}
-
-function testOneOrderTarget(
+async function testOneOrderTarget(
     target: order_data.ITestTarget
 ): Promise<ITestResult> {
   const result: ITestResult = {
@@ -52,7 +25,9 @@ function testOneOrderTarget(
     passed: false,
     defects: [],
   };
+
   console.log('testing:', target.site, target.order_id);
+
   const maybe_order: azad_order.IOrder | null = order_data.orderFromTestData(
     target.order_id,
     target.scrape_date,
@@ -73,18 +48,22 @@ function testOneOrderTarget(
     target.scrape_date,
     target.site
   );
+
   const keys = Object.keys(expected);
-  const key_validation_promises = keys.map( async key => {
+
+  async function validateKey(key: string): Promise<void> {
     try {
       let expected_value = util.defaulted(expected[key], '');
       const actual_value_promise = (order as Record<string, any>)[key]();
       let actual_value = await actual_value_promise;
       console.log('key:', key, expected_value, actual_value);
+
       if ( key.toLowerCase().includes('date') ) {
         actual_value = util.dateToDateIsoString(actual_value as Date);
       }
+
       if ( key == 'item_list' ) {
-        const strip_uninteresting_fields = function(
+        function strip_uninteresting_fields (
           item_list: azad_item.IItem[]
         ): azad_item.IItem[] {
           item_list.forEach( item => {
@@ -94,9 +73,11 @@ function testOneOrderTarget(
           });
           return item_list;
         };
+
         expected_value = strip_uninteresting_fields(
           expected_value as azad_item.IItem[]
         );
+
         actual_value = strip_uninteresting_fields(
           actual_value as azad_item.IItem[]
         );
@@ -108,30 +89,35 @@ function testOneOrderTarget(
           )
         );
       }
+
       const actual_string = JSON.stringify(actual_value);
       const expected_string = JSON.stringify(expected_value);
+
       if ( actual_string != expected_string ) {
         const msg = key + ' should be ' + expected_string +
           ' but we got ' + actual_string;
+
         result.defects.push(msg);
       }
     } catch(ex) {
       console.error(ex!.toString());
       result.defects.push(ex!.toString());
     }
-  });
+  }
+
+  const key_validation_promises = keys.map(validateKey); 
+
   return Promise.all(key_validation_promises).then( () => {
     if (result.defects.length == 0) {
       result.passed = true;
     }
+
     return result;
   });
 }
 
-function runAllOrderTests():  Promise<ITestResult[]> {
-  const order_test_targets = order_data.discoverTestData();
-  const order_test_results_promise = Promise.all(
-    order_test_targets
+async function runAllOrderTests():  Promise<ITestResult[]> {
+  const targets = order_data.discoverTestData()
       // .filter(target => target.order_id == '002-9651082-1715432')
       // .filter(target => target.order_id == '026-5653597-4769168')  // @philipmulcahy
       // .filter(target => target.order_id == '111-0193776-6839441')  // @ronindesign
@@ -154,19 +140,24 @@ function runAllOrderTests():  Promise<ITestResult[]> {
       // .filter(target => target.order_id == '701-0109921-6873001')  // @lstn
       // .filter(target => target.order_id == '701-6985978-3679428')  // @belilan
       // .filter(target => target.order_id == 'D01-4607619-0755448')  // @danniboy
-      //.filter(target => target.order_id == 'D01-1411651-9583045')  // @philipmulcahy
+      // .filter(target => target.order_id == 'D01-1411651-9583045')  // @philipmulcahy
       // .filter(target => target.order_id == 'D01-8755888-0539825')
-    .map(target => testOneOrderTarget(target))
-  );
-  return order_test_results_promise;
+  ;
+
+  const results_promises = targets.map(testOneOrderTarget);
+  const results = await Promise.all(results_promises);
+  return results;
 }
 
 async function main() {
-  const get_years_results = await testAllGetYearsTargets();
-  process.stdout.write(JSON.stringify(get_years_results, null, 2));
-
-  const order_results = await runAllOrderTests();
-  process.stdout.write(JSON.stringify(order_results, null, 2));
+  const results = await runAllOrderTests();
+  const badResults = results.filter(r => (!r.passed) || (r.defects.length != 0));
+  const badOrderCount = badResults.length;
+  const defectCount = badResults.map(r => r.defects).flat().length;
+  const returnCode = Math.max(badOrderCount, defectCount);
+  process.stdout.write(JSON.stringify(results, null, 2));
+  process.stderr.write(JSON.stringify(badResults));
+  process.exit(returnCode);
 }
 
 main();

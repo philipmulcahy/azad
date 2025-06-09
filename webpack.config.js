@@ -101,7 +101,7 @@ const node_options = {
     target: 'node',
     mode: process.env.NODE_ENV || "development",
     entry: {
-        nodejs_tests: path.join(__dirname, "src", "tests", "nodejs_tests.ts"),
+        nodejs_tests: path.join(__dirname, "src", "tests", "order_scraping", "order_scrape.test.ts"),
     },
     output: {
         path: path.join(__dirname, "build-node"),
