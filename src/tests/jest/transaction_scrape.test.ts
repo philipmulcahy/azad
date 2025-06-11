@@ -28,3 +28,13 @@ describe('can read 20 transactions from first page of DReffects\'s account', () 
       expect(transactions.length).toEqual(20);
   });
 });
+
+describe('can read 20 transactions from first page of cmulcahy\'s account', () => {
+  test(
+    'can read 20 transactions', () => {
+      const transactions = scrapePageOfTransactionsFromCannedHtml(
+        './src/tests/azad_test_data/transactions/cmulcahy/2025-06-09.html');
+
+      expect(transactions.length).toEqual(20);
+  });
+});
