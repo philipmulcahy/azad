@@ -12,7 +12,7 @@ test('detail extraction', () => {
   const context = 'detail_extraction_test';
   const doc = new jsdom.JSDOM(order_detail_html).window.document;
 
-  const basic: string = extraction.by_regex(
+  const basic = extraction.by_regex(
     [
       '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "VAT: ")]]'
     ],
