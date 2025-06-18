@@ -63,7 +63,7 @@ export function currencyRegex(): RegExp {
   // \u20ac is Euro symbol (€).
   // Sometimes typing it "properly" seems to break the regular
   // expression.
-  return /(\u20ac|€|£|$|AUD|CAD|EUR|GBP|USD)/;
+  return /(?:\u20ac|€|£|$|AUD|CAD|EUR|GBP|USD)/;
 }
 
 function parseToNumber(i: string | number): number {
