@@ -59,6 +59,13 @@ function clean_mixed_decimal_separators(number_string: string): string {
   return number_string;
 }
 
+export function currencyRegex(): RegExp {
+  // \u20ac is Euro symbol (€).
+  // Sometimes typing it "properly" seems to break the regular
+  // expression.
+  return /(\u20ac|€|£|$|AUD|CAD|EUR|GBP|USD)/;
+}
+
 function parseToNumber(i: string | number): number {
   try {
     if(typeof i === 'string') {
@@ -72,10 +79,7 @@ function parseToNumber(i: string | number): number {
         return 0;
       } else {
         const cc = c.trim()
-        // \u20ac is Euro symbol (€).
-        // Sometimes typing it "properly" seems to break the regular
-        // expression.
-                    .replace( /^(\u20ac|€|£|$|AUD|CAD|EUR|GBP|USD) */, '' )
+                    .replace( new RegExp(`^${currencyRegex().source} *`), '' )
                     .replace( /,/, '.' );
         const ccc = parseFloat(cc);
         return ccc;
