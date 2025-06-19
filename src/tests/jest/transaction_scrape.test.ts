@@ -1,12 +1,14 @@
-import { extractPageOfTransactions, Transaction } from '../../js/transaction';
-const jsdom = require('jsdom');
+import {extractPageOfTransactions, Transaction} from '../../js/transaction';
 import * as fs from 'fs';
+import * as dt from '../../js/date';
+import * as util from '../../js/util';
+
+const jsdom = require('jsdom');
 
 function scrapePageOfTransactionsFromCannedHtml(htmlFilePath: string): Transaction[] {
   const html: string = fs.readFileSync(htmlFilePath, 'utf8');
   const doc = new jsdom.JSDOM(html).window.document;
-  const transactions = extractPageOfTransactions(doc);
-  return transactions;
+  return extractPageOfTransactions(doc);
 }
 
 describe('can read 20 transactions', () => {
@@ -49,18 +51,14 @@ enum ComponentName {
   NONE = 'none',
 }
 
-import * as extraction from '../../js/extraction';
-import * as dt from '../../js/date';
-import * as util from '../../js/util';
-
 const patterns = new Map<ComponentName, RegExp>([
   [ComponentName.ORDER_ID, util.orderIdRegExp()],
-  [ComponentName.DATE, dt.getDateRegex()],
-  [ComponentName.BLANKED_DIGITS, new RegExp('(?:••••|[*][*][*][*])')],
+  [ComponentName.DATE, new RegExp(`(${dt.getDateRegex().source})`)],
+  [ComponentName.BLANKED_DIGITS, new RegExp('••••|[*][*][*][*]')],
   [ComponentName.CARD_DIGITS, new RegExp('(\d\d\d\d)')],
   [ComponentName.CARD_NAME, new RegExp('([A-Za-z][A-Za-z0-9]{2,24})')],
   [ComponentName.CURRENCY_AMOUNT,
-    new RegExp(`(${util.currencyRegex().source} *\d[0-9,.]*)`)],
+    new RegExp(`(-? *${util.currencyRegex().source} *\d[0-9,.]*)`)],
 ]);
 
 function match(pattern: ComponentName, node: Node): string | null {
@@ -109,6 +107,10 @@ function textNodesUnder(n: Node): Node[] {
 }
 
 function classifyTextNode(n: Node): ComponentName {
+  if (n.textContent == '09 Jun 2025') {
+    console.log('honey, I\'m home!');
+  }
+
   for (
     const p of [...patterns.keys()].filter(p => p != ComponentName.NONE)
   ) {
@@ -175,15 +177,11 @@ class ClassedNode {
   // Use create(...) instead
   private constructor(n: Node) {
     this._node = n;
-    this._component = classifyNode(this);
     this._depth = nodeDepth(n);
 
-    this._parsedValue =
-      patterns.has(this._component) ?
-      match(this._component, this._node) ?? '' :
-      '';
 
     this._descendants = [];
+
     for (const childNode of n.childNodes) {
       
       const classedChild = ClassedNode.create(childNode);
@@ -197,20 +195,30 @@ class ClassedNode {
       }
     }
 
+    this._component = classifyNode(this);
+
+    this._parsedValue =
+      patterns.has(this._component) ?
+      match(this._component, this._node) ?? '' :
+      '';
+
     ClassedNode._nodeMap.set(n, this);
   }
 
   // Prevent duplicate ClassedNode objects for the same Node object
   static create(n: Node): ClassedNode {
     if (ClassedNode._nodeMap.has(n)) {
-      const existing = ClassedNode._nodeMap.get(n)!;
-      return existing;
+      return ClassedNode._nodeMap.get(n)!;
     }
     
     return new ClassedNode(n);
   }
 
   get classedDescendants(): ClassedNode[] {
+    if (!Array.isArray(this._descendants)) {
+      console.error(`not an array, but should be: ${this._descendants}`);
+    }
+
     return [...this._descendants];
   }
 
@@ -280,5 +288,25 @@ test(
       const nodes = classedTextNodes.filter(nc => nc.component == component);
       console.log(`${component}: ${nodes.join(', ')}`);
     }
+
+    const idNode = classedTextNodes.filter(n => n.parsedValue == '204-7501111-7892320')[0]!;
+    console.log(idNode);
+
+    const ggParent = idNode.parent.parent.parent;
+    console.log(ggParent);
+  }
+);
+
+test(
+  'transaction date regex',
+  () => {
+    const goodDate = '09 Jun 2025';
+    const re = patterns.get(ComponentName.DATE);
+    console.log(re.source);
+    // const match = re.exec(goodDate);
+    const match = goodDate.match(re);
+    console.log(match);
+    expect(match).not.toBeNull;
+    expect(match[0]).toEqual(goodDate);
   }
 );

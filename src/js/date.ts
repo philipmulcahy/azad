@@ -70,14 +70,14 @@ export function getDateRegex(): RegExp {
       '07', '08', '09', '10', '11', '12',
     ])).sort().join('|') + ')';
 
-    const year = '20\d\d';
+    const year = '(?:20\\d\\d)';
   
-    const date = '[012]?\d|3[01]';
+    const date = '(?:[012]?\\d|3[01])';
 
     const patterns = [
-      `${date}\.? ${month} ${year}`,  // .co.uk, .de
-      `${month} ${date}, ${year}`,  // .com
-      `${year}-${month}-${date}`      // alternate, rational universe
+      `(?:${date}\\.? ${month} ${year})`,  // .co.uk, .de
+      `(?:${month} ${date}, ${year})`,  // .com
+      `(?:${year}-${month}-${date})`  // alternate, rational universe
     ];
 
     return new RegExp('(?:' + patterns.join('|') + ')');
