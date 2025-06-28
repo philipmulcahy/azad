@@ -54,32 +54,12 @@ enum ComponentName {
 const patterns = new Map<ComponentName, RegExp>([
   [ComponentName.ORDER_ID, util.orderIdRegExp()],
   [ComponentName.DATE, new RegExp(`(${dt.getDateRegex().source})`)],
-  [ComponentName.BLANKED_DIGITS, new RegExp('••••|[*][*][*][*]')],
-  [ComponentName.CARD_DIGITS, new RegExp('(\d\d\d\d)')],
+  [ComponentName.BLANKED_DIGITS, new RegExp('(••••|[*][*][*][*])')],
+  [ComponentName.CARD_DIGITS, new RegExp('(\\d\\d\\d\\d)')],
   [ComponentName.CARD_NAME, new RegExp('([A-Za-z][A-Za-z0-9]{2,24})')],
   [ComponentName.CURRENCY_AMOUNT,
-    new RegExp(`(-? *${util.currencyRegex().source} *\d[0-9,.]*)`)],
+    new RegExp(`(-? *${util.currencyRegex().source} *\\d[0-9,.]*)`)],
 ]);
-
-function match(pattern: ComponentName, node: Node): string | null {
-  if (!patterns.has(pattern)) {
-    return null;
-  }
-
-  const re: RegExp = patterns.get(pattern)!;
-
-  if(!node.textContent) {
-    return null;
-  }
-
-  const m = node.textContent.match(re);
-
-  if (m == null) {
-    return null;
-  }
-
-  return m[1];
-}
 
 function nodePath(node: Node): string[] {
   const path: string[] = [node.nodeName];
@@ -92,10 +72,10 @@ function nodePath(node: Node): string[] {
   return path;
 }
 
-function textNodesUnder(n: Node): Node[] {
+function textNodesUnder(e: HTMLElement): Node[] {
   const children: Node[] = [];
-  const walker = n.ownerDocument?.createTreeWalker(
-    n,
+  const walker = e.ownerDocument?.createTreeWalker(
+    e,
     4,  // NodeFilter.SHOW_TEXT apparently not available in node.js
   );
 
@@ -106,51 +86,90 @@ function textNodesUnder(n: Node): Node[] {
   return children;
 }
 
-function classifyTextNode(n: Node): ComponentName {
-  if (n.textContent == '09 Jun 2025') {
-    console.log('honey, I\'m home!');
-  }
-
-  for (
-    const p of [...patterns.keys()].filter(p => p != ComponentName.NONE)
-  ) {
-    const m = match(p, n);
-
-    if (m != null) {
-      return p;
-    }
-  }
-
-  return ComponentName.NONE;
+function elementsOwningTextNodes(textNodes: Node[]): HTMLElement[] {
+  const results = new Set<HTMLElement>(textNodes.map(t => t.parentElement!));
+  return [...results];
 }
 
-function classifyNode(n: ClassedNode): ComponentName {
-  if (n.type == '#text') {
-    return classifyTextNode(n.node);
+function classifyNode(n: ClassedNode): Set<ComponentName> {
+  try {
+  if (
+    n.element?.getAttribute('class')?.match('.*r-1awozwy.*') &&
+    n.element?.getAttribute('data-testid')?.match('transaction-link-content-wrapper')
+  ) {
+    console.log('oohlala');
   }
+  } catch (ex) {
+    console.log(ex);
+  }
+
+  if (n.isNonScriptText) {
+    const candidates = new Set<ComponentName>(
+      [...patterns.keys()].filter(p => match(p, n) != null));
+
+    if (candidates.has(ComponentName.CARD_DIGITS)) {
+        if (n.hasSiblingToLeft(
+          s => s.components.has(ComponentName.BLANKED_DIGITS)
+        )) {
+          candidates.clear();
+          candidates.add(ComponentName.CARD_DIGITS);
+        } else {
+          candidates.delete(ComponentName.CARD_DIGITS);
+        }
+    }
+
+    if (candidates.has(ComponentName.ORDER_ID)) {
+      candidates.clear();
+      candidates.add(ComponentName.ORDER_ID);
+    }
+
+    if (candidates.has(ComponentName.DATE)) {
+      candidates.clear();
+      candidates.add(ComponentName.DATE);
+    }
+
+    // if (candidates.has(ComponentName.CARD_NAME)) {
+
+    //   if (n.hasSiblingToRight(
+    //       s => s.components.has(ComponentName.BLANKED_DIGITS))
+    //   ) {
+    //     return new Set<ComponentName>([ComponentName.CARD_NAME]);
+    //   }
+
+    //   return  new Set<ComponentName>(); 
+    // }
+
+    return candidates;
+  }
+
+  const possibles: Set<ComponentName> = new Set<ComponentName>();
 
   const descendants = n.classedDescendants;
 
   function countDescendants(cn: ComponentName): number {
-    return descendants.filter(d => d.component == cn).length;
+    return descendants.filter(d => d.components.has(cn)).length;
   }
 
-  if (countDescendants(ComponentName.CARD_DETAILS) == 1 &&
+  if (
+      countDescendants(ComponentName.CARD_DETAILS) == 0 &&
+      countDescendants(ComponentName.CARD_DETAILS) == 1 &&
       countDescendants(ComponentName.DATE) >= 1 &&
       countDescendants(ComponentName.CURRENCY_AMOUNT) == 1 &&
       countDescendants(ComponentName.ORDER_ID) >= 1
   ) {
-    return ComponentName.TRANSACTION;
+    possibles.add(ComponentName.TRANSACTION);
   }
 
-  if (countDescendants(ComponentName.CARD_NAME) == 1 &&
+  if (
+      countDescendants(ComponentName.CARD_DETAILS) == 0 &&
+      countDescendants(ComponentName.CARD_NAME) == 1 &&
       countDescendants(ComponentName.BLANKED_DIGITS) == 1 &&
       countDescendants(ComponentName.CARD_DIGITS) == 1 
   ) {
-    return ComponentName.CARD_DETAILS;
+    possibles.add(ComponentName.CARD_DETAILS);
   }
 
-  return ComponentName.NONE;
+  return possibles;
 }
 
 function nodeDepth(n: Node): number {
@@ -165,28 +184,51 @@ function nodeDepth(n: Node): number {
   return d;
 }
 
+function match(pattern: ComponentName, elem: ClassedNode): string | null {
+  if (!patterns.has(pattern)) {
+    return null;
+  }
+
+  const re: RegExp = patterns.get(pattern)!;
+  const text = elem.directText;
+
+  if(!text) {
+    return null;
+  }
+
+  const m = text.match(re);
+
+  if (m == null) {
+    return null;
+  }
+
+  return m[1];
+}
+
+
 class ClassedNode {
-  _node: Node;
-  _component: ComponentName;
-  _parsedValue: string;
+  _element: HTMLElement;
+  _possibleComponents = new Map<ComponentName, string|null>();
   _depth: number;
   _descendants: ClassedNode[];
 
-  static _nodeMap = new Map<Node, ClassedNode>();
+  static _elementMap = new Map<Node, ClassedNode>();
   
   // Use create(...) instead
-  private constructor(n: Node) {
-    this._node = n;
+  private constructor(n: HTMLElement) {
+    if (n.nodeName == '#text') {
+      throw new Error('#text nodes are not elements');
+    }
+
+    this._element = n;
     this._depth = nodeDepth(n);
-
-
     this._descendants = [];
 
-    for (const childNode of n.childNodes) {
+    for (const childElement of Array.from(n.children ?? []) as HTMLElement[]) {
       
-      const classedChild = ClassedNode.create(childNode);
+      const classedChild = ClassedNode.create(childElement as HTMLElement);
 
-      if (classedChild.component != ComponentName.NONE) {
+      if (classedChild.components.size > 0) {
         this._descendants.push(classedChild);
       }
 
@@ -195,20 +237,31 @@ class ClassedNode {
       }
     }
 
-    this._component = classifyNode(this);
+    for (const name of classifyNode(this)) {
+      if (patterns.has(name)) {
+        const parsedValue = match(name, this); 
+        this._possibleComponents.set(name, parsedValue);
+      }
+    }
 
-    this._parsedValue =
-      patterns.has(this._component) ?
-      match(this._component, this._node) ?? '' :
-      '';
+    if (!['script', 'style'].includes(this.type.toLowerCase()) && this.directText != '') {
+      console.log(
+        `'${this.directText}' -> ` +
+        `${Array.from(this._possibleComponents.keys()).join(',')}`
+      );
+    }
 
-    ClassedNode._nodeMap.set(n, this);
+    ClassedNode._elementMap.set(n, this);
   }
 
   // Prevent duplicate ClassedNode objects for the same Node object
-  static create(n: Node): ClassedNode {
-    if (ClassedNode._nodeMap.has(n)) {
-      return ClassedNode._nodeMap.get(n)!;
+  static create(n: HTMLElement): ClassedNode {
+    if (n == null || typeof(n) == 'undefined') {
+      throw new Error('cannot make a ClassedNode from a null or undefined element');
+    }
+
+    if (ClassedNode._elementMap.has(n)) {
+      return ClassedNode._elementMap.get(n)!;
     }
     
     return new ClassedNode(n);
@@ -222,42 +275,84 @@ class ClassedNode {
     return [...this._descendants];
   }
 
-  get component(): ComponentName {
-    return this._component;
+  get components(): Set<ComponentName> {
+    return new Set(this._possibleComponents.keys());
   }
 
   get depth(): number {
     return this._depth;
   }
 
-  get node(): Node {
-    return this._node;  
+  get element(): HTMLElement {
+    return this._element;  
   }
 
   get parent(): ClassedNode {
-    return ClassedNode.create(this.node.parentNode!);
+    return ClassedNode.create(this.element.parentElement!);
   }
 
-  get parsedValue(): string {
-    return this._parsedValue;
+  getParsedValue(component: ComponentName): string | null {
+    return this._possibleComponents.get(component) ?? null;
   }
 
-  toString(): string {
-    return `ClassedNode(${this.component}, depth:${this.depth}, ` +
-           `descendants:${this.classedDescendants.length} ${this.parsedValue})`;
+  get directText(): string {
+    return [...this.element.childNodes]
+     .filter(n => n.nodeName.toLowerCase() == '#text')
+     .map(n => n.textContent)
+     .join('')
+     .replace(/\s+/g, ' ')
+     .trim();
+  }
+
+  get isNonScriptText(): boolean {
+    if (this.directText == '') {
+      return false;
+    }
+    
+    if (['script', 'style'].includes(this.type.toLowerCase())) {
+      return false;
+    }
+
+    return true;
   }
 
   // #text, div, span, etc.
   get type(): string {
-    return this._node.nodeName;
+    return this._element.nodeName;
+  }
+
+  hasSiblingToLeft(predicate: (sibling: ClassedNode) => boolean) {
+    let s = this.left;
+
+    while (s != null) {
+      if (predicate(s)) {
+        return true;
+      }
+
+      s = s.left;
+    }
+
+    return false;
+  }
+
+  get left(): ClassedNode | null {
+    let s = this.element.previousSibling;
+
+    while (s != null && s.nodeName.toLowerCase() == '#text') {
+      s = s.previousSibling;
+    }
+    
+    return s != null ?
+      ClassedNode.create(s as HTMLElement) :
+      null;
   }
 
   searchUpForTransaction(): ClassedNode|null {
     let pivot: ClassedNode = this;
-    const root = this.node.ownerDocument!.body; 
+    const root = this.element.ownerDocument!.body;
 
-    while (pivot.node != root && this.depth - pivot.depth < 10) {
-      if (pivot.component == ComponentName.TRANSACTION) {
+    while (pivot.element != root && this.depth - pivot.depth < 10) {
+      if (pivot.components.has(ComponentName.TRANSACTION)) {
         return pivot;
       }
 
@@ -266,6 +361,14 @@ class ClassedNode {
 
     return pivot;
   }
+
+  toString(): string {
+    return `ClassedNode(${[...this.components].join('|')}, ` +
+           `depth:${this.depth}, ` +
+           `descendants:${this.classedDescendants.join('|')}, ` +
+           `${this.directText == '' ? this.type : this.directText})`;
+  }
+
 }
 
 test(
@@ -281,19 +384,25 @@ test(
       node => node.textContent?.length ?? 0 < 500
     );
 
-    expect(conciseTextNodes.length).toBeGreaterThan(100);
-    const classedTextNodes = conciseTextNodes.map(n => ClassedNode.create(n));
+    const textElements = elementsOwningTextNodes(conciseTextNodes);
+
+    expect(textElements.length).toBeGreaterThan(100);
+    const classedElements = textElements.map(n => ClassedNode.create(n));
 
     for (const component of patterns.keys()) {
-      const nodes = classedTextNodes.filter(nc => nc.component == component);
-      console.log(`${component}: ${nodes.join(', ')}`);
+      const nodes = classedElements.filter(nc => nc.components.has(component));
+      console.log(`component: ${component} ${nodes.length} ${nodes.join(', ')}`);
+      expect(nodes.length).toBeGreaterThanOrEqual(15);
     }
 
-    const idNode = classedTextNodes.filter(n => n.parsedValue == '204-7501111-7892320')[0]!;
-    console.log(idNode);
+    const idNode = classedElements.filter(
+      n => n.getParsedValue(ComponentName.ORDER_ID) == '204-7501111-7892320'
+    )[0]!;
+
+    console.log('idNode:', idNode.toString());
 
     const ggParent = idNode.parent.parent.parent;
-    console.log(ggParent);
+    console.log('ggParent:', ggParent.toString());
   }
 );
 
@@ -301,12 +410,35 @@ test(
   'transaction date regex',
   () => {
     const goodDate = '09 Jun 2025';
-    const re = patterns.get(ComponentName.DATE);
-    console.log(re.source);
-    // const match = re.exec(goodDate);
+    const re = patterns.get(ComponentName.DATE)!;
+    console.log(re.source!);
     const match = goodDate.match(re);
     console.log(match);
     expect(match).not.toBeNull;
-    expect(match[0]).toEqual(goodDate);
+    expect(match![0]).toEqual(goodDate);
+
+    const anotherGoodDate = '07 Feb 2005';
+    expect(anotherGoodDate.match(re)).not.toBeNull;
+    expect(anotherGoodDate.match(re)![0]).toEqual(anotherGoodDate);
+  }
+);
+
+test(
+  'transaction card digits regex',
+  () => {
+    const p = patterns.get(ComponentName.CARD_DIGITS)!;
+    expect('1234'.match(p)).not.toBeNull();
+    expect('a234'.match(p)).toBeNull();
+    expect('123d'.match(p)).toBeNull();
+  }
+);
+
+test(
+  'transaction blanked card digits regex',
+  () => {
+    const p = patterns.get(ComponentName.BLANKED_DIGITS)!;
+    expect('••••'.match(p)).not.toBeNull();
+    expect('1234'.match(p)).toBeNull();
+    expect('abcd'.match(p)).toBeNull();
   }
 );
