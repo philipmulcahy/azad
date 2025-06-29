@@ -98,8 +98,8 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
   if (
     // n.text.length < 250 &&
     // n.text.match('07 Jun.*204.440.*56.57.*Charged')
-    n.element.textContent.length < 50 &&
-    n.element.textContent.match('AmericanExpress••••1005')
+    (n.element.textContent?.length ?? 0) < 50 &&
+    n.element.textContent?.match('AmericanExpress••••1005')
   ) {
     console.log('oohlala');
   }
@@ -314,7 +314,7 @@ class ClassedNode {
   }
 
   get text(): string {
-    return this.element.textContent;
+    return this.element.textContent ?? '';
   }
 
   get isNonScriptText(): boolean {
@@ -360,7 +360,7 @@ class ClassedNode {
       null;
   }
 
-  searchUpForTransaction(): ClassedNode|null {
+  searchUpwardsForTransaction(): ClassedNode|null {
     let pivot: ClassedNode = this;
     const root = this.element.ownerDocument!.body;
 
@@ -392,6 +392,7 @@ test(
 
     const html: string = fs.readFileSync(htmlFilePath, 'utf8');
     const doc = new jsdom.JSDOM(html).window.document;
+    const rootClassified = ClassedNode.create(doc.documentElement);
 
     const conciseTextNodes = textNodesUnder(doc.documentElement).filter(
       node => node.textContent?.length ?? 0 < 500
@@ -416,6 +417,20 @@ test(
 
     const ggParent = idNode.parent.parent.parent;
     console.log('ggParent:', ggParent.toString());
+
+    const orderIdElems = classedElements.filter(
+      e => e.components.has(ComponentName.ORDER_ID));
+
+    expect(orderIdElems.length).toEqual(21);
+
+    const transactionElems = classedElements.filter(
+      e => e.components.has(ComponentName.TRANSACTION));
+
+    const transactionElems2 = rootClassified.classedDescendants.filter(
+      d => d.components.has(ComponentName.TRANSACTION));
+
+    console.log('transaction text:\n' + transactionElems2.map(te => te.text).join('\n'));
+    expect(transactionElems2.length).toEqual(20);
   }
 );
 
