@@ -48,6 +48,7 @@ enum ComponentName {
   CARD_DIGITS = 'card_digits',
   CARD_NAME = 'card_name',
   CURRENCY_AMOUNT = 'currency_amount',
+  PAYMENT_STATUS = 'payment_status',
   NONE = 'none',
 }
 
@@ -59,6 +60,8 @@ const patterns = new Map<ComponentName, RegExp>([
   [ComponentName.CARD_NAME, new RegExp('([A-Za-z][A-Za-z0-9]{2,24})')],
   [ComponentName.CURRENCY_AMOUNT,
     new RegExp(`(-? *${util.currencyRegex().source} *\\d[0-9,.]*)`)],
+  [ComponentName.PAYMENT_STATUS,
+    new RegExp('(Pending|Charged|Berechnet|Erstattet|Ausstehend)')],
 ]);
 
 function nodePath(node: Node): string[] {
@@ -92,15 +95,13 @@ function elementsOwningTextNodes(textNodes: Node[]): HTMLElement[] {
 }
 
 function classifyNode(n: ClassedNode): Set<ComponentName> {
-  try {
   if (
-    n.element?.getAttribute('class')?.match('.*r-1awozwy.*') &&
-    n.element?.getAttribute('data-testid')?.match('transaction-link-content-wrapper')
+    // n.text.length < 250 &&
+    // n.text.match('07 Jun.*204.440.*56.57.*Charged')
+    n.element.textContent.length < 50 &&
+    n.element.textContent.match('AmericanExpress••••1005')
   ) {
     console.log('oohlala');
-  }
-  } catch (ex) {
-    console.log(ex);
   }
 
   if (n.isNonScriptText) {
@@ -128,6 +129,11 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
       candidates.add(ComponentName.DATE);
     }
 
+    if (candidates.has(ComponentName.PAYMENT_STATUS)) {
+      candidates.clear();
+      candidates.add(ComponentName.PAYMENT_STATUS);
+    }
+
     // if (candidates.has(ComponentName.CARD_NAME)) {
 
     //   if (n.hasSiblingToRight(
@@ -151,7 +157,7 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
   }
 
   if (
-      countDescendants(ComponentName.CARD_DETAILS) == 0 &&
+      countDescendants(ComponentName.TRANSACTION) == 0 &&
       countDescendants(ComponentName.CARD_DETAILS) == 1 &&
       countDescendants(ComponentName.DATE) >= 1 &&
       countDescendants(ComponentName.CURRENCY_AMOUNT) == 1 &&
@@ -162,7 +168,7 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
 
   if (
       countDescendants(ComponentName.CARD_DETAILS) == 0 &&
-      countDescendants(ComponentName.CARD_NAME) == 1 &&
+      countDescendants(ComponentName.CARD_NAME) >= 1 &&
       countDescendants(ComponentName.BLANKED_DIGITS) == 1 &&
       countDescendants(ComponentName.CARD_DIGITS) == 1 
   ) {
@@ -205,12 +211,11 @@ function match(pattern: ComponentName, elem: ClassedNode): string | null {
   return m[1];
 }
 
-
 class ClassedNode {
   _element: HTMLElement;
   _possibleComponents = new Map<ComponentName, string|null>();
   _depth: number;
-  _descendants: ClassedNode[];
+  _descendants: ClassedNode[] = [];
 
   static _elementMap = new Map<Node, ClassedNode>();
   
@@ -222,17 +227,13 @@ class ClassedNode {
 
     this._element = n;
     this._depth = nodeDepth(n);
-    this._descendants = [];
 
-    for (const childElement of Array.from(n.children ?? []) as HTMLElement[]) {
-      
-      const classedChild = ClassedNode.create(childElement as HTMLElement);
-
-      if (classedChild.components.size > 0) {
-        this._descendants.push(classedChild);
+    for (const child of this.children) {
+      if (child.components.size > 0) {
+        this._descendants.push(child);
       }
 
-      for (const d of classedChild.classedDescendants) {
+      for (const d of child.classedDescendants) {
         this._descendants.push(d);
       }
     }
@@ -241,6 +242,8 @@ class ClassedNode {
       if (patterns.has(name)) {
         const parsedValue = match(name, this); 
         this._possibleComponents.set(name, parsedValue);
+      } else {
+        this._possibleComponents.set(name, null);
       }
     }
 
@@ -275,6 +278,12 @@ class ClassedNode {
     return [...this._descendants];
   }
 
+  get children(): ClassedNode[] {
+    return Array.from(this.element.children)
+                .filter(c => c.textContent)
+                .map(c => ClassedNode.create(c as HTMLElement));
+  }
+
   get components(): Set<ComponentName> {
     return new Set(this._possibleComponents.keys());
   }
@@ -302,6 +311,10 @@ class ClassedNode {
      .join('')
      .replace(/\s+/g, ' ')
      .trim();
+  }
+
+  get text(): string {
+    return this.element.textContent;
   }
 
   get isNonScriptText(): boolean {
