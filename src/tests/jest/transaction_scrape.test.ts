@@ -40,26 +40,29 @@ describe('can read 20 transactions', () => {
 //TODO remove everything below this line (and this line) - it's experimental.
 
 enum ComponentName {
-  TRANSACTION = 'transaction',  // composite, so no entry in patterns below.
-  CARD_DETAILS = 'card_details',  // composite, so no entry in patterns below.
-  ORDER_ID = 'order_id',
-  DATE = 'date',
-  BLANKED_DIGITS = 'blanked_digits',
-  CARD_DIGITS = 'card_digits',
-  CARD_NAME = 'card_name',
-  CURRENCY_AMOUNT = 'currency_amount',
-  PAYMENT_STATUS = 'payment_status',
-  NONE = 'none',
+  TRANSACTION = 'transaction',  // composite, no entry in patterns below.
+    PAYMENT_SOURCE = 'payment_source',  // composite, no entry in patterns below.
+      GIFT_CARD = 'gift_card',
+//    or
+      CARD_DETAILS = 'card_details',  // composite, no entry in patterns below.
+        CARD_NAME = 'card_name',
+        BLANKED_DIGITS = 'blanked_digits',
+        CARD_DIGITS = 'card_digits',
+    ORDER_ID = 'order_id',
+    DATE = 'date',
+    CURRENCY_AMOUNT = 'currency_amount',
+    PAYMENT_STATUS = 'payment_status',
 }
 
 const patterns = new Map<ComponentName, RegExp>([
-  [ComponentName.ORDER_ID, util.orderIdRegExp()],
-  [ComponentName.DATE, new RegExp(`(${dt.getDateRegex().source})`)],
   [ComponentName.BLANKED_DIGITS, new RegExp('(••••|[*][*][*][*])')],
   [ComponentName.CARD_DIGITS, new RegExp('(\\d\\d\\d\\d)')],
   [ComponentName.CARD_NAME, new RegExp('([A-Za-z][A-Za-z0-9]{2,24})')],
   [ComponentName.CURRENCY_AMOUNT,
     new RegExp(`(-? *${util.currencyRegex().source} *\\d[0-9,.]*)`)],
+  [ComponentName.DATE, new RegExp(`(${dt.getDateRegex().source})`)],
+  [ComponentName.GIFT_CARD, new RegExp('(Amazon Gift Card)')],
+  [ComponentName.ORDER_ID, util.orderIdRegExp()],
   [ComponentName.PAYMENT_STATUS,
     new RegExp('(Pending|Charged|Berechnet|Erstattet|Ausstehend)')],
 ]);
@@ -75,31 +78,12 @@ function nodePath(node: Node): string[] {
   return path;
 }
 
-function textNodesUnder(e: HTMLElement): Node[] {
-  const children: Node[] = [];
-  const walker = e.ownerDocument?.createTreeWalker(
-    e,
-    4,  // NodeFilter.SHOW_TEXT apparently not available in node.js
-  );
-
-  while(walker?.nextNode()) {
-    children.push(walker.currentNode);
-  }
-
-  return children;
-}
-
-function elementsOwningTextNodes(textNodes: Node[]): HTMLElement[] {
-  const results = new Set<HTMLElement>(textNodes.map(t => t.parentElement!));
-  return [...results];
-}
-
 function classifyNode(n: ClassedNode): Set<ComponentName> {
   if (
     // n.text.length < 250 &&
     // n.text.match('07 Jun.*204.440.*56.57.*Charged')
-    (n.element.textContent?.length ?? 0) < 50 &&
-    n.element.textContent?.match('AmericanExpress••••1005')
+    (n.text.length ?? 0) < 250 &&
+    n.text.match('07 Feb.*4a378.*Charged')
   ) {
     console.log('oohlala');
   }
@@ -158,12 +142,27 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
 
   if (
       countDescendants(ComponentName.TRANSACTION) == 0 &&
-      countDescendants(ComponentName.CARD_DETAILS) == 1 &&
+      countDescendants(ComponentName.PAYMENT_SOURCE) == 1 &&
       countDescendants(ComponentName.DATE) >= 1 &&
       countDescendants(ComponentName.CURRENCY_AMOUNT) == 1 &&
       countDescendants(ComponentName.ORDER_ID) >= 1
   ) {
     possibles.add(ComponentName.TRANSACTION);
+  }
+
+  if (
+    countDescendants(ComponentName.PAYMENT_SOURCE) == 0 &&
+    (
+      (
+        countDescendants(ComponentName.CARD_DETAILS) == 1 &&
+        countDescendants(ComponentName.GIFT_CARD) == 0
+      ) || (
+        countDescendants(ComponentName.CARD_DETAILS) == 0 &&
+        countDescendants(ComponentName.GIFT_CARD) == 1
+      )
+    )
+  ) {
+    possibles.add(ComponentName.PAYMENT_SOURCE);
   }
 
   if (
@@ -394,43 +393,23 @@ test(
     const doc = new jsdom.JSDOM(html).window.document;
     const rootClassified = ClassedNode.create(doc.documentElement);
 
-    const conciseTextNodes = textNodesUnder(doc.documentElement).filter(
-      node => node.textContent?.length ?? 0 < 500
-    );
-
-    const textElements = elementsOwningTextNodes(conciseTextNodes);
-
-    expect(textElements.length).toBeGreaterThan(100);
-    const classedElements = textElements.map(n => ClassedNode.create(n));
-
-    for (const component of patterns.keys()) {
-      const nodes = classedElements.filter(nc => nc.components.has(component));
-      console.log(`component: ${component} ${nodes.length} ${nodes.join(', ')}`);
-      expect(nodes.length).toBeGreaterThanOrEqual(15);
+    function countType(name: ComponentName): number {
+      return rootClassified.classedDescendants.filter(
+        d => d.components.has(name)
+      ).length;
     }
-
-    const idNode = classedElements.filter(
-      n => n.getParsedValue(ComponentName.ORDER_ID) == '204-7501111-7892320'
-    )[0]!;
-
-    console.log('idNode:', idNode.toString());
-
-    const ggParent = idNode.parent.parent.parent;
-    console.log('ggParent:', ggParent.toString());
-
-    const orderIdElems = classedElements.filter(
-      e => e.components.has(ComponentName.ORDER_ID));
-
-    expect(orderIdElems.length).toEqual(21);
-
-    const transactionElems = classedElements.filter(
-      e => e.components.has(ComponentName.TRANSACTION));
 
     const transactionElems2 = rootClassified.classedDescendants.filter(
       d => d.components.has(ComponentName.TRANSACTION));
 
-    console.log('transaction text:\n' + transactionElems2.map(te => te.text).join('\n'));
-    expect(transactionElems2.length).toEqual(20);
+    console.log(
+      'transaction text:\n' + transactionElems2.map(te => te.text).join('\n'));
+
+    expect(countType(ComponentName.ORDER_ID)).toEqual(22);
+    expect(countType(ComponentName.GIFT_CARD)).toEqual(1);
+    expect(countType(ComponentName.CARD_DETAILS)).toEqual(19);
+    expect(countType(ComponentName.PAYMENT_SOURCE)).toEqual(20);
+    expect(countType(ComponentName.TRANSACTION)).toEqual(20);
   }
 );
 
@@ -468,5 +447,27 @@ test(
     expect('••••'.match(p)).not.toBeNull();
     expect('1234'.match(p)).toBeNull();
     expect('abcd'.match(p)).toBeNull();
+  }
+);
+
+test(
+  'new regex: delete me!',
+  () => {
+    const a = new RegExp(
+      '.*(' +
+      [
+        // vanilla numeric 3-7-7 with optional leading 'D'
+        // 202-5113396-3949156
+        '[A-Z0-9]\\d\\d-\\d{7}-\\d{7}',
+
+        // // 2025+ amazon fresh hex 8-4-4-12
+        // // 4a378358-f4f0-445a-87de-111b068ff0fc
+        // '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
+      ].join('|') +
+      ').*'
+    );
+    const b = /.*([A-Z0-9]\d\d-\d{7}-\d{7}).*/;
+
+    expect(a.source).toEqual(b.source);
   }
 );

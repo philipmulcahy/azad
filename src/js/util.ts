@@ -163,7 +163,20 @@ export function moneyRegEx(): RegExp {
 }
 
 export function orderIdRegExp(): RegExp {
-  return /.*([A-Z0-9]\d\d-\d{7}-\d{7}).*/;
+  return new RegExp(
+    '.*(' +
+    [
+      // vanilla numeric 3-7-7 with optional leading 'D'
+      // 202-5113396-3949156
+      '[A-Z0-9]\\d\\d-\\d{7}-\\d{7}',
+
+      // 2025+ amazon fresh hex 8-4-4-12
+      // 4a378358-f4f0-445a-87de-111b068ff0fc
+      '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
+    ].join('|') +
+    ').*'
+  );
+  // return /.*([A-Z0-9]\d\d-\d{7}-\d{7}).*/;
 }
 
 export function dateToDateIsoString(d: Date): string {
