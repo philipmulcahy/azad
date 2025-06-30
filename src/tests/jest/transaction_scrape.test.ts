@@ -41,6 +41,9 @@ describe('can read 20 transactions', () => {
 
 enum ComponentName {
   TRANSACTION = 'transaction',  // composite, no entry in patterns below.
+    CURRENCY_AMOUNT = 'currency_amount',
+    DATE = 'date',
+    ORDER_ID = 'order_id',
     PAYMENT_SOURCE = 'payment_source',  // composite, no entry in patterns below.
       GIFT_CARD = 'gift_card',
 //    or
@@ -48,10 +51,8 @@ enum ComponentName {
         CARD_NAME = 'card_name',
         BLANKED_DIGITS = 'blanked_digits',
         CARD_DIGITS = 'card_digits',
-    ORDER_ID = 'order_id',
-    DATE = 'date',
-    CURRENCY_AMOUNT = 'currency_amount',
     PAYMENT_STATUS = 'payment_status',
+    VENDOR = 'vendor',
 }
 
 const patterns = new Map<ComponentName, RegExp>([
@@ -65,18 +66,8 @@ const patterns = new Map<ComponentName, RegExp>([
   [ComponentName.ORDER_ID, util.orderIdRegExp()],
   [ComponentName.PAYMENT_STATUS,
     new RegExp('(Pending|Charged|Berechnet|Erstattet|Ausstehend)')],
+  [ComponentName.VENDOR, new RegExp('((?:[A-Za-z.]{5,20})?)')],
 ]);
-
-function nodePath(node: Node): string[] {
-  const path: string[] = [node.nodeName];
-
-  while (node.parentNode) {
-    node = node.parentNode;
-    path.push(node.nodeName);
-  }
-
-  return path;
-}
 
 function classifyNode(n: ClassedNode): Set<ComponentName> {
   if (
@@ -117,17 +108,6 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
       candidates.clear();
       candidates.add(ComponentName.PAYMENT_STATUS);
     }
-
-    // if (candidates.has(ComponentName.CARD_NAME)) {
-
-    //   if (n.hasSiblingToRight(
-    //       s => s.components.has(ComponentName.BLANKED_DIGITS))
-    //   ) {
-    //     return new Set<ComponentName>([ComponentName.CARD_NAME]);
-    //   }
-
-    //   return  new Set<ComponentName>(); 
-    // }
 
     return candidates;
   }
@@ -172,21 +152,17 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
       countDescendants(ComponentName.CARD_DIGITS) == 1 
   ) {
     possibles.add(ComponentName.CARD_DETAILS);
+    possibles.add(ComponentName.PAYMENT_SOURCE);
+  }
+
+  if (
+      countDescendants(ComponentName.PAYMENT_SOURCE) == 0 &&
+      countDescendants(ComponentName.GIFT_CARD) == 1
+  ) {
+    possibles.add(ComponentName.PAYMENT_SOURCE);
   }
 
   return possibles;
-}
-
-function nodeDepth(n: Node): number {
-  const root = n.ownerDocument!.body;
-  let d = 0;
-
-  while (n != null && n !== root) {
-    n = n.parentNode!;    
-    d++;
-  }
-
-  return d;
 }
 
 function match(pattern: ComponentName, elem: ClassedNode): string | null {
@@ -213,7 +189,6 @@ function match(pattern: ComponentName, elem: ClassedNode): string | null {
 class ClassedNode {
   _element: HTMLElement;
   _possibleComponents = new Map<ComponentName, string|null>();
-  _depth: number;
   _descendants: ClassedNode[] = [];
 
   static _elementMap = new Map<Node, ClassedNode>();
@@ -225,7 +200,6 @@ class ClassedNode {
     }
 
     this._element = n;
-    this._depth = nodeDepth(n);
 
     for (const child of this.children) {
       if (child.components.size > 0) {
@@ -285,10 +259,6 @@ class ClassedNode {
 
   get components(): Set<ComponentName> {
     return new Set(this._possibleComponents.keys());
-  }
-
-  get depth(): number {
-    return this._depth;
   }
 
   get element(): HTMLElement {
@@ -359,28 +329,45 @@ class ClassedNode {
       null;
   }
 
-  searchUpwardsForTransaction(): ClassedNode|null {
-    let pivot: ClassedNode = this;
-    const root = this.element.ownerDocument!.body;
-
-    while (pivot.element != root && this.depth - pivot.depth < 10) {
-      if (pivot.components.has(ComponentName.TRANSACTION)) {
-        return pivot;
-      }
-
-      pivot = pivot.parent;
-    }
-
-    return pivot;
-  }
-
   toString(): string {
     return `ClassedNode(${[...this.components].join('|')}, ` +
-           `depth:${this.depth}, ` +
            `descendants:${this.classedDescendants.join('|')}, ` +
            `${this.directText == '' ? this.type : this.directText})`;
   }
 
+}
+
+function transactionFromElement(elem: ClassedNode): Transaction | null {
+  function getComponent(e: ClassedNode, n: ComponentName): ClassedNode | null {
+    return e.classedDescendants.filter(c => c.components.has(n))[0] ?? null
+  }
+
+  try {
+    const cie = getComponent(elem, ComponentName.PAYMENT_SOURCE);
+
+    return {
+      date: new Date(elem.classedDescendants.filter(d => d.components.has(ComponentName.DATE))[0].text),
+      cardInfo: cie.text,
+      orderIds: elem.classedDescendants.filter(d => d.components.has(ComponentName.ORDER_ID)).map(e => e.text),
+      amount: util.floatVal(elem.classedDescendants.filter(d => d.components.has(ComponentName.CURRENCY_AMOUNT))[0].text),
+      vendor: elem.classedDescendants.filter(d => d.components.has(ComponentName.VENDOR))[0].text,
+    };
+  } catch (ex) {
+    console.warn(
+      `transactionFromElement caught ${ex} while processing ${elem.text}`);
+  }
+  return null;
+}
+
+function extractTransactions(doc: Document): Transaction[] {
+  const rootClassified = ClassedNode.create(doc.documentElement);
+
+  const transactionElements = rootClassified.classedDescendants.filter(
+    e => e.components.has(ComponentName.TRANSACTION)
+  );
+
+  return transactionElements.map(e => transactionFromElement(e))
+                            .filter(t => t);
 }
 
 test(
@@ -390,7 +377,7 @@ test(
       './src/tests/azad_test_data/transactions/cmulcahy/2025-06-09.html';
 
     const html: string = fs.readFileSync(htmlFilePath, 'utf8');
-    const doc = new jsdom.JSDOM(html).window.document;
+    const doc: Document = new jsdom.JSDOM(html).window.document;
     const rootClassified = ClassedNode.create(doc.documentElement);
 
     function countType(name: ComponentName): number {
@@ -410,7 +397,12 @@ test(
     expect(countType(ComponentName.CARD_DETAILS)).toEqual(19);
     expect(countType(ComponentName.PAYMENT_SOURCE)).toEqual(20);
     expect(countType(ComponentName.TRANSACTION)).toEqual(20);
+
+    const transactions = extractTransactions(doc);
+
+    console.log(transactions);
   }
+
 );
 
 test(
@@ -447,27 +439,5 @@ test(
     expect('••••'.match(p)).not.toBeNull();
     expect('1234'.match(p)).toBeNull();
     expect('abcd'.match(p)).toBeNull();
-  }
-);
-
-test(
-  'new regex: delete me!',
-  () => {
-    const a = new RegExp(
-      '.*(' +
-      [
-        // vanilla numeric 3-7-7 with optional leading 'D'
-        // 202-5113396-3949156
-        '[A-Z0-9]\\d\\d-\\d{7}-\\d{7}',
-
-        // // 2025+ amazon fresh hex 8-4-4-12
-        // // 4a378358-f4f0-445a-87de-111b068ff0fc
-        // '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
-      ].join('|') +
-      ').*'
-    );
-    const b = /.*([A-Z0-9]\d\d-\d{7}-\d{7}).*/;
-
-    expect(a.source).toEqual(b.source);
   }
 );
