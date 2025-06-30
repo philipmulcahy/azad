@@ -270,7 +270,9 @@ class ClassedNode {
   }
 
   getParsedValue(component: ComponentName): string | null {
-    return this._possibleComponents.get(component) ?? null;
+    return patterns.has(component) ?
+      this._possibleComponents.get(component) :
+      this.text;
   }
 
   get directText(): string {
@@ -338,19 +340,29 @@ class ClassedNode {
 }
 
 function transactionFromElement(elem: ClassedNode): Transaction | null {
-  function getComponent(e: ClassedNode, n: ComponentName): ClassedNode | null {
-    return e.classedDescendants.filter(c => c.components.has(n))[0] ?? null
+  const unused = new Set<ClassedNode>(elem.classedDescendants);
+
+  console.log(unused);
+
+  function getComponent(n: ComponentName): ClassedNode[] {
+    const candidates = Array.from(unused.keys()).filter(c => c.components.has(n));
+
+    for(const c of candidates) {
+      unused.delete(c);
+      for(const cc of c.classedDescendants) {
+        unused.delete(cc);
+      }
+    }
+    return candidates.sort((a,b)=>b.getParsedValue(n).length - a.getParsedValue(n).length);
   }
 
   try {
-    const cie = getComponent(elem, ComponentName.PAYMENT_SOURCE);
-
     return {
-      date: new Date(elem.classedDescendants.filter(d => d.components.has(ComponentName.DATE))[0].text),
-      cardInfo: cie.text,
-      orderIds: elem.classedDescendants.filter(d => d.components.has(ComponentName.ORDER_ID)).map(e => e.text),
-      amount: util.floatVal(elem.classedDescendants.filter(d => d.components.has(ComponentName.CURRENCY_AMOUNT))[0].text),
-      vendor: elem.classedDescendants.filter(d => d.components.has(ComponentName.VENDOR))[0].text,
+      orderIds: getComponent(ComponentName.ORDER_ID).map(e => e.text),
+      date: new Date(getComponent(ComponentName.DATE)[0].text),
+      cardInfo: getComponent(ComponentName.PAYMENT_SOURCE)[0].text,
+      amount: util.floatVal(getComponent(ComponentName.CURRENCY_AMOUNT)[0].text),
+      vendor: getComponent(ComponentName.VENDOR)[0].text,
     };
   } catch (ex) {
     console.warn(
