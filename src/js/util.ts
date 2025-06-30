@@ -97,9 +97,18 @@ function parseToNumber(i: string | number): number {
 // Remove the formatting to get integer data for summation
 export function floatVal(v: string | number): number {
   const candidate = parseToNumber(v);
+
   if (isNaN(candidate)) {
+    if (typeof(v) === 'string') {
+      const altered = (v as string).replace(currencyRegex(), '').trim();
+
+      if(altered != v) {
+          return floatVal(altered);
+      }
+    }
     return 0;
   }
+
   return candidate;
 }
 
