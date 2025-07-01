@@ -56,17 +56,22 @@ enum ComponentName {
 }
 
 const patterns = new Map<ComponentName, RegExp>([
-  [ComponentName.BLANKED_DIGITS, new RegExp('(••••|[*][*][*][*])')],
-  [ComponentName.CARD_DIGITS, new RegExp('(\\d\\d\\d\\d)')],
-  [ComponentName.CARD_NAME, new RegExp('([A-Za-z][A-Za-z0-9]{2,24})')],
+  [ComponentName.BLANKED_DIGITS, new RegExp('([•*]{3,4})')],
+  [ComponentName.CARD_DIGITS, new RegExp('([0-9]{3,4})')],
+  [ComponentName.CARD_NAME, new RegExp('([A-Za-z][A-Za-z0-9. ]{2,49})')],
+
   [ComponentName.CURRENCY_AMOUNT,
     new RegExp(`(-? *${util.currencyRegex().source} *\\d[0-9,.]*)`)],
+
   [ComponentName.DATE, new RegExp(`(${dt.getDateRegex().source})`)],
   [ComponentName.GIFT_CARD, new RegExp('(Amazon Gift Card)')],
   [ComponentName.ORDER_ID, util.orderIdRegExp()],
+
   [ComponentName.PAYMENT_STATUS,
     new RegExp('(Pending|Charged|Berechnet|Erstattet|Ausstehend)')],
-  [ComponentName.VENDOR, new RegExp('((?:[A-Za-z.]{5,20})?)')],
+
+  [ComponentName.VENDOR, new RegExp(
+    '((?:[A-Za-z][A-Za-z. ]{1,20}[A-Za-z])?)')],
 ]);
 
 function classifyNode(n: ClassedNode): Set<ComponentName> {
@@ -359,13 +364,13 @@ function transactionFromElement(elem: ClassedNode): Transaction | null {
     // n.text.length < 250 &&
     // n.text.match('07 Jun.*204.440.*56.57.*Charged')
     (elem.text.length ?? 0) < 250 &&
-    elem.text.match('.*30. Mai 2025.*')
+    elem.text.match('.*4072366.*Berechnet.*')
   ) {
     console.log('oohlala');
   }
 
   try {
-    return {
+    const t = {
       orderIds: getComponent(ComponentName.ORDER_ID).map(e => e.text),
       date: new Date(
         dt.normalizeDateString(
@@ -374,6 +379,8 @@ function transactionFromElement(elem: ClassedNode): Transaction | null {
       amount: util.floatVal(getComponent(ComponentName.CURRENCY_AMOUNT)[0].text),
       vendor: getComponent(ComponentName.VENDOR)[0].text,
     };
+
+    return t;
   } catch (ex) {
     console.warn(
       `transactionFromElement caught ${ex} while processing ${elem.text}`);
