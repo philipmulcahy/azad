@@ -48,8 +48,8 @@ export function getDateRegex(): RegExp {
       'Jan', 'Feb', 'März', 'Apr', 'Mai', 'Jun',
       'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec', 'Dez',
       'Januar', 'Februar', 'März', 'April',
-      'Mai', 'Juli', 'August', 'September',
-      'Oktober', 'November', 'November', 'Dezember',
+      'Mai', 'Juni', 'Juli', 'August',
+      'September', 'Oktober', 'November', 'Dezember',
 
       // English
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',

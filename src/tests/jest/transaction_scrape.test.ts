@@ -74,7 +74,7 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
     // n.text.length < 250 &&
     // n.text.match('07 Jun.*204.440.*56.57.*Charged')
     (n.text.length ?? 0) < 250 &&
-    n.text.match('07 Feb.*4a378.*Charged')
+    n.text.match('.*30. Mai 2025.*')
   ) {
     console.log('oohlala');
   }
@@ -341,7 +341,6 @@ class ClassedNode {
 
 function transactionFromElement(elem: ClassedNode): Transaction | null {
   const unused = new Set<ClassedNode>(elem.classedDescendants);
-
   console.log(unused);
 
   function getComponent(n: ComponentName): ClassedNode[] {
@@ -356,10 +355,21 @@ function transactionFromElement(elem: ClassedNode): Transaction | null {
     return candidates.sort((a,b)=>b.getParsedValue(n).length - a.getParsedValue(n).length);
   }
 
+  if (
+    // n.text.length < 250 &&
+    // n.text.match('07 Jun.*204.440.*56.57.*Charged')
+    (elem.text.length ?? 0) < 250 &&
+    elem.text.match('.*30. Mai 2025.*')
+  ) {
+    console.log('oohlala');
+  }
+
   try {
     return {
       orderIds: getComponent(ComponentName.ORDER_ID).map(e => e.text),
-      date: new Date(getComponent(ComponentName.DATE)[0].text),
+      date: new Date(
+        dt.normalizeDateString(
+          getComponent(ComponentName.DATE)[0].text)),
       cardInfo: getComponent(ComponentName.PAYMENT_SOURCE)[0].text,
       amount: util.floatVal(getComponent(ComponentName.CURRENCY_AMOUNT)[0].text),
       vendor: getComponent(ComponentName.VENDOR)[0].text,
@@ -382,55 +392,32 @@ function extractTransactions(doc: Document): Transaction[] {
                             .filter(t => t);
 }
 
-test(
-  'transaction page graph experiment',
-  () => {
-    const htmlFilePath =
-      './src/tests/azad_test_data/transactions/cmulcahy/2025-06-09.html';
-
-    const html: string = fs.readFileSync(htmlFilePath, 'utf8');
-    const doc: Document = new jsdom.JSDOM(html).window.document;
-    const rootClassified = ClassedNode.create(doc.documentElement);
-
-    function countType(name: ComponentName): number {
-      return rootClassified.classedDescendants.filter(
-        d => d.components.has(name)
-      ).length;
-    }
-
-    const transactionElems2 = rootClassified.classedDescendants.filter(
-      d => d.components.has(ComponentName.TRANSACTION));
-
-    console.log(
-      'transaction text:\n' + transactionElems2.map(te => te.text).join('\n'));
-
-    expect(countType(ComponentName.ORDER_ID)).toEqual(22);
-    expect(countType(ComponentName.GIFT_CARD)).toEqual(1);
-    expect(countType(ComponentName.CARD_DETAILS)).toEqual(19);
-    expect(countType(ComponentName.PAYMENT_SOURCE)).toEqual(20);
-    expect(countType(ComponentName.TRANSACTION)).toEqual(20);
-
-    const transactions = extractTransactions(doc);
-
-    console.log(transactions);
-  }
-
-);
-
-test(
+describe(
   'transaction date regex',
   () => {
-    const goodDate = '09 Jun 2025';
-    const re = patterns.get(ComponentName.DATE)!;
-    console.log(re.source!);
-    const match = goodDate.match(re);
-    console.log(match);
-    expect(match).not.toBeNull;
-    expect(match![0]).toEqual(goodDate);
 
-    const anotherGoodDate = '07 Feb 2005';
-    expect(anotherGoodDate.match(re)).not.toBeNull;
-    expect(anotherGoodDate.match(re)![0]).toEqual(anotherGoodDate);
+    function verifyDateExtraction(dateString: string) {
+      const re = patterns.get(ComponentName.DATE)!;
+      const match = dateString.match(re);
+      expect(match).not.toBeNull;
+      expect(match![0]).toEqual(dateString);
+    }
+
+    test(
+      'amazon.co.uk',
+      () => {
+        verifyDateExtraction('09 Jun 2025');
+        verifyDateExtraction('07 Feb 2005');
+      }
+    );
+
+    test(
+      'amazon.de',
+      () => {
+        verifyDateExtraction('04. Juni 2025');
+        verifyDateExtraction('08. Mai 2025');
+      }
+    );
   }
 );
 
@@ -451,5 +438,56 @@ test(
     expect('••••'.match(p)).not.toBeNull();
     expect('1234'.match(p)).toBeNull();
     expect('abcd'.match(p)).toBeNull();
+  }
+);
+
+test(
+  'transaction page graph experiment amazon.co.uk',
+  () => {
+    const htmlFilePath =
+      './src/tests/azad_test_data/transactions/cmulcahy/2025-06-09.html';
+
+    const html: string = fs.readFileSync(htmlFilePath, 'utf8');
+    const doc: Document = new jsdom.JSDOM(html).window.document;
+    const rootClassified = ClassedNode.create(doc.documentElement);
+
+    function countType(name: ComponentName): number {
+      return rootClassified.classedDescendants.filter(
+        d => d.components.has(name)
+      ).length;
+    }
+
+    expect(countType(ComponentName.ORDER_ID)).toEqual(22);
+    expect(countType(ComponentName.GIFT_CARD)).toEqual(1);
+    expect(countType(ComponentName.CARD_DETAILS)).toEqual(19);
+    expect(countType(ComponentName.PAYMENT_SOURCE)).toEqual(20);
+    expect(countType(ComponentName.TRANSACTION)).toEqual(20);
+
+    const transactions = extractTransactions(doc);
+
+    console.log(transactions);
+  }
+);
+
+test(
+  'transaction page graph experiment amazon.de',
+  () => {
+    const htmlFilePath =
+      './src/tests/azad_test_data/transactions/DReffects/2025-06-08.html';
+
+    const html: string = fs.readFileSync(htmlFilePath, 'utf8');
+    const doc: Document = new jsdom.JSDOM(html).window.document;
+    const rootClassified = ClassedNode.create(doc.documentElement);
+
+    function countType(name: ComponentName): number {
+      return rootClassified.classedDescendants.filter(
+        d => d.components.has(name)
+      ).length;
+    }
+
+    const transactions = extractTransactions(doc);
+    console.log(transactions);
+
+    expect(countType(ComponentName.TRANSACTION)).toEqual(20);
   }
 );
