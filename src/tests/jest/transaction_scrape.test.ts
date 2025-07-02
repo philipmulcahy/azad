@@ -64,22 +64,29 @@ const patterns = new Map<ComponentName, RegExp>([
     new RegExp(`(-? *${util.currencyRegex().source} *\\d[0-9,.]*)`)],
 
   [ComponentName.DATE, new RegExp(`(${dt.getDateRegex().source})`)],
-  [ComponentName.GIFT_CARD, new RegExp('(Amazon Gift Card)')],
+
+  [ComponentName.GIFT_CARD,
+   new RegExp('(Amazon Gift Card|Amazon-Geschenkgutschein)')],
+
   [ComponentName.ORDER_ID, util.orderIdRegExp()],
 
   [ComponentName.PAYMENT_STATUS,
-    new RegExp('(Pending|Charged|Berechnet|Erstattet|Ausstehend)')],
+   new RegExp('(Pending|Charged|Berechnet|Erstattet|Ausstehend)')],
 
   [ComponentName.VENDOR, new RegExp(
     '((?:[A-Za-z][A-Za-z. ]{1,20}[A-Za-z])?)')],
 ]);
 
+// This function has grown to feel sordid, and hard to understand.
+// I would like instead to adopt one of the following strategies:
+// 1) write BNF including replacing the regular expressions.
+// 2) identify the leaf components with regex, and then BNF driven parser.
 function classifyNode(n: ClassedNode): Set<ComponentName> {
   if (
     // n.text.length < 250 &&
     // n.text.match('07 Jun.*204.440.*56.57.*Charged')
-    (n.text.length ?? 0) < 250 &&
-    n.text.match('.*30. Mai 2025.*')
+    (n.text.length ?? 0) < 500 &&
+    n.text.match('.*303-9504388-9109144.*54.28.*')
   ) {
     console.log('oohlala');
   }
@@ -126,8 +133,10 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
   }
 
   if (
-      countDescendants(ComponentName.TRANSACTION) == 0 &&
-      countDescendants(ComponentName.PAYMENT_SOURCE) == 1 &&
+      countDescendants(ComponentName.TRANSACTION) == 0 && (
+        countDescendants(ComponentName.PAYMENT_SOURCE) >= 1 ||
+        countDescendants(ComponentName.VENDOR) >= 1
+      ) &&
       countDescendants(ComponentName.DATE) >= 1 &&
       countDescendants(ComponentName.CURRENCY_AMOUNT) == 1 &&
       countDescendants(ComponentName.ORDER_ID) >= 1
@@ -137,6 +146,7 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
 
   if (
     countDescendants(ComponentName.PAYMENT_SOURCE) == 0 &&
+    countDescendants(ComponentName.TRANSACTION) == 0 &&
     (
       (
         countDescendants(ComponentName.CARD_DETAILS) == 1 &&
@@ -152,6 +162,7 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
 
   if (
       countDescendants(ComponentName.CARD_DETAILS) == 0 &&
+      countDescendants(ComponentName.PAYMENT_SOURCE) == 0 &&
       countDescendants(ComponentName.CARD_NAME) >= 1 &&
       countDescendants(ComponentName.BLANKED_DIGITS) == 1 &&
       countDescendants(ComponentName.CARD_DIGITS) == 1 
@@ -344,40 +355,82 @@ class ClassedNode {
 
 }
 
-function transactionFromElement(elem: ClassedNode): Transaction | null {
+function transactionFromElement(elem: ClassedNode): Transaction {
   const unused = new Set<ClassedNode>(elem.classedDescendants);
   console.log(unused);
 
-  function getComponent(n: ComponentName): ClassedNode[] {
+  // Removes the matched/selected element from unused along with all of its
+  // descendants, to prevent use of the same element in subsequent calls to
+  // this function.
+  function getValue<T>(
+    n: ComponentName,
+    extractor: (es: ClassedNode[])=>T,
+    defaultValue: T,
+  ): T {
     const candidates = Array.from(unused.keys()).filter(c => c.components.has(n));
 
     for(const c of candidates) {
       unused.delete(c);
+
       for(const cc of c.classedDescendants) {
         unused.delete(cc);
       }
     }
-    return candidates.sort((a,b)=>b.getParsedValue(n).length - a.getParsedValue(n).length);
+
+    const es = candidates.sort(
+        (a,b) => b.getParsedValue(n).length - a.getParsedValue(n).length);
+
+    try {
+        const result = extractor(es);
+        return result;
+    } catch (e) {
+        console.warn(
+          `transactionFromElement.getValue caught ${e} while working on ${n}`);
+
+        return defaultValue;
+    }
   }
 
   if (
     // n.text.length < 250 &&
     // n.text.match('07 Jun.*204.440.*56.57.*Charged')
     (elem.text.length ?? 0) < 250 &&
-    elem.text.match('.*4072366.*Berechnet.*')
+    elem.text.match('.*303-9504388-9109144.*54.28.*')
   ) {
-    console.log('oohlala');
+    console.log('oohlalala!');
   }
 
   try {
     const t = {
-      orderIds: getComponent(ComponentName.ORDER_ID).map(e => e.text),
-      date: new Date(
-        dt.normalizeDateString(
-          getComponent(ComponentName.DATE)[0].text)),
-      cardInfo: getComponent(ComponentName.PAYMENT_SOURCE)[0].text,
-      amount: util.floatVal(getComponent(ComponentName.CURRENCY_AMOUNT)[0].text),
-      vendor: getComponent(ComponentName.VENDOR)[0].text,
+      orderIds: getValue(
+        ComponentName.ORDER_ID,
+        ns => ns.map(e => e.getParsedValue(ComponentName.ORDER_ID)),
+        []
+      ),
+
+      date: getValue(
+        ComponentName.DATE,
+        ns => new Date(dt.normalizeDateString(ns[0].text)),
+        new Date(1970, 0, 1),
+      ),
+
+      cardInfo: getValue(
+        ComponentName.PAYMENT_SOURCE,
+        ns => ns[0].text,
+        ''
+      ),
+
+      amount: getValue(
+        ComponentName.CURRENCY_AMOUNT,
+        ns => util.floatVal(ns[0].text),
+        0,
+      ),
+
+      vendor: getValue(
+        ComponentName.VENDOR,
+        ns => ns[0].text,
+        ''
+      ),
     };
 
     return t;
@@ -398,6 +451,8 @@ function extractTransactions(doc: Document): Transaction[] {
   return transactionElements.map(e => transactionFromElement(e))
                             .filter(t => t);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 describe(
   'transaction date regex',
@@ -494,7 +549,58 @@ test(
 
     const transactions = extractTransactions(doc);
     console.log(transactions);
+    const achievedOrderIds = new Map<string, number>();
 
-    expect(countType(ComponentName.TRANSACTION)).toEqual(20);
+    for(const t of transactions) {
+      for(const id of t.orderIds) {
+        const previous = achievedOrderIds.get(id) ?? 0;
+        achievedOrderIds.set(id, previous+1);
+      }
+    }
+
+    console.log('achieved...');
+    console.log(achievedOrderIds);
+
+    const expectedOrderIds = new Map<string, number>([
+      ['028-0347503-0632369', 3],
+      ['028-1782804-2661112', 1],
+      ['028-7335899-8388334', 1],
+      ['028-7566725-4072366', 1],
+      ['028-8924859-6127537', 2],
+      ['303-0233043-3185956', 3],
+      ['303-1232532-5892333', 2],
+      ['303-1432747-6689942', 2],
+      ['303-5261226-7761122', 3],
+      ['303-5561464-9593924', 1],
+      ['303-5628131-5481139', 3],
+      ['303-6646448-9495500', 1],
+      ['303-7953008-1837928', 1],
+      ['303-8126600-9781933', 2],
+      ['303-8296591-5429143', 3],
+      ['303-8535828-5837111', 1],
+      ['303-9219989-6909129', 2],
+      ['303-9504388-9109144', 3],
+      ['303-9573289-1968353', 2],
+      ['303-9940709-9305945', 1],
+      ['305-0908297-8514738', 1],
+      ['305-5646626-2045901', 1],
+    ]);
+
+    const missingOrderIds = new Map<string, number>();
+    
+    for(const id of expectedOrderIds.keys()) {
+      const expected = expectedOrderIds.get(id);
+      const achieved = achievedOrderIds.get(id) ?? 0;
+      const deficit = expected - achieved;
+      if (deficit) {
+        missingOrderIds.set(id, deficit);
+      }
+    }
+
+    console.log('missing...');
+    console.log(missingOrderIds);
+
+    expect(missingOrderIds.size).toEqual(0);
+    expect(countType(ComponentName.TRANSACTION)).toEqual(40);
   }
 );
