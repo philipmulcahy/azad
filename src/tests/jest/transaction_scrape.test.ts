@@ -82,15 +82,6 @@ const patterns = new Map<ComponentName, RegExp>([
 // 1) write BNF including replacing the regular expressions.
 // 2) identify the leaf components with regex, and then BNF driven parser.
 function classifyNode(n: ClassedNode): Set<ComponentName> {
-  if (
-    // n.text.length < 250 &&
-    // n.text.match('07 Jun.*204.440.*56.57.*Charged')
-    (n.text.length ?? 0) < 500 &&
-    n.text.match('.*303-9504388-9109144.*54.28.*')
-  ) {
-    console.log('oohlala');
-  }
-
   if (n.isNonScriptText) {
     const candidates = new Set<ComponentName>(
       [...patterns.keys()].filter(p => match(p, n) != null));
@@ -236,13 +227,6 @@ class ClassedNode {
       }
     }
 
-    if (!['script', 'style'].includes(this.type.toLowerCase()) && this.directText != '') {
-      console.log(
-        `'${this.directText}' -> ` +
-        `${Array.from(this._possibleComponents.keys()).join(',')}`
-      );
-    }
-
     ClassedNode._elementMap.set(n, this);
   }
 
@@ -357,7 +341,6 @@ class ClassedNode {
 
 function transactionFromElement(elem: ClassedNode): Transaction {
   const unused = new Set<ClassedNode>(elem.classedDescendants);
-  console.log(unused);
 
   // Removes the matched/selected element from unused along with all of its
   // descendants, to prevent use of the same element in subsequent calls to
@@ -385,19 +368,10 @@ function transactionFromElement(elem: ClassedNode): Transaction {
         return result;
     } catch (e) {
         console.warn(
-          `transactionFromElement.getValue caught ${e} while working on ${n}`);
+          `transactionFromElement.getValue caught ${e} while working on ${n} with '${elem.text}'`);
 
         return defaultValue;
     }
-  }
-
-  if (
-    // n.text.length < 250 &&
-    // n.text.match('07 Jun.*204.440.*56.57.*Charged')
-    (elem.text.length ?? 0) < 250 &&
-    elem.text.match('.*303-9504388-9109144.*54.28.*')
-  ) {
-    console.log('oohlalala!');
   }
 
   try {
