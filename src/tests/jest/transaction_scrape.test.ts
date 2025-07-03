@@ -156,7 +156,7 @@ function classifyNode(n: ClassedNode): Set<ComponentName> {
       countDescendants(ComponentName.PAYMENT_SOURCE) == 0 &&
       countDescendants(ComponentName.CARD_NAME) >= 1 &&
       countDescendants(ComponentName.BLANKED_DIGITS) == 1 &&
-      countDescendants(ComponentName.CARD_DIGITS) == 1 
+      countDescendants(ComponentName.CARD_DIGITS) == 1
   ) {
     possibles.add(ComponentName.CARD_DETAILS);
     possibles.add(ComponentName.PAYMENT_SOURCE);
@@ -199,7 +199,7 @@ class ClassedNode {
   _descendants: ClassedNode[] = [];
 
   static _elementMap = new Map<Node, ClassedNode>();
-  
+
   // Use create(...) instead
   private constructor(n: HTMLElement) {
     if (n.nodeName == '#text') {
@@ -220,7 +220,7 @@ class ClassedNode {
 
     for (const name of classifyNode(this)) {
       if (patterns.has(name)) {
-        const parsedValue = match(name, this); 
+        const parsedValue = match(name, this);
         this._possibleComponents.set(name, parsedValue);
       } else {
         this._possibleComponents.set(name, null);
@@ -239,7 +239,7 @@ class ClassedNode {
     if (ClassedNode._elementMap.has(n)) {
       return ClassedNode._elementMap.get(n)!;
     }
-    
+
     return new ClassedNode(n);
   }
 
@@ -262,7 +262,7 @@ class ClassedNode {
   }
 
   get element(): HTMLElement {
-    return this._element;  
+    return this._element;
   }
 
   get parent(): ClassedNode {
@@ -292,7 +292,7 @@ class ClassedNode {
     if (this.directText == '') {
       return false;
     }
-    
+
     if (['script', 'style'].includes(this.type.toLowerCase())) {
       return false;
     }
@@ -325,7 +325,7 @@ class ClassedNode {
     while (s != null && s.nodeName.toLowerCase() == '#text') {
       s = s.previousSibling;
     }
-    
+
     return s != null ?
       ClassedNode.create(s as HTMLElement) :
       null;
@@ -505,14 +505,87 @@ test(
   }
 );
 
+type Difference = string;
+
+function setsAreEqual<T>(a: Set<T>, b: Set<T>): boolean {
+  return a.size == b.size && [...a].every(value => b.has(value));
+}
+
+function compareTransactions(a: Transaction, b: Transaction): Difference[] {
+  const differences: Difference[] = [];
+  const aKeys = new Set(Object.keys(a));
+  const bKeys = new Set(Object.keys(a));
+  const commonKeys = new Set<string>();
+
+  for (const k of aKeys) {
+    commonKeys.add(k);
+  }
+
+  for (const k of bKeys) {
+    commonKeys.add(k);
+  }
+
+  if (!setsAreEqual(aKeys, bKeys)) {
+    for (const k of aKeys) {
+      if (!bKeys.has(k)) {
+        differences.push(`b missing key: ${k}`);
+      }
+    }
+
+    for (const k of bKeys) {
+      if (!aKeys.has(k)) {
+        differences.push(`a missing key: ${k}`);
+      }
+    }
+  }
+
+  if (a.orderIds.includes('303-9219989-6909129') && a.amount == -9.98 &&
+      b.orderIds.includes('303-9219989-6909129') && b.amount == -9.98) {
+    console.log('oohlala');
+  }
+
+  for (const k of commonKeys) {
+    const aVal = JSON.stringify((a as Record<string, any>)[k]);
+    const bVal = JSON.stringify((b as Record<string, any>)[k]);
+
+    if (aVal !== bVal) {
+      differences.push(`different values for ${k}: ${aVal} vs ${bVal}`);
+    }
+  }
+
+  return differences;
+}
+
+function compareLists(a: Transaction[], b: Transaction[]): Difference[] {
+  const differences: Difference[] = [];
+
+  for (const l of a) {
+    if (!b.some(r => compareTransactions(l, r).length == 0)) {
+      differences.push(`b does not contain ${JSON.stringify(l)}`);
+    }
+  }
+
+  for (const r of b) {
+    if (!a.some(l => compareTransactions(l, r).length == 0)) {
+      differences.push(`a does not contain ${JSON.stringify(r)}`);
+    }
+  }
+
+  return differences;
+}
+
 test(
   'transaction page graph experiment amazon.de',
   () => {
-    const htmlFilePath =
-      './src/tests/azad_test_data/transactions/DReffects/2025-06-08.html';
 
-    const html: string = fs.readFileSync(htmlFilePath, 'utf8');
+    const pathStem = './src/tests/azad_test_data/transactions/DReffects/2025-06-08';
+    const htmlPath = pathStem + '.html';
+    const jsonPath = pathStem + '.expected.json';
+
+    const html: string = fs.readFileSync(htmlPath, 'utf8');
     const doc: Document = new jsdom.JSDOM(html).window.document;
+    const expected = JSON.parse(fs.readFileSync(jsonPath, 'utf8')) as Transaction[];
+    expected.forEach(t => t.date = new Date(t.date));
     const rootClassified = ClassedNode.create(doc.documentElement);
 
     function countType(name: ComponentName): number {
@@ -532,49 +605,10 @@ test(
       }
     }
 
-    console.log('achieved...');
-    console.log(achievedOrderIds);
-
-    const expectedOrderIds = new Map<string, number>([
-      ['028-0347503-0632369', 3],
-      ['028-1782804-2661112', 1],
-      ['028-7335899-8388334', 1],
-      ['028-7566725-4072366', 1],
-      ['028-8924859-6127537', 2],
-      ['303-0233043-3185956', 3],
-      ['303-1232532-5892333', 2],
-      ['303-1432747-6689942', 2],
-      ['303-5261226-7761122', 3],
-      ['303-5561464-9593924', 1],
-      ['303-5628131-5481139', 3],
-      ['303-6646448-9495500', 1],
-      ['303-7953008-1837928', 1],
-      ['303-8126600-9781933', 2],
-      ['303-8296591-5429143', 3],
-      ['303-8535828-5837111', 1],
-      ['303-9219989-6909129', 2],
-      ['303-9504388-9109144', 3],
-      ['303-9573289-1968353', 2],
-      ['303-9940709-9305945', 1],
-      ['305-0908297-8514738', 1],
-      ['305-5646626-2045901', 1],
-    ]);
-
-    const missingOrderIds = new Map<string, number>();
-    
-    for(const id of expectedOrderIds.keys()) {
-      const expected = expectedOrderIds.get(id);
-      const achieved = achievedOrderIds.get(id) ?? 0;
-      const deficit = expected - achieved;
-      if (deficit) {
-        missingOrderIds.set(id, deficit);
-      }
-    }
-
-    console.log('missing...');
-    console.log(missingOrderIds);
-
-    expect(missingOrderIds.size).toEqual(0);
     expect(countType(ComponentName.TRANSACTION)).toEqual(40);
+    const differences = compareLists(transactions, expected);
+    console.log('differences...');
+    console.log(differences);
+    expect(differences.length).toEqual(0);
   }
 );
