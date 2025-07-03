@@ -23,11 +23,14 @@ const LOCALES = ['de', 'en', 'en-gb', 'es', 'fr', 'it'];
 
 const ALT_FORMATS = [
     {format: 'DD MMM YYYY', locale: 'fr'},
+    {format: 'DD MMM YYYY', locale: 'en'},
+    {format: 'DD MMM YYYY', locale: 'en-gb'},
     {format: 'D MMM YYYY', locale: 'fr'},
     {format: 'DD. MMM YYYY', locale: 'fr'},
     {format: 'D. MMM YYYY', locale: 'fr'},
     {format: 'YYYY-MM-DD', locale: 'en'},
     {format: 'MMMM DD, YYYY', locale: 'en'},
+    {format: 'MMM DD, YYYY', locale: 'en'},
     {format: 'DD MMMM YYYY', locale: 'en'},
     {format: 'D MMMM YYYY', locale: 'en'},
     {format: 'D MMM. YYYY', locale: 'en'},
@@ -100,10 +103,12 @@ function  getMom(ds: string) {
 export function normalizeDateString(ds: string): string {
     if ( !ds ) { return "N/A"; }
     const mom = getMom(ds);
+
     if (!mom) {
         console.warn('could not parse date: ' + ds);
         return ds;
     }
+
     return localDateFromMoment(mom);
 }
 
