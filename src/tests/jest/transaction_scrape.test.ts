@@ -1,5 +1,5 @@
 import {extractPageOfTransactions, Transaction} from '../../js/transaction';
-import {extractTransactions} from '../../js/transaction2';
+import {extractTransactions} from '../../js/transaction1';
 import * as fs from 'fs';
 import * as dt from '../../js/date';
 
