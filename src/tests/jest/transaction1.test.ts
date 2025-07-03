@@ -3,7 +3,7 @@ import {
   extractTransactions,
   ComponentName,
   patterns,
-  ClassedNode} from '../../js/transaction2';
+  ClassedNode} from '../../js/transaction1';
 
 const jsdom = require('jsdom');
 
