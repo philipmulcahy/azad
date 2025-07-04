@@ -1,9 +1,8 @@
 import * as cacheStuff from './cachestuff';
 import * as extraction from './extraction';
-import * as iframeWorker from './iframe-worker';
 const lzjs = require('lzjs');
-import * as transaction from './transaction';
-import * as util from './util';
+import * as transaction0 from './transaction0';
+import * as transaction1 from './transaction1';
 
 function getCache() {
   return cacheStuff.createLocalCache('TRANSACTIONS');
@@ -50,26 +49,28 @@ export async function reallyScrapeAndPublish(
 }
 
 function filterTransactionsByDateRange(
-  transactions: transaction.Transaction[],
+  transactions: Transaction[],
   start: Date,
   end: Date,
-): transaction.Transaction[] {
+): Transaction[] {
   const url = document.URL;
   const paramString = url.split('?')[1];
   return transactions.filter(t => t.date >= start && t.date <= end);
 }
 
-export function extractPageOfTransactions(doc: Document): transaction.Transaction[] {
-  const dateElems: Element[] = extraction.findMultipleNodeValues(
-    '//div[contains(@class, "transaction-date-container")]',
-    doc.documentElement,
-    'transaction date extraction',
-  ) as Element[];
-
-  return dateElems.map(de => extractTransactionsWithDate(de)).flat();
+export function extractPageOfTransactions(
+  doc: Document
+): Transaction[] {
+  return extraction.firstMatchingStrategy(
+    [
+      () => transaction0.extractPageOfTransactions(doc),
+      () => transaction1.extractPageOfTransactions(doc),
+    ],
+    []
+  );
 }
 
-async function retryingExtractPageOfTransactions(): Promise<transaction.Transaction[]> {
+async function retryingExtractPageOfTransactions(): Promise<Transaction[]> {
   let elapsedMillis: number = 0;
   const DEADLINE_MILLIS = 10 * 1000;
   const INCREMENT_MILLIS = 1000;
@@ -99,97 +100,10 @@ async function retryingExtractPageOfTransactions(): Promise<transaction.Transact
   return [];
 }
 
-function extractTransactionsWithDate(
-  dateElem: Element
-): transaction.Transaction[] {
-  const dateString = util.defaulted(dateElem.textContent, '1970-01-01');
-  const date = new Date(dateString);
-  const transactionElemContainer = dateElem.nextElementSibling;
-
-  const transactionElems: HTMLElement[] = extraction.findMultipleNodeValues(
-    './/div[contains(@class, "transactions-line-item")]',
-    transactionElemContainer as HTMLElement,
-    'finding transaction elements') as HTMLElement[];
-
-  return transactionElems
-    .map(te => extractSingleTransaction(date, te))
-    .filter(t => t) as transaction.Transaction[];
-}
-
-function extractSingleTransaction(
-  date: Date,
-  elem: Element,
-): transaction.Transaction | null {
-  const children = extraction.findMultipleNodeValues(
-    './div',
-    elem as HTMLElement,
-    'transaction components') as HTMLElement[];
-
-  const cardAndAmount = children[0];
-
-  const orderIdElems = children
-    .slice(1)
-    .filter(oie => oie.textContent?.match(util.orderIdRegExp()));
-
-  const vendorElems = children
-    .slice(1)
-    .filter(oie => !oie.textContent?.match(util.orderIdRegExp()));
-
-  const vendor = vendorElems.length
-    ? (vendorElems.at(-1)?.textContent?.trim() ?? '??')
-    : '??';
-
-  const orderIds: string[] = orderIdElems.map(
-    oe => util.defaulted(
-      extraction.by_regex(
-        ['.//a[contains(@href, "order")]'],
-        new RegExp('.*([A-Z0-9]{3}-\\d+-\\d+).*'),
-        '??',
-        oe,
-        'transaction order id',
-      ),
-      '??',
-    )
-  );
-
-  const amountSpan = extraction.findMultipleNodeValues(
-    './/span',
-    cardAndAmount,
-    'amount span'
-  )[1] as HTMLElement;
-
-  const amountText = amountSpan.textContent ?? '0';
-  const amountMatch = amountText.match(util.moneyRegEx());
-  const amount: number = amountMatch ? +amountMatch[3] : 0;
-
-  const cardInfo = util.defaulted(
-    extraction.by_regex(
-      ['.//span'],
-      new RegExp('(.*\\*{4}.*)'),
-      '??',
-      cardAndAmount,
-      'transaction amount',
-    ),
-    '??',
-  );
-
-  const transaction = {
-    date,
-    orderIds,
-    cardInfo,
-    amount,
-    vendor,
-  };
-
-  console.debug('extractSingleTransaction returning', transaction);
-
-  return transaction;
-}
-
 function mergeTransactions(
-  a: transaction.Transaction[],
-  b: transaction.Transaction[]
-): transaction.Transaction[] {
+  a: Transaction[],
+  b: Transaction[]
+): Transaction[] {
   // Q: Why are you not using map on Set.values() iterator?
   // A? YCM linting thinks it's not a thing, along with a bunch of other
   //    sensible iterator magic. Chrome is fine with it, but my life is too
@@ -197,7 +111,7 @@ function mergeTransactions(
   const merged = new Set<string>([a, b].flat().map(t => JSON.stringify(t)));
   const ss = Array.from(merged.values());
 
-  const ts: transaction.Transaction[] = restoreDateObjects(
+  const ts: Transaction[] = restoreDateObjects(
     ss.map(s => JSON.parse(s)));
 
   return ts;
@@ -211,7 +125,7 @@ async function extractAllTransactions() {
 
   let minNewTimestamp = new Date(3000, 1, 1).getTime();
   let nextButton = findUsableNextButton() as HTMLElement;
-  let page: transaction.Transaction[] = [];
+  let page: Transaction[] = [];
 
   do {
     page = await retryingExtractPageOfTransactions();
@@ -252,7 +166,7 @@ function maybeClickNextPage(): void {
   }
 }
 
-async function getTransactionsFromCache(): Promise<transaction.Transaction[]> {
+async function getTransactionsFromCache(): Promise<Transaction[]> {
   const compressed = await getCache().get(CACHE_KEY);
   if (!compressed) {
     return [];
@@ -262,15 +176,15 @@ async function getTransactionsFromCache(): Promise<transaction.Transaction[]> {
   return ts;
 }
 
-function putTransactionsInCache(ts: transaction.Transaction[]) {
+function putTransactionsInCache(ts: Transaction[]) {
   const s = JSON.stringify(ts);
   const compressed = lzjs.compress(s);
   getCache().set(CACHE_KEY, compressed);
 }
 
 function restoreDateObjects(
-  ts: transaction.Transaction[]
-): transaction.Transaction[] {
+  ts: Transaction[]
+): Transaction[] {
   return ts.map( t => {
     const copy = JSON.parse(JSON.stringify(t));
     copy.date = new Date(copy.date);

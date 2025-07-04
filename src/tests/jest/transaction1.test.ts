@@ -1,6 +1,8 @@
 import * as fs from 'fs';
+import { compareLists } from './transaction_scrape.test';
+import { Transaction } from '../../js/transaction';
 import {
-  extractTransactions,
+  extractPageOfTransactions,
   ComponentName,
   patterns,
   ClassedNode} from '../../js/transaction1';
@@ -78,9 +80,5 @@ test(
     expect(countType(ComponentName.CARD_DETAILS)).toEqual(19);
     expect(countType(ComponentName.PAYMENT_SOURCE)).toEqual(20);
     expect(countType(ComponentName.TRANSACTION)).toEqual(20);
-
-    const transactions = extractTransactions(doc);
-
-    console.log(transactions);
   }
 );

@@ -1,44 +1,10 @@
-import {extractPageOfTransactions, Transaction} from '../../js/transaction';
-import {extractTransactions} from '../../js/transaction1';
 import * as fs from 'fs';
-import * as dt from '../../js/date';
-
 const jsdom = require('jsdom');
 
+// Note that we do not import transaction0 or transaction1...
+// ...they are abstracted by transaction.
+import * as tn from '../../js/transaction';
 
-function scrapePageOfTransactionsFromCannedHtml(htmlFilePath: string): Transaction[] {
-  const html: string = fs.readFileSync(htmlFilePath, 'utf8');
-  const doc = new jsdom.JSDOM(html).window.document;
-  return extractPageOfTransactions(doc);
-}
-
-describe('can read 20 transactions', () => {
-  test(
-    'philipmulcahy', () => {
-      const transactions = scrapePageOfTransactionsFromCannedHtml(
-        './src/tests/azad_test_data/transactions/philipmulcahy/2025-06-08.html');
-
-      expect(transactions.length).toEqual(20);
-  });
-
-  test(
-    'DReffects', () => {
-      const transactions = scrapePageOfTransactionsFromCannedHtml(
-        './src/tests/azad_test_data/transactions/DReffects/2025-06-08.html');
-
-      expect(transactions.length).toEqual(20);
-  });
-
-  test(
-    'cmulcahy', () => {
-      const transactions = scrapePageOfTransactionsFromCannedHtml(
-        './src/tests/azad_test_data/transactions/cmulcahy/2025-06-09.html');
-
-      expect(transactions.length).toEqual(20);
-  });
-});
-
-///////////////////////////////////////////////////////////////////////////////
 
 type Difference = string;
 
@@ -46,7 +12,7 @@ function setsAreEqual<T>(a: Set<T>, b: Set<T>): boolean {
   return a.size == b.size && [...a].every(value => b.has(value));
 }
 
-function compareTransactions(a: Transaction, b: Transaction): Difference[] {
+function compareTransactions(a: tn.Transaction, b: tn.Transaction): Difference[] {
   const differences: Difference[] = [];
   const aKeys = new Set(Object.keys(a));
   const bKeys = new Set(Object.keys(a));
@@ -86,7 +52,7 @@ function compareTransactions(a: Transaction, b: Transaction): Difference[] {
   return differences;
 }
 
-function compareLists(a: Transaction[], b: Transaction[]): Difference[] {
+export function compareLists(a: tn.Transaction[], b: tn.Transaction[]): Difference[] {
   const differences: Difference[] = [];
 
   for (const l of a) {
@@ -104,28 +70,74 @@ function compareLists(a: Transaction[], b: Transaction[]): Difference[] {
   return differences;
 }
 
-function transactionParsing(pathStem: string): void {
-  const htmlPath = pathStem + '.html';
-  const jsonPath = pathStem + '.expected.json';
-  const html: string = fs.readFileSync(htmlPath, 'utf8');
-  const doc: Document = new jsdom.JSDOM(html).window.document;
-
-  const expected = JSON.parse(
-    fs.readFileSync(jsonPath, 'utf8')) as Transaction[];
-
-  expected.forEach(t => t.date = new Date(t.date));
-  const transactions = extractTransactions(doc);
-  const differences = compareLists(transactions, expected);
-  console.log(`differences: ${JSON.stringify(differences)}`);
-  expect(differences.length).toEqual(0);
+function scrapePageOfTransactionsFromCannedHtml(htmlFilePath: string): tn.Transaction[] {
+  const html: string = fs.readFileSync(htmlFilePath, 'utf8');
+  const doc = new jsdom.JSDOM(html).window.document;
+  return tn.extractPageOfTransactions(doc);
 }
 
-test(
-  'transaction page graph experiment amazon.de',
-  () => transactionParsing('./src/tests/azad_test_data/transactions/DReffects/2025-06-08')
-);
+describe('can read some transactions', () => {
+  test(
+    'philipmulcahy', () => {
+      const transactions = scrapePageOfTransactionsFromCannedHtml(
+        './src/tests/azad_test_data/transactions/philipmulcahy/2025-06-08.html');
 
-test(
-  'transaction page graph experiment amazon.co.uk',
-  () => transactionParsing('./src/tests/azad_test_data/transactions/cmulcahy/2025-06-09')
+      expect(transactions.length).toEqual(20);
+  });
+
+  test(
+    'DReffects', () => {
+      const transactions = scrapePageOfTransactionsFromCannedHtml(
+        './src/tests/azad_test_data/transactions/DReffects/2025-06-08.html');
+
+      expect(transactions.length).toEqual(40);
+  });
+
+  test(
+    'cmulcahy', () => {
+      const transactions = scrapePageOfTransactionsFromCannedHtml(
+        './src/tests/azad_test_data/transactions/cmulcahy/2025-06-09.html');
+
+      expect(transactions.length).toEqual(20);
+  });
+});
+
+describe (
+  'multi-strategy transaction scraping and verification',
+
+  () => {
+    function scrapeAndVerify(pathStem: string): void {
+      const htmlPath = pathStem + '.html';
+      const jsonPath = pathStem + '.expected.json';
+      const html: string = fs.readFileSync(htmlPath, 'utf8');
+      const doc: Document = new jsdom.JSDOM(html).window.document;
+      const transactions = tn.extractPageOfTransactions(doc);
+
+      const expected = JSON.parse(
+        fs.readFileSync(jsonPath, 'utf8')) as tn.Transaction[];
+
+      expected.forEach(t => t.date = new Date(t.date));
+      const differences = compareLists(transactions, expected);
+      console.log(`differences: ${JSON.stringify(differences)}`);
+      expect(differences.length).toEqual(0);
+    }
+
+    test(
+      'transaction amazon.de',
+      () => scrapeAndVerify(
+        './src/tests/azad_test_data/transactions/DReffects/2025-06-08')
+    );
+
+    test(
+      'transaction amazon.co.uk pmulcahy',
+      () => scrapeAndVerify(
+        './src/tests/azad_test_data/transactions/philipmulcahy/2025-06-08')
+    );
+
+    test(
+      'transaction amazon.co.uk cmulcahy',
+      () => scrapeAndVerify(
+        './src/tests/azad_test_data/transactions/cmulcahy/2025-06-09')
+    );
+  }
 );

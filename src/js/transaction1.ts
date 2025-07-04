@@ -333,6 +333,12 @@ function transactionFromElement(elem: ClassedNode): Transaction {
       const result = extractor(es);
       return result;
     } catch (e) {
+      if (es.length == 0) {
+        // it looks like extractor isn't equipped to handle empty es.
+        return defaultValue;
+      }
+
+      // Something else has gone wrong between es and extractor.
       console.warn(
         `transactionFromElement.getValue caught ${e} while working on ${n} with '${elem.text}'`);
 
@@ -373,6 +379,7 @@ function transactionFromElement(elem: ClassedNode): Transaction {
       ),
     };
 
+    console.debug('transactionFromElement returning', t);
     return t;
   } catch (ex) {
     console.warn(
@@ -382,7 +389,7 @@ function transactionFromElement(elem: ClassedNode): Transaction {
   throw 'could not find Transaction in html';
 }
 
-export function extractTransactions(doc: Document): Transaction[] {
+export function extractPageOfTransactions(doc: Document): Transaction[] {
   const rootClassified = ClassedNode.create(doc.documentElement);
 
   const transactionElements = rootClassified.classedDescendants.filter(
