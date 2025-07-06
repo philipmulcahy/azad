@@ -59,7 +59,7 @@ Params: none
 Returns: generator of parsed log entries, with decrypted userids
 """
 def get_log_lines():
-    log_server = 'purple.local'
+    log_server = 'purple.lan'
     
     def get_log_lines(grep, filepattern):
         ssh_grep = subprocess.Popen(
@@ -67,7 +67,7 @@ def get_log_lines():
                 'ssh',
                 '-l', 'logs',
                 '-i', '/Users/philip/.ssh/logs_readonly',
-                'purple.local',
+                log_server,
                 grep,
                 '-H',
                 '"azad-extension.co.uk.*operation"',
