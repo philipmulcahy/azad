@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { compareLists } from './transaction_scrape.test';
+import { compareLists } from './transaction.test';
 import { Transaction } from '../../js/transaction';
 import {
   extractPageOfTransactions,
