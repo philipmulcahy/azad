@@ -14,7 +14,19 @@ export interface Transaction {
   orderIds: string[],
   amount: number,
   vendor: string,
-};
+}
+
+type TransactionKey = keyof Transaction;
+
+export function getTransactionKeys(): TransactionKey[] {
+  return [
+      'date',
+      'cardInfo',
+      'orderIds',
+      'amount',
+      'vendor'
+  ];
+}
 
 export function clearCache() {
   getCache().clear();

@@ -5,44 +5,40 @@ const jsdom = require('jsdom');
 // ...they are abstracted by transaction.
 import * as tn from '../../js/transaction';
 
-
 type Difference = string;
 
-function setsAreEqual<T>(a: Set<T>, b: Set<T>): boolean {
-  return a.size == b.size && [...a].every(value => b.has(value));
+// Be very careful about using this function - it's only intention is to help tests pass where we have
+// potentially dodgy date logic impact.
+function getUTCDateString(d: Date): string {
+    const dd = new Date(d.toUTCString());  // defensive copy, because we're going to do some editing.
+
+    if (dd.getUTCHours() > 12) {
+        dd.setUTCHours(0);
+        dd.setUTCDate(d.getUTCDate() + 1);  // "magically" this copes with end of month - setting 32 is OK for example.
+    }
+
+    return [
+        dd.getUTCFullYear().toString(),
+        (dd.getUTCMonth() + 1).toString().padStart(2, '0'),
+        dd.getUTCDate().toString().padStart(2, '0'),
+      ].join('-');
 }
 
 function compareTransactions(a: tn.Transaction, b: tn.Transaction): Difference[] {
   const differences: Difference[] = [];
-  const aKeys = new Set(Object.keys(a));
-  const bKeys = new Set(Object.keys(a));
-  const commonKeys = new Set<string>();
+  const keys = tn.getTransactionKeys();
 
-  for (const k of aKeys) {
-    commonKeys.add(k);
+  function getStringVal(t: tn.Transaction, k: keyof tn.Transaction): string {
+    const val = t[k];
+
+    return (k.toString() == 'date') ?
+      getUTCDateString(val as Date) :
+      JSON.stringify(val);
   }
 
-  for (const k of bKeys) {
-    commonKeys.add(k);
-  }
-
-  if (!setsAreEqual(aKeys, bKeys)) {
-    for (const k of aKeys) {
-      if (!bKeys.has(k)) {
-        differences.push(`b missing key: ${k}`);
-      }
-    }
-
-    for (const k of bKeys) {
-      if (!aKeys.has(k)) {
-        differences.push(`a missing key: ${k}`);
-      }
-    }
-  }
-
-  for (const k of commonKeys) {
-    const aVal = JSON.stringify((a as Record<string, any>)[k]);
-    const bVal = JSON.stringify((b as Record<string, any>)[k]);
+  for (const k of keys) {
+    const aVal = getStringVal(a, k);
+    const bVal = getStringVal(b, k);
 
     if (aVal !== bVal) {
       differences.push(`different values for ${k}: ${aVal} vs ${bVal}`);
