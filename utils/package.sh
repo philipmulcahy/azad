@@ -1,8 +1,8 @@
 #!/bin/bash
 
 cd $(dirname $0)/..
-DIRT=$(git status --porcelain=v2)
 rm -f azad.zip
+DIRT=$(git status --porcelain=v2)
 if [[ -n $DIRT ]]; then echo "Dirty client!"; echo "${DIRT}"; echo "quitting"; exit; fi;
 npm run build
 cp -r build dist
