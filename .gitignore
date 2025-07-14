@@ -1,11 +1,13 @@
-.DS_Store
 *.swp
-azad_*.zip
+.DS_Store
+.idea
 azad.zip
+azad_*.zip
 build
 build-node
 docs
 node_modules
+src/js/git_hash.ts
 src/tests/azad_test_data
 tmp
 utils/remote_logs/.venv

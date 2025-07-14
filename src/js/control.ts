@@ -6,6 +6,7 @@ const $ = require('jquery');
 
 import * as settings from './settings';
 import * as util from './util';
+import * as git_hash from './git_hash';
 
 $(document).ready(function() {
   $('body').on(
@@ -272,6 +273,15 @@ function handleYearClick(evt: { target: { value: any; }; }) {
   }
 }
 
+function setVersion() {
+  const elem = document.getElementById('azad_version');
+  const clean = git_hash.isClean();
+  const hash = git_hash.hash();
+  elem.textContent = clean ?
+    `version id: ${hash}` :
+    `version id: build included uncommitted changes`;
+}
+
 async function handleMonthsClick(evt: { target: { value: any; }; }) {
   const month_count = Number(evt.target.value);
   const end_date = new Date();
@@ -301,6 +311,7 @@ function init() {
   settings.initialiseUi();
   settings.registerTableTypeRadioButtons();
   console.log('init');
+  setVersion();
   activateIdle();
   connectToBackground();
   registerActionButtons();
