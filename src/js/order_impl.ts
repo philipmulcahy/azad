@@ -46,6 +46,7 @@ export class OrderImpl {
       const date = this.header.date ?
         util.dateToDateIsoString(this.header.date) :
         '';
+
       return Promise.resolve([
         this.header.total ?
           date + ': ' + this.header.total :
@@ -61,6 +62,7 @@ export class OrderImpl {
     }.bind(this);
 
     const url = this.header.payments_url;
+
     if (!url) {
       throw('cannot fetch payments without payments_url');
     }
@@ -78,6 +80,7 @@ export class OrderImpl {
     } catch (ex) {
       const msg = 'timeout or other error while fetching ' + url +
                   ' for ' + this.header.id + ': ' + ex;
+
       console.error(msg);
       return [];
     }
