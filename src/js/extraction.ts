@@ -111,18 +111,23 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
   };
   const strategy_2 = () => {
     const new_style_payments = findMultipleNodeValues(
-      '//*[contains(text(), "Payment Method")]/../self::*',
+      '//*[contains(translate(text(), "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "payment method")]/../self::*',
+      // '//*[contains(text(), "Payment Method")]/../self::*',
       doc.documentElement
     ).map(
-      e => e.textContent?.replace(/\s+/g, ' ').trim()
+      e => {
+        const spansText = [...(e as Element).querySelectorAll('span')]
+          .map(s => s.textContent).join(' ').replace(/\s+/g, ' ').trim();
+
+        return spansText;
+      }
     );
     // "Item(s) Subtotal: GBP 9.63 Shipping & Handling: GBP 4.24 ----- Total before tax: GBP 13.87 Estimated tax to be collected: GBP 1.22 ----- Grand Total: GBP 15.09 Payment Method: American Express | Last digits: 1416 Billing address Mr Philip Mulcahy Somewhere in the UK"
 
-    const map_payment_field = function(pattern: string) {
+    const map_payment_field = function(pattern: RegExp) {
       return new_style_payments.map(
         function(s) {
-          const x = RegExp(pattern);
-          const y = x.exec(util.defaulted(s, ''));
+          const y = pattern.exec(util.defaulted(s, ''));
           if (y == null) {
             return '';
           }
@@ -133,15 +138,15 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
     };
 
     const card_names: string[] = map_payment_field(
-      'Payment Method: ([A-Za-z0-9 /]*) \\|'
+      /Payment Method: ([A-Za-z0-9 /]*) \|/i,
     );
 
     const card_number_suffixes = map_payment_field(
-      'Last digits: (\\d+)'
+      /Last digits: (\\d+)/i,
     );
 
     const payment_amounts = map_payment_field(
-      'Grand Total: (.*) Payment Method'
+      /Grand Total: (.*) Payment Method/i,
     );
 
     const count = Math.min(
@@ -163,7 +168,73 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
     return payments;
   };
 
-  const strategies = [strategy_1, strategy_2];
+  const strategy_3 = () => {
+    const new_style_payments = findMultipleNodeValues(
+      '//*[contains(translate(text(), "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "payment method")]/../self::*',
+      doc.documentElement
+    ).map(
+      e => {
+        const spans = [...(e as Element).querySelectorAll('span')];
+        const strings = spans.map(se => se.textContent.trim().replace(/[\t\n ]+/g, ' '));
+
+        const interestingString = strings.find(
+          s => s.length < 250 && s.length > 20 && s.match(/.*\d{3}$/));
+        
+        return interestingString;
+      }
+    );
+    // "Item(s) Subtotal: GBP 9.63 Shipping & Handling: GBP 4.24 ----- Total before tax: GBP 13.87 Estimated tax to be collected: GBP 1.22 ----- Grand Total: GBP 15.09 Payment Method: American Express | Last digits: 1416 Billing address Mr Philip Mulcahy Somewhere in the UK"
+
+    const map_payment_field = function(pattern: RegExp) {
+      return new_style_payments.map(
+        function(s) {
+          const x = RegExp(pattern);
+          const y = x.exec(util.defaulted(s, ''));
+          if (y == null) {
+            return '';
+          }
+
+          return y[1].trim();
+        }
+      );
+    };
+
+    const card_names: string[] = map_payment_field(
+      /Payment Method: ([A-Za-z0-9 /]*) \|/i,
+    );
+
+    const card_number_suffixes = map_payment_field(
+      /Last digits: (\d+)/,
+    );
+
+    const payment_amounts = map_payment_field(
+      /Grand Total: (.*) Payment Method/,
+    );
+
+    const count = Math.min(
+      ...[card_names, card_number_suffixes, payment_amounts].map(
+        l => l.length
+      )
+    );
+
+    const payments = [];
+    let i = 0;
+    for ( i = 0; i < count; i++ ) {
+      payments.push(
+        card_names[i] +
+          ' ending in ' + card_number_suffixes[i] + ': '
+        + payment_amounts[i]
+      );
+    }
+
+    return payments;
+  };
+  const strategies = [
+    strategy_1,
+    strategy_2,
+    // strategy_3,
+  ];
+
   let i: number = 0;
 
   for ( i = 0; i < strategies.length; i++ ) {
