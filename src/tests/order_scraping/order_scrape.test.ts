@@ -118,11 +118,13 @@ async function testOneOrderTarget(
 
 async function runAllOrderTests():  Promise<ITestResult[]> {
   const targets = order_data.discoverTestData()
-      // .filter(target => target.order_id == '002-9651082-1715432')
+      // .filter(target => target.order_id == '002-9651082-1715432')  // @philipmulcahy amazon.com
       // .filter(target => target.order_id == '026-5653597-4769168')  // @philipmulcahy
       // .filter(target => target.order_id == '111-0193776-6839441')  // @ronindesign
       // .filter(target => target.order_id == '112-1097135-4205023')
       // .filter(target => target.order_id == '111-7327625-5652241')  // @alfredoagg
+      // .filter(target => target.order_id == '702-7505549-3590660')  // @belilan
+      // .filter(target => target.order_id == '111-2830238-7935455')  // @arnie-lang
       // .filter(target => target.order_id == '114-0199479-3410664')
       // .filter(target => target.order_id == '114-0571216-2380247')  // @Sunshine-Oh-My
       // .filter(target => target.order_id == '114-2140650-5679427')
