@@ -118,11 +118,11 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
     );
     // "Item(s) Subtotal: GBP 9.63 Shipping & Handling: GBP 4.24 ----- Total before tax: GBP 13.87 Estimated tax to be collected: GBP 1.22 ----- Grand Total: GBP 15.09 Payment Method: American Express | Last digits: 1416 Billing address Mr Philip Mulcahy Somewhere in the UK"
 
-    const map_payment_field = function(pattern: string) {
+    const map_payment_field = function(pattern: RegExp) {
       return new_style_payments.map(
         function(s) {
-          const x = RegExp(pattern);
-          const y = x.exec(util.defaulted(s, ''));
+          const y = pattern.exec(util.defaulted(s, ''));
+
           if (y == null) {
             return '';
           }
@@ -133,15 +133,15 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
     };
 
     const card_names: string[] = map_payment_field(
-      'Payment Method: ([A-Za-z0-9 /]*) \\|'
+      /Payment Method: ([A-Za-z0-9 /]*) \|/,
     );
 
     const card_number_suffixes = map_payment_field(
-      'Last digits: (\\d+)'
+      /Last digits: (\d+)/i,
     );
 
     const payment_amounts = map_payment_field(
-      'Grand Total: (.*) Payment Method'
+      /Grand Total: (.*) Payment Method/i,
     );
 
     const count = Math.min(
