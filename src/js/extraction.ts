@@ -163,7 +163,27 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
     return payments;
   };
 
-  const strategies = [strategy_1, strategy_2];
+  const strategy_3 = () => {
+    const roots = findMultipleNodeValues(
+      '//*[@data-component="viewPaymentPlanSummaryWidget"]//*[contains(@class, "pmts-payments-instrument-detail-box")]',
+      doc.documentElement
+    );
+
+    // remove non visible text such as scripts and styles
+    for (const r of roots) {
+      for (const tag of ['script', 'style']) {
+        (r as Element).querySelectorAll(tag).forEach(el => el.remove());
+      }
+    }
+
+    const texts = roots.map(
+      e => e.textContent?.replace(/\s+/g, ' ').trim()
+    );
+
+    return texts;
+  }
+
+  const strategies = [strategy_1, strategy_2, strategy_3];
   const payments = firstMatchingStrategy(strategies, ['UNKNOWN']);
   return payments;
 }
