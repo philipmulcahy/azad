@@ -164,22 +164,8 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
   };
 
   const strategies = [strategy_1, strategy_2];
-  let i: number = 0;
-
-  for ( i = 0; i < strategies.length; i++ ) {
-    const strategy = strategies[i];
-    try {
-      const payments = strategy();
-
-      if (payments && payments.length) {
-        return payments;
-      }
-    } catch (ex) {
-      console.warn('strategy ' + i + ' blew up with ' + ex);
-    }
-  }
-
-  return ['UNKNOWN'];
+  const payments = firstMatchingStrategy(strategies, ['UNKNOWN']);
+  return payments;
 }
 
 /*
