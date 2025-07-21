@@ -101,7 +101,7 @@ async function testOneOrderTarget(
       }
     } catch(ex) {
       console.error(ex!.toString());
-      result.defects.push(ex!.toString());
+      result.defects.push(`${key}: ${ex!.toString()}`);
     }
   }
 
