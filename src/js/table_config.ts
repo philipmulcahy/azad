@@ -287,13 +287,16 @@ const ORDER_COLS: colspec.ColSpec[] = [
   }, {
     field_name: 'payments',
     render_func: (order: azad_entity.IEntity, td: HTMLElement) => {
+      // TODO replace then with await
       return (order as azad_order.IOrder).payments().then( payments => {
         const ul = td.ownerDocument!.createElement('ul');
         td.textContent = '';
+
         payments.forEach( async (payment: any) => {
           const li = document.createElement('li');
           ul.appendChild(li);
           const detail_url = await (order as azad_order.IOrder).detail_url();
+
           li.innerHTML = util.safe_new_tab_link(
             detail_url,
             (payment ? payment : '-') + '; '

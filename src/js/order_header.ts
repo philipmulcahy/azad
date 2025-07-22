@@ -126,6 +126,7 @@ function reallyExtractOrderHeader(
     if (list_url) {
       const list_url_match = list_url.match(
         RegExp('.*//([^/]*)'));
+
       if (list_url_match) {
         return util.defaulted(list_url_match[1], '');
       }
@@ -157,7 +158,10 @@ function reallyExtractOrderHeader(
   // We replace it (where we know the search pattern for the country)
   // with information from the order detail page.
   const total = extraction.getField2(
-    ['.//div[contains(span,"Total")]/../div/span[contains(@class,"value")]'],
+    [
+      './/div[contains(span,"Total")]/../div/span[contains(@class,"value")]',
+      './/div[contains(span,"Total")]/../div[last()]/span',
+    ],
     elem,
     '',
     context

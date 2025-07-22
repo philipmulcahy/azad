@@ -164,7 +164,6 @@ export function orderIdRegExp(): RegExp {
 
 export function dateToDateIsoString(d: Date): string {
     return d.toISOString().substr(0,10);
-
 }
 
 export async function get_settled_and_discard_rejects<T>(

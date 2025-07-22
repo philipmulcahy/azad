@@ -11,16 +11,17 @@ test('detail extraction', () => {
   const order_detail_html = order_data.order_D01_9960417_3589456_html();
   const context = 'detail_extraction_test';
   const doc = new jsdom.JSDOM(order_detail_html).window.document;
+  const def = 'N/A';
 
   const basic: string = extraction.by_regex(
     [
       '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(., "VAT: ")]]'
     ],
     /VAT: (?:[^-$£€0-9]*)([-$£€0-9.]*)/,
-    'N/A',
+    def,
     doc.documentElement,
     context,
-  );
+  ) ?? def;
 
   expect(basic).toEqual('£0.90');
 });

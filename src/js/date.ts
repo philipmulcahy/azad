@@ -57,12 +57,17 @@ function  getMom(ds: string) {
 }
 
 export function normalizeDateString(ds: string): string {
-    if ( !ds ) { return "N/A"; }
+    if (!ds) {
+      return "N/A";
+    }
+
     const mom = getMom(ds);
+
     if (!mom) {
         console.warn('could not parse date: ' + ds);
         return ds;
     }
+
     return localDateFromMoment(mom);
 }
 
