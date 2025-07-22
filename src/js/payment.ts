@@ -4,8 +4,13 @@ import * as extraction from './extraction';
 import { sprintf } from 'sprintf-js';
 import * as util from './util';
 
-export function payments_from_invoice(doc: HTMLDocument): string[] {
+export function payments_from_invoice(
+  invoiceDoc: HTMLDocument,
+  defaultDate: Date | null,
+  defaultAmount: string,
+): string[] {
   // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
+  // or a truncated version (card details only).
   function strategy_1(): string[] {
     const payments: string[] = extraction.findMultipleNodeValues(
       [
@@ -18,7 +23,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
           label
         )
       ).join('|'),
-      doc.documentElement
+      invoiceDoc.documentElement
     ).map(function(row){
       return util.defaulted(
         row.textContent
@@ -30,10 +35,11 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
     });
     return payments;
   };
+
   function strategy_2(): string[] {
     const new_style_payments = extraction.findMultipleNodeValues(
       '//*[contains(text(), "Payment Method")]/../self::*',
-      doc.documentElement
+      invoiceDoc.documentElement
     ).map(
       e => e.textContent?.replace(/\s+/g, ' ').trim()
     );
@@ -73,6 +79,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
 
     const payments = [];
     let i = 0;
+
     for ( i = 0; i < count; i++ ) {
       payments.push(
         card_names[i] +
@@ -87,7 +94,7 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
   function strategy_3(): string[] {
     const roots = extraction.findMultipleNodeValues(
       '//*[@data-component="viewPaymentPlanSummaryWidget"]//*[contains(@class, "pmts-payments-instrument-detail-box")]',
-      doc.documentElement
+      invoiceDoc.documentElement
     );
 
     // remove non visible text such as scripts and styles
@@ -101,10 +108,21 @@ export function payments_from_invoice(doc: HTMLDocument): string[] {
       e => e.textContent?.replace(/\s+/g, ' ').trim() ?? ''
     );
 
+    if (texts.length === 1 && defaultDate && defaultAmount !== '') {
+      const dateString = util.dateToDateIsoString(defaultDate);
+
+      return [
+        `${texts[0]}: ${dateString}: ${defaultAmount}`,
+      ];
+    }
+
     return texts;
   }
 
-  const strategies = [strategy_1, strategy_2, strategy_3];
-  const payments = extraction.firstMatchingStrategy<string[]>(strategies, ['UNKNOWN']);
+  const payments = extraction.firstMatchingStrategy<string[]>(
+    [strategy_1, strategy_2, strategy_3],
+    ['UNKNOWN']
+  );
+
   return payments;
 }
