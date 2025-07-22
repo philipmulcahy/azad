@@ -4,6 +4,7 @@ import * as date from './date';
 import * as extraction from './extraction';
 import * as order_details from './order_details';
 import * as order_header from './order_header';
+import * as pmt from './payment';
 import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import * as util from './util';
@@ -56,7 +57,7 @@ export class OrderImpl {
 
     const event_converter = function(evt: any): Payments{
       const doc = util.parseStringToDOM( evt.target.responseText );
-      const payments = extraction.payments_from_invoice(doc);
+      const payments = pmt.payments_from_invoice(doc);
       // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
       return payments;
     }.bind(this);
