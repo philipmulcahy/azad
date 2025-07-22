@@ -166,11 +166,14 @@ function reallyExtractOrderHeader(
   console.debug('total direct:', total);
 
   const who = extraction.getField2(
-    ['.//div[contains(@class,"recipient")]//span[@class="trigger-text"]'],
+    [
+      './/div[contains(@class,"recipient")]//span[@class="trigger-text"]',
+      './/div[contains(@id,"shipToInsertionNode")]//a'
+    ],
     elem,
     '',
     context,
-  );
+  ).trim();
 
   return {
     id: id,
