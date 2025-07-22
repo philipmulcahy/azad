@@ -125,6 +125,9 @@ function extractDetailFromDoc(
         // Physical orders 2025.
         './/*[contains(@class,"displayAddressFullName")]',
 
+        // .com physical orders 2025.
+        './/div[@data-component="shippingAddress"]/ul/li[1]',
+
         // TODO: seems brittle, depending on the precise path of the element.
         // US Digital.
         './/table[contains(@class,"sample")]/tbody/tr/td/div/text()[2]',
@@ -136,7 +139,7 @@ function extractDetailFromDoc(
       doc_elem,
       '',  // default value
       context,
-    );
+    ).trim();
 
     return x;
   };
