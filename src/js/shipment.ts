@@ -66,10 +66,7 @@ export async function get_shipments(
       doc_elem);
   }
 
-  let elems = strategy_a();
-  if (elems.length == 0) {
-    elems = strategy_b();
-  }
+  const elems = extraction.firstMatchingStrategy([strategy_a, strategy_b], []);
 
   const shipment_promises = elems.map(e => shipment_from_elem(
     e as HTMLElement,
@@ -201,6 +198,7 @@ async function shipment_from_elem(
                       extract_shipment_id(tracking_link) :
                       '';
   const refund: string = get_refund(shipment_elem);
+
   return {
     shipment_id: shipment_id,
     items: await item.extractItems(shipment_elem, order_header, scheduler, context),
@@ -233,7 +231,7 @@ function is_delivered(shipment_elem: HTMLElement): Delivered {
     return Delivered.YES;
   }
 
-  const text = shipment_elem.textContent.toLowerCase();
+  const text = shipment_elem.textContent?.toLowerCase().trim() ?? '';
 
   if (text.includes('delivered')) {
     return Delivered.YES;

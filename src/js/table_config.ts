@@ -1,4 +1,4 @@
-/* Copyright(c) 2024 Philip Mulcahy. */
+/* Copyright(c) 2024,2025 Philip Mulcahy. */
 
 import * as azad_entity from './entity';
 import * as azad_item from './item';
@@ -532,7 +532,8 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
     field_name: 'delivered',
     render_func: async function(shipment_obj: azad_entity.IEntity, td: HTMLElement) {
       const s = shipment_obj as order_util.IEnrichedShipment;
-      td.textContent = shipment.Delivered[s.delivered];
+      const statusString = shipment.Delivered[s.delivered];
+      td.textContent = statusString;
       return null;
     },
     is_numeric: false,
