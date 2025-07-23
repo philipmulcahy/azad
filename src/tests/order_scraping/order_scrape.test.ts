@@ -2,6 +2,7 @@
 
 import * as azad_item from '../../js/item';
 import * as azad_order from '../../js/order';
+import {dateToDateIsoString} from '../../js/date';
 import * as fs from 'fs';
 import * as order_data from '../fake_order';
 const process = require('process');
@@ -59,7 +60,7 @@ async function testOneOrderTarget(
       console.log('key:', key, expected_value, actual_value);
 
       if ( key.toLowerCase().includes('date') ) {
-        actual_value = util.dateToDateIsoString(actual_value as Date);
+        actual_value = dateToDateIsoString(actual_value as Date);
       }
 
       if ( key == 'item_list' ) {

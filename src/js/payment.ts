@@ -1,5 +1,6 @@
 /* Copyright(c) 2025 Philip Mulcahy. */
 
+import {dateToDateIsoString} from './date';
 import * as extraction from './extraction';
 import { sprintf } from 'sprintf-js';
 import * as util from './util';
@@ -109,7 +110,7 @@ export function payments_from_invoice(
     );
 
     if (texts.length === 1 && defaultDate && defaultAmount !== '') {
-      const dateString = util.dateToDateIsoString(defaultDate);
+      const dateString = dateToDateIsoString(defaultDate);
 
       return [
         `${texts[0]}: ${dateString}: ${defaultAmount}`,

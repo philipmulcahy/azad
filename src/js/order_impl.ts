@@ -53,14 +53,14 @@ export class OrderImpl {
     defaultAmount: string,
   ): Promise<Payments> {
     if (this.header.id?.startsWith('D')) {
-      const date = this.header.date ?
-        util.dateToDateIsoString(this.header.date) :
+      const d = this.header.date ?
+        date.dateToDateIsoString(this.header.date) :
         '';
 
       return Promise.resolve([
         this.header.total ?
-          date + ': ' + this.header.total :
-          date
+          d + ': ' + this.header.total :
+          d
       ]);
     }
 

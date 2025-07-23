@@ -73,3 +73,6 @@ export function normalizeDateString(ds: string): string {
 
 export type DateFilter = (d: Date|null) => boolean;
 
+export function dateToDateIsoString(d: Date): string {
+    return d.toISOString().substr(0,10);
+}

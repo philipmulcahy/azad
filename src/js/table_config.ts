@@ -5,6 +5,7 @@ import * as azad_item from './item';
 import * as azad_order from './order';
 import * as colspec from './colspec';
 import * as datatable_wrap from './datatable_wrap';
+import {dateToDateIsoString} from './date';
 import * as order_util from './order_util';
 import * as settings from './settings';
 import * as shipment from './shipment';
@@ -221,7 +222,7 @@ const ORDER_COLS: colspec.ColSpec[] = [
       ): Promise<null> {
         const order = entity as azad_order.IOrder;
         const d: Date|null = await order.date();
-        td.innerHTML = d ? util.dateToDateIsoString(d): '?';
+        td.innerHTML = d ? dateToDateIsoString(d): '?';
         return null;
       },
     is_numeric: false,
@@ -360,7 +361,7 @@ const ITEM_COLS: colspec.ColSpec[] = [
     ): Promise<null> {
       const item = entity as azad_item.IItem;
       const date = item.order_header.date;
-      td.innerHTML = date ? util.dateToDateIsoString(date): '?';
+      td.innerHTML = date ? dateToDateIsoString(date): '?';
       return Promise.resolve(null);
     },
     is_numeric: false,
@@ -523,7 +524,7 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
     ): Promise<null> {
       const shipment = entity as order_util.IEnrichedShipment;
       const order_date = shipment.order.date;
-      td.innerHTML = order_date ? util.dateToDateIsoString(order_date): '?';
+      td.innerHTML = order_date ? dateToDateIsoString(order_date): '?';
       return Promise.resolve(null);
     },
     is_numeric: false,
@@ -582,7 +583,7 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
     ): Promise<null> {
       const t = entity as transaction.Transaction;
       const date = new Date(t.date.toString());
-      const ds = util.dateToDateIsoString(date);
+      const ds = dateToDateIsoString(date);
       td.innerHTML = ds;
       return Promise.resolve(null);
     },
