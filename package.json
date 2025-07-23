@@ -1,7 +1,7 @@
 {
     "name": "azad",
     "private": true,
-    "version": "1.16.10",
+    "version": "1.16.11",
     "description": "This extension extracts order history from your Amazon account.",
     "license": "Apache-2.0",
     "main": "background.js",
