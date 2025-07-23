@@ -32,6 +32,12 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.11
+---------------
+#341 Restoration of many .com order.payments details after Amazon changed invoice format.
+#346 Restoration of order.who (recipient) for .com physical orders (after Amazon changed stuff).
+#336 git hash of build source shown at bottom of control popup, and builds can only be made from clean source tree
+
 Changes 1.16.10
 ---------------
 #320 If amazon provide inconsistent order counts as the scrape progresses, attempt to fetch the greatest number of orders they admit to.
@@ -56,7 +62,6 @@ Changes 1.16.6-8
 #328 make iframe dynamic html fetch workers more visible (and perhaps annoying too: sorry!)
 #330 fix .ca GST and PST scraping
 
-
 Changes 1.16.1-3
 ----------------
 * Faster and more robust transaction fetches
@@ -69,9 +74,6 @@ Changes 1.16.1-3
 Changes 1.16.0
 --------------
 #295 New: Transactions table (premium only)
-  * Not yet filtered by the date range you click on
-  * Limited by the years covered by Amazon - seems to go back ~4 years for me
-  * No progress indication, but caching is very effective
   * might take 5+ minutes for initial scrape...
      ..but incremental scrapes are super quick.
   * Open console log to see progress - it fetches a page at a time, which up to 20 transactions.
@@ -80,14 +82,6 @@ Changes 1.16.0
 #308 some digital subscription orders were only getting their id scraped: nothing else.
   * I suspect this fix will not work for non-english language site variants
   * let me know if you're impacted by filing a new ticket that references #308, and provides an order debug json file (see https://github.com/philipmulcahy/azad/blob/master/README.md#how-to-save-and-send-an-order-debug-json-file)
-
-Changes 1.15.0
---------------
-Clarified cancellation terms: No refunds, because they cost the charity ~5x the refund.
-If you don't unsubscribe before annual auto-renewal, it's on you.
-Chargeback requests not explicitly agreed by me (author) in writing may result in (but not be limited to):
-1) public sharing of your identity to prevent future fraud.
-2) permanent disablement all of extension's free functionality for the offending user.
 
 Source Code
 -------------
@@ -119,4 +113,5 @@ Strangely none of the authors ever follows up with evidence or indeed any reason
 New Commercial Features
 ---------------
 If you seek new commercial features, please read https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md before even thinking about contacting me directly. I am bored of reading proposals from malware distributors.
+
 
