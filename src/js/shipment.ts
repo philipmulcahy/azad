@@ -15,8 +15,8 @@ export interface ITransaction {
 
 export enum Delivered {
   YES = 1,
-  NO,
-  UNKNOWN,
+  NO = 2,
+  UNKNOWN = 3,
 }
 
 export interface IShipment {
@@ -88,6 +88,7 @@ export async function get_shipments(
       shipments[i].transaction = transactions[i];
     }
   }
+
   return shipments;
 }
 
@@ -227,9 +228,21 @@ function get_refund(shipment_elem: HTMLElement): string {
 
 function is_delivered(shipment_elem: HTMLElement): Delivered {
   const attr = shipment_elem.getAttribute('class');
+
   if ((attr as string).includes('shipment-is-delivered')) {
     return Delivered.YES;
   }
+
+  const text = shipment_elem.textContent.toLowerCase();
+
+  if (text.includes('delivered')) {
+    return Delivered.YES;
+  }
+
+  if (text.includes('arriving')) {
+    return Delivered.NO;
+  }
+
   return Delivered.UNKNOWN;
 }
 
