@@ -32,6 +32,12 @@ Bug reports are gratefully accepted (see github link below), with extra points a
 
 Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.12
+---------------
+#338 more robust transaction scraping in the face of adversarially obfuscated html being intermittently served to some users.
+#347 restored many shipment.delivered status values (new amazon html layout).
+#348 missing category scraping for items fixed (new amazon html layout).
+
 Changes 1.16.11
 ---------------
 #341 Restoration of many .com order.payments details after Amazon changed invoice format.
@@ -70,18 +76,6 @@ Changes 1.16.1-3
 * Handled scenario where user asks for transactions while on the transactions page (this was causing confusion in message routing between the background script and the two content scripts).
 #310 transactions fetching (new in 1.16.0) was hardcoded to amazon.co.uk (sorry!)
 #N/A long transaction scrape caused loss of connectivity between content page and background script preventing table display for transactions until user retried (caching means that this retry is quick).
-
-Changes 1.16.0
---------------
-#295 New: Transactions table (premium only)
-  * might take 5+ minutes for initial scrape...
-     ..but incremental scrapes are super quick.
-  * Open console log to see progress - it fetches a page at a time, which up to 20 transactions.
-#307 addressed regression of caching where some pages were being re-scraped too frequently
-  * this should expedite most repeated scrapes
-#308 some digital subscription orders were only getting their id scraped: nothing else.
-  * I suspect this fix will not work for non-english language site variants
-  * let me know if you're impacted by filing a new ticket that references #308, and provides an order debug json file (see https://github.com/philipmulcahy/azad/blob/master/README.md#how-to-save-and-send-an-order-debug-json-file)
 
 Source Code
 -------------
