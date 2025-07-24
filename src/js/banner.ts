@@ -15,7 +15,7 @@ export function addBanner(): void {
       Your results table should appear on this tab, and this message should
       disappear when all the scraped data has been filled in.
       <br/>
-      Until them, you can follow progress by...
+      Until then, you can follow progress by...
       <ul>
         <li>observing the orange and blue progress_bar bar above.</li>
         <li>

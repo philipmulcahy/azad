@@ -15,8 +15,8 @@ export interface ITransaction {
 
 export enum Delivered {
   YES = 1,
-  NO,
-  UNKNOWN,
+  NO = 2,
+  UNKNOWN = 3,
 }
 
 export interface IShipment {
@@ -66,10 +66,7 @@ export async function get_shipments(
       doc_elem);
   }
 
-  let elems = strategy_a();
-  if (elems.length == 0) {
-    elems = strategy_b();
-  }
+  const elems = extraction.firstMatchingStrategy([strategy_a, strategy_b], []);
 
   const shipment_promises = elems.map(e => shipment_from_elem(
     e as HTMLElement,
@@ -88,6 +85,7 @@ export async function get_shipments(
       shipments[i].transaction = transactions[i];
     }
   }
+
   return shipments;
 }
 
@@ -200,6 +198,7 @@ async function shipment_from_elem(
                       extract_shipment_id(tracking_link) :
                       '';
   const refund: string = get_refund(shipment_elem);
+
   return {
     shipment_id: shipment_id,
     items: await item.extractItems(shipment_elem, order_header, scheduler, context),
@@ -227,9 +226,21 @@ function get_refund(shipment_elem: HTMLElement): string {
 
 function is_delivered(shipment_elem: HTMLElement): Delivered {
   const attr = shipment_elem.getAttribute('class');
+
   if ((attr as string).includes('shipment-is-delivered')) {
     return Delivered.YES;
   }
+
+  const text = shipment_elem.textContent?.toLowerCase().trim() ?? '';
+
+  if (text.includes('delivered')) {
+    return Delivered.YES;
+  }
+
+  if (text.includes('arriving')) {
+    return Delivered.NO;
+  }
+
   return Delivered.UNKNOWN;
 }
 

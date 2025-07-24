@@ -4,6 +4,7 @@ import * as date from './date';
 import * as extraction from './extraction';
 import * as order_details from './order_details';
 import * as order_header from './order_header';
+import * as pmt from './payment';
 import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import * as util from './util';
@@ -35,32 +36,49 @@ export class OrderImpl {
     }
 
     this.detail_promise = order_details.extractDetailPromise(
-      this.header, scheduler);
-    this.payments_promise = this.fetch_payments(scheduler);
+      this.header,
+      scheduler,
+    );
+
+    this.payments_promise = this.fetch_payments(
+      scheduler,
+      this.header.date,
+      this.header.total ?? '',
+    );
   }
 
   async fetch_payments(
     scheduler: request_scheduler.IRequestScheduler,
+    defaultDate: Date | null,
+    defaultAmount: string,
   ): Promise<Payments> {
     if (this.header.id?.startsWith('D')) {
-      const date = this.header.date ?
-        util.dateToDateIsoString(this.header.date) :
+      const d = this.header.date ?
+        date.dateToDateIsoString(this.header.date) :
         '';
+
       return Promise.resolve([
         this.header.total ?
-          date + ': ' + this.header.total :
-          date
+          d + ': ' + this.header.total :
+          d
       ]);
     }
 
     const event_converter = function(evt: any): Payments{
-      const doc = util.parseStringToDOM( evt.target.responseText );
-      const payments = extraction.payments_from_invoice(doc);
+      const invoiceDoc = util.parseStringToDOM( evt.target.responseText );
+
+      const payments = pmt.payments_from_invoice(
+        invoiceDoc,
+        defaultDate,
+        defaultAmount,
+      );
+
       // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
       return payments;
     }.bind(this);
 
     const url = this.header.payments_url;
+
     if (!url) {
       throw('cannot fetch payments without payments_url');
     }
@@ -78,6 +96,7 @@ export class OrderImpl {
     } catch (ex) {
       const msg = 'timeout or other error while fetching ' + url +
                   ' for ' + this.header.id + ': ' + ex;
+
       console.error(msg);
       return [];
     }

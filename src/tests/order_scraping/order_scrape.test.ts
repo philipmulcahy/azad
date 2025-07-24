@@ -2,6 +2,7 @@
 
 import * as azad_item from '../../js/item';
 import * as azad_order from '../../js/order';
+import {dateToDateIsoString} from '../../js/date';
 import * as fs from 'fs';
 import * as order_data from '../fake_order';
 const process = require('process');
@@ -59,7 +60,7 @@ async function testOneOrderTarget(
       console.log('key:', key, expected_value, actual_value);
 
       if ( key.toLowerCase().includes('date') ) {
-        actual_value = util.dateToDateIsoString(actual_value as Date);
+        actual_value = dateToDateIsoString(actual_value as Date);
       }
 
       if ( key == 'item_list' ) {
@@ -118,7 +119,7 @@ async function testOneOrderTarget(
 
 async function runAllOrderTests():  Promise<ITestResult[]> {
   const targets = order_data.discoverTestData()
-      // .filter(target => target.order_id == '002-9651082-1715432')
+      // .filter(target => target.order_id == '002-9651082-1715432')  // @philipmulcahy amazon.com
       // .filter(target => target.order_id == '026-5653597-4769168')  // @philipmulcahy
       // .filter(target => target.order_id == '111-0193776-6839441')  // @ronindesign
       // .filter(target => target.order_id == '112-1097135-4205023')

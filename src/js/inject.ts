@@ -6,6 +6,7 @@ import * as azad_order from './order';
 import * as azad_table from './table';
 import * as business from './business';
 import * as csv from './csv';
+import {dateToDateIsoString} from './date';
 import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
 const lzjs = require('lzjs');
@@ -19,7 +20,6 @@ import * as signin from './signin';
 import * as stats from './statistics';
 import * as transaction from './transaction';
 import * as urls from './url';
-import * as util from './util';
 
 let scheduler: request_scheduler.IRequestScheduler | null = null;
 let years: number[] = [];
@@ -110,9 +110,9 @@ async function fetchAndShowOrdersByRange(
   }
 
   const purpose: string
-    = util.dateToDateIsoString(start_date)
+    = dateToDateIsoString(start_date)
     + ' -> '
-    + util.dateToDateIsoString(end_date);
+    + dateToDateIsoString(end_date);
 
   resetScheduler(purpose);
   const latest_year: number = await periods.getLatestYear();

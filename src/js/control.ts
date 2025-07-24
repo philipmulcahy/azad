@@ -275,6 +275,10 @@ function handleYearClick(evt: { target: { value: any; }; }) {
 
 function setVersion() {
   const elem = document.getElementById('azad_version');
+  if (!elem) {
+    return;
+  }
+
   const clean = git_hash.isClean();
   const hash = git_hash.hash();
   elem.textContent = clean ?

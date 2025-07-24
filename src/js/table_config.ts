@@ -1,10 +1,11 @@
-/* Copyright(c) 2024 Philip Mulcahy. */
+/* Copyright(c) 2024,2025 Philip Mulcahy. */
 
 import * as azad_entity from './entity';
 import * as azad_item from './item';
 import * as azad_order from './order';
 import * as colspec from './colspec';
 import * as datatable_wrap from './datatable_wrap';
+import {dateToDateIsoString} from './date';
 import * as order_util from './order_util';
 import * as settings from './settings';
 import * as shipment from './shipment';
@@ -221,7 +222,7 @@ const ORDER_COLS: colspec.ColSpec[] = [
       ): Promise<null> {
         const order = entity as azad_order.IOrder;
         const d: Date|null = await order.date();
-        td.innerHTML = d ? util.dateToDateIsoString(d): '?';
+        td.innerHTML = d ? dateToDateIsoString(d): '?';
         return null;
       },
     is_numeric: false,
@@ -287,13 +288,16 @@ const ORDER_COLS: colspec.ColSpec[] = [
   }, {
     field_name: 'payments',
     render_func: (order: azad_entity.IEntity, td: HTMLElement) => {
+      // TODO replace then with await
       return (order as azad_order.IOrder).payments().then( payments => {
         const ul = td.ownerDocument!.createElement('ul');
         td.textContent = '';
+
         payments.forEach( async (payment: any) => {
           const li = document.createElement('li');
           ul.appendChild(li);
           const detail_url = await (order as azad_order.IOrder).detail_url();
+
           li.innerHTML = util.safe_new_tab_link(
             detail_url,
             (payment ? payment : '-') + '; '
@@ -357,7 +361,7 @@ const ITEM_COLS: colspec.ColSpec[] = [
     ): Promise<null> {
       const item = entity as azad_item.IItem;
       const date = item.order_header.date;
-      td.innerHTML = date ? util.dateToDateIsoString(date): '?';
+      td.innerHTML = date ? dateToDateIsoString(date): '?';
       return Promise.resolve(null);
     },
     is_numeric: false,
@@ -520,7 +524,7 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
     ): Promise<null> {
       const shipment = entity as order_util.IEnrichedShipment;
       const order_date = shipment.order.date;
-      td.innerHTML = order_date ? util.dateToDateIsoString(order_date): '?';
+      td.innerHTML = order_date ? dateToDateIsoString(order_date): '?';
       return Promise.resolve(null);
     },
     is_numeric: false,
@@ -528,7 +532,8 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
     field_name: 'delivered',
     render_func: async function(shipment_obj: azad_entity.IEntity, td: HTMLElement) {
       const s = shipment_obj as order_util.IEnrichedShipment;
-      td.textContent = shipment.Delivered[s.delivered];
+      const statusString = shipment.Delivered[s.delivered];
+      td.textContent = statusString;
       return null;
     },
     is_numeric: false,
@@ -579,7 +584,7 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
     ): Promise<null> {
       const t = entity as transaction.Transaction;
       const date = new Date(t.date.toString());
-      const ds = util.dateToDateIsoString(date);
+      const ds = dateToDateIsoString(date);
       td.innerHTML = ds;
       return Promise.resolve(null);
     },
