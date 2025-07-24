@@ -98,6 +98,7 @@ export function firstMatchingStrategy<T>(
     }
 
     if (t == '') {
+      // this also works for an empty array: it's javascript - what more is there to say?
       return false;
     }
 

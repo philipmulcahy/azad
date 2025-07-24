@@ -1,8 +1,8 @@
-*.swp
 .DS_Store
 .idea
-azad.zip
+*.swp
 azad_*.zip
+azad.zip
 build
 build-node
 docs
