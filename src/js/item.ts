@@ -78,27 +78,33 @@ async function categoriseItems(
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<IItem[]> {
   let show_category_in_items_view = true;
+
   try {
     show_category_in_items_view = await settings.getBoolean(
       'show_category_in_items_view');
-      if (!show_category_in_items_view) {
-        return items;
-      }
+
+    if (!show_category_in_items_view) {
+      return items;
+    }
   } catch(ex) {
     console.log(
       'categoriseItems caught', ex,
       'when looking at settings: maybe we are doing regression testing?');
   }
+
   const completions: Promise<void>[] = [];
+
   items.forEach(async function(item: IItem) {
     const category_promise = getCategoryForProduct(item.url, scheduler);
     completions.push(category_promise.then(_ => {}));
+
     try {
       item.category = await category_promise;
     } catch (_) {
       // We don't care;
     }
   });
+
   await Promise.allSettled(completions);
   return items;
 }
@@ -113,13 +119,15 @@ function getCategoryForProduct(
     (evt) => {
       const productPage = util.parseStringToDOM(evt.target.responseText)
                               .documentElement;
+
       const raw = extraction.by_regex(
-        [ '//*[@id="wayfinding-breadcrumbs_feature_div"]/ul', ],
+        [ '//*[@id="wayfinding-breadcrumbs_feature_div"]//ul', ],
         null,
         '',
         productPage,
         'category'
       );
+
       const tidied = raw!.replace(/\s+/g, ' ').trim();
       return tidied;
     },
