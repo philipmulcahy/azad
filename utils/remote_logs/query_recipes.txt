@@ -10,3 +10,7 @@
 # userid, count
 ./remote_logs/readonly_query.sh \
   "SELECT userid, count(*) from events where userid not like '%mulcahy%' group by 1 order by 1;"
+
+# date, userud, operation, count
+./readonly_query.sh "SELECT substr(event_timestamp,1,10), userid, operation, count(*) \
+  from events where userid not like '%mulcahy%' group by 1,2,3 order by 1,2,3;"
