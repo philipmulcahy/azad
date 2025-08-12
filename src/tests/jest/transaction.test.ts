@@ -82,6 +82,14 @@ describe('can read some transactions', () => {
   });
 
   test(
+    'benhbell', () => {
+      const transactions = scrapePageOfTransactionsFromCannedHtml(
+        './src/tests/azad_test_data/transactions/benhbell/2025-08-07.html');
+
+      expect(transactions.length).toEqual(20);
+  });
+
+  test(
     'DReffects', () => {
       const transactions = scrapePageOfTransactionsFromCannedHtml(
         './src/tests/azad_test_data/transactions/DReffects/2025-06-08.html');
