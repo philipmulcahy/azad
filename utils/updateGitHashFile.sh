@@ -13,8 +13,10 @@ echo "'use strict';" >> ${HASH_FILE}
 
 if [[ -n $DIRT ]]; then
   echo "export function isClean(): boolean { return false; }" >> ${HASH_FILE}
+  echo "export function text(): string { return 'version id: build included uncommitted changes'; }" >> ${HASH_FILE}
 else
   echo "export function isClean(): boolean { return true; }" >> ${HASH_FILE}
+  echo "export function text(): string { return 'version id: ${HASH}'; }" >> ${HASH_FILE}
 fi
 
 echo "export function hash(): string { return '${HASH}'; }" >> ${HASH_FILE}

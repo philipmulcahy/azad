@@ -279,11 +279,8 @@ function setVersion() {
     return;
   }
 
-  const clean = git_hash.isClean();
-  const hash = git_hash.hash();
-  elem.textContent = clean ?
-    `version id: ${hash}` :
-    `version id: build included uncommitted changes`;
+  const text = git_hash.text();
+  elem.textContent = text;
 }
 
 async function handleMonthsClick(evt: { target: { value: any; }; }) {

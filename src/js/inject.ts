@@ -8,6 +8,7 @@ import * as business from './business';
 import * as csv from './csv';
 import {dateToDateIsoString} from './date';
 import * as extraction from './extraction';
+import * as git_hash from './git_hash';
 import * as iframeWorker from './iframe-worker';
 const lzjs = require('lzjs');
 import * as notice from './notice';
@@ -279,6 +280,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
 
 function initialiseContentScript() {
   console.log('Amazon Order History Reporter content script initialising');
+  console.log(git_hash.text());
 
   const isWorker = pageType.isWorker();
   registerContentScript(isWorker);
