@@ -168,7 +168,7 @@ async function extractAllTransactions() {
 function findUsableNextButton(): HTMLInputElement | null {
   try {
     const buttonInputElem = extraction.findSingleNodeValue(
-      '//span[contains(@class, "button")]/span[text()="Next page"]/preceding-sibling::input[not(@disabled)]',
+      '//span[contains(@class, "button")]/span[text()="Next page" or text()="Next page"]/preceding-sibling::input[not(@disabled)]',
       document.documentElement,
       'finding transaction elements'
     ) as HTMLInputElement;
