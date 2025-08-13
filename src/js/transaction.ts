@@ -135,21 +135,31 @@ async function extractAllTransactions() {
   const maxCachedTimestamp = Math.max(
     ...allKnownTransactions.map(t => t.date.getTime()));
 
-  let minNewTimestamp = new Date(3000, 1, 1).getTime();
-  let nextButton = findUsableNextButton() as HTMLElement;
-  let page: Transaction[] = [];
+  let shouldContinue = true;
 
-  do {
-    page = await retryingExtractPageOfTransactions();
+  while(shouldContinue) {
+    const page = await retryingExtractPageOfTransactions();
     console.log('scraped', page.length, 'transactions');
-    minNewTimestamp = Math.min(...allKnownTransactions.map(t => t.date.getTime()));
+    const minNewTimestamp = Math.min(...allKnownTransactions.map(t => t.date.getTime()));
     allKnownTransactions = mergeTransactions(page, allKnownTransactions);
-    nextButton = findUsableNextButton() as HTMLElement;
+    const nextButton = findUsableNextButton() as HTMLElement;
+    const nextButtonFound = nextButton !== undefined && nextButton !== null;
+    console.debug(`next page button ${nextButtonFound ? '': 'not '}found`);
+    const overlappedWithCache = minNewTimestamp < maxCachedTimestamp;
 
-    if (nextButton) {
-      nextButton.click();
+    if (overlappedWithCache) {
+      console.debug('fetched transactions time range are overlapped with cache');
     }
-  } while(nextButton && page && minNewTimestamp >= maxCachedTimestamp)
+
+    shouldContinue = nextButtonFound && !overlappedWithCache;
+
+    if (shouldContinue) {
+      console.log('clicking next page button');
+      nextButton.click();
+    } else {
+      console.log('stopping transaction scrape');
+    }
+  }
 
   putTransactionsInCache(allKnownTransactions);
   return allKnownTransactions;
