@@ -323,6 +323,7 @@ function extractDetailFromDoc(
         '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(.,"VAT: ")]]',
         '//div[contains(@class, "orderSummary")]//*[text()[contains(.,"VAT: ")]]',
         '//div[contains(@id,"od-subtotals")]//span[contains(text(),"VAT") and not(contains(text(),"before") or contains(text(),"Before") or contains(text(),"esclusa") )]/../../..//div[contains(@class,"row-content")]/span',
+        '//div[contains(@id,"od-subtotals")]//*[contains(text(),"VAT") and not(contains(text(),"before") or contains(text(),"Before") or contains(text(),"esclusa") )]/../../../following-sibling::div',
       ]
     );
 
