@@ -219,7 +219,7 @@ function extractDetailFromDoc(
     const a = extraction.by_regex(
       [
         '//div[contains(@id,"od-subtotals")]//' +
-        'span[.//text()[contains(.,"Gift")] or .//text()[contains(.,"Importo Buono Regalo")]]/' +
+        'span[.//text()[(contains(.,"Gift") or contains(.,"Importo Buono Regalo")) and not(contains(., "wrap"))]]' +
         'parent::div/following-sibling::div/span',
 
         '//span[contains(@id, "giftCardAmount-amount")]/text()', // Whole foods or Amazon Fresh.
