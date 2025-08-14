@@ -321,9 +321,11 @@ function extractDetailFromDoc(
         'parent::div/following-sibling::div/span',
 
         '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(.,"VAT: ")]]',
-        '//div[contains(@class, "orderSummary")]//*[text()[contains(.,"VAT: ")]]'
+        '//div[contains(@class, "orderSummary")]//*[text()[contains(.,"VAT: ")]]',
+        '//div[contains(@id,"od-subtotals")]//span[contains(text(),"VAT") and not(contains(text(),"before") or contains(text(),"Before") or contains(text(),"esclusa") )]/../../..//div[contains(@class,"row-content")]/span',
       ]
     );
+
     const a = extraction.by_regex(
       xpaths,
       null,
@@ -331,12 +333,14 @@ function extractDetailFromDoc(
       doc.documentElement,
       context,
     );
+
     if( a != null ) {
       const b = a.match( new RegExp('VAT:' + util.moneyRegEx().source, 'i') );
       if( b !== null ) {
         return b[1];
       }
     }
+
     return util.defaulted(a, '');
   };
 
