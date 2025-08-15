@@ -156,6 +156,7 @@ function get_transactions(order_detail_doc_elem: HTMLElement): ITransaction[] {
     const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
     return transactions;
   }
+
   function strategy_b(): ITransaction[] {
     function transaction_from_elem(elem: HTMLElement): ITransaction {
 
@@ -177,11 +178,12 @@ function get_transactions(order_detail_doc_elem: HTMLElement): ITransaction[] {
     const transactions = transaction_elems.map(e => transaction_from_elem(e as HTMLElement));
     return transactions;
   }
-  const result = util.first_acceptable_non_throwing(
+
+  const result = extraction.firstMatchingStrategy(
     [strategy_a, strategy_b],
-    (result: ITransaction[])=>result.length > 0,
-    []
+    [],
   );
+
   return result ? result : [];  // tslint whingeing about nulls.
 }
 

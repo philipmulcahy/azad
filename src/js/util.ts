@@ -266,24 +266,6 @@ export function is_promise(candidate: any): boolean {
   return false;
 }
 
-export function first_acceptable_non_throwing<T>(
-  strategies: (()=>T)[],
-  acceptable_predicate: ((t: T)=>boolean),
-  default_t: T,
-): T | null {
-  for (const s of strategies) {
-    try {
-      const t = s();
-      if (acceptable_predicate(t)) {
-        return t;
-      }
-    } catch(ex) {
-      console.log('caught:', ex);
-    }
-  }
-  return default_t;
-}
-
 export function safe_new_tab_link(url: string, title: string): string {
   return '<a ' +
          'href="' + url + '" ' +
