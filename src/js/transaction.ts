@@ -140,15 +140,22 @@ async function extractAllTransactions() {
   while(shouldContinue) {
     const page = await retryingExtractPageOfTransactions();
     console.log('scraped', page.length, 'transactions');
-    const minNewTimestamp = Math.min(...allKnownTransactions.map(t => t.date.getTime()));
+
+    const minNewTimestamp = Math.min(
+      ...allKnownTransactions.map(t => t.date.getTime())
+    );
+
     allKnownTransactions = mergeTransactions(page, allKnownTransactions);
     const nextButton = findUsableNextButton() as HTMLElement;
     const nextButtonFound = nextButton !== undefined && nextButton !== null;
     console.debug(`next page button ${nextButtonFound ? '': 'not '}found`);
-    const overlappedWithCache = minNewTimestamp < maxCachedTimestamp;
+    const overlappedWithCache = minNewTimestamp < maxCachedTimestamp
+                              && allKnownTransactions.length > 0;
 
     if (overlappedWithCache) {
-      console.debug('fetched transactions time range are overlapped with cache');
+      console.debug(
+        'fetched transactions time range are overlapped with cache'
+      );
     }
 
     shouldContinue = nextButtonFound && !overlappedWithCache;
@@ -168,7 +175,7 @@ async function extractAllTransactions() {
 function findUsableNextButton(): HTMLInputElement | null {
   try {
     const buttonInputElem = extraction.findSingleNodeValue(
-      '//span[contains(@class, "button")]/span[text()="Next page" or text()="Next page"]/preceding-sibling::input[not(@disabled)]',
+      '//span[contains(@class, "button")]/span[text()="Next page" or text()="Next Page"]/preceding-sibling::input[not(@disabled)]',
       document.documentElement,
       'finding transaction elements'
     ) as HTMLInputElement;
