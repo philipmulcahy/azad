@@ -104,6 +104,14 @@ describe('can read some transactions', () => {
 
       expect(transactions.length).toEqual(20);
   });
+
+  test(
+    'mliupenta', () => {
+      const transactions = scrapePageOfTransactionsFromCannedHtml(
+        './src/tests/azad_test_data/transactions/mliupenta/2025-09-11.html');
+
+      expect(transactions.length).toEqual(20);
+  });
 });
 
 describe (
@@ -127,7 +135,7 @@ describe (
     }
 
     test(
-      'transaction amazon.de',
+      'transaction amazon.de DReffects',
       () => scrapeAndVerify(
         './src/tests/azad_test_data/transactions/DReffects/2025-06-08')
     );
@@ -143,5 +151,12 @@ describe (
       () => scrapeAndVerify(
         './src/tests/azad_test_data/transactions/cmulcahy/2025-06-09')
     );
+
+    test(
+      'transaction amazon.com mliupenta',
+      () => scrapeAndVerify(
+        './src/tests/azad_test_data/transactions/mliupenta/2025-09-11')
+    );
+
   }
 );
