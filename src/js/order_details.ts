@@ -257,7 +257,7 @@ function extractDetailFromDoc(
               'parent::div/following-sibling::div/span',
               label
             )
-          ).join('|') //20191025
+          ).join('|')
         ],
         null,
         null,
@@ -279,7 +279,7 @@ function extractDetailFromDoc(
               'parent::div/following-sibling::div/span',
               label
             )
-          ).join('|') //20191025
+          ).join('|')
         ],
         null,
         null,
@@ -307,37 +307,66 @@ function extractDetailFromDoc(
   }
 
   const vat = function(): string {
-    const xpaths = ['VAT', 'tax', 'TVA', 'IVA'].map(
-      label =>
-        '//div[contains(@id,"od-subtotals")]//' +
-        'span[contains(text(),"' + label + '") ' +
-        'and not(contains(text(),"before") or contains(text(),"Before") or contains(text(),"esclusa") ' +
-        ')]/' +
-        'parent::div/following-sibling::div/span'
-    ).concat(
-      [
-        '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
-        'span[contains(text(),"VAT")]/' +
-        'parent::div/following-sibling::div/span',
+    const vat_words = ['VAT', 'tax', 'TVA', 'IVA'];
 
-        '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(.,"VAT: ")]]',
-        '//div[contains(@class, "orderSummary")]//*[text()[contains(.,"VAT: ")]]'
-      ]
-    );
-    const a = extraction.by_regex(
-      xpaths,
+    const strategy0 = function(): string {
+      const xpaths = vat_words.map(
+        label =>
+          '//div[contains(@id,"od-subtotals")]//' +
+          'span[contains(text(),"' + label + '") ' +
+          'and not(contains(text(),"before") or contains(text(),"Before") or contains(text(),"esclusa") ' +
+          ')]/' +
+          'parent::div/following-sibling::div/span'
+      ).concat(
+        [
+          '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//' +
+          'span[contains(text(),"VAT")]/' +
+          'parent::div/following-sibling::div/span',
+
+          '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(.,"VAT: ")]]',
+          '//div[contains(@class, "orderSummary")]//*[text()[contains(.,"VAT: ")]]'
+        ]
+      );
+      const a = extraction.by_regex(
+        xpaths,
+        null,
+        null,
+        doc.documentElement,
+        context,
+      );
+      if( a != null ) {
+        const b = a.match( new RegExp('VAT:' + util.moneyRegEx().source, 'i') );
+        if( b !== null ) {
+          return b[1];
+        }
+      }
+      return util.defaulted(a, '');
+    };
+
+    const strategy1 = () => extraction.by_regex(
+      [
+        vat_words.map(
+          label => sprintf.sprintf(
+            '//div[contains(@id,"od-subtotals")]//' +
+            'span[.//text()[starts-with(.,"%s")]]/' +
+            'parent::div/following-sibling::div/span',
+            label
+          )
+        ).join('|')
+      ],
       null,
       null,
       doc.documentElement,
       context,
     );
-    if( a != null ) {
-      const b = a.match( new RegExp('VAT:' + util.moneyRegEx().source, 'i') );
-      if( b !== null ) {
-        return b[1];
-      }
-    }
-    return util.defaulted(a, '');
+
+    const s0 = strategy0();
+    const s1 = strategy1();
+  
+    return extraction.firstMatchingStrategy(
+      [strategy0, strategy1],
+      ''
+    );
   };
 
   const us_tax = function(): string {
