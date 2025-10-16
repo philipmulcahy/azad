@@ -4,8 +4,48 @@ import {dateToDateIsoString} from './date';
 import * as extraction from './extraction';
 import { sprintf } from 'sprintf-js';
 import * as util from './util';
+import * as dt from './date';
 
-export function payments_from_invoice(
+export function get_payments(
+  invoiceDoc: HTMLDocument,
+  detailDoc: HTMLDocument,
+  defaultDate: Date | null,
+  defaultAmount: string,
+): string[] {
+  return extraction.firstMatchingStrategy(
+    [ 
+      () => payments_from_invoice(invoiceDoc, defaultDate, defaultAmount),
+      () => [payment_from_detail(detailDoc, defaultDate, defaultAmount)],
+    ],
+    [],
+  );
+}
+
+function payment_from_detail(
+  detailDoc: HTMLDocument,
+  defaultDate: Date | null,
+  defaultAmount: string,
+): string {
+  const card_details = extraction.findMultipleNodeValues(
+    '//*[contains(@class, "paystationpaymentmethod")]',
+    detailDoc.body,
+    'payment_from_detail'
+  );
+
+  if (card_details.length != 1) {
+    return '';
+  }
+
+  const card_detail = card_details[0].textContent;
+  const payment = [
+    card_detail,
+    dt.dateToDateIsoString(defaultDate),
+    defaultAmount
+  ].join(': ');
+  return payment;
+}
+
+function payments_from_invoice(
   invoiceDoc: HTMLDocument,
   defaultDate: Date | null,
   defaultAmount: string,

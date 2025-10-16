@@ -496,12 +496,14 @@ export async function assembleDiagnostics(
 
 export function create(
   header: order_header.IOrderHeader,
+  detailDoc: HTMLDocument,
   scheduler: request_scheduler.IRequestScheduler,
   date_filter: date.DateFilter,
 ): IOrder|null {
   try {
     const impl = new order_impl.OrderImpl(
       header,
+      detailDoc,
       scheduler,
       date_filter,
     );

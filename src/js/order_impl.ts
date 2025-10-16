@@ -18,18 +18,20 @@ export class OrderImpl {
 
   constructor(
     header: order_header.IOrderHeader,
+    detailDoc: HTMLDocument,
     scheduler: request_scheduler.IRequestScheduler,
     date_filter: date.DateFilter,
   ) {
     this.header = header;
     this.detail_promise = null;
     this.payments_promise = null;
-    this._extractOrder(date_filter, scheduler);
+    this._extractOrder(date_filter, scheduler, detailDoc);
   }
 
   _extractOrder(
     date_filter: date.DateFilter,
-    scheduler: request_scheduler.IRequestScheduler
+    scheduler: request_scheduler.IRequestScheduler,
+    detailDoc: HTMLDocument,
   ) {
     if (!date_filter(this.header.date)) {
       throw new Error("Discarding order due to date filter: " + this.header.id);
@@ -42,6 +44,7 @@ export class OrderImpl {
 
     this.payments_promise = this.fetch_payments(
       scheduler,
+      detailDoc,
       this.header.date,
       this.header.total ?? '',
     );
@@ -49,6 +52,7 @@ export class OrderImpl {
 
   async fetch_payments(
     scheduler: request_scheduler.IRequestScheduler,
+    detailDoc: HTMLDocument,
     defaultDate: Date | null,
     defaultAmount: string,
   ): Promise<Payments> {
@@ -67,8 +71,9 @@ export class OrderImpl {
     const event_converter = function(evt: any): Payments{
       const invoiceDoc = util.parseStringToDOM( evt.target.responseText );
 
-      const payments = pmt.payments_from_invoice(
+      const payments = pmt.get_payments(
         invoiceDoc,
+        detailDoc,
         defaultDate,
         defaultAmount,
       );
