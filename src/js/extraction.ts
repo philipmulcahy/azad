@@ -118,6 +118,12 @@ export function firstMatchingStrategy<T>(
       }
     }
 
+    if (Array.isArray(t)) {
+      if (t.length == 0) {
+        return false;
+      }
+    }
+
     return true;
   }
 

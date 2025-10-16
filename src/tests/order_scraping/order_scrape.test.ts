@@ -144,6 +144,7 @@ async function runAllOrderTests():  Promise<ITestResult[]> {
       // .filter(target => target.order_id == '206-1563844-4321133')
       // .filter(target => target.order_id == '701-0109921-6873001')  // @lstn
       // .filter(target => target.order_id == '701-6985978-3679428')  // @belilan
+      .filter(target => target.order_id == '702-0959775-1855435')  // @freddyboy1974
       // .filter(target => target.order_id == 'D01-4607619-0755448')  // @danniboy
       // .filter(target => target.order_id == 'D01-1411651-9583045')  // @philipmulcahy
       // .filter(target => target.order_id == 'D01-8755888-0539825')
