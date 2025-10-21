@@ -67,7 +67,7 @@ function payments_from_invoice(
 
     const card_names: string[] = map_payment_field(
       /Payment Method: ([A-Za-z0-9 /]*) \|/,
-    );
+    ).filter(name => name.length);
 
     const card_number_suffixes = map_payment_field(
       /Last digits: (\d+)/i,

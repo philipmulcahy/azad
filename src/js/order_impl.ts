@@ -42,5 +42,4 @@ export class OrderImpl {
       this.header,
     );
   }
-
 }
