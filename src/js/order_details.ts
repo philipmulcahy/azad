@@ -219,7 +219,7 @@ function extractDetailFromDoc(
     const a = extraction.by_regex(
       [
         '//div[contains(@id,"od-subtotals")]//' +
-        'span[.//text()[contains(.,"Gift")] or .//text()[contains(.,"Importo Buono Regalo")]]/' +
+        'span[.//text()[(contains(.,"Gift") or contains(.,"Importo Buono Regalo")) and not(contains(., "wrap"))]]' +
         'parent::div/following-sibling::div/span',
 
         '//span[contains(@id, "giftCardAmount-amount")]/text()', // Whole foods or Amazon Fresh.
@@ -321,9 +321,12 @@ function extractDetailFromDoc(
         'parent::div/following-sibling::div/span',
 
         '//div[@id="digitalOrderSummaryContainer"]//*[text()[contains(.,"VAT: ")]]',
-        '//div[contains(@class, "orderSummary")]//*[text()[contains(.,"VAT: ")]]'
+        '//div[contains(@class, "orderSummary")]//*[text()[contains(.,"VAT: ")]]',
+        '//div[contains(@id,"od-subtotals")]//span[contains(text(),"VAT") and not(contains(text(),"before") or contains(text(),"Before") or contains(text(),"esclusa") )]/../../..//div[contains(@class,"row-content")]/span',
+        '//div[contains(@id,"od-subtotals")]//*[contains(text(),"VAT") and not(contains(text(),"before") or contains(text(),"Before") or contains(text(),"esclusa") )]/../../../following-sibling::div',
       ]
     );
+
     const a = extraction.by_regex(
       xpaths,
       null,
@@ -331,12 +334,14 @@ function extractDetailFromDoc(
       doc.documentElement,
       context,
     );
+
     if( a != null ) {
       const b = a.match( new RegExp('VAT:' + util.moneyRegEx().source, 'i') );
       if( b !== null ) {
         return b[1];
       }
     }
+
     return util.defaulted(a, '');
   };
 
