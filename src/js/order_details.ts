@@ -4,6 +4,7 @@ import * as date from './date';
 import * as extraction from './extraction';
 import * as item from './item';
 import * as order_header from './order_header';
+import * as payment from './payment';
 import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import * as shipment from './shipment';
@@ -24,6 +25,7 @@ export interface IOrderDetails {
   refund: string;
   who: string;
   invoice_url: string;
+  payments: string[];  // this is not the only source of payment information.
 }
 
 export interface IOrderDetailsAndItems {
@@ -144,7 +146,7 @@ function extractDetailFromDoc(
     return x;
   };
 
-  const order_date = function(): Date|null {
+  const order_date: Date|null = function(): Date|null {
     const def_string = (header.date && !isNaN(header.date.getDate())) ?
       date.dateToDateIsoString(header.date):
       null;
@@ -162,9 +164,9 @@ function extractDetailFromDoc(
       return new Date(date.normalizeDateString(d));
     }
     return util.defaulted(header.date, null);
-  };
+  }();
 
-  const total = function(): string {
+  const total: string = function(): string {
     const a = extraction.by_regex(
       [
         '//span[@class="a-color-price a-text-bold"]/text()',
@@ -212,7 +214,7 @@ function extractDetailFromDoc(
               .replace('-', '');
     }
     return util.defaulted(a, '');
-  };
+  }();
 
   // TODO Need to exclude gift wrap
   const gift = function(): string {
@@ -468,7 +470,7 @@ function extractDetailFromDoc(
     return a;
   };
 
-  const invoice_url: string = function (): string {
+  const invoice_url: string = function(): string {
     const suffix: string|null = getAttribute(
       '//a[contains(@href, "/invoice") or contains(@href, "_invoice")]',
       'href',
@@ -481,9 +483,15 @@ function extractDetailFromDoc(
     return '';
   }();
 
+  const payments = () => payment.paymentsFromDetailPage(
+    doc,
+    order_date,
+    total
+  );
+
   const details: IOrderDetails = {
-    date: order_date(),
-    total: total(),
+    date: order_date,
+    total: total,
     postage: postage(),
     postage_refund: postage_refund(),
     gift: gift(),
@@ -495,6 +503,7 @@ function extractDetailFromDoc(
     refund: refund(),
     who: who(),
     invoice_url: invoice_url,
+    payments: payments(),
   };
 
   return details;

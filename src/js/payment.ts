@@ -2,18 +2,23 @@
 
 import {dateToDateIsoString} from './date';
 import * as extraction from './extraction';
+import * as order_header from './order_header';
+import * as req from './request';
+import * as request_scheduler from './request_scheduler';
 import { sprintf } from 'sprintf-js';
 import * as util from './util';
 
-export function payments_from_invoice(
+export type Payments = string[];
+
+function payments_from_invoice(
   invoiceDoc: HTMLDocument,
   defaultDate: Date | null,
   defaultAmount: string,
 ): string[] {
   // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
   // or a truncated version (card details only).
-  function strategy_1(): string[] {
-    const payments: string[] = extraction.findMultipleNodeValues(
+  function strategy_1(): Payments {
+    const payments: Payments = extraction.findMultipleNodeValues(
       [
         'Credit Card transactions',
         'Transactions de carte de crédit'
@@ -37,7 +42,7 @@ export function payments_from_invoice(
     return payments;
   };
 
-  function strategy_2(): string[] {
+  function strategy_2(): Payments {
     const new_style_payments = extraction.findMultipleNodeValues(
       '//*[contains(text(), "Payment Method")]/../self::*',
       invoiceDoc.documentElement
@@ -62,7 +67,7 @@ export function payments_from_invoice(
 
     const card_names: string[] = map_payment_field(
       /Payment Method: ([A-Za-z0-9 /]*) \|/,
-    );
+    ).filter(name => name.length);
 
     const card_number_suffixes = map_payment_field(
       /Last digits: (\d+)/i,
@@ -92,7 +97,7 @@ export function payments_from_invoice(
     return payments;
   };
 
-  function strategy_3(): string[] {
+  function strategy_3(): Payments {
     const roots = extraction.findMultipleNodeValues(
       '//*[@data-component="viewPaymentPlanSummaryWidget"]//*[contains(@class, "pmts-payments-instrument-detail-box")]',
       invoiceDoc.documentElement
@@ -120,10 +125,89 @@ export function payments_from_invoice(
     return texts;
   }
 
-  const payments = extraction.firstMatchingStrategy<string[]>(
+  const payments = extraction.firstMatchingStrategy<Payments>(
     [strategy_1, strategy_2, strategy_3],
     ['UNKNOWN']
   );
 
   return payments;
+}
+
+export function paymentsFromDetailPage(
+  detailDoc: HTMLDocument,
+  defaultOrderDate: Date | null,
+  defaultTotal: string,
+
+): Payments {
+  const card_detailss = extraction.findMultipleNodeValues(
+    '//*[contains(@class, "paystationpaymentmethod")]',
+    detailDoc.documentElement,
+    'order_details_payments',
+  );
+
+  if (card_detailss.length != 1) {
+    return [];
+  }
+  
+  return [
+    [
+      card_detailss[0],
+      defaultOrderDate ? dateToDateIsoString(defaultOrderDate) : '?',
+      defaultTotal,
+    ].join(': ')
+  ];
+}
+
+export async function fetch_payments(
+  scheduler: request_scheduler.IRequestScheduler,
+  orderHeader: order_header.IOrderHeader,
+): Promise<Payments> {
+  if (orderHeader.id?.startsWith('D')) {
+    const d = orderHeader.date?
+      dateToDateIsoString(orderHeader.date) :
+      '';
+
+    return Promise.resolve([
+      orderHeader.total ?
+        d + ': ' + orderHeader.total :
+        d
+    ]);
+  }
+
+  const event_converter = function(evt: any): Payments {
+    const invoiceDoc = util.parseStringToDOM(evt.target.responseText);
+
+    const payments = payments_from_invoice(
+      invoiceDoc,
+      orderHeader.date,
+      orderHeader.total ?? '',
+    );
+
+    // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
+    return payments;
+  };
+
+  const url = orderHeader.payments_url;
+
+  if (!url) {
+    throw('cannot fetch payments without payments_url');
+  }
+
+  try {
+    return await req.makeAsyncStaticRequest<Payments>(
+      url,
+      'fetch_payments',
+      event_converter,
+      scheduler,
+      util.defaulted(orderHeader.id, '9999'), // priority
+      false,  // nocache,
+      'payments for ' + orderHeader.id,  // debug_context
+    );
+  } catch (ex) {
+    const msg = 'timeout or other error while fetching ' + url +
+                ' for ' + orderHeader.id + ': ' + ex;
+
+    console.error(msg);
+    return [];
+  }
 }

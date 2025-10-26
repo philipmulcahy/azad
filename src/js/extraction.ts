@@ -10,9 +10,11 @@ const xpath = require('xpath');
 // Considers only the first match for each xpath.
 export function by_regex(
   xpaths: string[],  // the priority ordered list of regular expressions.
-  regex: RegExp | null,  // if supplied, and matched, the string returned will be first match.
+  regex: RegExp | null,  // if supplied, and matched, the string returned will
+                         // be first match.
   default_value: string|null,
-  elem: HTMLElement,  // the element that will be searched (including its descendants).
+  elem: HTMLElement,  // the element that will be searched (including its
+                      // descendants).
   context: string,  // for log messages and debugging only.
 ): string | null {
   let i;
@@ -98,7 +100,8 @@ export function firstMatchingStrategy<T>(
     }
 
     if (t == '') {
-      // this also works for an empty array: it's javascript - what more is there to say?
+      // this also works for an empty array: it's javascript - what more is
+      // there to say?
       return false;
     }
 
@@ -118,6 +121,12 @@ export function firstMatchingStrategy<T>(
       }
     }
 
+    if (Array.isArray(t)) {
+      if (t.length == 0) {
+        return false;
+      }
+    }
+
     return true;
   }
 
@@ -127,10 +136,13 @@ export function firstMatchingStrategy<T>(
       if (isValid(candidate)) {
         return candidate as T;
       } else {
-        console.debug(`${strategy.name} returned invalid candidate: moving to next strategy or default`);
+        console.debug(
+          strategy.name +
+          'returned invalid candidate: moving to next strategy or default');
       }
     } catch (_ex) {
-      console.debug(`${strategy.name} blew up: moving to next strategy or default`);
+      console.debug(
+        `${strategy.name} blew up: moving to next strategy or default`);
     }
   }
 
@@ -144,7 +156,8 @@ export function firstMatchingStrategy<T>(
  *                returned.
  * @param elem - HTMLElement from which the root of the xpath should launch.
  *               This could be the document's root element.
- * @param context - debugging context - has no effect aside from potentially being logged.
+ * @param context - debugging context - has no effect aside from potentially
+ *                  being logged.
  *
  * @returns the html text or null if the xpath is not matched.
  */
@@ -248,7 +261,8 @@ export function findMultipleNodeValues(
 
     return values;
   } catch( ex ) {
-    throw 'Unknown exception from findMultipleNodeValues: ' + context + ' ' + (ex as string).toString();
+    throw 'Unknown exception from findMultipleNodeValues: ' +
+          context + ' ' + (ex as string).toString();
   }
 }
 
