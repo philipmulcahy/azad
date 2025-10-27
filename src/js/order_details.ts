@@ -310,8 +310,13 @@ function extractDetailFromDoc(
 
   const vat = function(): string {
     const vat_words = ['VAT', 'tax', 'TVA', 'IVA'];
+
+    const vat_words_extended = vat_words
+      .map(w => 'Estimated '.concat(w))
+      .concat(vat_words);
+
     const strategy0 = function(): string {
-      const xpaths = vat_words.map(
+      const xpaths = vat_words_extended.map(
         label =>
           '//div[contains(@id,"od-subtotals")]//' +
           'span[contains(text(),"' + label + '") ' +
@@ -346,10 +351,10 @@ function extractDetailFromDoc(
 
     const strategy1 = () => extraction.by_regex(
       [
-        vat_words.map(
+        vat_words_extended.map(
           label => sprintf.sprintf(
-            '//div[contains(@id,"od-subtotals")]//' +
-            'span[.//text()[starts-with(.,"%s")]]/' +
+            '//div[contains(@id, "od-subtotals")]//' +
+            'span[.//text()[starts-with(., "%s")]]/' +
             'parent::div/following-sibling::div/span',
             label
           )
