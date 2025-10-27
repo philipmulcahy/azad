@@ -203,6 +203,21 @@ function get_one_time_passcode(shipment_elem: HTMLElement): string {
   }
 }
 
+function get_tracking_id_from_text(shipment_elem: HTMLElement): string {
+  try {
+    const text = util.defaulted(shipment_elem.textContent, '');
+    // Match pattern: "Tracking ID: TBA325431380846"
+    const match = text.match(/Tracking ID:\s*([A-Z0-9]+)/i);
+    if (match && match[1]) {
+      return match[1];
+    }
+    return '';
+  } catch(err) {
+    console.log('shipment.get_tracking_id_from_text got ', err);
+    return '';
+  }
+}
+
 async function shipment_from_elem(
   shipment_elem: HTMLElement,
   order_header: order_header.IOrderHeader,
@@ -211,7 +226,15 @@ async function shipment_from_elem(
   site: string,
 ): Promise<IShipment> {
   const tracking_link: string = get_tracking_link(shipment_elem, site);
-  const tracking_id: string = await get_tracking_id(tracking_link, scheduler);
+
+  // Try to get tracking ID directly from the order page first
+  let tracking_id: string = get_tracking_id_from_text(shipment_elem);
+
+  // If not found, fall back to fetching the separate tracking page
+  if (tracking_id === '' && tracking_link !== '') {
+    tracking_id = await get_tracking_id(tracking_link, scheduler);
+  }
+
   const shipment_id = tracking_id != '' ?
                       extract_shipment_id(tracking_link) :
                       '';
