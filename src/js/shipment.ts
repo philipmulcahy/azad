@@ -26,6 +26,7 @@ export interface IShipment {
   status: string;
   tracking_link: string;
   tracking_id: string;
+  one_time_passcode: string;
   transaction: ITransaction|null,
   refund: string;
 }
@@ -187,6 +188,21 @@ function get_transactions(order_detail_doc_elem: HTMLElement): ITransaction[] {
   return result ? result : [];  // tslint whingeing about nulls.
 }
 
+function get_one_time_passcode(shipment_elem: HTMLElement): string {
+  try {
+    const text = util.defaulted(shipment_elem.textContent, '');
+    // Match pattern: "Your one-time password is 907299"
+    const match = text.match(/one-time password is (\d+)/i);
+    if (match && match[1]) {
+      return match[1];
+    }
+    return '';
+  } catch(err) {
+    console.log('shipment.one_time_passcode got ', err);
+    return '';
+  }
+}
+
 async function shipment_from_elem(
   shipment_elem: HTMLElement,
   order_header: order_header.IOrderHeader,
@@ -200,6 +216,7 @@ async function shipment_from_elem(
                       extract_shipment_id(tracking_link) :
                       '';
   const refund: string = get_refund(shipment_elem);
+  const one_time_passcode: string = get_one_time_passcode(shipment_elem);
 
   return {
     shipment_id: shipment_id,
@@ -208,6 +225,7 @@ async function shipment_from_elem(
     status: get_status(shipment_elem),
     tracking_link: tracking_link,
     tracking_id: tracking_id,
+    one_time_passcode: one_time_passcode,
     transaction: null,
     refund: refund,
   };

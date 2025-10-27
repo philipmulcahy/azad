@@ -464,6 +464,16 @@ const ITEM_COLS: colspec.ColSpec[] = [
     is_numeric: false,
     visibility: shipment_info_enabled,
   }, {
+    field_name: 'one-time passcode',
+    render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
+      const ei = await (item as order_util.IEnrichedItem);
+      const s = ei.shipment;
+      const passcode = s.one_time_passcode;
+      td.textContent = passcode;
+    },
+    is_numeric: false,
+    visibility: shipment_info_enabled,
+  }, {
     field_name: 'shipment id',
     render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
       const ei = item as order_util.IEnrichedItem;
@@ -569,6 +579,15 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
       const s = await (item as order_util.IEnrichedShipment);
       const id = s.tracking_id;
       td.textContent = id;
+    },
+    is_numeric: false,
+    visibility: shipment_info_enabled,
+  }, {
+    field_name: 'one-time passcode',
+    render_func: async function(item: azad_entity.IEntity, td: HTMLElement) {
+      const s = await (item as order_util.IEnrichedShipment);
+      const passcode = s.one_time_passcode;
+      td.textContent = passcode;
     },
     is_numeric: false,
     visibility: shipment_info_enabled,
