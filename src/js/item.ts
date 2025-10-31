@@ -58,7 +58,9 @@ export function extractItems(
   const strategies = bareStrategies.map(
     s => () => s(order_elem, order_header, context + ';extractItems') );
 
-  const items = extraction.firstMatchingStrategy(strategies, []);
+  const items = extraction.firstMatchingStrategy(
+    'extractItems', strategies, []);
+
   return categoriseItems(items, scheduler);
 }
 

@@ -69,3 +69,17 @@ export class Statistics {
     }
   }
 }
+
+export class StrategyStats {
+  static reportSuccess(callSiteName: string, strategyIndex: number) {
+    console.debug(
+      `StrategyStats.reportSuccess ${callSiteName}, ${strategyIndex}`
+    );
+  }
+
+  static reportFailure(callSiteName: string) {
+    console.debug(
+      `StrategyStats.reportSuccess ${callSiteName}`
+    );
+  }
+}

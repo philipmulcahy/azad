@@ -79,6 +79,7 @@ function reallyExtractOrderHeader(
     }
 
     const id = extraction.firstMatchingStrategy(
+      'reallyExtractOrderHeader',
       [strategy0, strategy1, strategy2],
       '???-???????-???????',
     );
@@ -115,6 +116,7 @@ function reallyExtractOrderHeader(
     }
 
     const dd: Date = extraction.firstMatchingStrategy<Date>(
+      'orderHeaderDate',
       [strategy0, strategy1],
       new Date('invalid'),
     );

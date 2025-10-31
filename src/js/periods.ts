@@ -172,7 +172,7 @@ export function get_years(orders_page_doc: HTMLDocument): number[] {
   }
 
   const strategies = [strategy0, strategy1].map(s => () => s(orders_page_doc));
-  return extraction.firstMatchingStrategy(strategies, []);
+  return extraction.firstMatchingStrategy('getYears', strategies, []);
 }
 
 export async function init(

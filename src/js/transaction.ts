@@ -76,7 +76,8 @@ export function extractPageOfTransactions(
   const strategies = [transaction0, transaction1].map(
     t => () => t.extractPageOfTransactions(doc));
 
-  return extraction.firstMatchingStrategy(strategies, []);
+  return extraction.firstMatchingStrategy(
+    'extractPageOfTransactions', strategies, []);
 }
 
 async function retryingExtractPageOfTransactions(): Promise<Transaction[]> {

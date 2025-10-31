@@ -126,6 +126,7 @@ function payments_from_invoice(
   }
 
   const payments = extraction.firstMatchingStrategy<Payments>(
+    'paymentsFromInvoice',
     [strategy_1, strategy_2, strategy_3],
     ['UNKNOWN']
   );

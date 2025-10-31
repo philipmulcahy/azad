@@ -367,6 +367,7 @@ function extractDetailFromDoc(
     );
   
     return extraction.firstMatchingStrategy(
+      'extractDetailFromDoc.vat',
       [strategy0, strategy1],
       ''
     );

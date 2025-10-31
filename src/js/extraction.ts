@@ -3,6 +3,7 @@
 /* jshint strict: true, esversion: 6 */
 
 import * as util from './util';
+import * as statistics from './statistics';
 const xpath = require('xpath');
 
 "use strict";
@@ -91,6 +92,7 @@ export function by_regex2(
  * If no element returns a valid T, then return defaultValue.
 */
 export function firstMatchingStrategy<T>(
+  callSiteName: string,  // used to identify the stats for this call site.
   strategies: Array<()=>T|null>,
   defaultValue: T
 ): T {
@@ -130,10 +132,14 @@ export function firstMatchingStrategy<T>(
     return true;
   }
 
-  for (const strategy of strategies) {
+  for (let iStrategy: number = 0; iStrategy < strategies.length; ++iStrategy) {
+    const strategy = strategies[iStrategy];
+
     try {
       const candidate = strategy();
+
       if (isValid(candidate)) {
+        statistics.StrategyStats.reportSuccess(callSiteName, iStrategy);
         return candidate as T;
       } else {
         console.debug(
@@ -146,6 +152,7 @@ export function firstMatchingStrategy<T>(
     }
   }
 
+  statistics.StrategyStats.reportFailure(callSiteName);
   return defaultValue;
 }
 

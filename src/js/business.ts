@@ -108,7 +108,8 @@ async function getBTBGroupKey(): Promise<string> {
 
   function keyFromDocument(doc: HTMLDocument): string {
     const strategies = [strategy0, strategy1].map( s => () => s(doc) );
-    return extraction.firstMatchingStrategy<string>(strategies, '');
+    return extraction.firstMatchingStrategy<string>(
+      'btbGroupKey', strategies, '');
   }
 
   if (btbGroupKey == '') {
