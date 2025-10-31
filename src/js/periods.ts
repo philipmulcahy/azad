@@ -171,17 +171,8 @@ export function get_years(orders_page_doc: HTMLDocument): number[] {
     return years;
   }
 
-  for (const s of [strategy0, strategy1]) {
-    try {
-      const years = s(orders_page_doc);
-      if (years.length) {
-        return years;
-      }
-    } catch(ex) {
-      console.log('get_years caught', ex);
-    }
-  }
-  return [];
+  const strategies = [strategy0, strategy1].map(s => () => s(orders_page_doc));
+  return extraction.firstMatchingStrategy(strategies, []);
 }
 
 export async function init(

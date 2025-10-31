@@ -84,8 +84,6 @@ export function getBaseOrdersPageURL() {
 
 let btbGroupKey: string = '';  // hyper-local cache
 async function getBTBGroupKey(): Promise<string> {
-  type Strategy = (doc: HTMLDocument) => string;
-
   function strategy0(doc: HTMLDocument): string {
     const groupKeyNode = extraction.findSingleNodeValue(
       BTB_KEY_XPATH_0,
@@ -109,20 +107,8 @@ async function getBTBGroupKey(): Promise<string> {
   }
 
   function keyFromDocument(doc: HTMLDocument): string {
-    const strategies = [strategy0, strategy1] as Strategy[];
-    for (const [i, strategy] of strategies.entries()) {
-      try {
-        const candidate: string = strategy(doc);
-        if (candidate) {
-          return candidate
-        }
-      } catch (ex) {
-        console.log('caught while trying a strategy in getBTBGroupKey:', ex);
-        return '';
-      }
-    }
-
-    return '';
+    const strategies = [strategy0, strategy1].map( s => () => s(doc) );
+    return extraction.firstMatchingStrategy<string>(strategies, '');
   }
 
   if (btbGroupKey == '') {

@@ -73,13 +73,10 @@ function filterTransactionsByDateRange(
 export function extractPageOfTransactions(
   doc: Document
 ): Transaction[] {
-  return extraction.firstMatchingStrategy(
-    [
-      () => transaction0.extractPageOfTransactions(doc),
-      () => transaction1.extractPageOfTransactions(doc),
-    ],
-    []
-  );
+  const strategies = [transaction0, transaction1].map(
+    t => () => t.extractPageOfTransactions(doc));
+
+  return extraction.firstMatchingStrategy(strategies, []);
 }
 
 async function retryingExtractPageOfTransactions(): Promise<Transaction[]> {
