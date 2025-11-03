@@ -1,4 +1,7 @@
-/* Copyright(c) 2020 Philip Mulcahy. */
+/* Copyright(c) 2020-2025 Philip Mulcahy. */
+
+import * as gitHash from './git_hash'; 
+import * as urls from './url'; 
 
 export const OStatsKey = {
   QUEUED_COUNT: 0,
@@ -70,16 +73,50 @@ export class Statistics {
   }
 }
 
+class Key {
+  readonly _labels: Map<string, string>;
+
+  constructor(labels: Map<string, string>) {
+    this._labels = new Map<string, string>(labels);
+  }
+
+  toString(): string {
+    return this.keys.map(k => `${k}=${this._labels.get(k)}`).join(',');
+  }
+
+  get keys(): string[] {
+    const keys = [...this._labels.keys()];
+    keys.sort();
+    return keys;
+  }
+}
+
 export class StrategyStats {
+  static readonly _stats = new Map<string, number>();
+  static readonly _gitHash = gitHash.hash() + gitHash.isClean() ? '' : '*';
+  static readonly _site = urls.getSite();
+
+  static _callSiteToKey(callSiteName: string): Key {
+    const labels = new Map<string, string>();
+    labels.set('git_hash', StrategyStats._gitHash);
+    labels.set('site', StrategyStats._site);
+    labels.set('call_site_name', callSiteName);
+    return new Key(labels);
+  }
+
   static reportSuccess(callSiteName: string, strategyIndex: number) {
+    const keyString = StrategyStats._callSiteToKey(callSiteName).toString();
+
     console.debug(
-      `StrategyStats.reportSuccess ${callSiteName}, ${strategyIndex}`
+      `StrategyStats.reportSuccess ${keyString}, ${strategyIndex}`
     );
   }
 
   static reportFailure(callSiteName: string) {
+    const keyString = StrategyStats._callSiteToKey(callSiteName).toString();
+
     console.debug(
-      `StrategyStats.reportSuccess ${callSiteName}`
+      `StrategyStats.reportSuccess ${keyString}`
     );
   }
 }
