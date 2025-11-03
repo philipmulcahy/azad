@@ -80,6 +80,12 @@ class Key {
     this._labels = new Map<string, string>(labels);
   }
 
+  setLabel(labelName: string, labelValue: string): Key {
+    const augmented = new Map<string, string>(this._labels);
+    augmented.set(labelName, labelValue);
+    return new Key(augmented);
+  }
+
   toString(): string {
     return this.keys.map(k => `${k}=${this._labels.get(k)}`).join(',');
   }
@@ -105,10 +111,13 @@ export class StrategyStats {
   }
 
   static reportSuccess(callSiteName: string, strategyIndex: number) {
-    const keyString = StrategyStats._callSiteToKey(callSiteName).toString();
+    const keyString = StrategyStats
+      ._callSiteToKey(callSiteName)
+      .setLabel('strategy_index', strategyIndex.toString())
+      .toString();
 
     console.debug(
-      `StrategyStats.reportSuccess ${keyString}, ${strategyIndex}`
+      `StrategyStats.reportSuccess ${keyString}`
     );
   }
 
