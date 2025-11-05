@@ -8,7 +8,6 @@
 
 import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
-import * as signin from './signin';
 import * as urls from './url';
 import * as util from './util';
 
@@ -53,7 +52,7 @@ export async function getOrderHeadersSequencePageURL(
   year: number,
   startIndex: number
 ): Promise<string> {
-  const btbGroupKey = await getBTBGroupKey();
+  // const btbGroupKey = await getBTBGroupKey();
 
   // return urls.normalizeUrl(
   //   '/gp/your-account/order-history' +
@@ -82,43 +81,43 @@ export function getBaseOrdersPageURL() {
   return url;
 }
 
-let btbGroupKey: string = '';  // hyper-local cache
-async function getBTBGroupKey(): Promise<string> {
-  function strategy0(doc: HTMLDocument): string {
-    const groupKeyNode = extraction.findSingleNodeValue(
-      BTB_KEY_XPATH_0,
-      doc.documentElement,
-      'getBTBGroupKey#0',
-    ) as HTMLElement;
+// let btbGroupKey: string = '';  // hyper-local cache
+// async function getBTBGroupKey(): Promise<string> {
+//   function strategy0(doc: HTMLDocument): string {
+//     const groupKeyNode = extraction.findSingleNodeValue(
+//       BTB_KEY_XPATH_0,
+//       doc.documentElement,
+//       'getBTBGroupKey#0',
+//     ) as HTMLElement;
 
-    const value = groupKeyNode.getAttribute('value') ?? '';
-    const key = value.replace(/.*-/, '');
-    return key;
-  }
+//     const value = groupKeyNode.getAttribute('value') ?? '';
+//     const key = value.replace(/.*-/, '');
+//     return key;
+//   }
 
-  function strategy1(doc: HTMLDocument): string {
-    const groupKeyNode = extraction.findSingleNodeValue(
-      BTB_KEY_XPATH_1,
-      doc.documentElement,
-      'getBTBGroupKey#1',
-    ) as HTMLElement;
+//   function strategy1(doc: HTMLDocument): string {
+//     const groupKeyNode = extraction.findSingleNodeValue(
+//       BTB_KEY_XPATH_1,
+//       doc.documentElement,
+//       'getBTBGroupKey#1',
+//     ) as HTMLElement;
 
-    return groupKeyNode.getAttribute('value') ?? '';
-  }
+//     return groupKeyNode.getAttribute('value') ?? '';
+//   }
 
-  function keyFromDocument(doc: HTMLDocument): string {
-    const strategies = [strategy0, strategy1].map( s => () => s(doc) );
-    return extraction.firstMatchingStrategy<string>(
-      'btbGroupKey', strategies, '');
-  }
+//   function keyFromDocument(doc: HTMLDocument): string {
+//     const strategies = [strategy0, strategy1].map( s => () => s(doc) );
+//     return extraction.firstMatchingStrategy<string>(
+//       'btbGroupKey', strategies, '');
+//   }
 
-  if (btbGroupKey == '') {
-    const doc = await getBaseOrdersPage();
-    btbGroupKey = keyFromDocument(doc);
-  }
+//   if (btbGroupKey == '') {
+//     const doc = await getBaseOrdersPage();
+//     btbGroupKey = keyFromDocument(doc);
+//   }
 
-  return btbGroupKey;
-}
+//   return btbGroupKey;
+// }
 
 const BTB_KEY_XPATH_0 = '//option[contains(@value, "yoAllOrders-")]';
 const BTB_KEY_XPATH_1 = '//select[@name="selectedB2BGroupKey"]/option[starts-with(@value, "B2B:")]';

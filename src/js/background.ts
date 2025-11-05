@@ -8,7 +8,6 @@ import * as extpay from './extpay_client';
 import * as msg from './message_types';
 import * as remoteLog from './remote_log';
 import * as settings from './settings';
-import * as urls from './url';
 import * as util from './util';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -120,7 +119,6 @@ async function relayToParentOfIframe(
   msg: any,
 ) {
   const tabId = sender?.tab?.id?.toString() ?? '?';
-  const url = sender?.url ?? '?';
 
   const rootKeys = Object.keys(content_ports)
       .filter(k => k.startsWith('azad_inject:'));
@@ -174,22 +172,23 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         advertisePeriods();
         break;
       case 'fetch_url':
-        console.log('initiating fetch_url using iframe', msg);
+        {
+          console.log('initiating fetch_url using iframe', msg);
 
-        iframeWorkerTaskSpecs.set(
-          msg.guid,
-          msg,
-        );
+          iframeWorkerTaskSpecs.set(
+            msg.guid,
+            msg,
+          );
 
-        const purpose = msg.purpose ?? 'fetch url';
+          const purpose = msg.purpose ?? 'fetch url';
 
-        sendToOneContentPage({
-          action: 'start_iframe_worker',
-          guid: msg.guid,
-          url: msg.url,
-          purpose,
-        });
-
+          sendToOneContentPage({
+            action: 'start_iframe_worker',
+            guid: msg.guid,
+            url: msg.url,
+            purpose,
+          });
+        }
         break;
       case 'statistics_update':
         if (control_port) {

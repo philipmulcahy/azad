@@ -170,7 +170,7 @@ export function createIframe(
 
     parent.appendChild(child);
     return child;
-  }
+  };
 
   appendChild(
     container,
@@ -312,7 +312,7 @@ export async function fetchURL(
         url,
         html: msg.html,
       });
-    })
+    });
   });
 
   try {

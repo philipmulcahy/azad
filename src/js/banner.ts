@@ -65,7 +65,8 @@ export function addBanner(): void {
     </td>
   </tr>
 </table>
-  `
+  `;
+
   parent.insertBefore(
     a,
     parent.firstChild

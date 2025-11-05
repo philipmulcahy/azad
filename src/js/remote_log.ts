@@ -13,7 +13,7 @@ export async function log(
   const params = keys.map(
     function(k): string {
       const v: string = msg[k];
-      return `${k}=${v}`
+      return `${k}=${v}`;
     }
   );
 

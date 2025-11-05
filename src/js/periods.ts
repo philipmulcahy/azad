@@ -14,7 +14,7 @@ const yearsPromise = new Promise<number[]>((resolve, _reject) => {
 
   setYears = function(years: number[]) {
     resolve(years);
-  }
+  };
 });
 
 function getCache() {
@@ -90,7 +90,7 @@ async function getUrl(): Promise<string> {
 }
 
 async function extractYears(): Promise<number[]> {
-  const years_key = 'YEARS'
+  const years_key = 'YEARS';
 
   const cached = util.defaulted<number []>(await getCache().get(years_key), []);
   if (cached.length != 0) {
@@ -149,7 +149,7 @@ export function get_years(orders_page_doc: HTMLDocument): number[] {
       .sort();
 
     return years;
-  }
+  };
 
   const  strategy1: Strategy = function(doc: HTMLDocument) {
     const snapshot: Node[] = extraction.findMultipleNodeValues(
@@ -169,7 +169,7 @@ export function get_years(orders_page_doc: HTMLDocument): number[] {
       .sort();
 
     return years;
-  }
+  };
 
   const strategies = [strategy0, strategy1].map(s => () => s(orders_page_doc));
   return extraction.firstMatchingStrategy('getYears', strategies, []);
@@ -182,4 +182,4 @@ export async function init(
   const years = await extractYears();
   setYears(years);
   advertisePeriods(getBackgroundPort);
-};
+}

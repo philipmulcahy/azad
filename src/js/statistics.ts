@@ -132,7 +132,7 @@ export class StrategyStats {
       .map(e => {
         const k = e[0];
         const v = e[1];
-        return `${k}=${v};`
+        return `${k}=${v};`;
       })
       .join('\n');
   }

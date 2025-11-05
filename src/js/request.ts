@@ -94,7 +94,7 @@ function makeXHRTask(
 
       return eventPromise;
     },
-  }
+  };
 }
 
 function makeDynamicFetchTask(
@@ -113,7 +113,7 @@ function makeDynamicFetchTask(
         }
       };
     },
-  }
+  };
 }
 
 export type Event = {
@@ -234,7 +234,7 @@ class AzadRequest<T> {
           priority: this._priority
       },
       this
-    )
+    );
   }
 
   async B_Dequeued(): Promise<void> {

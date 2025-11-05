@@ -40,7 +40,7 @@ function payments_from_invoice(
       );
     });
     return payments;
-  };
+  }
 
   function strategy_2(): Payments {
     const new_style_payments = extraction.findMultipleNodeValues(
@@ -95,7 +95,7 @@ function payments_from_invoice(
     }
 
     return payments;
-  };
+  }
 
   function strategy_3(): Payments {
     const roots = extraction.findMultipleNodeValues(

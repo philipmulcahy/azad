@@ -58,7 +58,7 @@ describe('cache operations', () => {
     const retrieved = await cache.get('my_order');
     const item_parent = await retrieved.items[0].parent_order;
     const other_child_parent = await retrieved.child_thing.parent_order;
-    expect(item_parent.a).toEqual('A')
+    expect(item_parent.a).toEqual('A');
     expect(other_child_parent.a).toEqual('A');
   });
 

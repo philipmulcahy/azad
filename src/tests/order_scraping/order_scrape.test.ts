@@ -73,7 +73,7 @@ async function testOneOrderTarget(
             ].forEach( key => { delete (item as any)[key]; } );
           });
           return item_list;
-        };
+        }
 
         expected_value = strip_uninteresting_fields(
           expected_value as azad_item.IItem[]

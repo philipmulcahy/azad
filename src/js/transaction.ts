@@ -105,7 +105,7 @@ async function retryingExtractPageOfTransactions(): Promise<Transaction[]> {
       console.log(`got ${finalTry.length} transactions`);
       return finalTry;
     }
-  };
+  }
 
   return [];
 }

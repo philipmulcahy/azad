@@ -45,7 +45,7 @@ function reallyExtractOrderHeader(
        .filter( match => match )[0][1];
 
       return id.toString();
-    }
+    };
 
     const strategy1 = function(): string|null {
       const id_node: Node = extraction.findSingleNodeValue(
@@ -65,7 +65,7 @@ function reallyExtractOrderHeader(
       }
 
       return null;
-    }
+    };
 
     const strategy2 = function(): string|null {
       const id_node = extraction.findSingleNodeValue(
@@ -76,7 +76,7 @@ function reallyExtractOrderHeader(
 
       const id = id_node.textContent;
       return id;
-    }
+    };
 
     const id = extraction.firstMatchingStrategy(
       'reallyExtractOrderHeader',
