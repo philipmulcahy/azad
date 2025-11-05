@@ -346,7 +346,7 @@ async function reallyDisplayTransactions(
   beautiful: boolean,
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
 ): Promise<HTMLTableElement> {
-  console.log('amazon_order_history_table.reallyDisplay starting');
+  console.log('amazon_order_history_table.reallyDisplayTransactions starting');
 
   util.clearBody();
   banner.addBanner();
@@ -358,8 +358,7 @@ async function reallyDisplayTransactions(
     throw('unsupported tableType: ' + tableType);
   }
 
-  const table_promise =
-    addTransactionTable(document, transactions, cols);
+  const table_promise = addTransactionTable(document, transactions, cols);
 
   // Wait for table to be there before doing more html stuff.
   const table = await table_promise;
@@ -396,7 +395,7 @@ async function reallyDisplayTransactions(
     },
   });
 
-  console.log('azad.reallyDisplay returning');
+  console.log('azad.reallyDisplayTransactions returning');
   return table;
 }
 
@@ -407,8 +406,7 @@ function addProgressBar(): void {
 function addOrdersCsvButton(
   orders: azad_order.IOrder[],
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
-): void
-{
+): void {
   const title = "download spreadsheet ('.csv')";
 
   util.addButton(
@@ -531,6 +529,9 @@ export function updateProgressBar(statistics: stats.Statistics): void {
 
       if (ratio) {
         progress_indicator.update_progress(ratio);
+        if (ratio == 1.0) {
+          console.log(stats.StrategyStats.toString());
+        }
       }
     }
   }

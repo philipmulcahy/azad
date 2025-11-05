@@ -87,7 +87,7 @@ class Key {
   }
 
   toString(): string {
-    return this.keys.map(k => `${k}=${this._labels.get(k)}`).join(',');
+    return this.keys.map(k => `${k}:${this._labels.get(k)}`).join(',');
   }
 
   get keys(): string[] {
@@ -98,9 +98,15 @@ class Key {
 }
 
 export class StrategyStats {
-  static readonly _stats = new Map<string, number>();
-  static readonly _gitHash = gitHash.hash() + gitHash.isClean() ? '' : '*';
-  static readonly _site = urls.getSite();
+  static readonly _localStats: StrategyStats = new StrategyStats();
+
+  readonly _stats = new Map<string, number>();
+
+  static readonly _gitHash: string = gitHash.hash() +
+    gitHash.isClean() ? '' : '*';
+
+  static readonly _site: string = urls.getSite();
+
 
   static _callSiteToKey(callSiteName: string): Key {
     const labels = new Map<string, string>();
@@ -110,22 +116,37 @@ export class StrategyStats {
     return new Key(labels);
   }
 
-  static reportSuccess(callSiteName: string, strategyIndex: number) {
-    const keyString = StrategyStats
-      ._callSiteToKey(callSiteName)
-      .setLabel('strategy_index', strategyIndex.toString())
-      .toString();
+  increment(key: Key): void {
+    const ks = key.toString();
+    const iOld: number = this._stats.get(ks) ?? 0;
+    const iNew = iOld + 1;
+    this._stats.set(ks, iNew);
+  }
 
-    console.debug(
-      `StrategyStats.reportSuccess ${keyString}`
-    );
+  static toString(): string {
+    return StrategyStats._localStats.toString();
+  }
+
+  toString(): string {
+    return [...this._stats.entries()]
+      .map(e => {
+        const k = e[0];
+        const v = e[1];
+        return `${k}=${v};`
+      })
+      .join('\n');
+  }
+
+  static reportSuccess(callSiteName: string, strategyIndex: number) {
+    const key= StrategyStats
+      ._callSiteToKey(callSiteName)
+      .setLabel('strategy_completed', '')
+      .setLabel('strategy_index', strategyIndex.toString());
+
+    StrategyStats._localStats.increment(key);
   }
 
   static reportFailure(callSiteName: string) {
-    const keyString = StrategyStats._callSiteToKey(callSiteName).toString();
-
-    console.debug(
-      `StrategyStats.reportSuccess ${keyString}`
-    );
+    StrategyStats.reportSuccess(callSiteName, -1);
   }
 }

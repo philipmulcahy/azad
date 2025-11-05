@@ -178,7 +178,7 @@ function registerActionButtons() {
 
     $('#azad_extpay_login_button').on('click', () => {
       if (background_port) {
-        console.log('show payment UI clicked');
+        console.log('show extpay login clicked');
         background_port.postMessage({action: 'show_extpay_login_ui'});
       } else {
         console.warn('show extpay log-in UI clicked, but I have no background port');
