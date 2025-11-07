@@ -1,7 +1,7 @@
 /* Copyright(c) 2020-2025 Philip Mulcahy. */
 
-import * as gitHash from './git_hash'; 
-import * as urls from './url'; 
+import * as gitHash from './git_hash';
+import * as urls from './url';
 
 export const OStatsKey = {
   QUEUED_COUNT: 0,
@@ -102,8 +102,8 @@ export class StrategyStats {
 
   readonly _stats = new Map<string, number>();
 
-  static readonly _gitHash: string = gitHash.hash() +
-    gitHash.isClean() ? '' : '*';
+  static readonly _gitHash: string = gitHash.hash()
+    + (gitHash.isClean() ? '' : '*');
 
   static readonly _site: string = urls.getSite();
 
@@ -123,6 +123,63 @@ export class StrategyStats {
     this._stats.set(ks, iNew);
   }
 
+  serialize(): string {
+    const o = {};
+    for (const e of this._stats.entries()) {
+      const ks: string = e[0].toString();
+      const v: number = e[1];
+      Object.defineProperty(o, ks, {value: v, enumerable: true});
+    }
+    return JSON.stringify(o);
+  }
+
+  static deserialize(json: string): StrategyStats {
+    const o = JSON.parse(json);
+    const stats = new StrategyStats();
+    for (const e of Object.entries(o)) {
+      const ks: string = e[0].toString();
+      const v: number = e[1] as number;
+      stats._stats.set(ks, v);
+    }
+    return stats;
+  }
+
+  add(stats: StrategyStats): StrategyStats {
+    const sum = new StrategyStats();
+
+    for(const e of this._stats.entries()) {
+      const ks: string = e[0].toString();
+      const v: number = e[1];
+      sum._stats.set(ks, v);
+    }
+
+    for(const e of stats._stats.entries()) {
+      const ks: string = e[0].toString();
+      const v = (sum._stats.get(ks) ?? 0) + e[1];
+      sum._stats.set(ks, v);
+    }
+
+    return sum
+  }
+
+  static readonly storageKey = 'Azad_StrategyStats_global';
+
+  static async load(): Promise<StrategyStats> {
+    const results = await chrome.storage.local.get(StrategyStats.storageKey);
+
+    if (results.hasOwnProperty(StrategyStats.storageKey)) {
+      const json = results[StrategyStats.storageKey] as string;
+      return StrategyStats.deserialize(json);
+    }
+
+    return new StrategyStats();
+  }
+
+  async save(): Promise<void> {
+    const json = this.serialize()
+    return chrome.storage.local.set({[StrategyStats.storageKey]: json});
+  }
+
   static toString(): string {
     return StrategyStats._localStats.toString();
   }
@@ -137,10 +194,21 @@ export class StrategyStats {
       .join('\n');
   }
 
+  static async logAndSave(): Promise<void> {
+    console.log('STRATEGYSTATS_LOCAL...');
+    console.log(StrategyStats._localStats.toString());
+
+    const previous = await StrategyStats.load();
+    const updated = previous.add(StrategyStats._localStats);
+    updated.save();
+
+    console.log('STRATEGYSTATS_ALL...');
+    console.log(updated.toString());
+  }
+
   static reportSuccess(callSiteName: string, strategyIndex: number) {
     const key= StrategyStats
       ._callSiteToKey(callSiteName)
-      .setLabel('strategy_completed', '')
       .setLabel('strategy_index', strategyIndex.toString());
 
     StrategyStats._localStats.increment(key);

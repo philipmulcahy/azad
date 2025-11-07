@@ -516,6 +516,7 @@ export function dumpOrderDiagnostics(
   }
 }
 
+let lastSeenProgressRatio: number = -1.0;
 export function updateProgressBar(statistics: stats.Statistics): void {
   if (progress_indicator) {
     const completed = statistics.get(stats.OStatsKey.COMPLETED_COUNT);
@@ -527,11 +528,14 @@ export function updateProgressBar(statistics: stats.Statistics): void {
       const ratio: number = (completed + cache_hits) /
                             (completed + queued + running + cache_hits);
 
-      if (ratio) {
+      if (ratio && ratio != lastSeenProgressRatio) {
         progress_indicator.update_progress(ratio);
+
         if (ratio == 1.0) {
-          console.log(stats.StrategyStats.toString());
+          stats.StrategyStats.logAndSave();
         }
+
+        lastSeenProgressRatio = ratio;
       }
     }
   }
