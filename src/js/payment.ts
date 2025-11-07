@@ -40,7 +40,7 @@ function payments_from_invoice(
       );
     });
     return payments;
-  };
+  }
 
   function strategy_2(): Payments {
     const new_style_payments = extraction.findMultipleNodeValues(
@@ -95,7 +95,7 @@ function payments_from_invoice(
     }
 
     return payments;
-  };
+  }
 
   function strategy_3(): Payments {
     const roots = extraction.findMultipleNodeValues(
@@ -126,6 +126,7 @@ function payments_from_invoice(
   }
 
   const payments = extraction.firstMatchingStrategy<Payments>(
+    'paymentsFromInvoice',
     [strategy_1, strategy_2, strategy_3],
     ['UNKNOWN']
   );

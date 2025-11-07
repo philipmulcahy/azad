@@ -3,7 +3,7 @@ const jsdom = require('jsdom');
 import * as periods from '../../js/periods';
 
 function testOneGetYearsTarget(name: string) {
-  const filePath = `./src/tests/azad_test_data/get_years/${name}.html`
+  const filePath = `./src/tests/azad_test_data/get_years/${name}.html`;
 
   const html_text = fs.readFileSync(filePath, 'utf8');
   const doc = new jsdom.JSDOM(html_text).window.document;

@@ -306,7 +306,7 @@ function extractDetailFromDoc(
       a = null;
     }
     return util.defaulted(a, '');
-  }
+  };
 
   const vat = function(): string {
     const vat_words = ['VAT', 'tax', 'TVA', 'IVA'];
@@ -367,6 +367,7 @@ function extractDetailFromDoc(
     );
   
     return extraction.firstMatchingStrategy(
+      'extractDetailFromDoc.vat',
       [strategy0, strategy1],
       ''
     );

@@ -35,7 +35,7 @@ describe('exercise numeric string parsing', () => {
   });
 
   test( 'comma_as_decimal_more_difficult', () => {
-    expect(util.floatVal(' \u20ac27,58 ')).toEqual(27.58)
+    expect(util.floatVal(' \u20ac27,58 ')).toEqual(27.58);
     expect(util.floatVal('€27,58')).toEqual(27.58);
   });
 

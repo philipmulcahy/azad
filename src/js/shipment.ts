@@ -66,7 +66,8 @@ export async function get_shipments(
       doc_elem);
   }
 
-  const elems = extraction.firstMatchingStrategy([strategy_a, strategy_b], []);
+  const elems = extraction.firstMatchingStrategy(
+    'shipmentElems', [strategy_a, strategy_b], []);
 
   const shipment_promises = elems.map(e => shipment_from_elem(
     e as HTMLElement,
@@ -180,6 +181,7 @@ function get_transactions(order_detail_doc_elem: HTMLElement): ITransaction[] {
   }
 
   const result = extraction.firstMatchingStrategy(
+    'shipmentTransactions',
     [strategy_a, strategy_b],
     [],
   );

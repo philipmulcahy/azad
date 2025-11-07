@@ -46,7 +46,7 @@ export function extractItems(
   scheduler: request_scheduler.IRequestScheduler,
   context: string,
 ): Promise<IItem[]> {
-  const strategies: ItemsExtractor[] = [
+  const bareStrategies: ItemsExtractor[] = [
     strategy0,
     strategy1,
     strategy2,
@@ -55,22 +55,13 @@ export function extractItems(
     strategy5,
   ];
 
-  for (let i=0; i!=strategies.length; i+=1) {
-    const strategy: ItemsExtractor = strategies[i];
-    try {
-      const items = strategy(
-        order_elem,
-        order_header,
-        context + ';extractItems:strategy:' + i,
-      );
-      if (items.length) {
-        return categoriseItems(items, scheduler);
-      }
-    } catch (ex) {
-      console.log('strategy', i, 'caught', ex);
-    }
-  }
-  return Promise.resolve([]);
+  const strategies = bareStrategies.map(
+    s => () => s(order_elem, order_header, context + ';extractItems') );
+
+  const items = extraction.firstMatchingStrategy(
+    'extractItems', strategies, []);
+
+  return categoriseItems(items, scheduler);
 }
 
 async function categoriseItems(
