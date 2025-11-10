@@ -10,18 +10,18 @@ type Difference = string;
 // Be very careful about using this function - it's only intention is to help tests pass where we have
 // potentially dodgy date logic impact.
 function getUTCDateString(d: Date): string {
-    const dd = new Date(d.toUTCString());  // defensive copy, because we're going to do some editing.
+  const dd = new Date(d.toUTCString());  // defensive copy, because we're going to do some editing.
 
-    if (dd.getUTCHours() > 12) {
-        dd.setUTCHours(0);
-        dd.setUTCDate(d.getUTCDate() + 1);  // "magically" this copes with end of month - setting 32 is OK for example.
-    }
+  if (dd.getUTCHours() > 12) {
+      dd.setUTCHours(0);
+      dd.setUTCDate(d.getUTCDate() + 1);  // "magically" this copes with end of month - setting 32 is OK for example.
+  }
 
-    return [
-        dd.getUTCFullYear().toString(),
-        (dd.getUTCMonth() + 1).toString().padStart(2, '0'),
-        dd.getUTCDate().toString().padStart(2, '0'),
-      ].join('-');
+  return [
+    dd.getUTCFullYear().toString(),
+    (dd.getUTCMonth() + 1).toString().padStart(2, '0'),
+    dd.getUTCDate().toString().padStart(2, '0'),
+  ].join('-');
 }
 
 function compareTransactions(a: tn.Transaction, b: tn.Transaction): Difference[] {
@@ -74,11 +74,19 @@ function scrapePageOfTransactionsFromCannedHtml(htmlFilePath: string): tn.Transa
 
 describe('can read some transactions', () => {
   test(
-    'philipmulcahy', () => {
+    'philipmulcahy_I', () => {
       const transactions = scrapePageOfTransactionsFromCannedHtml(
         './src/tests/azad_test_data/transactions/philipmulcahy/2025-06-08.html');
 
       expect(transactions.length).toEqual(20);
+  });
+
+  test(
+    'philipmulcahy_II', () => {
+      const transactions = scrapePageOfTransactionsFromCannedHtml(
+        './src/tests/azad_test_data/transactions/philipmulcahy/2025-11-10.html');
+
+      expect(transactions.length).toEqual(39);
   });
 
   test(
@@ -133,9 +141,15 @@ describe (
     );
 
     test(
-      'transaction amazon.co.uk pmulcahy',
+      'transaction amazon.co.uk pmulcahy I',
       () => scrapeAndVerify(
         './src/tests/azad_test_data/transactions/philipmulcahy/2025-06-08')
+    );
+
+    test(
+      'transaction amazon.co.uk pmulcahy II',
+      () => scrapeAndVerify(
+        './src/tests/azad_test_data/transactions/philipmulcahy/2025-11-10')
     );
 
     test(
