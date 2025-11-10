@@ -33,15 +33,15 @@ function activateIdle(): void {
   actionsShowOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
 }
 
-function activateScraping(years: number[]): void {
-  console.log('activateScraping');
+function activateScrapingUI(years: number[]): void {
+  console.log('activateScrapingUI');
   actionsShowOnly(['azad_stop', 'azad_hide_controls']);
   try {
     updateStateText(
       'scraping ' + (Array.isArray(years) ? years.join(',') : years)
     );
   } catch (ex) {
-    console.log('control.activateScraping blew up with: ', ex);
+    console.log('control.activateScrapingUI blew up with: ', ex);
   }
 }
 
@@ -99,7 +99,7 @@ function connectToBackground() {
               msg.statistics.QUEUED_COUNT + msg.statistics.RUNNING_COUNT
             ) > 0
           ) {
-            activateScraping(msg.purpose);
+            activateScrapingUI(msg.purpose);
           } else {
             activateDone(msg.purpose);
           }
@@ -257,7 +257,7 @@ async function showMonthsButtons(month_counts: number[]): Promise<void> {
 function handleYearClick(evt: { target: { value: any; }; }) {
   const year = evt.target.value;
   const years = [year];
-  activateScraping(years);
+  activateScrapingUI(years);
   if (background_port) {
     console.log('sending scrape_years', year, 'message');
     try {
@@ -287,7 +287,7 @@ async function handleMonthsClick(evt: { target: { value: any; }; }) {
   const month_count = Number(evt.target.value);
   const end_date = new Date();
   const start_date = util.subtract_months(end_date, month_count);
-  activateScraping([month_count]);
+  activateScrapingUI([month_count]);
   if (background_port) {
     console.log('sending scrape_range', start_date, end_date, 'message');
     background_port.postMessage({
