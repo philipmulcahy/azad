@@ -68,7 +68,8 @@ function resetScheduler(purpose: string): void {
 }
 
 async function fetchAndShowOrdersByYears(
-  years: number[]
+  years: number[],
+  client: string,
 ): Promise<HTMLTableElement|undefined> {
   const ezp_mode: boolean = await settings.getBoolean('ezp_mode');
 
@@ -84,21 +85,23 @@ async function fetchAndShowOrdersByYears(
 
   const purpose: string = years.join(', ');
   resetScheduler(purpose);
-  const latest_year: number = await periods.getLatestYear();
+  const latestYear: number = await periods.getLatestYear();
 
-  const order_promises = azad_order.getOrdersByYear(
+  const orderPromises = azad_order.getOrdersByYear(
     years,
     getScheduler(),
-    latest_year,
+    latestYear,
     (_date: Date|null) => true,  // DateFilter predicate
   );
 
-  return azad_table.display(order_promises, true, ports.getBackgroundPort);
+  return azad_table.display(
+    orderPromises, true, ports.getBackgroundPort, client);
 }
 
 async function fetchAndShowOrdersByRange(
   start_date: Date, end_date: Date,
-  beautiful_table: boolean,
+  beautifulTable: boolean,
+  client: string,
 ): Promise<HTMLTableElement|undefined> {
   console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);
 
@@ -131,22 +134,28 @@ async function fetchAndShowOrdersByRange(
     },
   );
 
-  return azad_table.display(orders, beautiful_table, ports.getBackgroundPort);
+  return azad_table.display(
+    orders, beautifulTable, ports.getBackgroundPort, client);
 }
 
 async function fetchShowAndSendItemsByRange(
   start_date: Date,
   end_date: Date,
   destination_extension_id: string,
+  client: string,
 ): Promise<void> {
   await settings.storeBoolean('ezp_mode', true);
-  const original_items_setting = await settings.getBoolean('show_items_not_orders');
+
+  const original_items_setting = await settings.getBoolean(
+    'show_items_not_orders');
+
   await settings.storeBoolean('show_items_not_orders', true);
 
   const table: (HTMLTableElement|undefined) = await fetchAndShowOrdersByRange(
     start_date,
     end_date,
     false,
+    client,
   );
 
   await settings.storeBoolean('show_items_not_orders', original_items_setting);
@@ -206,19 +215,24 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       azad_table.dumpOrderDiagnostics(msg.order_id, getScheduler);
       break;
     case 'scrape_years':
-      years = msg.years;
-      if (years) {
-        fetchAndShowOrdersByYears(years);
+      {
+        const years = msg.years;
+        const client: string = msg.client;
+        if (years) {
+          fetchAndShowOrdersByYears(years, client);
+        }
       }
       break;
     case 'scrape_range':
       {
         const start_date: Date = new Date(msg.start_date);
         const end_date: Date = new Date(msg.end_date);
+        const client: string = msg.client;
         fetchAndShowOrdersByRange(
           start_date,
           end_date,
           true,
+          client,
         );
       }
       break;
@@ -226,10 +240,12 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       {
         const startDate: Date = new Date(msg.start_date);
         const endDate: Date = new Date(msg.end_date);
+        const client: string = msg.client;
         fetchShowAndSendItemsByRange(
           startDate,
           endDate,
           msg.sender_id,
+          client,
         );
       }
       break;
@@ -243,18 +259,20 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       iframeWorker.removeIframeWorker(msg.guid);
       break;
     case 'transactions':
-      console.log('got transactions', msg.transactions);
-
-      (async ()=>{
-        if (!pageType.isWorker()) {
-          await azad_table.displayTransactions(
-            msg.transactions,
-            true,
-            ports.getBackgroundPort,
-          );
-        }
-      })();
-
+      {
+        console.log('got transactions', msg.transactions);
+        const client: string = msg.client;
+        (async ()=>{
+          if (!pageType.isWorker()) {
+            await azad_table.displayTransactions(
+              msg.transactions,
+              true,
+              ports.getBackgroundPort,
+              client,
+            );
+          }
+        })();
+      }
       break;
     case 'clear_cache':
       getScheduler().cache().clear();

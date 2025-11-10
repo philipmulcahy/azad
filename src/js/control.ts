@@ -254,16 +254,18 @@ async function showMonthsButtons(month_counts: number[]): Promise<void> {
   console.log('showMonthButtons(...) buttons wired up');
 }
 
-function handleYearClick(evt: { target: { value: any; }; }) {
+async function handleYearClick(evt: { target: { value: any; }; }) {
   const year = evt.target.value;
   const years = [year];
   activateScrapingUI(years);
+  const tableType = await settings.getString('azad_table_type');
   if (background_port) {
     console.log('sending scrape_years', year, 'message');
     try {
       background_port.postMessage({
         action: 'scrape_years',
         years: years,
+        table_type: tableType,
       });
     } catch (ex) {
       console.log(ex);
@@ -288,12 +290,14 @@ async function handleMonthsClick(evt: { target: { value: any; }; }) {
   const end_date = new Date();
   const start_date = util.subtract_months(end_date, month_count);
   activateScrapingUI([month_count]);
+  const tableType = await settings.getString('azad_table_type');
   if (background_port) {
     console.log('sending scrape_range', start_date, end_date, 'message');
     background_port.postMessage({
       action: 'scrape_range',
       start_date: start_date,
       end_date: end_date,
+      table_type: tableType,
     });
   } else {
     console.warn('background_port not set');
