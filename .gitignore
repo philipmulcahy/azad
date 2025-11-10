@@ -11,3 +11,4 @@ src/js/git_hash.ts
 src/tests/azad_test_data
 tmp
 utils/remote_logs/.venv
+utils/*.svg

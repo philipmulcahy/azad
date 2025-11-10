@@ -7,7 +7,7 @@ digraph messaging {
 	edge [fontname="Helvetica,Arial,sans-serif"]
 	node [shape = circle];
 
-  control -> background [label = "scrape_years" color = "green"];
+  control -> background [label = "scrape_years" color = "green" penwidth = "2.0"];
   control -> background [label = "scrape_range" color = "green"];
   control -> background [label = "check_feature_authorized" color = "orange"];
   control -> background [label = "show_payment_ui" color = "orange"];
@@ -41,7 +41,7 @@ digraph messaging {
 
   background -> content [label = "dump_order_detail" color = "pink"];
   background -> content [label = "scrape_range_and_dump_items" color = "pink"];
-  background -> content [label = "scrape_years" color = "green"];
+  background -> content [label = "scrape_years" color = "green" penwidth = "2.0"];
   background -> content [label = "scrape_range" color = "green"];
   background -> content [label = "start_iframe_worker"];
   background -> content [label = "remove_iframe_worker"];
