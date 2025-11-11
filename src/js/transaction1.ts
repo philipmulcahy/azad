@@ -218,7 +218,7 @@ export class ClassedNode {
   }
 
   get children(): ClassedNode[] {
-    return Array.from(this.element.children)
+    return Array.from(this.element.children??[])
                 .filter(c => c.textContent)
                 .map(c => ClassedNode.create(c as HTMLElement));
   }
