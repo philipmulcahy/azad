@@ -166,6 +166,10 @@ export class ClassedNode {
 
   static _elementMap = new Map<Node, ClassedNode>();
 
+  static clearElementMap(): void {
+    ClassedNode._elementMap.clear();
+  }
+
   // Use create(...) instead
   private constructor(n: HTMLElement) {
     if (n.nodeName == '#text') {
@@ -390,6 +394,8 @@ function transactionFromElement(elem: ClassedNode): Transaction {
 }
 
 export function extractPageOfTransactions(doc: Document): Transaction[] {
+  ClassedNode.clearElementMap();
+
   const rootClassified = ClassedNode.create(doc.documentElement);
 
   const transactionElements = rootClassified.classedDescendants.filter(
