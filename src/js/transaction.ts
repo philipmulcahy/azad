@@ -209,7 +209,7 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
   // latest and greatest take from the page we're on
   let page: Transaction[] = [];
 
-  while(!overlapped()) {
+  while(outerLoopShouldContinue()) {
     commandScroll();
     const latestScrape = await getTransactionsFromPage();
     console.log(`latest scrape got ${latestScrape.length} transactions`);
@@ -226,6 +226,26 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
   putTransactionsInCache(mergedTransactions);
   return mergedTransactions;
 
+  function outerLoopShouldContinue(): boolean {
+    const haveCachedTransactions = cachedTransactions.length > 0;
+    const isOverlapped = overlapped();
+    const wellDry = theWellIsDry();
+
+    if (haveCachedTransactions && !isOverlapped) {
+      return true;
+    }
+
+    if (!wellDry) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // The transactions we have managed to fetch in this scrape
+  // overlapp (chronologically) with the transactions we got from the
+  // extension's cache if this function returns true. If it returns false
+  // then we should continue scraping.
   function overlapped(): boolean {
     return page.map(t => t.date.getTime())
                .some(d => d < maxCachedTimestamp);
@@ -244,7 +264,12 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
     console.log('scrolling down by one page');
 
     const elem = findScrollableElem();
-    elem?.scrollIntoView();
+
+    if (elem != undefined) {
+      elem.scrollIntoView();
+    } else {
+      console.log('no scrollable element found: failed to even try to scroll');
+    }
   }
 
   function findScrollableElem(): HTMLElement | undefined {
