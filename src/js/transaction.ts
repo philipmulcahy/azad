@@ -178,14 +178,15 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
   // What behaviour are we exploiting?
   // ---------------------------------
   // Scrolling down the transaction list extends the list of transactions
-  // displayed on the page without removing the ones at the top.
+  // at the bottom, and at some point starts pruning transactions from the top.
   //
   // Strategy outline
   // ----------------
-  // Grow the page until either:
-  // 1) it overlaps with the stuff in the cache,
+  // Scroll the page while hoovering up new transactions using
+  // mergeTransactions to avoid duplicates, until either:
+  // 1) the merged collection overlaps with the stuff in the cache,
   // or:
-  // 2) it stops growing.
+  // 2) the merged collection stops growing.
   //    We know it has stopped growing because it has stayed the same size
   //    after two cycles of scrolling.
   //
@@ -199,6 +200,9 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
     ...cachedTransactions.map(t => t.date.getTime())
   );
 
+  console.log(`we have ${cachedTransactions.length} transactions in cache`);
+  console.log(`maxCachedTimestamp ${maxCachedTimestamp}`);
+
   // transaction counts from each call to getTransactionsFromPageAfterScroll()
   const counts: number[] = [];
 
@@ -207,7 +211,14 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
 
   while(!overlapped()) {
     commandScroll();
-    page = await getTransactionsFromPage();
+    const latestScrape = await getTransactionsFromPage();
+    console.log(`latest scrape got ${latestScrape.length} transactions`);
+    try {
+      const oldestDateInLatestScrape = latestScrape.map(t => t.date).sort()[0];
+      console.log(`latest scrape min timestamp ${oldestDateInLatestScrape}`);
+    } catch (_) {};
+    page = mergeTransactions(page, latestScrape);
+    console.log(`accumulated ${page.length} transactions`);
     counts.push(page.length);
   }
 
@@ -232,23 +243,15 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
   function commandScroll(): void {
     console.log('scrolling down by one page');
 
-    const evt = new WheelEvent("wheel", {
-      deltaMode: WheelEvent.DOM_DELTA_PAGE,
-      deltaY: -100,
-      bubbles: true,
-      cancelable: true,
-      view: window,
-    });
-
     const elem = findScrollableElem();
-    elem?.dispatchEvent(evt);
+    elem?.scrollIntoView();
   }
 
   function findScrollableElem(): HTMLElement | undefined {
     return (
-      document.querySelector(
+      [...document.querySelectorAll(
         'a[data-testid="transaction-link"]'
-      ) as HTMLElement
+      )].at(-1) as HTMLElement
     ) ?? undefined;
   }
 
@@ -263,7 +266,7 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
       elapsedMillis += INCREMENT_MILLIS;
       console.log('elapsedMillis', elapsedMillis);
       const page = extractPageOfTransactions(document);
-      console.log(`got ${page.length} transactions`);
+      console.log(`scraped ${page.length} transactions`);
 
       if (page.length > 0) {
         // Wait before trying one final time in case amazon code was still
@@ -271,7 +274,7 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
         console.log(`waiting (once) before scraping one last time`);
         await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
         const finalTry = extractPageOfTransactions(document);
-        console.log(`got ${finalTry.length} transactions`);
+        console.log(`scraped ${finalTry.length} transactions`);
         return finalTry;
       }
     }
