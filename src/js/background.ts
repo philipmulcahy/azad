@@ -213,6 +213,9 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         }
 
         break;
+      case 'keepalive':
+        console.debug('got keepalive');
+        break;
       case 'transactions':
         console.log('forwarding transactions');
         sendToOneContentPage(msg);
@@ -223,7 +226,6 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         }
 
         break;
-
       case 'remote_log_with_user_id':
         (
           async () => {

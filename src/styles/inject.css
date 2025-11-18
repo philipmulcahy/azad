@@ -77,6 +77,8 @@
 }
 
 .azad-iframe-worker-container {
+  width: 750px;
+  height: 350px;
   border: solid Orange;
   border-width: 2px;
   padding: 3px;
@@ -84,8 +86,11 @@
 
 
 .azad-iframe-worker {
-  width: 1px;
-  height: 1px;
+  display: block;
+  width: 1250px;
+  height: 1000px;
+  transform: scale(0.25);
+  transform-origin: 0 0;
 }
 
 .azad-iframe-worker-title {

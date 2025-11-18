@@ -3,7 +3,6 @@
 /* jshint strict: true, esversion: 6 */
 
 import * as util from './util';
-import * as statistics from './statistics';
 const xpath = require('xpath');
 
 "use strict";
@@ -83,77 +82,6 @@ export function by_regex2(
   } catch {
     return null;
   }
-}
-
-/*
- * Iterate through strategies, executing its elements until one returns a T,
- * catching and swallowing any exceptions.
- * Null, empty strings and isNaN values are considered as bad as exceptions.
- * If no element returns a valid T, then return defaultValue.
-*/
-export function firstMatchingStrategy<T>(
-  callSiteName: string,  // used to identify the stats for this call site.
-  strategies: Array<()=>T|null>,
-  defaultValue: T
-): T {
-  function isValid(t: T|null): boolean {
-    if (t == null) {
-      return false;
-    }
-
-    if (t == '') {
-      // this also works for an empty array: it's javascript - what more is
-      // there to say?
-      return false;
-    }
-
-    if (typeof(t) == 'undefined') {
-      return false;
-    }
-
-    if (typeof(t) == 'number') {
-      if (isNaN(t)) {
-        return false;
-      }
-    }
-
-    if (t instanceof Date) {
-      if (isNaN(t.getTime())) {
-        return false;
-      }
-    }
-
-    if (Array.isArray(t)) {
-      if (t.length == 0) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  for (let iStrategy: number = 0; iStrategy < strategies.length; ++iStrategy) {
-    const strategy = strategies[iStrategy];
-
-    try {
-      const candidate = strategy();
-
-      if (isValid(candidate)) {
-        statistics.StrategyStats.reportSuccess(callSiteName, iStrategy);
-        return candidate as T;
-      } else {
-        console.debug(
-          strategy.name +
-          'returned invalid candidate: moving to next strategy or default');
-      }
-    } catch (_ex) {
-      console.debug(
-        `${strategy.name} blew up: moving to next strategy or default`);
-    }
-  }
-
-  statistics.StrategyStats.reportFailure(callSiteName);
-  return defaultValue;
 }
 
 /*

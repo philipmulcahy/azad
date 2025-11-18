@@ -6,6 +6,7 @@ import * as order_header from './order_header';
 import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import { sprintf } from 'sprintf-js';
+import * as strategy from './strategy';
 import * as util from './util';
 
 export type Payments = string[];
@@ -125,7 +126,7 @@ function payments_from_invoice(
     return texts;
   }
 
-  const payments = extraction.firstMatchingStrategy<Payments>(
+  const payments = strategy.firstMatchingStrategy<Payments>(
     'paymentsFromInvoice',
     [strategy_1, strategy_2, strategy_3],
     ['UNKNOWN']

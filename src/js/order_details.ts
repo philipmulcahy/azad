@@ -8,6 +8,7 @@ import * as payment from './payment';
 import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import * as shipment from './shipment';
+import * as strategy from './strategy';
 import * as sprintf from 'sprintf-js';
 import * as util from './util';
 
@@ -333,6 +334,7 @@ function extractDetailFromDoc(
           '//div[contains(@class, "orderSummary")]//*[text()[contains(.,"VAT: ")]]'
         ]
       );
+
       const a = extraction.by_regex(
         xpaths,
         null,
@@ -340,12 +342,14 @@ function extractDetailFromDoc(
         doc.documentElement,
         context,
       );
+
       if( a != null ) {
         const b = a.match( new RegExp('VAT:' + util.moneyRegEx().source, 'i') );
         if( b !== null ) {
-          return b[1];
+          return b[1] ?? '';
         }
       }
+
       return util.defaulted(a, '');
     };
 
@@ -361,16 +365,16 @@ function extractDetailFromDoc(
         ).join('|')
       ],
       null,
-      null,
+      '',
       doc.documentElement,
       context,
     );
   
-    return extraction.firstMatchingStrategy(
+    return strategy.firstMatchingStrategy(
       'extractDetailFromDoc.vat',
       [strategy0, strategy1],
       ''
-    );
+    ) ?? '';
   };
 
   const us_tax = function(): string {

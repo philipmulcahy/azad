@@ -1,8 +1,9 @@
-/* Copyright(c) 2023 Philip Mulcahy. */
+/* Copyright(c) 2023-5 Philip Mulcahy. */
 
 import * as date from './date';
 import * as extraction from './extraction';
 import * as sprintf from 'sprintf-js';
+import * as strategy from './strategy';
 import * as urls from './url';
 import * as util from './util';
 
@@ -78,7 +79,7 @@ function reallyExtractOrderHeader(
       return id;
     };
 
-    const id = extraction.firstMatchingStrategy(
+    const id = strategy.firstMatchingStrategy(
       'reallyExtractOrderHeader',
       [strategy0, strategy1, strategy2],
       '???-???????-???????',
@@ -115,7 +116,7 @@ function reallyExtractOrderHeader(
       return ddd;
     }
 
-    const dd: Date = extraction.firstMatchingStrategy<Date>(
+    const dd: Date = strategy.firstMatchingStrategy<Date>(
       'orderHeaderDate',
       [strategy0, strategy1],
       new Date('invalid'),
