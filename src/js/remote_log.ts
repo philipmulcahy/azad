@@ -2,7 +2,7 @@
 
 'use strict';
 
-const URL_STEM = 'https://azad-extension.co.uk/logs';
+const URL_STEM = 'https://azad-extension.co.uk/logs/';
 
 export async function log(
   msg: { [index: string]: string },
