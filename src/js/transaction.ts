@@ -39,15 +39,16 @@ export async function reallyScrapeAndPublish(
   startDate: Date,
   endDate: Date,
 ) {
+  const port = await getPort();
+
   const transactions = findUsableNextButton() !== undefined ?
-    await extractAllTransactionsWithNextButton() :
-    await extractAllTransactionsWithScrolling();
+    await extractAllTransactionsWithNextButton(port) :
+    await extractAllTransactionsWithScrolling(port);
 
   const filtered = filterTransactionsByDateRange(
     transactions, startDate, endDate);
 
   const url = document.URL;
-  const port = await getPort();
 
   try {
     if (port) {
@@ -133,7 +134,9 @@ function mergeTransactions(
   return ts;
 }
 
-async function extractAllTransactionsWithNextButton(): Promise<Transaction[]> {
+async function extractAllTransactionsWithNextButton(
+  port: chrome.runtime.Port | null
+): Promise<Transaction[]> {
   let allKnownTransactions = await getTransactionsFromCache();
 
   const maxCachedTimestamp = Math.max(
@@ -142,6 +145,10 @@ async function extractAllTransactionsWithNextButton(): Promise<Transaction[]> {
   let shouldContinue = true;
 
   while(shouldContinue) {
+    if (port) {
+      port.postMessage({action: 'keepalive'});
+    }
+
     const page = await retryingExtractPageOfTransactions();
     console.log('scraped', page.length, 'transactions');
 
@@ -178,7 +185,9 @@ async function extractAllTransactionsWithNextButton(): Promise<Transaction[]> {
   return allKnownTransactions;
 }
 
-async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
+async function extractAllTransactionsWithScrolling(
+  port: chrome.runtime.Port | null
+): Promise<Transaction[]> {
   // What behaviour are we exploiting?
   // ---------------------------------
   // Scrolling down the transaction list extends the list of transactions
@@ -214,6 +223,10 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
   let page: Transaction[] = [];
 
   while(scrollLoopShouldContinue()) {
+    if (port) {
+      port.postMessage({action: 'keepalive'});
+    }
+
     commandScroll();
     const INCREMENT_MILLIS = 1000;
     await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
