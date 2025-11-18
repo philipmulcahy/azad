@@ -1,0 +1,52 @@
+digraph messaging {
+
+	rankdir=LR;
+
+  fontname="Helvetica,Arial,sans-serif"
+	node [fontname="Helvetica,Arial,sans-serif"]
+	edge [fontname="Helvetica,Arial,sans-serif"]
+	node [shape = circle];
+
+  control -> background [label = "scrape_years" color = "green" penwidth = "2.0"];
+  control -> background [label = "scrape_range" color = "green"];
+  control -> background [label = "check_feature_authorized" color = "orange"];
+  control -> background [label = "show_payment_ui" color = "orange"];
+  control -> background [label = "show_extpay_login_ui" color = "orange"];
+  control -> background [label = "show_extpay_console" color = "orange"];
+  control -> background [label = "clear_cache" color = "red"];
+  control -> background [label = "force_logout" color = "red"];
+  control -> background [label = "abort" color = "red"];
+
+
+  content -> background [label = "transactions" color = "green"];
+  content -> background [label = "scrape_periods" color = "blue"];
+  content -> background [label = "advertise_periods" color = "blue"];
+  content -> background [label = "fetch_url"];
+  content -> background [label = "statistics_update" color = "silver"];
+  content -> background [label = "relayToParent"];
+  content -> background [label = "remote_log_with_user_id"];
+
+  content -> background [label = "remove_cookie" color = "red"];
+  content -> background [label = "open_tab" color = "silver"];
+
+  iframe -> background [label = "get_iframe_task_instructions"];
+  background -> iframe [label = "scrape_periods"];
+  background -> iframe [label = "scrape_transactions"];
+  background -> iframe [label = "fetch_url"];
+
+  background -> control [label = "advertise_periods" color = "blue"];
+  background -> control [label = "statistics_update" color = "silver"];
+  background -> control [label = "authorisation_status" color = "orange"];
+
+
+  background -> content [label = "dump_order_detail" color = "pink"];
+  background -> content [label = "scrape_range_and_dump_items" color = "pink"];
+  background -> content [label = "scrape_years" color = "green" penwidth = "2.0"];
+  background -> content [label = "scrape_range" color = "green"];
+  background -> content [label = "start_iframe_worker"];
+  background -> content [label = "remove_iframe_worker"];
+  background -> content [label = "transactions" color = "green"];
+  background -> content [label = "clear_cache" color = "red"];
+  background -> content [label = "force_logout" color = "red"];
+  background -> content [label = "abort" color = "red"];
+}

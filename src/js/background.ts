@@ -62,7 +62,7 @@ function broadcastToRootContentPages(msg: any): void {
     } catch (ex) {
       console.warn('error when sending msg to content port', ex);
     }
-  } 
+  }
 }
 
 export async function sendToOneContentPage(msg: any) {
@@ -254,19 +254,22 @@ async function handleMessageFromControl(msg: any) {
       case 'scrape_years':
       case 'scrape_range':
         await async function() {
-          const table_type = await settings.getString('azad_table_type');
-
+          const table_type = msg.table_type;
           if (table_type == 'transactions') {
             const guid = uuidv4();
             const purpose = 'scrape transactions';
             msg.action = 'scrape_transactions';
+            msg.client = 'Azad UI';
             msg.guid = guid;
 
             // No site prefix: background page doesn't know about prefixes!
             const url = '/cpe/yourpayments/transactions';
 
             iframeWorkerTaskSpecs.set(guid, msg);
-            sendToOneContentPage({action: 'start_iframe_worker', url, guid, purpose});
+
+            sendToOneContentPage(
+              {action: 'start_iframe_worker', url, guid, purpose}
+            );
           } else {
             console.debug('forwarding:', msg);
             sendToOneContentPage(msg);
@@ -372,7 +375,7 @@ function registerExternalConnectionListener() {
 
     if (!ALLOWED_EXTENSION_IDS.includes(sender.id)) {
       console.log(
-        `Message Ignored: Sender (${sender.id}) is not Whitlisted..`,
+        `Message Ignored: Sender (${sender.id}) is not allow-listed..`,
         message
       );
       return; // don't allow access
@@ -386,6 +389,7 @@ function registerExternalConnectionListener() {
 
       const msg = {
         action: 'scrape_range_and_dump_items',
+        client: 'ezp API',
         start_date: start_date,
         end_date: end_date,
         sender_id: sender.id,
