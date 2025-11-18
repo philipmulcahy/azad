@@ -126,6 +126,10 @@ function mergeTransactions(
   const ts: Transaction[] = restoreDateObjects(
     ss.map(s => JSON.parse(s)));
 
+  console.log(
+    `merged ${a.length} and ${b.length} into ${ts.length} transactions`
+  );
+
   return ts;
 }
 
@@ -209,36 +213,60 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
   // latest and greatest take from the page we're on
   let page: Transaction[] = [];
 
-  while(outerLoopShouldContinue()) {
+  while(scrollLoopShouldContinue()) {
     commandScroll();
+    const INCREMENT_MILLIS = 1000;
+    await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
     const latestScrape = await getTransactionsFromPage();
     console.log(`latest scrape got ${latestScrape.length} transactions`);
     try {
-      const oldestDateInLatestScrape = latestScrape.map(t => t.date).sort()[0];
-      console.log(`latest scrape min timestamp ${oldestDateInLatestScrape}`);
+      const sortedByDate = latestScrape.map(t => t.date).sort();
+      const oldestDateInLatestScrape = sortedByDate[0];
+      const youngestDateInLatestScrape = sortedByDate.at(-1);
+      console.log(
+        `latest scrape: min timestamp ${oldestDateInLatestScrape}, ` +
+        `max timestamp ${youngestDateInLatestScrape}`
+      );
     } catch (_) {};
     page = mergeTransactions(page, latestScrape);
     console.log(`accumulated ${page.length} transactions`);
     counts.push(page.length);
   }
 
-  const mergedTransactions = mergeTransactions(page, cachedTransactions);
-  putTransactionsInCache(mergedTransactions);
-  return mergedTransactions;
+  if (overlapped()) {
+    const mergedTransactions = mergeTransactions(page, cachedTransactions);
+    console.log('overlapped, so cacheing merged transactions');
+    putTransactionsInCache(mergedTransactions);
+    return mergedTransactions;
+  } else {
+    console.log('not overlapped, so only cacheing recently seen transactions');
+    putTransactionsInCache(page);
+    return page;
+  }
 
-  function outerLoopShouldContinue(): boolean {
+  function scrollLoopShouldContinue(): boolean {
     const haveCachedTransactions = cachedTransactions.length > 0;
     const isOverlapped = overlapped();
     const wellDry = theWellIsDry();
 
-    if (haveCachedTransactions && !isOverlapped) {
-      return true;
+    if (tooManyScrolls()) {
+      // experience (during testing) has revealed that an Amazon data
+      // endpoint that's loaded by scrolling serves HTTP429 (with no declared
+      // end time). Let's not accidentally get ourselves locked out.
+      console.log('should not continue scrolling loop because we\'ve scrolled too many times');
+      return false;
+    }
+
+    if (haveCachedTransactions && isOverlapped) {
+      console.log('should not continue scrolling loop because we\'ve overlapped with cached results');
+      return false;
     }
 
     if (!wellDry) {
       return true;
     }
 
+    console.warn('should not continue scrolling loop because we\'re in an unexpected state');
     return false;
   }
 
@@ -258,6 +286,10 @@ async function extractAllTransactionsWithScrolling(): Promise<Transaction[]> {
     }
 
     return counts.at(-1) == counts.at(-3);  // compare last with third last.
+  }
+
+  function tooManyScrolls(): boolean {
+    return counts.length >= 25;
   }
 
   function commandScroll(): void {
