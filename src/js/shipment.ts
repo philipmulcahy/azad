@@ -5,6 +5,7 @@ import * as extraction from './extraction';
 import * as order_header from './order_header';
 import * as req from './request';
 import * as request_scheduler from './request_scheduler';
+import * as strategy from './strategy';
 import * as url from './url';
 import * as util from './util';
 
@@ -66,7 +67,7 @@ export async function get_shipments(
       doc_elem);
   }
 
-  const elems = extraction.firstMatchingStrategy(
+  const elems = strategy.firstMatchingStrategy(
     'shipmentElems', [strategy_a, strategy_b], []);
 
   const shipment_promises = elems.map(e => shipment_from_elem(
@@ -180,7 +181,7 @@ function get_transactions(order_detail_doc_elem: HTMLElement): ITransaction[] {
     return transactions;
   }
 
-  const result = extraction.firstMatchingStrategy(
+  const result = strategy.firstMatchingStrategy(
     'shipmentTransactions',
     [strategy_a, strategy_b],
     [],

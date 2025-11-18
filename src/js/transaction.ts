@@ -1,6 +1,7 @@
 import * as cacheStuff from './cachestuff';
 import * as extraction from './extraction';
 const lzjs = require('lzjs');
+import * as strategy from './strategy';
 import * as transaction0 from './transaction0';
 import * as transaction1 from './transaction1';
 
@@ -41,7 +42,7 @@ export async function reallyScrapeAndPublish(
 ) {
   const port = await getPort();
 
-  const transactions = await extraction.firstMatchingStrategyAsync(
+  const transactions = await strategy.firstMatchingStrategyAsync(
     'transaction.reallyScrapeAndPublish',
     [
       () => extractAllTransactionsWithNextButton(port),
@@ -84,7 +85,7 @@ export function extractPageOfTransactions(
   const strategies = [transaction0, transaction1].map(
     t => () => t.extractPageOfTransactions(doc));
 
-  return extraction.firstMatchingStrategy(
+  return strategy.firstMatchingStrategy(
     'extractPageOfTransactions', strategies, []);
 }
 

@@ -4,6 +4,7 @@ import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
 import * as pageType from './page_type';
 import * as signin from './signin';
+import * as strategy from './strategy';
 import * as urls from './url';
 import * as util from './util';
 
@@ -172,7 +173,7 @@ export function get_years(orders_page_doc: HTMLDocument): number[] {
   };
 
   const strategies = [strategy0, strategy1].map(s => () => s(orders_page_doc));
-  return extraction.firstMatchingStrategy('getYears', strategies, []);
+  return strategy.firstMatchingStrategy('getYears', strategies, []);
 }
 
 export async function init(

@@ -6,6 +6,7 @@ import * as order_header from './order_header';
 import * as request_scheduler from './request_scheduler';
 import * as req from './request';
 import * as settings from './settings';
+import * as strategy from './strategy';
 import * as urls from './url';
 import * as util from './util';
 
@@ -58,7 +59,7 @@ export function extractItems(
   const strategies = bareStrategies.map(
     s => () => s(order_elem, order_header, context + ';extractItems') );
 
-  const items = extraction.firstMatchingStrategy(
+  const items = strategy.firstMatchingStrategy(
     'extractItems', strategies, []);
 
   return categoriseItems(items, scheduler);
