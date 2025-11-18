@@ -94,7 +94,7 @@ export function by_regex2(
 export function firstMatchingStrategy<T>(
   callSiteName: string,  // used to identify the stats for this call site.
   strategies: Array<()=>T|null>,
-  defaultValue: T
+  defaultValue: T,
 ): T {
   function isValid(t: T|null): boolean {
     if (t == null) {
@@ -139,6 +139,70 @@ export function firstMatchingStrategy<T>(
       const candidate = strategy();
 
       if (isValid(candidate)) {
+        statistics.StrategyStats.reportSuccess(callSiteName, iStrategy);
+        return candidate as T;
+      } else {
+        console.debug(
+          strategy.name +
+          'returned invalid candidate: moving to next strategy or default');
+      }
+    } catch (_ex) {
+      console.debug(
+        `${strategy.name} blew up: moving to next strategy or default`);
+    }
+  }
+
+  statistics.StrategyStats.reportFailure(callSiteName);
+  return defaultValue;
+}
+
+// Same as firstMatchingStrategy, but async.
+export async function firstMatchingStrategyAsync<T>(
+  callSiteName: string,  // used to identify the stats for this call site.
+  strategies: Array<()=>Promise<T>>,
+  defaultValue: T,
+): Promise<T> {
+  function isValid(t: T|null): boolean {
+    if (t === null) {
+      return false;
+    }
+
+    if (t === undefined) {
+      return false;
+    }
+
+    if (t === '') {
+      return false;
+    }
+
+    if (typeof(t) == 'number') {
+      if (isNaN(t)) {
+        return false;
+      }
+    }
+
+    if (t instanceof Date) {
+      if (isNaN(t.getTime())) {
+        return false;
+      }
+    }
+
+    if (Array.isArray(t)) {
+      if (t.length == 0) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  for (let iStrategy: number = 0; iStrategy < strategies.length; ++iStrategy) {
+    const strategy = strategies[iStrategy];
+
+    try {
+      const candidate = await strategy();
+
+      if (isValid(candidate as T)) {
         statistics.StrategyStats.reportSuccess(callSiteName, iStrategy);
         return candidate as T;
       } else {

@@ -41,9 +41,14 @@ export async function reallyScrapeAndPublish(
 ) {
   const port = await getPort();
 
-  const transactions = findUsableNextButton() !== undefined ?
-    await extractAllTransactionsWithNextButton(port) :
-    await extractAllTransactionsWithScrolling(port);
+  const transactions = await extraction.firstMatchingStrategyAsync(
+    'transaction.reallyScrapeAndPublish',
+    [
+      () => extractAllTransactionsWithNextButton(port),
+      () => extractAllTransactionsWithScrolling(port),
+    ],
+    [],
+  );
 
   const filtered = filterTransactionsByDateRange(
     transactions, startDate, endDate);
@@ -137,6 +142,12 @@ function mergeTransactions(
 async function extractAllTransactionsWithNextButton(
   port: chrome.runtime.Port | null
 ): Promise<Transaction[]> {
+
+  if (!findUsableNextButton()) {
+    console.debug('no next button found: returning []');
+    return Promise.resolve([]);
+  }
+
   let allKnownTransactions = await getTransactionsFromCache();
 
   const maxCachedTimestamp = Math.max(
@@ -183,6 +194,19 @@ async function extractAllTransactionsWithNextButton(
 
   putTransactionsInCache(allKnownTransactions);
   return allKnownTransactions;
+
+  function findUsableNextButton(): HTMLInputElement | undefined {
+    try {
+      const buttonInputElem = extraction.findSingleNodeValue(
+        '//span[contains(@class, "button")]/span[text()="Next page" or text()="Next Page"]/preceding-sibling::input[not(@disabled)]',
+        document.documentElement,
+        'finding transaction elements'
+      ) as HTMLInputElement;
+      return buttonInputElem ?? undefined;
+    } catch(_) {
+      return undefined;
+    }
+  }
 }
 
 async function extractAllTransactionsWithScrolling(
@@ -350,19 +374,6 @@ async function extractAllTransactionsWithScrolling(
     }
 
     return [];
-  }
-}
-
-function findUsableNextButton(): HTMLInputElement | undefined {
-  try {
-    const buttonInputElem = extraction.findSingleNodeValue(
-      '//span[contains(@class, "button")]/span[text()="Next page" or text()="Next Page"]/preceding-sibling::input[not(@disabled)]',
-      document.documentElement,
-      'finding transaction elements'
-    ) as HTMLInputElement;
-    return buttonInputElem ?? undefined;
-  } catch(_) {
-    return undefined;
   }
 }
 
