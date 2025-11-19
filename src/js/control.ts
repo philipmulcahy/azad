@@ -266,6 +266,7 @@ async function handleYearClick(evt: { target: { value: any; }; }) {
         action: 'scrape_years',
         years: years,
         table_type: tableType,
+        client: 'Azad UI',
       });
     } catch (ex) {
       console.log(ex);
@@ -298,6 +299,7 @@ async function handleMonthsClick(evt: { target: { value: any; }; }) {
       start_date: start_date,
       end_date: end_date,
       table_type: tableType,
+      client: 'Azad UI',
     });
   } else {
     console.warn('background_port not set');

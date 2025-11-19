@@ -349,6 +349,7 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
             ports.getBackgroundPort,
             startDate,
             endDate,
+            msg.client,
           );
         } else if (msg.hasOwnProperty('years')) {
           const years = (msg.years as string[]).map(ys => +ys).sort();
@@ -361,6 +362,7 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
             ports.getBackgroundPort,
             startDate,
             endDate,
+            msg.client,
           );
 
           await removeThisIframe();

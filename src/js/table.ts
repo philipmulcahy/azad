@@ -343,7 +343,7 @@ async function reallyDisplay(
       operation: `display.${tableType}`,
       status: 'complete',
       rowCount: (table.rows.length).toString(),
-      client: client,
+      client,
     },
   });
 
@@ -409,7 +409,7 @@ async function reallyDisplayTransactions(
       operation: `display.${tableType}`,
       status: 'complete',
       rowCount: (table.rows.length).toString(),
-      client: client,
+      client,
     },
   });
 

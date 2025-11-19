@@ -39,6 +39,7 @@ export async function reallyScrapeAndPublish(
   getPort: () => Promise<chrome.runtime.Port | null>,
   startDate: Date,
   endDate: Date,
+  client: string,
 ) {
   const port = await getPort();
 
@@ -61,7 +62,8 @@ export async function reallyScrapeAndPublish(
       port.postMessage({
         action: 'transactions',
         transactions: filtered,
-        url: url,
+        url,
+        client,
       });
     }
   } catch (ex) {
