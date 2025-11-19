@@ -1,36 +1,70 @@
 This extension extracts order history from your Amazon account.
-Amazon used to provide csv reports for US customers only, but it didn't include digital orders, shipping, total amount, or payment information. Sometime in the middle of 2020, Amazon withdrew the feature even in the USA.
+Amazon used to provide csv reports for US customers only, but it didn't include
+digital orders, shipping, total amount, or payment information. Sometime in the
+middle of 2020, Amazon withdrew the feature even in the USA.
 
 This extension aims to fill the gap.
 
 How to Use
 ----------
-After you install the extension, you won't see anything until you view your order history on the website (Your Account -> Your Orders).
+After you install the extension, you won't see anything until you view your
+order history on the website (Your Account -> Your Orders).
 
-Get to your orders page, then click on the extension icon at the top right of the Chrome window; look for an orange upper case A. Once you do this, you  should see buttons with years on the extensions pop-up window.
-Clicking on one of these buttons causes the extension to sift through all of your order pages and show you a searchable, sortable table with all of the orders in. It can take a few seconds to get all of the pages.
-A blue button enables you to download a CSV (viewable in Excel and other spreadsheet programs) of the order table the extension has assembled.
-It's better not to have more than one amazon tab open while the extension is doing stuff. I (Philip) find the Items CSV more useful: https://github.com/philipmulcahy/azad/blob/master/doc/img/items_csv_2023-12.png
-Here's a slightly more wordy quick-start guide: https://github.com/philipmulcahy/azad/blob/master/README.md#quick-start-instructions
+Get to your orders page, then click on the extension icon at the top right of
+the Chrome window; look for an orange upper case A. Once you do this, you
+should see buttons with years on the extensions pop-up window.
+Clicking on one of these buttons causes the extension to sift through all of
+your order pages and show you a searchable, sortable table with all of the
+orders in. It can take a few seconds to get all of the pages.
+A blue button enables you to download a CSV (viewable in Excel and other
+spreadsheet programs) of the order table the extension has assembled.
+It's better not to have more than one amazon tab open while the extension is
+doing stuff. I (Philip) find the Items CSV more useful:
+https://github.com/philipmulcahy/azad/blob/master/doc/img/items_csv_2023-12.png
+Here's a slightly more wordy quick-start guide:
+https://github.com/philipmulcahy/azad/blob/master/README.md#quick-start-instructions
 
 Currently supported:
 amazon.com.au, .ca, .de, .es, .in, co.uk, com, .com.mx (partial), .ae (experimental).
 
-For at least some of these sites, I know that the extension is missing some of the native language strings it needs to find your data. Many users, particularly in Germany seem to use the english version of their country's site to get better results, but if you want better results in your language, you can help me by providing order debug information and marked up screenshots showing me where the missing/wrongly scraped data can be found.
+For at least some of these sites, I know that the extension is missing some of
+the native language strings it needs to find your data. Many users,
+particularly in Germany seem to use the english version of their country's site
+to get better results, but if you want better results in your language, you can
+help me by providing order debug information and marked up screenshots showing
+me where the missing/wrongly scraped data can be found.
 
-For other Amazon sites, please submit debug information as described in https://github.com/philipmulcahy/azad/blob/master/README.md
+For other Amazon sites, please submit debug information as described in
+https://github.com/philipmulcahy/azad/blob/master/README.md
 
-Bug reports are gratefully accepted (see github link below), with extra points awarded for:
-1) reproducibility - if you describe it well and I can reproduce it then it's normally straightforward to fix.
-2) staying in contact - fire and forget bug reports are often impossible to reproduce and are seriously demotivating.
+Bug reports are gratefully accepted (see github link below), with extra points
+awarded for:
+1) reproducibility - if you describe it well and I can reproduce it then it's
+   normally straightforward to fix.
+2) staying in contact - fire and forget bug reports are often impossible to
+   reproduce and are seriously demotivating.
 3) using courteous language.
-4) using English - you're not paying me and while I can scrape by in French and German, I'm spending more of my spare time on this project than you are, and it's not about learning human languages.
-5) having read the (very brief) instructions - and if English is not your favorite language, you have two choices:
+4) using English - you're not paying me and while I can scrape by in French and
+   German, I'm spending more of my spare time on this project than you are, and
+   it's not about learning human languages.
+5) having read the (very brief) instructions - and if English is not your
+   favorite language, you have two choices:
    i) Google translate (don't send it to me!)
    ii) Sending me a translation (better than Google's) of the instructions.
        I will figure out how to incorporate it and list you in the credits.
 
-Feature requests: if there's a github ticket outstanding for the same thing, please add your thoughts there rather than making a new one. You can signal your sincerity by clear communication and responsiveness to follow-up queries.
+Feature requests: if there's a github ticket outstanding for the same thing,
+please add your thoughts there rather than making a new one. You can signal
+your sincerity by clear communication and responsiveness to follow-up queries.
+
+Changes 1.16.14
+---------------
+#359 strategy statistics reported to console log - allowing us to see what's
+     working, and how frequently.
+#374 increased consistency in how control popup passes instructions to pages.
+#380 Transactions recently started being paged using scrolling and dynamic
+     fetching rather than "next page" buttons for many users.
+     This fix delivers code that can scroll down through the transactions list.
 
 Changes 1.16.13
 ---------------
@@ -43,54 +77,84 @@ Various performance, logging transparency and reliability improvements.
 
 Changes 1.16.12
 ---------------
-#338 more robust transaction scraping in the face of adversarially obfuscated html being intermittently served to some users.
+#338 more robust transaction scraping in the face of adversarially obfuscated
+     html being intermittently served to some users.
 #347 restored many shipment.delivered status values (new amazon html layout).
 #348 missing category scraping for items fixed (new amazon html layout).
 
 Changes 1.16.11
 ---------------
-#341 Restoration of many .com order.payments details after Amazon changed invoice format.
-#346 Restoration of order.who (recipient) for .com physical orders (after Amazon changed stuff).
-#336 git hash of build source shown at bottom of control popup, and builds can only be made from clean source tree
+#341 Restoration of many .com order.payments details after Amazon changed
+     invoice format.
+#346 Restoration of order.who (recipient) for .com physical orders (after
+     Amazon changed stuff).
+#336 git hash of build source shown at bottom of control popup, and builds can
+     only be made from clean source tree
 
 Changes 1.16.10
 ---------------
-#320 If amazon provide inconsistent order counts as the scrape progresses, attempt to fetch the greatest number of orders they admit to.
+#320 If amazon provide inconsistent order counts as the scrape progresses,
+     attempt to fetch the greatest number of orders they admit to.
 #331 Secure logging: record which table type has been scraped.
-#335 Add button to access Stripe console for premium subscribers: maybe an easier way to cancel. Caution: ExtPay are not keen on this yet.
+#335 Add button to access Stripe console for premium subscribers: maybe an
+     easier way to cancel. Caution: ExtPay are not keen on this yet.
 
 Changes 1.16.9
 --------------
-#331 Secure remote logging of logged-in premium subscriber usage (no amazon account details).
-#333 Cache available year numbers because they're really slow to get these days, and needed to populate the orange year buttons in the control popup.
+#331 Secure remote logging of logged-in premium subscriber usage
+     (no amazon account details).
+#333 Cache available year numbers because they're really slow to get these
+     days, and needed to populate the orange year buttons in the control popup.
 
 Source Code
 -------------
 https://github.com/philipmulcahy/azad
-contributors (Thank you!): https://github.com/philipmulcahy/azad/graphs/contributors
+contributors (Thank you!):
+https://github.com/philipmulcahy/azad/graphs/contributors
 
 Premium Features
 ---------------
-Please read https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md
+Please read:
+https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md
 
 Donations
 ---------------
-I have a day job, and cannot accept personal donations.
-Don't worry: just redirect your gratitude here instead: https://www.justgiving.com/fundraising/azad-pah
-Donations entitle you to nothing except a warm feeling of righteousness/generosity.
+If you'd like to thank me financially, please don't!
+Don't worry: just redirect your gratitude here instead:
+https://www.justgiving.com/fundraising/azad-pah
+Donations entitle you to nothing except a warm feeling of
+righteousness/generosity.
 
 Premium Subscriptions
 ---------------
-It is necessary to subscribe ONLY if you want to use a small set of features aimed at commercial users. Paying for an annual subscription also entitles you to any new subscription-only features I might add during your subscription period. Please see the blurb in the subscription workflow for more details, and also:
-https://github.com/philipmulcahy/azad/blob/master/README.md#subscribe-to-premium-features. I offer no warranty of any kind: this is a personal project that you are welcome to use and contribute to.
+It is necessary to subscribe ONLY if you want to use a small set of features
+aimed at commercial users.  Paying for an annual subscription also entitles you
+to any new subscription-only features I might add during your subscription
+period. Please see the blurb in the subscription flow for more details, also:
+https://github.com/philipmulcahy/azad/blob/master/README.md#subscribe-to-premium-features.
+I offer no warranty of any kind: this is a personal project that you are
+welcome to use and contribute to.
 
-I am a human being, not a corporation and I don't make my living from this extension. Please bear that in mind before complaining about bugs or making false statements in your reviews of this product - others have been there ahead of you:
-The most amusing (and demotivating) posts tend to fall into one or more of the following three categories.
-i) I ordered stuff from you and it hasn't arrived: no stars for you Philip (I am not Amazon, and you haven't given me any of your money).
-ii) Your extension stole my credit card details (It never sees your card details - only stripe.com gets those - and it carefully avoids seeing your amazon login credentials as well - you are free to inspect the source code to verify this)
-iii) You have to pay, and it still doesn't work. (You don't, and I'm sorry it's not working for you - would you like some help?)
-Strangely none of the authors ever follows up with evidence or indeed any reasoned feedback at all.
+I am a human being, not a corporation and I don't make my living from this
+extension. Please bear that in mind before complaining about bugs or making
+false statements in your reviews of this product - others have been there ahead
+of you: The most amusing (and demotivating) posts tend to fall into one or more
+of the following three categories:
+i) I ordered stuff from you and it hasn't arrived: no stars for you Philip
+   (I am not Amazon, and you haven't given me any of your money).
+ii) Your extension stole my credit card details (It never sees your card
+    details - only stripe.com gets those - and it carefully avoids seeing your
+    amazon login credentials as well - you are free to inspect the source code
+    to verify this)
+iii) You have to pay, and it still doesn't work.
+     (You don't, and I'm sorry it's not working for you - would you like some
+     help?)
+Strangely none of the authors ever follows up with evidence or indeed any
+reasoned feedback at all.
 
 New Commercial Features
 ---------------
-If you seek new commercial features, please read https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md before even thinking about contacting me directly. I am bored of reading proposals from malware distributors.
+If you seek new commercial features, please read
+https://github.com/philipmulcahy/azad/blob/master/doc/commercial_features.md
+before even thinking about contacting me directly.
+I am bored of reading proposals from malware distributors.
