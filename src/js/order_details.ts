@@ -227,9 +227,10 @@ function extractDetailFromDoc(
 
         '//span[contains(@id, "giftCardAmount-amount")]/text()', // Whole foods or Amazon Fresh.
 
-        '//*[text()[contains(.,"Gift Certificate")]]',
+        '//span[text()[contains(.,"Gift Certificate")]]',
 
-        '//*[text()[contains(.,"Gift Card")]]',
+        // '//span[text()[contains(.,"Gift Card") and not(contains(.,"Gift Cards"))]]',
+        '//span[text()[contains(.,"Gift Card") and not(contains(.,"Gift Cards"))]]/ancestor::div[2]',
       ],
       null,
       null,
@@ -238,7 +239,7 @@ function extractDetailFromDoc(
     );
     if ( a ) {
       const b = a.match(
-        /Gift (?:Certificate|Card) Amount: *-?([$£€0-9.]*)/i);
+        /Gift (?:Certificate|Card) Amount:\s*-?([$£€0-9.]*)/i);
       if( b !== null ) {
         return b[1];
       }
