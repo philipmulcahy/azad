@@ -96,12 +96,12 @@ function reallyExtractOrderHeader(
       'Order placed',
       'Ordine effettuato',
       'Pedido realizado',
-      'Subscription Charged on',
-    ];
+      'Subscription charged on',
+    ].map(s => s.toLowerCase());
 
     function strategy0(): Date {
       const xpaths = labels.map(
-        label => `.//div[contains(span,"${label}")]/../div/span[contains(@class,"value") or contains(@class,"a-size-base")]`,
+        label => `.//span[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'${label}')]/../../div/span[contains(@class,"value") or contains(@class,"a-size-base")]`,
       );
 
       const raw = extraction.getField2(xpaths, elem, '', context);
@@ -110,7 +110,7 @@ function reallyExtractOrderHeader(
     }
 
     function strategy1(): Date {
-      const xpaths = labels.map(label => `.//div[contains(text(), "${label}")]/following-sibling::div`);
+      const xpaths = labels.map(label => `.//div[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'), "${label}")]/following-sibling::div`);
       const raw = extraction.getField2(xpaths, elem, '', context);
       const ddd = new Date(date.normalizeDateString(util.defaulted(raw, '')));
       return ddd;
