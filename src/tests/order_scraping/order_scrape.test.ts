@@ -127,6 +127,8 @@ async function runAllOrderTests():  Promise<ITestResult[]> {
     // .filter(byOrderId('026-5653597-4769168'))  // @philipmulcahy
     // .filter(byOrderId('111-0193776-6839441'))  // @ronindesign
     // .filter(byOrderId('111-2830238-7935455'))  // @arnie-lang
+    // .filter(byOrderId('111-4563007-4720250'))  // aafayed (has search and replaced heavily for privacy - treat html with suspicion)
+    .filter(byOrderId('111-6654974-2451435'))  // aafayed
     // .filter(byOrderId('111-7327625-5652241'))  // @alfredoagg
     // .filter(byOrderId('112-1097135-4205023'))
     // .filter(byOrderId('112-4839511-0466649'))  // @arnie-lang
@@ -146,7 +148,6 @@ async function runAllOrderTests():  Promise<ITestResult[]> {
     // .filter(byOrderId('203-6059583-9048313'))  // @philipmulcahy
     // .filter(byOrderId('205-1380848-8821960'),  // Chris Lambert-Shiels #353 fired-and-forgotten 2025-09
     // .filter(byOrderId('205-7528990-3423569'))
-    // .filter(byOrderId('111-4563007-4720250'))  // aafayed (has search and replaced heavily for privacy - treat html with suspicion)
     // .filter(byOrderId('206-1563844-4321133'))
     // .filter(byOrderId('701-0109921-6873001'))  // @lstn
     // .filter(byOrderId('701-6985978-3679428'))  // @belilan

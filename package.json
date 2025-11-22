@@ -7,8 +7,9 @@
     "main": "background.js",
     "scripts": {
         "init": "npm install --init",
-        "clean": "rm -rf azad*.zip build/* build-node/*",
-        "build": "node utils/build.js",
+        "clean": "rm -rf azad*.zip build/* build-node/* src/js/git_hash.ts",
+        "generate_code": "node utils/generate_code.js",
+        "build": "npm run clean; node utils/generate_code.js; npm run lint && node utils/build.js",
         "doc": "npx typedoc --entryPointStrategy Expand src/js",
         "lint": "tsc --strict --alwaysStrict --noEmit --noUnusedParameters --noImplicitReturns --noImplicitOverride --noImplicitThis --noFallthroughCasesInSwitch",
         "eslint": "eslint --ignore-path .gitignore --ext .js,.ts .",
