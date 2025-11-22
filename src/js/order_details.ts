@@ -168,6 +168,19 @@ function extractDetailFromDoc(
   }();
 
   const total: string = function(): string {
+    const currencies = ['$', '£', '€', 'AUD', 'CAD', 'GBP', 'USD'];
+    const titles = [
+      'Grand total',
+      'Grand Total',
+      'Total general',
+      'Total for this order',
+      'Total of this order',
+      'Total de este pedido',
+      'Total del pedido',
+      'Montant total TTC',
+      'Total général du paiement',
+    ];
+
     const a = extraction.by_regex(
       [
         '//span[@class="a-color-price a-text-bold"]/text()',
@@ -183,25 +196,17 @@ function extractDetailFromDoc(
         ']/parent::div/following-sibling::div/span',
 
         '//span[contains(text(),"Grand Total:")]' +
-        '/parent::*/parent::*/div/span[' +
-        'contains(text(), "$") or ' +
-        'contains(text(), "£") or ' +
-        'contains(text(), "€") or ' +
-        'contains(text(), "AUD") or ' +
-        'contains(text(), "CAD") or ' +
-        'contains(text(), "GBP") or ' +
-        'contains(text(), "USD") ' +
+        '/parent::*/parent::*/parent::*/div/span[' +
+        currencies.map(ccy => `contains(text(), "${ccy}")`).join(' or ') +
         ']/parent::*/parent::*',
 
-        '//*[contains(text(),"Grand total:") ' +
-        'or  contains(text(),"Grand Total:") ' +
-        'or  contains(text(),"Total general:")' +
-        'or  contains(text(),"Total for this order:")' +
-        'or  contains(text(),"Total of this order:")' +
-        'or  contains(text(),"Total de este pedido:")' +
-        'or  contains(text(),"Total del pedido:")' +
-        'or  contains(text(),"Montant total TTC:")' +
-        'or  contains(text(),"Total général du paiement:")' +
+        '//span[contains(text(),"Grand Total:")]' +
+        '/parent::*/parent::*/div/span[' +
+        currencies.map(ccy => `contains(text(), "${ccy}")`).join(' or ') +
+        ']/parent::*/parent::*',
+
+        '//*[' +
+          titles.map(t => `contains(text(), "${t}")`).join(' or ') +
         ']',
       ],
       null,
