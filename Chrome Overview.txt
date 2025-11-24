@@ -57,6 +57,13 @@ Feature requests: if there's a github ticket outstanding for the same thing,
 please add your thoughts there rather than making a new one. You can signal
 your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.15
+---------------
+#375 Some gift payment amounts (and a smaller number of order totals) went
+     missing - now restored.
+#379 fix missing order date on some digital orders (maybe only subscriptions)
+     Amazon have become quite inconsistent on letter case.
+
 Changes 1.16.14
 ---------------
 #359 strategy statistics reported to console log - allowing us to see what's
@@ -98,13 +105,6 @@ Changes 1.16.10
 #331 Secure logging: record which table type has been scraped.
 #335 Add button to access Stripe console for premium subscribers: maybe an
      easier way to cancel. Caution: ExtPay are not keen on this yet.
-
-Changes 1.16.9
---------------
-#331 Secure remote logging of logged-in premium subscriber usage
-     (no amazon account details).
-#333 Cache available year numbers because they're really slow to get these
-     days, and needed to populate the orange year buttons in the control popup.
 
 Source Code
 -------------
