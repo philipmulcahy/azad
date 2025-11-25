@@ -3,9 +3,14 @@ import { compareLists } from './transaction.test';
 import { Transaction } from '../../js/transaction';
 import {
   extractPageOfTransactions,
-  ComponentName,
+  classifyNode,
+  Component,
   patterns,
-  ClassedNode} from '../../js/transaction1';
+} from '../../js/transaction1';
+import {
+  ClassedNode,
+  TopologicalScrape,
+} from '../../js/topology';
 
 const jsdom = require('jsdom');
 
@@ -15,7 +20,7 @@ describe(
   () => {
 
     function verifyDateExtraction(dateString: string) {
-      const re = patterns.get(ComponentName.DATE)!;
+      const re = patterns.get(Component.DATE)!;
       const match = dateString.match(re);
       expect(match).not.toBeNull;
       expect(match![0]).toEqual(dateString);
@@ -42,7 +47,7 @@ describe(
 test(
   'transaction card digits regex',
   () => {
-    const p = patterns.get(ComponentName.CARD_DIGITS)!;
+    const p = patterns.get(Component.CARD_DIGITS)!;
     expect('1234'.match(p)).not.toBeNull();
     expect('ab34'.match(p)).toBeNull();
     expect('12cd'.match(p)).toBeNull();
@@ -52,7 +57,7 @@ test(
 test(
   'transaction blanked card digits regex',
   () => {
-    const p = patterns.get(ComponentName.BLANKED_DIGITS)!;
+    const p = patterns.get(Component.BLANKED_DIGITS)!;
     expect('••••'.match(p)).not.toBeNull();
     expect('1234'.match(p)).toBeNull();
     expect('abcd'.match(p)).toBeNull();
@@ -67,18 +72,20 @@ test(
 
     const html: string = fs.readFileSync(htmlFilePath, 'utf8');
     const doc: Document = new jsdom.JSDOM(html).window.document;
-    const rootClassified = ClassedNode.create(doc.documentElement);
 
-    function countType(name: ComponentName): number {
-      return rootClassified.classedDescendants.filter(
+    const scrape = new TopologicalScrape<Component>(
+      patterns, classifyNode, doc.documentElement);
+
+    function countType(name: Component): number {
+      return scrape.classified.filter(
         d => d.components.has(name)
       ).length;
     }
 
-    expect(countType(ComponentName.ORDER_ID)).toEqual(22);
-    expect(countType(ComponentName.GIFT_CARD)).toEqual(1);
-    expect(countType(ComponentName.CARD_DETAILS)).toEqual(19);
-    expect(countType(ComponentName.PAYMENT_SOURCE)).toEqual(20);
-    expect(countType(ComponentName.TRANSACTION)).toEqual(20);
+    expect(countType(Component.ORDER_ID)).toEqual(22);
+    expect(countType(Component.GIFT_CARD)).toEqual(1);
+    expect(countType(Component.CARD_DETAILS)).toEqual(19);
+    expect(countType(Component.PAYMENT_SOURCE)).toEqual(20);
+    expect(countType(Component.TRANSACTION)).toEqual(20);
   }
 );
