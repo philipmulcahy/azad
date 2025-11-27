@@ -1,11 +1,16 @@
 /* Copyright(c) 2025 Philip Mulcahy. */
 
+///////////////////////////////////////////////////////////////////////////////
+// Use "topology" based strategy to parse transaction pages.
+///////////////////////////////////////////////////////////////////////////////
+
 import * as dt from './date';
 import * as util from './util';
 import {Transaction} from './transaction';
-import {ClassedNode, TopologicalScrape, match} from './topology';
+import {ClassedNode, TopologicalScrape} from './topology';
 
-
+// Indentation here reflects expected topology to help understand code: it has
+// no significance to the actual behaviour of the code.
 export enum Component {
   TRANSACTION = 'transaction',  // composite, no entry in patterns below.
     CURRENCY_AMOUNT = 'currency_amount',
@@ -40,8 +45,7 @@ export const patterns = new Map<Component, RegExp>([
   [Component.PAYMENT_STATUS,
    new RegExp('(Pending|Charged|Berechnet|Erstattet|Ausstehend)')],
 
-  [Component.VENDOR, new RegExp(
-    '((?:[A-Za-z][A-Za-z. ]{1,20}[A-Za-z])?)')],
+  [Component.VENDOR, new RegExp('((?:[A-Za-z][A-Za-z. ]{1,20}[A-Za-z])?)')],
 ]);
 
 // This function has grown to feel sordid, and hard to understand.
@@ -50,8 +54,9 @@ export const patterns = new Map<Component, RegExp>([
 // 2) identify the leaf components with regex, and then BNF driven parser.
 export function classifyNode(n: ClassedNode<Component>): Set<Component> {
   if (n.isNonScriptText) {
+    // Simple text node: regexes allow us to classify.
     const candidates = new Set<Component>(
-      [...patterns.keys()].filter(p => match(p, n) != null));
+      [...patterns.keys()].filter(p => n.match(p) != null));
 
     if (candidates.has(Component.CARD_DIGITS)) {
         if (n.hasSiblingToLeft(
@@ -82,8 +87,8 @@ export function classifyNode(n: ClassedNode<Component>): Set<Component> {
     return candidates;
   }
 
+  // We need to look below ourselves to figure out what we might be.
   const possibles: Set<Component> = new Set<Component>();
-
   const descendants = n.classedDescendants;
 
   function countDescendants(cn: Component): number {
@@ -91,13 +96,13 @@ export function classifyNode(n: ClassedNode<Component>): Set<Component> {
   }
 
   if (
-      countDescendants(Component.TRANSACTION) == 0 && (
-        countDescendants(Component.PAYMENT_SOURCE) >= 1 ||
-        countDescendants(Component.VENDOR) >= 1
-      ) &&
-      countDescendants(Component.DATE) >= 1 &&
-      countDescendants(Component.CURRENCY_AMOUNT) == 1 &&
-      countDescendants(Component.ORDER_ID) >= 1
+    countDescendants(Component.TRANSACTION) == 0 && (
+      countDescendants(Component.PAYMENT_SOURCE) >= 1 ||
+      countDescendants(Component.VENDOR) >= 1
+    ) &&
+    countDescendants(Component.DATE) >= 1 &&
+    countDescendants(Component.CURRENCY_AMOUNT) == 1 &&
+    countDescendants(Component.ORDER_ID) >= 1
   ) {
     possibles.add(Component.TRANSACTION);
   }
@@ -119,19 +124,19 @@ export function classifyNode(n: ClassedNode<Component>): Set<Component> {
   }
 
   if (
-      countDescendants(Component.CARD_DETAILS) == 0 &&
-      countDescendants(Component.PAYMENT_SOURCE) == 0 &&
-      countDescendants(Component.CARD_NAME) >= 1 &&
-      countDescendants(Component.BLANKED_DIGITS) == 1 &&
-      countDescendants(Component.CARD_DIGITS) == 1
+    countDescendants(Component.CARD_DETAILS) == 0 &&
+    countDescendants(Component.PAYMENT_SOURCE) == 0 &&
+    countDescendants(Component.CARD_NAME) >= 1 &&
+    countDescendants(Component.BLANKED_DIGITS) == 1 &&
+    countDescendants(Component.CARD_DIGITS) == 1
   ) {
     possibles.add(Component.CARD_DETAILS);
     possibles.add(Component.PAYMENT_SOURCE);
   }
 
   if (
-      countDescendants(Component.PAYMENT_SOURCE) == 0 &&
-      countDescendants(Component.GIFT_CARD) == 1
+    countDescendants(Component.PAYMENT_SOURCE) == 0 &&
+    countDescendants(Component.GIFT_CARD) == 1
   ) {
     possibles.add(Component.PAYMENT_SOURCE);
   }
@@ -233,6 +238,5 @@ export function extractPageOfTransactions(doc: Document): Transaction[] {
   const transactionElements = t.classified.filter(
     n => n.components.has(Component.TRANSACTION));
 
-  return transactionElements.map(e => transactionFromElement(e))
-                            .filter(t => t);
+  return transactionElements.map(transactionFromElement).filter(t => t);
 }

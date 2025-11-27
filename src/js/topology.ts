@@ -1,7 +1,10 @@
 /* Copyright(c) 2025 Philip Mulcahy. */
 
-export type ComponentName = string;
 
+// TODO - consider whether we should make this a function
+// so as to constrain the lifetime (and memory consumption) of _elementMap.
+// The function would take the constructor arguments as inputs and return
+// a collection of Classed nodes that do not retain _elementMap.
 export class TopologicalScrape<TEnum> {
    _elementMap: Map<Node, ClassedNode<TEnum>>
      = new Map<Node, ClassedNode<TEnum>>();
@@ -59,7 +62,7 @@ export class ClassedNode<TEnum> {
 
     for (const name of this._owner.classify(this)) {
       if (this._owner._patterns.has(name)) {
-        const parsedValue = match(name, this);
+        const parsedValue = this.match(name);
 
         this._possibleComponents.set(name, parsedValue);
       } else {
@@ -102,6 +105,30 @@ export class ClassedNode<TEnum> {
                     c as HTMLElement, this._owner
                   )
                 );
+  }
+
+  // Establish whether node matches pattern.
+  // If it does, return the matching text.
+  // If it doesn't then return null.
+  match(pattern: TEnum): string | null {
+    if (!this._owner._patterns.get(pattern)) {
+      return null;
+    }
+
+    const re: RegExp = this._owner._patterns.get(pattern)!;
+    const text: string = this.directText;
+
+    if(!text) {
+      return null;
+    }
+
+    const m = text.match(re);
+
+    if (!m) {
+      return null;
+    }
+
+    return m[1];
   }
 
   get components(): Set<TEnum> {
@@ -184,31 +211,4 @@ export class ClassedNode<TEnum> {
            `${this.directText == '' ? this.type : this.directText})`;
   }
 
-}
-
-// Establish whether elem matches pattern.
-// If it does, return the matching text.
-// If it doesn't then return null.
-export function match<TEnum>(
-  pattern: TEnum,
-  elem: ClassedNode<TEnum>,
-): string | null {
-  if (!elem._owner._patterns.has(pattern)) {
-    return null;
-  }
-
-  const re: RegExp = elem._owner._patterns.get(pattern)!;
-  const text = elem.directText;
-
-  if(!text) {
-    return null;
-  }
-
-  const m = text.match(re);
-
-  if (m == null) {
-    return null;
-  }
-
-  return m[1];
 }
