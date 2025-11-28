@@ -1,0 +1,41 @@
+digraph G {
+  fontname="Helvetica,Arial,sans-serif"
+	node [fontname="Helvetica,Arial,sans-serif"]
+	edge [fontname="Helvetica,Arial,sans-serif"]
+  node [style=filled, color=white];
+
+	subgraph cluster_0 {
+		style=filled;
+		color=pink;
+    Order;
+		label = "order.ts";
+	}
+
+	subgraph cluster_1 {
+		style=filled;
+		color=lightgrey;
+    "OrderImpl._extractOrder";
+		label = "order_impl.ts";
+	}
+
+  subgraph cluster_2 {
+		style=filled;
+    color=cyan;
+    extractDetailPromise -> extractDetailFromDoc -> payments;
+    label = "order_details.ts";
+  }
+
+	subgraph cluster_3 {
+		style=filled;
+		color=salmon;
+    fetch_payments -> payments_from_invoice;
+    paymentsFromDetailPage;
+    payments_from_invoice;
+		label = "payments.ts";
+	}
+
+  Order -> "OrderImpl._extractOrder";
+  "OrderImpl._extractOrder" -> extractDetailPromise;
+  payments -> paymentsFromDetailPage;
+  "OrderImpl._extractOrder" -> fetch_payments;
+}
