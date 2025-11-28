@@ -146,6 +146,7 @@ async function runAllOrderTests():  Promise<ITestResult[]> {
     // .filter(byOrderId('203-5043319-1160320'))
     // .filter(byOrderId('203-5431933-7437105'))  // @philipmulcahy
     // .filter(byOrderId('203-6059583-9048313'))  // @philipmulcahy
+    .filter(byOrderId('204-1776211-0905112'))  // @philipmulcahy
     // .filter(byOrderId('205-1380848-8821960'),  // Chris Lambert-Shiels #353 fired-and-forgotten 2025-09
     // .filter(byOrderId('205-7528990-3423569'))
     // .filter(byOrderId('206-1563844-4321133'))

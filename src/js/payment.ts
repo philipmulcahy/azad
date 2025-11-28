@@ -7,9 +7,11 @@ import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import {sprintf} from 'sprintf-js';
 import * as strategy from './strategy';
+import {ClassedNode, TopologicalScrape} from './topology';
 import * as util from './util';
 
-export type Payments = string[];
+export type Payment = string;
+export type Payments = Payment[];
 
 function payments_from_invoice(
   invoiceDoc: HTMLDocument,
@@ -19,7 +21,7 @@ function payments_from_invoice(
   // Returns ["American Express ending in 1234: 12 May 2019: £83.58", ...]
   // or a truncated version (card details only).
   function strategy_1(): Payments {
-    const payments: Payments = extraction.findMultipleNodeValues(
+    const paymentStrings: string[] = extraction.findMultipleNodeValues(
       [
         'Credit Card transactions',
         'Transactions de carte de crédit'
@@ -31,15 +33,16 @@ function payments_from_invoice(
         )
       ).join('|'),
       invoiceDoc.documentElement
-    ).map(function(row){
-      return util.defaulted(
+    ).map(
+      row => util.defaulted(
         row.textContent
           ?.replace(/[\n\r]/g, ' ')
            .replace(/  */g, '\xa0')  //&nbsp;
            .trim(),
         ''
-      );
-    });
+      )
+    );
+
     return payments;
   }
 
@@ -84,15 +87,13 @@ function payments_from_invoice(
       )
     );
 
-    const payments = [];
+    const payments: Payments = [];
     let i = 0;
 
     for ( i = 0; i < count; i++ ) {
-      payments.push(
-        card_names[i] +
-          ' ending in ' + card_number_suffixes[i] + ': '
-        + payment_amounts[i]
-      );
+      const p: Payment = (`${card_names[i]} ending in ${card_number_suffixes[i]} : ${payment_amounts[i]}`);
+
+      payments.push(p);
     }
 
     return payments;
@@ -117,13 +118,11 @@ function payments_from_invoice(
 
     if (texts.length === 1 && defaultDate && defaultAmount !== '') {
       const dateString = dateToDateIsoString(defaultDate);
-
-      return [
-        `${texts[0]}: ${dateString}: ${defaultAmount}`,
-      ];
+      const p: Payment = `${texts[0]}: ${dateString}: ${defaultAmount}`;
+      return [p] as Payments;
     }
 
-    return texts;
+    return texts as Payments;
   }
 
   const payments = strategy.firstMatchingStrategy<Payments>(
@@ -139,25 +138,147 @@ export function paymentsFromDetailPage(
   detailDoc: HTMLDocument,
   defaultOrderDate: Date | null,
   defaultTotal: string,
-
 ): Payments {
-  const card_detailss = extraction.findMultipleNodeValues(
-    '//*[contains(@class, "paystationpaymentmethod")]',
-    detailDoc.documentElement,
-    'order_details_payments',
-  );
 
-  if (card_detailss.length != 1) {
-    return [];
+  function strategy0(): Payments {
+    const card_detailss = extraction.findMultipleNodeValues(
+      '//*[contains(@class, "paystationpaymentmethod")]',
+      detailDoc.documentElement,
+      'order_details_payments',
+    );
+
+    if (card_detailss.length != 1) {
+      return [];
+    }
+
+    const paymentStrings: string[] = [
+      [
+        card_detailss[0],
+        defaultOrderDate ? dateToDateIsoString(defaultOrderDate) : '?',
+        defaultTotal,
+      ].join(': ')
+    ];
+
+    return paymentStrings.map(ps => ps as Payment) as Payments;
   }
-  
-  return [
+
+  function strategy1(): Payments {
+    // Indentation here reflects expected topology to help understand code: it has
+    // no significance to the actual behaviour of the code.
+    enum Component {
+      PAYMENT_SOURCES = 'payment_sources',  // composite, no entry in patterns below.
+        PAYMENT_SOURCE = 'payment_source',  // composite, no entry in patterns below.
+          GIFT_CARD = 'gift_card',
+    //    or
+          CARD_DETAILS = 'card_details',  // composite, no entry in patterns below.
+            CARD_NAME = 'card_name',
+            BLANKED_DIGITS = 'blanked_digits',
+             CARD_DIGITS = 'card_digits',
+    }
+
+    const patterns = new Map<Component, RegExp>([
+      [Component.BLANKED_DIGITS, new RegExp('([•*]{3,4})')],
+      [Component.CARD_DIGITS, new RegExp('([0-9]{3,4})')],
+      [Component.CARD_NAME, new RegExp('([A-Za-z][A-Za-z0-9. ]{2,49})')],
+      [Component.GIFT_CARD,
+       new RegExp('(Amazon Gift Card|Amazon-Geschenkgutschein)')],
+    ]);
+
+    // This function has grown to feel sordid, and hard to understand.
+    // I would like instead to adopt one of the following strategies:
+    // 1) write BNF including replacing the regular expressions.
+    // 2) identify the leaf components with regex, and then BNF driven parser.
+    function classifyNode(n: ClassedNode<Component>): Set<Component> {
+      if (n.isNonScriptText) {
+        // Simple text node: regexes allow us to classify.
+        const candidates = new Set<Component>(
+          [...patterns.keys()].filter(p => n.match(p) != null));
+
+        if (candidates.has(Component.CARD_DIGITS)) {
+            if (n.hasSiblingToLeft(
+              s => s.components.has(Component.BLANKED_DIGITS)
+            )) {
+              candidates.clear();
+              candidates.add(Component.CARD_DIGITS);
+            } else {
+              candidates.delete(Component.CARD_DIGITS);
+            }
+        }
+
+        return candidates;
+      }
+
+      // We need to look below ourselves to figure out what we might be.
+      const possibles: Set<Component> = new Set<Component>();
+      const descendants = n.classedDescendants;
+
+      function countDescendants(cn: Component): number {
+        return descendants.filter(d => d.components.has(cn)).length;
+      }
+
+      if (
+        countDescendants(Component.PAYMENT_SOURCES) == 0 && (
+          countDescendants(Component.PAYMENT_SOURCE) >= 1
+        )      ) {
+        possibles.add(Component.PAYMENT_SOURCES);
+      }
+
+      if (
+        countDescendants(Component.PAYMENT_SOURCE) == 0 &&
+        (
+          (
+            countDescendants(Component.CARD_DETAILS) == 1 &&
+            countDescendants(Component.GIFT_CARD) == 0
+          ) || (
+            countDescendants(Component.CARD_DETAILS) == 0 &&
+            countDescendants(Component.GIFT_CARD) == 1
+          )
+        )
+      ) {
+        possibles.add(Component.PAYMENT_SOURCE);
+      }
+
+      if (
+        countDescendants(Component.GIFT_CARD) == 0 &&
+        countDescendants(Component.CARD_DETAILS) == 0 &&
+        countDescendants(Component.PAYMENT_SOURCE) == 0 &&
+        countDescendants(Component.CARD_NAME) >= 1 &&
+        countDescendants(Component.BLANKED_DIGITS) == 1 &&
+        countDescendants(Component.CARD_DIGITS) == 1
+      ) {
+        possibles.add(Component.CARD_DETAILS);
+      }
+
+      if (
+        countDescendants(Component.CARD_DETAILS) == 0 &&
+        countDescendants(Component.PAYMENT_SOURCE) == 0 &&
+        countDescendants(Component.GIFT_CARD) == 1
+      ) {
+        possibles.add(Component.GIFT_CARD);
+      }
+
+      return possibles;
+    }
+
+    const t = new TopologicalScrape<Component>(
+      patterns,
+      classifyNode,
+      detailDoc.documentElement,
+    );
+
+    return t.classified
+            .filter(n => n.components.has(Component.PAYMENT_SOURCE))
+            .map(n => n.text);
+  }
+
+  return strategy.firstMatchingStrategy(
+    "payment.paymentsFromDetailPage",
     [
-      card_detailss[0],
-      defaultOrderDate ? dateToDateIsoString(defaultOrderDate) : '?',
-      defaultTotal,
-    ].join(': ')
-  ];
+      strategy0,
+      strategy1,
+    ],
+    [],
+  );
 }
 
 export async function fetch_payments(
