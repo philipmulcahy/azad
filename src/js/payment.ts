@@ -5,7 +5,7 @@ import * as extraction from './extraction';
 import * as order_header from './order_header';
 import * as req from './request';
 import * as request_scheduler from './request_scheduler';
-import { sprintf } from 'sprintf-js';
+import {sprintf} from 'sprintf-js';
 import * as strategy from './strategy';
 import * as util from './util';
 
