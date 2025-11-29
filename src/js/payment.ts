@@ -128,7 +128,7 @@ function payments_from_invoice(
   const payments = strategy.firstMatchingStrategy<Payments>(
     'paymentsFromInvoice',
     [strategy_1, strategy_2, strategy_3],
-    ['UNKNOWN']
+    [],
   );
 
   return payments;
@@ -266,9 +266,11 @@ export function paymentsFromDetailPage(
       detailDoc.documentElement,
     );
 
-    return t.classified
-            .filter(n => n.components.has(Component.PAYMENT_SOURCE))
-            .map(n => n.text);
+    const result = t.classified
+      .filter(n => n.components.has(Component.PAYMENT_SOURCE))
+      .map(n => n.text);
+
+    return result;
   }
 
   return strategy.firstMatchingStrategy(
