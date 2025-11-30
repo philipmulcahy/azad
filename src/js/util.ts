@@ -273,3 +273,23 @@ export function safe_new_tab_link(url: string, title: string): string {
          'rel="noopener noreferrer"' +
          '>' + title + '</a>';
 }
+
+/**
+ * Retrieves an array of all text nodes under a given element.
+ * From: stackoverflow.com/questions/10730309/find-all-text-nodes-in-html-page
+ *
+ * @param { Node } el - The element under which to search for text nodes.
+ * @returns { Node[] } An array of text nodes found under the given element.
+ */
+export function textNodesUnder(el: Node): Text[] {
+  const children: Text[] = [];
+  const walker = el.ownerDocument!.createTreeWalker(
+    el,
+    0x4,  // NodeFilter.SHOW_TEXT is undefined in node.js (needed in tests)
+  );
+
+  while(walker.nextNode()) {
+    children.push(walker.currentNode as Text);
+  }
+  return children;
+}
