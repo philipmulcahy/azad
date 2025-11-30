@@ -141,19 +141,27 @@ export function paymentsFromDetailPage(
 ): Payments {
 
   function strategy0(): Payments {
-    const card_detailss = extraction.findMultipleNodeValues(
+    const nodes = extraction.findMultipleNodeValues(
       '//*[contains(@class, "paystationpaymentmethod")]',
       detailDoc.documentElement,
       'order_details_payments',
     );
 
-    if (card_detailss.length != 1) {
+    if (!nodes) {
       return [];
     }
 
+    const cardTextNodes = util.textNodesUnder(nodes[0]);
+
+    if (!cardTextNodes) {
+      return [];
+    }
+
+    const cardText = cardTextNodes.map(n => n.textContent).join(' ');
+
     const paymentStrings: string[] = [
       [
-        card_detailss[0],
+        cardText,
         defaultOrderDate ? dateToDateIsoString(defaultOrderDate) : '?',
         defaultTotal,
       ].join(': ')
