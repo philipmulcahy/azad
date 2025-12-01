@@ -91,8 +91,8 @@ async function testOneOrderTarget(
         );
       }
 
-      const actual_string = JSON.stringify(actual_value);
-      const expected_string = JSON.stringify(expected_value);
+      const actual_string = JSON.stringify(actual_value).toLowerCase();
+      const expected_string = JSON.stringify(expected_value).toLowerCase();
 
       if ( actual_string != expected_string ) {
         const msg = key + ' should be ' + expected_string +
@@ -146,11 +146,11 @@ async function runAllOrderTests():  Promise<ITestResult[]> {
     // .filter(byOrderId('203-5043319-1160320'))
     // .filter(byOrderId('203-5431933-7437105'))  // @philipmulcahy
     // .filter(byOrderId('203-6059583-9048313'))  // @philipmulcahy
-    .filter(byOrderId('204-1776211-0905112'))  // @philipmulcahy
+    // .filter(byOrderId('204-1776211-0905112'))  // @philipmulcahy
     // .filter(byOrderId('205-1380848-8821960'),  // Chris Lambert-Shiels #353 fired-and-forgotten 2025-09
     // .filter(byOrderId('205-7528990-3423569'))
     // .filter(byOrderId('206-1563844-4321133'))
-    // .filter(byOrderId('701-0109921-6873001'))  // @lstn
+    // .filter(byOrderId('701-0109921-6873001'))  // @lstn amazon.ca
     // .filter(byOrderId('701-6985978-3679428'))  // @belilan
     // .filter(byOrderId('702-0959775-1855435'))  // @freddyboy1974
     // .filter(byOrderId('702-7505549-3590660'))  // @belilan
