@@ -499,11 +499,13 @@ function extractDetailFromDoc(
     return '';
   }();
 
-  const payments = () => payment.paymentsFromDetailPage(
-    doc,
-    order_date,
-    total
-  );
+  function payments() {
+    return payment.paymentsFromDetailPage(
+      doc,
+      order_date,
+      total
+    );
+  }
 
   const details: IOrderDetails = {
     date: order_date,

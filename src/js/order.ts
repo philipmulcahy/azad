@@ -14,6 +14,7 @@ import * as signin from './signin';
 import * as shipment from './shipment';
 import * as request_scheduler from './request_scheduler';
 import * as single_fetch from './single_fetch';
+import * as strategy from './strategy';
 import * as urls from './url';
 import * as util from './util';
 
@@ -231,19 +232,19 @@ class Order implements IOrder{
     return Promise.resolve([]);
   }
   async payments(): Promise<string[]> {
-    const default_payments: string[] = [];
-    const payments_promise = util.defaulted(
-      this.impl.payments_promise, Promise.resolve(default_payments));
-    try {
-      const payments = await payments_promise;
-      return payments;
-    } catch (ex) {
-      console.warn('While getting payments we caught: ', ex);
-      return Promise.resolve(default_payments);
-    }
+    const pmts = await strategy.firstMatchingStrategyAsync(
+      'order.payments resolution',
+      [
+        async () => util.defaulted(await this.impl.payments_promise, []),
+        async () => (await this.impl.detail_promise!).details.payments,
+      ],
+      [],
+    );
+
+    return pmts;
   }
   async _detail_dependent_promise(
-      detail_lambda: (d: order_details.IOrderDetails) => string
+    detail_lambda: (d: order_details.IOrderDetails) => string
   ): Promise<string> {
     if (this.impl.detail_promise) {
       try {
