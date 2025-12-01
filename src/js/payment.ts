@@ -43,7 +43,7 @@ function payments_from_invoice(
       )
     );
 
-    return payments;
+    return paymentStrings;
   }
 
   function strategy_2(): Payments {
