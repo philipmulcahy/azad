@@ -37,7 +37,9 @@ function payments_from_invoice(
       row => util.defaulted(
         row.textContent
           ?.replace(/[\n\r]/g, ' ')  // remove newlines and carriage returns
-           .replace(/  */g, '\xa0')  // xa0 == &nbsp
+           .replace(/  */g, ' ')  // dedupe
+           .replace(/ : /g, ': ')
+           .replace(/ /g, '\xa0')  // xa0 == &nbsp
            .trim(),
         ''
       )
@@ -91,7 +93,7 @@ function payments_from_invoice(
     let i = 0;
 
     for ( i = 0; i < count; i++ ) {
-      const p: Payment = (`${card_names[i]} ending in ${card_number_suffixes[i]} : ${payment_amounts[i]}`);
+      const p: Payment = (`${card_names[i]} ending in ${card_number_suffixes[i]}: ${payment_amounts[i]}`);
 
       payments.push(p);
     }
