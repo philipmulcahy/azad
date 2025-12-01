@@ -36,8 +36,8 @@ function payments_from_invoice(
     ).map(
       row => util.defaulted(
         row.textContent
-          ?.replace(/[\n\r]/g, ' ')
-           .replace(/  */g, '\xa0')  //&nbsp;
+          ?.replace(/[\n\r]/g, ' ')  // remove newlines and carriage returns
+           .replace(/  */g, '\xa0')  // xa0 == &nbsp
            .trim(),
         ''
       )
