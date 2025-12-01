@@ -57,6 +57,15 @@ Feature requests: if there's a github ticket outstanding for the same thing,
 please add your thoughts there rather than making a new one. You can signal
 your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.16
+---------------
+#369, #372, #384 UK payments for physical orders restored after Amazon html
+                 "obfuscation", by generalising the strategy used for
+                 transactions. Depends on user supplied strings used to
+                 identify the relevant text in the order detail pages.
+                 We've got english and german. I await bug reports that'll
+                 enable me to tackle french, spanish etc.
+
 Changes 1.16.15
 ---------------
 #375 Some gift payment amounts (and a smaller number of order totals) went
@@ -97,14 +106,6 @@ Changes 1.16.11
      Amazon changed stuff).
 #336 git hash of build source shown at bottom of control popup, and builds can
      only be made from clean source tree
-
-Changes 1.16.10
----------------
-#320 If amazon provide inconsistent order counts as the scrape progresses,
-     attempt to fetch the greatest number of orders they admit to.
-#331 Secure logging: record which table type has been scraped.
-#335 Add button to access Stripe console for premium subscribers: maybe an
-     easier way to cancel. Caution: ExtPay are not keen on this yet.
 
 Source Code
 -------------
