@@ -204,12 +204,11 @@ export async function get_headers(
 }
 
 const BASE_URL_TEMPLATE = 'https://%(site)s/your-orders/orders?' + [
-  // '?ie=UTF8' +
   'timeFilter=year-%(year)s',
   'startIndex=%(startOrderPos)s'
 ].join('&');
 
-const BASE_DIGITAL_URL_TEMPLATE = 'https://www.amazon.com/gp/legacy/order-history?' + [
+const BASE_DIGITAL_URL_TEMPLATE_0 = 'https://%(site)s/gp/legacy/order-history?' + [
   'opt=ab',
   'orderFilter=year-%(year)s',
   'startIndex=%(startOrderPos)s',
@@ -219,13 +218,20 @@ const BASE_DIGITAL_URL_TEMPLATE = 'https://www.amazon.com/gp/legacy/order-histor
   'returnTo=',
 ].join('&');
 
+const BASE_DIGITAL_URL_TEMPLATE_1 = BASE_URL_TEMPLATE +
+  '&orderFilter=digital';
+
 const TEMPLATE_BY_SITE: Map<string, string[]> = new Map<string, string[]>([
   ['www.amazon.ca', [BASE_URL_TEMPLATE + '&language=en_US']],
   ['www.amazon.co.jp', [BASE_URL_TEMPLATE]],
   ['www.amazon.co.uk', [BASE_URL_TEMPLATE]],
-  ['www.amazon.com', [
-    BASE_URL_TEMPLATE + '&language=en_US',
-    BASE_DIGITAL_URL_TEMPLATE + '&language=en_US']],
+  ['www.amazon.com',
+    [
+      BASE_URL_TEMPLATE + '&language=en_US',
+      BASE_DIGITAL_URL_TEMPLATE_0 + '&language=en_US',
+      BASE_DIGITAL_URL_TEMPLATE_1 + '&language=en_US',
+    ],
+  ],
   ['www.amazon.com.au', [BASE_URL_TEMPLATE]],
   ['www.amazon.com.mx', [BASE_URL_TEMPLATE + '&language=en_US']],
   ['www.amazon.de', [BASE_URL_TEMPLATE + '&language=en_GB']],
