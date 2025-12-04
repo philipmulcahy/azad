@@ -297,7 +297,7 @@ async function fetchYear(
   scheduler: request_scheduler.IRequestScheduler,
   date_filter: date.DateFilter,
 ): Promise<IOrder[]> {
-  const headers: order_header.IOrderHeader[] = await olp.get_headers(
+  const headers: order_header.IOrderHeader[] = await olp.getHeaders(
     urls.getSite(),
     year,
     scheduler,

@@ -131,12 +131,12 @@ function dedupeHeaders(
   return deduped;
 }
 
-export async function get_headers(
+export async function getHeaders(
   site: string,
   year: number,
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<order_header.IOrderHeader[]> {
-  async function fetch_headers_for_template(
+  async function fetchHeadersForTemplate(
     urlGenerator: headerPageUrlGenerator
   ): Promise<order_header.IOrderHeader[]> {
     let expected_order_count = await getExpectedOrderCount(
@@ -197,10 +197,12 @@ export async function get_headers(
       }
     );
 
-  const pheaderss = urlGenerators.map(ug => fetch_headers_for_template(ug));
+  const pheaderss = urlGenerators.map(ug => fetchHeadersForTemplate(ug));
   const headerss = await util.get_settled_and_discard_rejects(pheaderss);
   const headers = headerss.flat();
-  return dedupeHeaders(headers);
+  const deduped = dedupeHeaders(headers);
+  const filtered = deduped.filter(oh => oh.date?.getFullYear() === year);
+  return filtered;
 }
 
 const BASE_URL_TEMPLATE = 'https://%(site)s/your-orders/orders?' + [
