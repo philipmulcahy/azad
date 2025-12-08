@@ -112,10 +112,17 @@ export class Counters {
   }
 
   increment(counterGroup: string, key: Key): void {
-    const completeKey = key.setLabel('group', counterGroup);
+    this.incrementBy(counterGroup, key, 1);
+  }
+
+  incrementBy(counterGroup: string, key: Key, count: number): void {
+    const completeKey = key.setLabel('group', counterGroup)
+                           .setLabel('git_hash', Counters._gitHash)
+                           .setLabel('site', Counters._site);
+
     const ks = completeKey.toString();
     const iOld: number = this._stats.get(ks) ?? 0;
-    const iNew = iOld + 1;
+    const iNew = iOld + count;
     this._stats.set(ks, iNew);
   }
 
@@ -213,29 +220,42 @@ class CounterGroup {
   increment(key: Key) {
     Counters.stats.increment(this.groupName, key);
   }
+
+  incrementBy(key: Key, count: number) {
+    Counters.stats.incrementBy(this.groupName, key, count);
+  }
 }
 
 export class StrategyStats {
-
   static readonly group = new CounterGroup('strategy');
 
   static reportSuccess(callSiteName: string, strategyIndex: number) {
-    const key= StrategyStats
-      ._callSiteToKey(callSiteName)
-      .setLabel('strategy_index', strategyIndex.toString());
-
-    StrategyStats.group.increment(key);
+    const labels = new Map<string, string>();
+    labels.set('call_site_name', callSiteName);
+    labels.set('strategy_index', strategyIndex.toString());
+    const key = new Key(labels);
+    this.group.increment(key);
   }
 
   static reportFailure(callSiteName: string) {
-    StrategyStats.reportSuccess(callSiteName, -1);
+    this.reportSuccess(callSiteName, -1);
+  }
+}
+
+export class UrlStats {
+  static readonly group = new CounterGroup('url');
+
+  static reportSuccess(urlPattern: string, successfulFetchCount: number) {
+    const labels = new Map<string, string>();
+    labels.set('url_pattern', urlPattern);
+    const key = new Key(labels);
+    this.group.incrementBy(key, successfulFetchCount);
   }
 
-  static _callSiteToKey(callSiteName: string): Key {
+  static reportFailure(urlPattern: string) {
     const labels = new Map<string, string>();
-    labels.set('git_hash', Counters._gitHash);
-    labels.set('site', Counters._site);
-    labels.set('call_site_name', callSiteName);
-    return new Key(labels);
+    labels.set('url_pattern', urlPattern);
+    const key = new Key(labels);
+    this.group.increment(key);
   }
 }
