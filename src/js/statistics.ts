@@ -186,26 +186,33 @@ export class Counters {
     return Counters._localStats.toString();
   }
 
-  toString(): string {
+  toLines(): string[] {
     return [...this._stats.entries()]
       .map(e => {
         const k = e[0];
         const v = e[1];
         return `${k}=${v};`;
-      })
-      .join('\n');
+      });
+  }
+
+  toString(): string {
+    return this.toLines().join('\n');
   }
 
   static async logAndSave(): Promise<void> {
     console.log('STRATEGYSTATS_LOCAL...');
-    console.log(Counters._localStats.toString());
+    for (const line of Counters.stats.toLines()) {
+      console.log(line);
+    }
 
     const previous = await Counters.load();
     const updated = previous.add(Counters._localStats);
     updated.save();
 
     console.log('STRATEGYSTATS_ALL...');
-    console.log(updated.toString());
+    for (const line of updated.toLines()) {
+      console.log(line);
+    }
   }
 }
 
