@@ -77,7 +77,9 @@ function extractSingleTransaction(
 
   const amountText = amountSpan.textContent ?? '0';
   const amountMatch = amountText.match(util.moneyRegEx());
-  const amount: number = amountMatch ? +amountMatch[3] : 0;
+  const unsignedAmount: number = amountMatch ? +amountMatch[3] : 0;
+  const isNegative: boolean = amountText.includes('-');
+  const amount = isNegative ? -unsignedAmount : unsignedAmount;
 
   const cardInfo = util.defaulted(
     extraction.by_regex(

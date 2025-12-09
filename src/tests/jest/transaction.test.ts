@@ -112,6 +112,15 @@ describe('can read some transactions', () => {
 
       expect(transactions.length).toEqual(20);
   });
+
+  test(
+    'Siddhant-k', () => {
+      const transactions = scrapePageOfTransactionsFromCannedHtml(
+        './src/tests/azad_test_data/transactions/Siddhant-k/2025-08-26.html');
+
+      expect(transactions.length).toEqual(20);
+  });
+
 });
 
 describe (
@@ -156,6 +165,12 @@ describe (
       'transaction amazon.co.uk cmulcahy',
       () => scrapeAndVerify(
         './src/tests/azad_test_data/transactions/cmulcahy/2025-06-09')
+    );
+
+    test(
+      'transaction amazon.ca Siddhant-k',
+      () => scrapeAndVerify(
+        './src/tests/azad_test_data/transactions/Siddhant-k/2025-08-26')
     );
   }
 );
