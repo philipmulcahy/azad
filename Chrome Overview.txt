@@ -57,6 +57,12 @@ Feature requests: if there's a github ticket outstanding for the same thing,
 please add your thoughts there rather than making a new one. You can signal
 your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.17
+---------------
+#361 Some transaction refunds were not signed correctly.
+#383 USA (and others?) digital orders not being discovered correctly, including
+     some from current year being included in scrapes for previous years.
+
 Changes 1.16.16
 ---------------
 #369, #372, #384 UK payments for physical orders restored after Amazon html
@@ -97,15 +103,6 @@ Changes 1.16.12
      html being intermittently served to some users.
 #347 restored many shipment.delivered status values (new amazon html layout).
 #348 missing category scraping for items fixed (new amazon html layout).
-
-Changes 1.16.11
----------------
-#341 Restoration of many .com order.payments details after Amazon changed
-     invoice format.
-#346 Restoration of order.who (recipient) for .com physical orders (after
-     Amazon changed stuff).
-#336 git hash of build source shown at bottom of control popup, and builds can
-     only be made from clean source tree
 
 Source Code
 -------------
