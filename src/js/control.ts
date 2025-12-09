@@ -255,8 +255,8 @@ async function showMonthsButtons(month_counts: number[]): Promise<void> {
 }
 
 async function handleYearClick(evt: { target: { value: any; }; }) {
-  const year = evt.target.value;
-  const years = [year];
+  const year: number = parseInt(evt.target.value);
+  const years: number[] = [year];
   activateScrapingUI(years);
   const tableType = await settings.getString('azad_table_type');
   if (background_port) {

@@ -8,6 +8,7 @@
 
 import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
+import * as order_list_page from './order_list_page';
 import * as urls from './url';
 import * as util from './util';
 
@@ -51,7 +52,7 @@ export async function getOrderHeadersSequencePageURL(
   site: string,
   year: number,
   startIndex: number
-): Promise<string> {
+): Promise<order_list_page.AttributedUrl> {
   // const btbGroupKey = await getBTBGroupKey();
 
   // return urls.normalizeUrl(
@@ -67,12 +68,16 @@ export async function getOrderHeadersSequencePageURL(
 
   const pageNumber = (startIndex / 10) + 1;
 
+  // TODO: find a way to avoid repeating the template string - maybe abandon
+  //       template literal and go with sprintf (which I use somewhere else
+  //       in this project).
+  const template = '/gp/css/order-history?ref_=abn_yadd_ad_your_orders#time/${year}/pagination/${pageNumber}/';
   const url = urls.normalizeUrl(
     `/gp/css/order-history?ref_=abn_yadd_ad_your_orders#time/${year}/pagination/${pageNumber}/`,
     site,
   );
 
-  return Promise.resolve(url);
+  return Promise.resolve({template, url});
 }
 
 export function getBaseOrdersPageURL() {
