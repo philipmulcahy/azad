@@ -10,18 +10,28 @@ import * as req from './request';
 import * as request from './request';
 import * as request_scheduler from './request_scheduler';
 import * as sprintf from 'sprintf-js';
+import * as statistics from './statistics';
 import * as urls from './url';
 import * as util from './util';
 
+export interface AttributedUrl{
+  template: string;
+  url: string;
+};
+
 type headerPageUrlGenerator = (
-  site: string, year: number, startOrderIndex: number) => Promise<string>;
+  site: string,
+  year: number,
+  startOrderIndex: number,
+) => Promise<AttributedUrl>;
 
 async function getExpectedOrderCount(
   site: string,
   year: number,
   urlGenerator: headerPageUrlGenerator,
 ): Promise<number> {
-  const url = await urlGenerator(site, year, 0);
+  const aUrl = await urlGenerator(site, year, 0);
+  const url = aUrl.url;
   const pageReadyXpath = '//span[@class="num-orders"]';
 
   const response = await iframeWorker.fetchURL(
@@ -82,35 +92,46 @@ async function get_page_of_headers(
   scheduler: request_scheduler.IRequestScheduler,
   updateExpectedOrderCount: (count: number)=>void,
 ): Promise<OrderHeaderPageData> {
-  const url = await urlGenerator(site, year, start_order_number);
+  const aUrl = await urlGenerator(site, year, start_order_number);
+  const url = aUrl.url;
+  const urlTemplate = aUrl.template;
   const pageReadyXpath = '//*[contains(@class, "yohtmlc-order-id")]';
   const nocache = start_order_number == 0;
   const priority = nocache ? '00000' : '2';
 
-  const pageData = request.makeAsyncDynamicRequest(
+  const pdp = request.makeAsyncDynamicRequest(
     url,
     'get_page_of_headers',
     (evt) => translateOrdersPage(evt, year.toString()),
     pageReadyXpath,
     scheduler,
-    '',
+    '',  // priority
     nocache,
-    `order_list_page.get_page_of_headers: ${start_order_number}`,  // debug_context
+    `order_list_page.get_page_of_headers: ${start_order_number}`,  // context
   ) as Promise<OrderHeaderPageData>;
 
-  pageData.then(
-    pageData => {
-      updateExpectedOrderCount(pageData.expectedOrderCount);
-      const headers = pageData.headers;
-      const ids: string = headers.map(h => h.id).join(', ');
-      console.debug(
-        `get_page_of_headers fetched ${url} and discovered these ids: ${ids}`);
-    },
-    err => console.warn(
-      `get_page_of_headers blew up while fetching or processing: ${err}`)
-  );
+  try {
+    const pageData = await pdp;
+    updateExpectedOrderCount(pageData.expectedOrderCount);
+    const headers = pageData.headers;
+    const ids: string[] = headers.map(h => h.id);
+    const idCount: number = ids.length;
+    if (idCount > 0) {
+      statistics.UrlStats.reportSuccess(urlTemplate, idCount);
+    } else {
+      statistics.UrlStats.reportFailure(urlTemplate);
+    }
 
-  return pageData;
+    console.debug(
+      `get_page_of_headers fetched ${url} and discovered these ids: ${ids.join(', ')}`);
+
+    return pageData;
+  } catch (err) {
+    console.warn(
+      `get_page_of_headers blew up while fetching or processing: ${err}`)
+
+    throw err;
+  }
 }
 
 function dedupeHeaders(
@@ -131,12 +152,12 @@ function dedupeHeaders(
   return deduped;
 }
 
-export async function get_headers(
+export async function getHeaders(
   site: string,
   year: number,
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<order_header.IOrderHeader[]> {
-  async function fetch_headers_for_template(
+  async function fetchHeadersForTemplate(
     urlGenerator: headerPageUrlGenerator
   ): Promise<order_header.IOrderHeader[]> {
     let expected_order_count = await getExpectedOrderCount(
@@ -193,23 +214,24 @@ export async function get_headers(
     selectTemplates(site).map(
       template => function(site, year, index) {
         const url = generateQueryString(site, year, index, template);
-        return Promise.resolve(url);
+        return Promise.resolve({template, url});
       }
     );
 
-  const pheaderss = urlGenerators.map(ug => fetch_headers_for_template(ug));
+  const pheaderss = urlGenerators.map(ug => fetchHeadersForTemplate(ug));
   const headerss = await util.get_settled_and_discard_rejects(pheaderss);
   const headers = headerss.flat();
-  return dedupeHeaders(headers);
+  const deduped = dedupeHeaders(headers);
+  const filtered = deduped.filter(oh => oh.date?.getFullYear() == year);
+  return filtered;
 }
 
 const BASE_URL_TEMPLATE = 'https://%(site)s/your-orders/orders?' + [
-  // '?ie=UTF8' +
   'timeFilter=year-%(year)s',
   'startIndex=%(startOrderPos)s'
 ].join('&');
 
-const BASE_DIGITAL_URL_TEMPLATE = 'https://www.amazon.com/gp/legacy/order-history?' + [
+const BASE_DIGITAL_URL_TEMPLATE_0 = 'https://%(site)s/gp/legacy/order-history?' + [
   'opt=ab',
   'orderFilter=year-%(year)s',
   'startIndex=%(startOrderPos)s',
@@ -219,13 +241,20 @@ const BASE_DIGITAL_URL_TEMPLATE = 'https://www.amazon.com/gp/legacy/order-histor
   'returnTo=',
 ].join('&');
 
+const BASE_DIGITAL_URL_TEMPLATE_1 = BASE_URL_TEMPLATE +
+  '&orderFilter=digital';
+
 const TEMPLATE_BY_SITE: Map<string, string[]> = new Map<string, string[]>([
   ['www.amazon.ca', [BASE_URL_TEMPLATE + '&language=en_US']],
   ['www.amazon.co.jp', [BASE_URL_TEMPLATE]],
   ['www.amazon.co.uk', [BASE_URL_TEMPLATE]],
-  ['www.amazon.com', [
-    BASE_URL_TEMPLATE + '&language=en_US',
-    BASE_DIGITAL_URL_TEMPLATE + '&language=en_US']],
+  ['www.amazon.com',
+    [
+      BASE_URL_TEMPLATE + '&language=en_US',
+      BASE_DIGITAL_URL_TEMPLATE_0 + '&language=en_US',
+      BASE_DIGITAL_URL_TEMPLATE_1 + '&language=en_US',
+    ],
+  ],
   ['www.amazon.com.au', [BASE_URL_TEMPLATE]],
   ['www.amazon.com.mx', [BASE_URL_TEMPLATE + '&language=en_US']],
   ['www.amazon.de', [BASE_URL_TEMPLATE + '&language=en_GB']],

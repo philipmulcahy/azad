@@ -97,29 +97,32 @@ class Key {
   }
 }
 
-export class StrategyStats {
-  static readonly _localStats: StrategyStats = new StrategyStats();
+export class Counters {
+  static readonly _localStats: Counters = new Counters();
+  static readonly _site: string = urls.getSite();
+  static readonly storageKey = 'Azad_StrategyStats_global';
+
+  static readonly _gitHash: string = gitHash.hash().substr(0, 8)
+    + (gitHash.isClean() ? '' : '*');
 
   readonly _stats = new Map<string, number>();
 
-  static readonly _gitHash: string = gitHash.hash()
-    + (gitHash.isClean() ? '' : '*');
-
-  static readonly _site: string = urls.getSite();
-
-
-  static _callSiteToKey(callSiteName: string): Key {
-    const labels = new Map<string, string>();
-    labels.set('git_hash', StrategyStats._gitHash);
-    labels.set('site', StrategyStats._site);
-    labels.set('call_site_name', callSiteName);
-    return new Key(labels);
+  static get stats(): Counters {
+    return Counters._localStats;
   }
 
-  increment(key: Key): void {
-    const ks = key.toString();
+  increment(counterGroup: string, key: Key): void {
+    this.incrementBy(counterGroup, key, 1);
+  }
+
+  incrementBy(counterGroup: string, key: Key, count: number): void {
+    const completeKey = key.setLabel('group', counterGroup)
+                           .setLabel('git_hash', Counters._gitHash)
+                           .setLabel('site', Counters._site);
+
+    const ks = completeKey.toString();
     const iOld: number = this._stats.get(ks) ?? 0;
-    const iNew = iOld + 1;
+    const iNew = iOld + count;
     this._stats.set(ks, iNew);
   }
 
@@ -130,12 +133,13 @@ export class StrategyStats {
       const v: number = e[1];
       Object.defineProperty(o, ks, {value: v, enumerable: true});
     }
+
     return JSON.stringify(o);
   }
 
-  static deserialize(json: string): StrategyStats {
+  static deserialize(json: string): Counters {
     const o = JSON.parse(json);
-    const stats = new StrategyStats();
+    const stats = new Counters();
     for (const e of Object.entries(o)) {
       const ks: string = e[0].toString();
       const v: number = e[1] as number;
@@ -144,8 +148,8 @@ export class StrategyStats {
     return stats;
   }
 
-  add(stats: StrategyStats): StrategyStats {
-    const sum = new StrategyStats();
+  add(stats: Counters): Counters {
+    const sum = new Counters();
 
     for(const e of this._stats.entries()) {
       const ks: string = e[0].toString();
@@ -162,59 +166,103 @@ export class StrategyStats {
     return sum
   }
 
-  static readonly storageKey = 'Azad_StrategyStats_global';
+  static async load(): Promise<Counters> {
+    const results = await chrome.storage.local.get(Counters.storageKey);
 
-  static async load(): Promise<StrategyStats> {
-    const results = await chrome.storage.local.get(StrategyStats.storageKey);
-
-    if (results.hasOwnProperty(StrategyStats.storageKey)) {
-      const json = results[StrategyStats.storageKey] as string;
-      return StrategyStats.deserialize(json);
+    if (results.hasOwnProperty(Counters.storageKey)) {
+      const json = results[Counters.storageKey] as string;
+      return Counters.deserialize(json);
     }
 
-    return new StrategyStats();
+    return new Counters();
   }
 
   async save(): Promise<void> {
     const json = this.serialize()
-    return chrome.storage.local.set({[StrategyStats.storageKey]: json});
+    return chrome.storage.local.set({[Counters.storageKey]: json});
   }
 
   static toString(): string {
-    return StrategyStats._localStats.toString();
+    return Counters._localStats.toString();
   }
 
-  toString(): string {
+  toLines(): string[] {
     return [...this._stats.entries()]
       .map(e => {
         const k = e[0];
         const v = e[1];
         return `${k}=${v};`;
-      })
-      .join('\n');
+      });
+  }
+
+  toString(): string {
+    return this.toLines().join('\n');
   }
 
   static async logAndSave(): Promise<void> {
     console.log('STRATEGYSTATS_LOCAL...');
-    console.log(StrategyStats._localStats.toString());
+    for (const line of Counters.stats.toLines()) {
+      console.log(line);
+    }
 
-    const previous = await StrategyStats.load();
-    const updated = previous.add(StrategyStats._localStats);
+    const previous = await Counters.load();
+    const updated = previous.add(Counters._localStats);
     updated.save();
 
     console.log('STRATEGYSTATS_ALL...');
-    console.log(updated.toString());
+    for (const line of updated.toLines()) {
+      console.log(line);
+    }
+  }
+}
+
+// (almost) stateless proxy for a partition of Counters
+class CounterGroup {
+  readonly groupName: string;
+
+  constructor(groupName: string) {
+    this.groupName = groupName;
   }
 
-  static reportSuccess(callSiteName: string, strategyIndex: number) {
-    const key= StrategyStats
-      ._callSiteToKey(callSiteName)
-      .setLabel('strategy_index', strategyIndex.toString());
+  increment(key: Key) {
+    Counters.stats.increment(this.groupName, key);
+  }
 
-    StrategyStats._localStats.increment(key);
+  incrementBy(key: Key, count: number) {
+    Counters.stats.incrementBy(this.groupName, key, count);
+  }
+}
+
+export class StrategyStats {
+  static readonly group = new CounterGroup('strategy');
+
+  static reportSuccess(callSiteName: string, strategyIndex: number) {
+    const labels = new Map<string, string>();
+    labels.set('call_site_name', callSiteName);
+    labels.set('strategy_index', strategyIndex.toString());
+    const key = new Key(labels);
+    this.group.increment(key);
   }
 
   static reportFailure(callSiteName: string) {
-    StrategyStats.reportSuccess(callSiteName, -1);
+    this.reportSuccess(callSiteName, -1);
+  }
+}
+
+export class UrlStats {
+  static readonly group = new CounterGroup('url');
+
+  static reportSuccess(urlPattern: string, successfulFetchCount: number) {
+    const labels = new Map<string, string>();
+    labels.set('url_pattern', urlPattern);
+    const key = new Key(labels);
+    this.group.incrementBy(key, successfulFetchCount);
+  }
+
+  static reportFailure(urlPattern: string) {
+    const labels = new Map<string, string>();
+    labels.set('url_pattern', urlPattern);
+    const key = new Key(labels);
+    this.group.increment(key);
   }
 }

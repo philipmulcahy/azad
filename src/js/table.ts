@@ -553,7 +553,7 @@ export function updateProgressBar(statistics: stats.Statistics): void {
         progress_indicator.update_progress(ratio);
 
         if (ratio == 1.0) {
-          stats.StrategyStats.logAndSave();
+          stats.Counters.logAndSave();
         }
 
         lastSeenProgressRatio = ratio;
