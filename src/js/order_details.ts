@@ -238,7 +238,10 @@ function extractDetailFromDoc(
         '//span[text()[contains(.,"Gift Certificate")]]',
 
         // '//span[text()[contains(.,"Gift Card") and not(contains(.,"Gift Cards"))]]',
-        '//span[text()[contains(.,"Gift Card") and not(contains(.,"Gift Cards"))]]/ancestor::div[2]',
+        '//span[' +
+          'text()[contains(.,"Gift Card") and not(contains(.,"Gift Cards"))] ' +
+          'and not (@data-testid) ' +
+        ']/ancestor::div[2]',
       ],
       null,
       null,
