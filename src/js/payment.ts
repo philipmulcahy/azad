@@ -149,7 +149,7 @@ export function paymentsFromDetailPage(
       'order_details_payments',
     );
 
-    if (!nodes) {
+    if (!nodes || nodes.length == 0) {
       return [];
     }
 
@@ -276,11 +276,23 @@ export function paymentsFromDetailPage(
       detailDoc.documentElement,
     );
 
-    const result = t.classified
+    const sources = t.classified
       .filter(n => n.components.has(Component.PAYMENT_SOURCE))
       .map(n => n.text);
 
-    return result;
+    if (sources.length == 1) {
+      const source = sources[0];
+
+      const paymentString =  [
+        source,
+        defaultOrderDate ? dateToDateIsoString(defaultOrderDate) : '?',
+        defaultTotal,
+      ].join(': ');
+
+      return [paymentString];
+    } else {
+      return sources;
+    }
   }
 
   return strategy.firstMatchingStrategy(
@@ -329,7 +341,7 @@ export async function fetch_payments(
   }
 
   try {
-    return await req.makeAsyncStaticRequest<Payments>(
+    const payments = await req.makeAsyncStaticRequest<Payments>(
       url,
       'fetch_payments',
       event_converter,
@@ -338,6 +350,8 @@ export async function fetch_payments(
       false,  // nocache,
       'payments for ' + orderHeader.id,  // debug_context
     );
+
+    return payments;
   } catch (ex) {
     const msg = 'timeout or other error while fetching ' + url +
                 ' for ' + orderHeader.id + ': ' + ex;
