@@ -113,6 +113,7 @@ function getCategoryForProduct(
                               .documentElement;
 
       const raw = extraction.by_regex(
+        'item_category',
         [ '//*[@id="wayfinding-breadcrumbs_feature_div"]//ul', ],
         null,
         '',

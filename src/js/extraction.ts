@@ -3,13 +3,15 @@
 /* jshint strict: true, esversion: 6 */
 
 import * as util from './util';
+import * as statistics from './statistics';
 const xpath = require('xpath');
 
 "use strict";
 
 // Considers only the first match for each xpath.
 export function by_regex(
-  xpaths: string[],  // the priority ordered list of regular expressions.
+  callSiteName: string,  // identifies the call site in logging stats.
+  xpaths: string[],  // priority ordered list of regular expressions.
   regex: RegExp | null,  // if supplied, and matched, the string returned will
                          // be first match.
   default_value: string|null,
@@ -31,6 +33,7 @@ export function by_regex(
       console.debug('Caught ' + JSON.stringify(ex));
     }
     if ( a ) {
+      statistics.StrategyStats.reportSuccess(callSiteName, i); 
       if ( regex ) {
         const match: RegExpMatchArray | null | undefined
           = a.textContent?.trim().match(regex);
@@ -41,7 +44,8 @@ export function by_regex(
       return util.defaulted(a.textContent?.trim(), null);
     }
   }
-
+  
+  statistics.StrategyStats.reportFailure(callSiteName); 
   try {
     return default_value!.toString();
   } catch {
@@ -51,6 +55,7 @@ export function by_regex(
 
 // Consider every xpath match, not just the first match for each xpath.
 export function by_regex2(
+  callSiteName: string,  // identifies the call site in logging stats.
   xpaths: string[],
   regex: RegExp,
   default_value: string|number|null,
@@ -65,11 +70,15 @@ export function by_regex2(
         elem,
         context,
       );
+
       for ( let j=0; j!=candidate_nodes.length; j++ ) {
         const candidate_node = candidate_nodes[j];
+
         const match: RegExpMatchArray | null | undefined
           = candidate_node.textContent?.trim().match(regex);
+
         if (match !== null && typeof(match) !== 'undefined') {
+          statistics.StrategyStats.reportSuccess(callSiteName, i); 
           return match[1];
         }
       }
@@ -77,6 +86,8 @@ export function by_regex2(
       console.debug('Caught ' + JSON.stringify(ex) + 'while doing:' + context);
     }
   }
+  
+  statistics.StrategyStats.reportFailure(callSiteName);
   try {
     return default_value!.toString();
   } catch {
