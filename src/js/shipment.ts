@@ -218,6 +218,7 @@ async function shipment_from_elem(
 
 function get_refund(shipment_elem: HTMLElement): string {
   const refund = extraction.by_regex2(
+    'shipment_refund',
     [
       ".//div[contains(@class, ' shipment')]//span[contains(text(), 'Refund for this return')]/../../../../..//span/text()"
     ],

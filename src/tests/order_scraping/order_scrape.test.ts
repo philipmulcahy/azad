@@ -2,6 +2,7 @@
 
 import * as azad_item from '../../js/item';
 import * as azad_order from '../../js/order';
+import * as statistics from '../../js/statistics';
 import {dateToDateIsoString} from '../../js/date';
 import * as fs from 'fs';
 import * as order_data from '../fake_order';
@@ -150,6 +151,7 @@ async function runAllOrderTests():  Promise<ITestResult[]> {
     // .filter(byOrderId('205-1380848-8821960'),  // Chris Lambert-Shiels #353 fired-and-forgotten 2025-09
     // .filter(byOrderId('205-7528990-3423569'))
     // .filter(byOrderId('206-1563844-4321133'))
+    // .filter(byOrderId('302-1216490-4418760'))  // @Axelb1971 amazon.de
     // .filter(byOrderId('701-0109921-6873001'))  // @lstn amazon.ca
     // .filter(byOrderId('701-0324843-0325833'))  // @hadsie amazon.ca
     // .filter(byOrderId('701-6985978-3679428'))  // @belilan
@@ -172,8 +174,9 @@ async function main() {
   const badOrderCount = badResults.length;
   const defectCount = badResults.map(r => r.defects).flat().length;
   const returnCode = Math.max(badOrderCount, defectCount);
-  process.stdout.write(JSON.stringify(results, null, 2));
-  process.stderr.write(JSON.stringify(badResults));
+  process.stdout.write(`Counters:\n${statistics.Counters.stats.toString()}\n`);
+  process.stdout.write(`Results:\n${JSON.stringify(results, null, 2)}\n`);
+  process.stderr.write(`BadResults:\n${JSON.stringify(badResults)}\n`);
   process.exit(returnCode);
 }
 

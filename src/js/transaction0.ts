@@ -59,6 +59,7 @@ function extractSingleTransaction(
   const orderIds: string[] = orderIdElems.map(
     oe => util.defaulted(
       extraction.by_regex(
+        'transaction0_orderids',
         ['.//a[contains(@href, "order")]'],
         new RegExp('.*([A-Z0-9]{3}-\\d+-\\d+).*'),
         '??',
@@ -83,6 +84,7 @@ function extractSingleTransaction(
 
   const cardInfo = util.defaulted(
     extraction.by_regex(
+      'transaction0_cardinfo',
       ['.//span'],
       new RegExp('(.*\\*{4}.*)'),
       '??',

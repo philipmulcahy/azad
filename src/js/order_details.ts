@@ -152,6 +152,7 @@ function extractDetailFromDoc(
       date.dateToDateIsoString(header.date):
       null;
     const d = extraction.by_regex(
+      'orderdetails_orderdate',
       [
           '//*[contains(@class,"order-date-invoice-item")]/text()',
           '//*[contains(@class, "orderSummary")]//*[contains(text(), "Digital Order: ")]/text()',
@@ -182,6 +183,7 @@ function extractDetailFromDoc(
     ];
 
     const a = extraction.by_regex(
+      'orderdetails_total',
       [
         '//span[@class="a-color-price a-text-bold"]/text()',
 
@@ -225,6 +227,7 @@ function extractDetailFromDoc(
   // TODO Need to exclude gift wrap
   const gift = function(): string {
     const a = extraction.by_regex(
+      'orderdetails_gift',
       [
         '//div[contains(@id,"od-subtotals")]//' +
         'span[.//text()[(contains(.,"Gift") or contains(.,"Importo Buono Regalo")) and not(contains(., "wrap"))]]' +
@@ -235,7 +238,10 @@ function extractDetailFromDoc(
         '//span[text()[contains(.,"Gift Certificate")]]',
 
         // '//span[text()[contains(.,"Gift Card") and not(contains(.,"Gift Cards"))]]',
-        '//span[text()[contains(.,"Gift Card") and not(contains(.,"Gift Cards"))]]/ancestor::div[2]',
+        '//span[' +
+          'text()[contains(.,"Gift Card") and not(contains(.,"Gift Cards"))] ' +
+          'and not (@data-testid) ' +
+        ']/ancestor::div[2]',
       ],
       null,
       null,
@@ -258,6 +264,7 @@ function extractDetailFromDoc(
   const postage = function(): string {
     return util.defaulted(
       extraction.by_regex(
+        'orderdetails_postage',
         [
           ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
             label => sprintf.sprintf(
@@ -280,6 +287,7 @@ function extractDetailFromDoc(
   const postage_refund = function(): string {
     return util.defaulted(
       extraction.by_regex(
+        'orderdetails_postagerefund',
         [
           ['FREE Shipping'].map(
             label => sprintf.sprintf(
@@ -301,6 +309,7 @@ function extractDetailFromDoc(
 
   const subscribe_and_save = function(): string {
     let a = extraction.by_regex(
+      'orderdetails_subscribeandsave',
       [
         '//span[contains(text(), "Subscribe & Save:")]/../following-sibling::div/span/text()'
       ],
@@ -342,6 +351,7 @@ function extractDetailFromDoc(
       );
 
       const a = extraction.by_regex(
+        'orderdetails_vat_strategy0',
         xpaths,
         null,
         null,
@@ -360,6 +370,7 @@ function extractDetailFromDoc(
     };
 
     const strategy1 = () => extraction.by_regex(
+      'orderdetails_vat_strategy1',
       [
         vat_words_extended.map(
           label => sprintf.sprintf(
@@ -385,6 +396,7 @@ function extractDetailFromDoc(
 
   const us_tax = function(): string {
     let a = extraction.by_regex(
+      'orderdetails_ustax',
       [
         '//div[text() = "Tax Collected:"]/following-sibling::div/text()',
         '//span[.//text()[contains(.,"Estimated tax to be collected:")]]/../../div[2]/span/text()',
@@ -427,6 +439,7 @@ function extractDetailFromDoc(
 
   const cad_gst = function(): string {
     const a = extraction.by_regex(
+      'orderdetails_cadgst',
       [
         ['GST', 'HST'].map(
           label => sprintf.sprintf(
@@ -447,6 +460,7 @@ function extractDetailFromDoc(
 
   const cad_pst = function(): string {
     const a = extraction.by_regex(
+      'orderdetails_cadpst',
       [
         ['PST', 'RST', 'QST'].map(
           label => sprintf.sprintf(
