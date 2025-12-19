@@ -26,7 +26,7 @@ export interface IOrderDetails {
   refund: string;
   who: string;
   invoice_url: string;
-  payments: string[];  // this is not the only source of payment information.
+  payments: Promise<payment.Payments>;  // this is not the only source of payment information.
 }
 
 export interface IOrderDetailsAndItems {
@@ -513,7 +513,7 @@ function extractDetailFromDoc(
     return '';
   }();
 
-  function payments() {
+  function payments(): Promise<payment.Payments>{
     return payment.paymentsFromDetailPage(
       doc,
       order_date,

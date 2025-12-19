@@ -2,6 +2,7 @@
 
 import {dateToDateIsoString} from './date';
 import * as extraction from './extraction';
+import * as iframeWorker from './iframe-worker';
 import * as order_header from './order_header';
 import * as req from './request';
 import * as request_scheduler from './request_scheduler';
@@ -140,9 +141,9 @@ export function paymentsFromDetailPage(
   detailDoc: HTMLDocument,
   defaultOrderDate: Date | null,
   defaultTotal: string,
-): Payments {
+): Promise<Payments> {
 
-  function strategy0(): Payments {
+  function strategy0(): Promise<Payments> {
     const nodes = extraction.findMultipleNodeValues(
       '//*[contains(@class, "paystationpaymentmethod")]',
       detailDoc.documentElement,
@@ -150,13 +151,13 @@ export function paymentsFromDetailPage(
     );
 
     if (!nodes || nodes.length == 0) {
-      return [];
+      return Promise.resolve([]);
     }
 
     const cardTextNodes = util.textNodesUnder(nodes[0]);
 
     if (!cardTextNodes) {
-      return [];
+      return Promise.resolve([]);
     }
 
     const cardText = cardTextNodes.map(n => n.textContent).join(' ');
@@ -169,10 +170,12 @@ export function paymentsFromDetailPage(
       ].join(': ')
     ];
 
-    return paymentStrings.map(ps => ps as Payment) as Payments;
+    return Promise.resolve(
+      paymentStrings.map(ps => ps as Payment)
+    );
   }
 
-  function strategy1(): Payments {
+  function useTopology(doc: HTMLDocument): Promise<Payments> {
     // Indentation here reflects expected topology to help understand code: it has
     // no significance to the actual behaviour of the code.
     enum Component {
@@ -273,7 +276,7 @@ export function paymentsFromDetailPage(
     const t = new TopologicalScrape<Component>(
       patterns,
       classifyNode,
-      detailDoc.documentElement,
+      doc.documentElement,
     );
 
     const sources = t.classified
@@ -289,17 +292,36 @@ export function paymentsFromDetailPage(
         defaultTotal,
       ].join(': ');
 
-      return [paymentString];
+      return Promise.resolve([paymentString]);
     } else {
-      return sources;
+      return Promise.resolve(sources);
     }
   }
 
-  return strategy.firstMatchingStrategy(
+  // uses raw html
+  function strategy1(): Promise<Payments> {
+    return Promise.resolve(useTopology(detailDoc));
+  }
+
+  // uses cooked html
+  async function strategy2(): Promise<Payments> {
+    const cookedResponse = await iframeWorker.fetchURL(
+      detailDoc.URL,
+      '//*[contains(@class, "pmts-payments-instrument-details")]',
+      'paymentsFromDetailPage strategy2',
+    );
+
+    const cookedHtml = cookedResponse.html;
+    const cookedDoc = util.parseStringToDOM(cookedHtml);
+    return useTopology(cookedDoc);
+  }
+
+  return strategy.firstMatchingStrategyAsync<Payments>(
     "payment.paymentsFromDetailPage",
     [
       strategy0,
       strategy1,
+      strategy2,
     ],
     [],
   );
