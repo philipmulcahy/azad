@@ -71,16 +71,13 @@ async function fetchAndShowOrdersByYears(
   years: number[],
   client: string,
 ): Promise<HTMLTableElement|undefined> {
-  const ezp_mode: boolean = await settings.getBoolean('ezp_mode');
 
-  if ( ! ezp_mode ) {
-    if ( document.visibilityState != 'visible' ) {
-      console.log(
-        'fetchAndShowOrdersByYears() returning without doing anything: ' +
-        'tab is not visible'
-      );
-      return;
-    }
+  if ( document.visibilityState != 'visible' ) {
+    console.log(
+      'fetchAndShowOrdersByYears() returning without doing anything: ' +
+      'tab is not visible'
+    );
+    return;
   }
 
   const purpose: string = years.join(', ');
@@ -136,37 +133,6 @@ async function fetchAndShowOrdersByRange(
 
   return azad_table.display(
     orders, beautifulTable, ports.getBackgroundPort, client);
-}
-
-async function fetchShowAndSendItemsByRange(
-  start_date: Date,
-  end_date: Date,
-  destination_extension_id: string,
-  client: string,
-): Promise<void> {
-  await settings.storeBoolean('ezp_mode', true);
-
-  const original_items_setting = await settings.getBoolean(
-    'show_items_not_orders');
-
-  await settings.storeBoolean('show_items_not_orders', true);
-
-  const table: (HTMLTableElement|undefined) = await fetchAndShowOrdersByRange(
-    start_date,
-    end_date,
-    false,
-    client,
-  );
-
-  await settings.storeBoolean('show_items_not_orders', original_items_setting);
-
-  if (typeof(table) != 'undefined') {
-    await csv.send_csv_to_ezp_peer(table, destination_extension_id);
-    await settings.storeBoolean('ezp_mode', false);
-    return;
-  } else {
-    return undefined;
-  }
 }
 
 async function registerContentScript(isIframeWorker: boolean) {
@@ -232,19 +198,6 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
           start_date,
           end_date,
           true,
-          client,
-        );
-      }
-      break;
-    case 'scrape_range_and_dump_items':
-      {
-        const startDate: Date = new Date(msg.start_date);
-        const endDate: Date = new Date(msg.end_date);
-        const client: string = msg.client;
-        fetchShowAndSendItemsByRange(
-          startDate,
-          endDate,
-          msg.sender_id,
           client,
         );
       }

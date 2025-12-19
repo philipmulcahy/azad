@@ -22,21 +22,6 @@ export async function download(
   await save_file.save(csv_string, 'amazon_order_history.csv');
 }
 
-export async function send_csv_to_ezp_peer(
-  table: HTMLTableElement,
-  ext_id: string,
-): Promise<void> {
-  const csv_string = make_csv_string(
-    table,
-    false,  //EZP code doesn't want their data polluted by aggregation rows.
-  );
-  try {
-    send_file.send(csv_string, ext_id);
-  } catch (error) {
-    console.error('Error Sending Data to EZP Extension:', error);
-  }
-}
-
 function make_csv_string(
   table: HTMLTableElement,
   sums_for_spreadsheet: boolean
