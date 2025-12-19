@@ -11,15 +11,6 @@ import * as settings from './settings';
 import * as util from './util';
 import { v4 as uuidv4 } from 'uuid';
 
-export const ALLOWED_EXTENSION_IDS: (string | undefined)[] = [
-  'apgfmdalhahnnfgmjejmhkeobobobhjd', // azad_test dev Philip@ball.local
-  'ofddmcjihdeahnjehbpaaopghkkncndh', // azad_test dev Ricardo's
-  'hldaogmccopioopclfmolfpcacadelco', // EZP_Ext Dev Ricardo
-  'jjegocddaijoaiooabldmkcmlfdahkoe', // EZP Regular Release
-  'ccffmpedppmmccbelbkmembkkggbmnce', // EZP Early testers Release
-  'ciklnhigjmbmehniheaolibcchfmabfp', // EZP Alpha Tester Release
-];
-
 const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
 let advertised_periods: number[] = [];
@@ -362,51 +353,6 @@ function registerConnectionListener() {
   });
 }
 
-function registerExternalConnectionListener() {
-  chrome.runtime.onMessageExternal.addListener( function (
-    message: any,
-    sender: chrome.runtime.MessageSender,
-    sendResponse: (response?: any) => void
-  ) {
-    console.log(
-      `Received Ext Msg: (Prior to Whitelist Filter) From:${sender.id} Msg:`,
-      message
-    );
-
-    if (!ALLOWED_EXTENSION_IDS.includes(sender.id)) {
-      console.log(
-        `Message Ignored: Sender (${sender.id}) is not allow-listed..`,
-        message
-      );
-      return; // don't allow access
-    }
-
-    if (message.action == 'get_items_3m') {
-      const month_count = 3;
-      const end_date = new Date();
-      const start_date = util.subtract_months(end_date, month_count);
-      console.log('sending scrape_range', start_date, end_date);
-
-      const msg = {
-        action: 'scrape_range_and_dump_items',
-        client: 'ezp API',
-        start_date: start_date,
-        end_date: end_date,
-        sender_id: sender.id,
-      };
-
-      sendToOneContentPage(msg);
-      sendResponse({ status: 'ack' });
-    } else {
-      sendResponse({ status: 'unsupported' });
-    }
-
-    // Incompletely documented, but returning true seems to be needed to allow
-    // sendResponse calls to succeed.
-    return true;
-  });
-}
-
 function registerRightClickActions() {
   try {
     chrome.contextMenus.create({
@@ -547,4 +493,3 @@ registerVersionUpdateListener();
 registerConnectionListener();
 registerRightClickActions();
 registerMessageListener();
-registerExternalConnectionListener();
