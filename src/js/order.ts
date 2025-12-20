@@ -4,6 +4,7 @@
 
 import * as azad_entity from './entity';
 import * as date from './date';
+import * as iframeWorker from './iframe-worker';
 import * as item from './item';
 import * as notice from './notice';
 import * as order_details from './order_details';
@@ -409,6 +410,7 @@ export async function assembleDiagnostics(
     'total',
     'who',
   ];
+
   field_names.forEach(
     (field_name: keyof ISyncOrder) => {
       const value: any = sync_order[field_name];
@@ -418,18 +420,21 @@ export async function assembleDiagnostics(
 
   diagnostics['items'] = await get_legacy_items(order);
 
-  async function get_url_html_map(
-    urls: string[]
-  ): Promise<Record<string, string>>
+  async function getUrlHtmlMap(urls: string[]): Promise<Record<string, string>>
   {
     const data: Record<string, string> = {};
-    const done_promises = urls.filter(url => url != '' && url != null)
-                              .map( async url => {
-      const response = await single_fetch.checkedStaticFetch(url);
-      const html = await response.text();
-      data[url] = html;
-      return;
-    });
+
+    const done_promises = urls
+      .filter(url => url != '' && url != null)
+      .map(
+        async url => {
+          const response = await single_fetch.checkedStaticFetch(url);
+          const html = await response.text();
+          data[url] = html;
+          return;
+        }
+      );
+
     await Promise.allSettled(done_promises);
     return data;
   }
@@ -437,9 +442,8 @@ export async function assembleDiagnostics(
   async function get_item_data(
     order: ISyncOrder
   ): Promise<Record<string, string>> {
-    const urls = order.item_list
-                      .map(item => item.url);
-    const data = await get_url_html_map(urls);
+    const urls = order.item_list.map(item => item.url);
+    const data = await getUrlHtmlMap(urls);
     return data;
   }
 
@@ -448,9 +452,8 @@ export async function assembleDiagnostics(
   async function get_tracking_data(
     order: ISyncOrder,
   ): Promise<Record<string, string>> {
-    const urls = order.shipments
-                      .map(s => s.tracking_link);
-    const data = await get_url_html_map(urls);
+    const urls = order.shipments.map(s => s.tracking_link);
+    const data = await getUrlHtmlMap(urls);
     return data;
   }
 
@@ -466,22 +469,26 @@ export async function assembleDiagnostics(
 
       getScheduler,
     ).then(
-      (text: string) => {
-        diagnostics['list_html'] = text; 
-      },
+      (text: string) => { diagnostics['list_html'] = text; },
       (err: any) => {
         console.warn(`list_html fetch for order diagnostics failed: ${err}`);
         diagnostics['list_html'] = JSON.stringify(err);
       }
     ),
 
-    single_fetch.checkedStaticFetch( util.defaulted(sync_order.detail_url, '') )
-      .then( (response: Response) => response.text() )
-      .then( (text: string) => { diagnostics['detail_html'] = text; } ),
+    single_fetch.checkedStaticFetch(util.defaulted(sync_order.detail_url, ''))
+      .then((response: Response) => response.text())
+      .then((text: string) => { diagnostics['detail_html'] = text; }),
 
-    single_fetch.checkedStaticFetch( util.defaulted(sync_order.payments_url, '') )
-      .then( (response: Response) => response.text() )
-      .then( (text: string) => { diagnostics['invoice_html'] = text; } ),
+    iframeWorker.fetchURL(
+      sync_order.detail_url,
+      '',  // empty xpath: wait for the timeout to expire, but then succeed.
+      'assembleDiagnostics detail_html_cooked',
+    ).then(response => {diagnostics['detail_html_cooked'] = response.html;}),
+
+    single_fetch.checkedStaticFetch(util.defaulted(sync_order.payments_url, ''))
+      .then((response: Response) => response.text())
+      .then((text: string) => {diagnostics['invoice_html'] = text;}),
   ]).then(
     () => {
       getScheduler().abort();
@@ -506,6 +513,7 @@ export function create(
       scheduler,
       date_filter,
     );
+
     const wrapper = new Order(impl);
     return wrapper;
   } catch(err) {
