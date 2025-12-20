@@ -13,6 +13,7 @@ export function isWorker(): boolean {
   // start popping up that match these patterns.
   const relevantPage = url.includes('/transactions') ||
                        url.includes('/your-orders/orders') ||
+                       url.includes('/your-orders/order-details') ||
                        url.includes('/order-history') ||
                        url.includes('/gp/css/order-history');
 

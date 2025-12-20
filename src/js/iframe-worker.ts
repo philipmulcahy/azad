@@ -441,7 +441,8 @@ function removeIframeContainerIfPresentAndEmpty(): void {
  * Repeatedly polls the document to see if xpath matches.
  * If it doesn't match for long enough, the function times out + returns false.
  * If it matches, it immediately returns true.
- * @param xpath - xpath string to attempt matching.
+ * @param xpath - xpath string to attempt matching. If empty then match after
+ *                timing out.
  * @returns boolean: true for matched, false for timed out.
  */
 async function waitForXPathToMatch(
@@ -454,6 +455,10 @@ async function waitForXPathToMatch(
   const url = doc.documentURI;
 
   function matched(): boolean {
+    if (xpath == '') {
+      return false;
+    }
+
     try {
       const match = extraction.findSingleNodeValue(
         xpath,
@@ -469,6 +474,7 @@ async function waitForXPathToMatch(
       // Do nothing: I should not have had findSingleNodeValue throw when it
       // doesn't find stuff.
     }
+
     return false;
   }
 
@@ -486,7 +492,7 @@ async function waitForXPathToMatch(
 
   // One last time after the timer has expired, because there's no guarantee
   // that we've tested even once so far.
-  if (matched() ) {
+  if (matched() || xpath == '' ) {
     return true;
   }
 
@@ -499,7 +505,8 @@ async function waitForXPathToMatch(
  * Q: Why might we need to wait?
  * A: To allow site javascript to run, mutating the document.
  * @param url - xpath string to attempt matching.
- * @param completionXPath - xpath string to attempt matching.
+ * @param completionXPath - xpath string to attempt matching. If empty, then
+ *        completion is deemed after 10s.
  * @param guid - unique identifier of the request, so that the recipient of the
                  the result knows it is for them.
  * @returns string: "baked" html.
