@@ -25,7 +25,7 @@ export function firstMatchingStrategy<T>(
       } else {
         console.debug(
           strategy.name +
-          'returned invalid candidate: moving to next strategy or default');
+          ' returned invalid candidate: moving to next strategy or default');
       }
     } catch (_ex) {
       console.debug(
@@ -56,7 +56,7 @@ export async function firstMatchingStrategyAsync<T>(
       } else {
         console.debug(
           strategy.name +
-          'returned invalid candidate: moving to next strategy or default');
+          ' returned invalid candidate: moving to next strategy or default');
       }
     } catch (_ex) {
       console.debug(

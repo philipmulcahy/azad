@@ -241,7 +241,7 @@ function extractDetailFromDoc(
         '//span[' +
           'text()[contains(.,"Gift Card") and not(contains(.,"Gift Cards"))] ' +
           'and not (@data-testid) ' +
-        ']/ancestor::div[2]',
+        ']/ancestor::div[2][not (@data-pmts-component-id)]',
       ],
       null,
       null,
