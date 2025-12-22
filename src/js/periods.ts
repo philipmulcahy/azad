@@ -3,6 +3,7 @@ import * as cacheStuff from './cachestuff';
 import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
 import * as pageType from './page_type';
+import * as request_scheduler from './request_scheduler';
 import * as signin from './signin';
 import * as strategy from './strategy';
 import * as urls from './url';
@@ -43,7 +44,8 @@ export async function getLatestYear(): Promise<number> {
 }
 
 export async function advertisePeriods(
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port|null>
+  getBackgroundPort: ()=>Promise<chrome.runtime.Port|null>,
+  scheduler: request_scheduler.IRequestScheduler,
 ): Promise<void> {
   const periods = await getPeriods();
   const noPeriods = periods.length == 0;
@@ -54,7 +56,7 @@ export async function advertisePeriods(
     try {
       if (noPeriods && !inIframeWorker) {
         console.log('no periods found in naked page -> try iframe worker');
-        const url = await getUrl();
+        const url = await getUrl(scheduler);
 
         bg_port.postMessage({
           action: 'scrape_periods',
@@ -78,8 +80,10 @@ export async function advertisePeriods(
   }
 }
 
-async function getUrl(): Promise<string> {
-  const isBusinessAcct = await business.isBusinessAccount();
+async function getUrl(
+  scheduler: request_scheduler.IRequestScheduler,
+): Promise<string> {
+  const isBusinessAcct = await business.isBusinessAccount(scheduler);
 
   const url = isBusinessAcct ?
     business.getBaseOrdersPageURL():
@@ -90,7 +94,9 @@ async function getUrl(): Promise<string> {
   return url;
 }
 
-async function extractYears(): Promise<number[]> {
+async function extractYears(
+  scheduler: request_scheduler.IRequestScheduler
+): Promise<number[]> {
   const years_key = 'YEARS';
 
   const cached = util.defaulted<number []>(await getCache().get(years_key), []);
@@ -99,14 +105,14 @@ async function extractYears(): Promise<number[]> {
     return cached;
   }
 
-  const url = await getUrl();
+  const url = await getUrl(scheduler);
 
   async function getDoc(): Promise<Document> {
     console.log('fetching', url, 'for getYears()');
     const readyXPath = '//option[contains(@id, "timeFilterDropdown")]';
 
     const response = await iframeWorker.fetchURL(
-      url, readyXPath, 'extract available years');
+      url, readyXPath, 'extract available years', scheduler);
 
     const html = response.html;
     const doc = util.parseStringToDOM(html);
@@ -177,10 +183,11 @@ export function get_years(orders_page_doc: HTMLDocument): number[] {
 }
 
 export async function init(
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port|null>
+  getBackgroundPort: ()=>Promise<chrome.runtime.Port|null>,
+  scheduler: request_scheduler.IRequestScheduler,
 ): Promise<void>
 {
-  const years = await extractYears();
+  const years = await extractYears(scheduler);
   setYears(years);
-  advertisePeriods(getBackgroundPort);
+  advertisePeriods(getBackgroundPort, scheduler);
 }

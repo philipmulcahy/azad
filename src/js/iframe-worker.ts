@@ -110,6 +110,7 @@ import * as inject from './inject';
 import * as pageType from './page_type';
 import * as periods from './periods';
 import * as ports from './ports';
+import * as request_scheduler from './request_scheduler';
 import * as transaction from './transaction';
 import * as urls from './url';
 import * as util from './util';
@@ -280,7 +281,13 @@ export async function fetchURL(
   url: string,
   xpath: string,
   purpose: string,
+  scheduler: request_scheduler.IRequestScheduler,
 ): Promise<FetchResponse> {
+  if (scheduler.isOverlaid) {
+    const html = scheduler.cooked_overlay_url_map[url] ?? '';
+    return Promise.resolve({url, html});
+  }
+
   const guid: string = uuidv4();
 
   const requestMsg = {
@@ -326,7 +333,10 @@ export async function fetchURL(
   return result;
 }
 
-export async function handleInstructionsResponse(msg: any): Promise<void> {
+export async function handleInstructionsResponse(
+  msg: any,
+  scheduler: request_scheduler.IRequestScheduler,
+): Promise<void> {
   if (!pageType.isWorker()) {
     console.error('cannot start iframe task from outside an iframe');
   }
@@ -335,7 +345,7 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
 
   switch (action) {
     case 'scrape_periods':
-      periods.advertisePeriods(ports.getBackgroundPort);
+      periods.advertisePeriods(ports.getBackgroundPort, scheduler);
       break;
     case 'scrape_transactions':
       {

@@ -173,10 +173,6 @@ export function paymentsFromOrderDetailDocUsingTopology(
   // 1) write BNF including replacing the regular expressions.
   // 2) identify the leaf components with regex, and then BNF driven parser.
   function classifyNode(n: ClassedNode<Component>): Set<Component> {
-    if (n.directText.includes('ending in')) {
-      console.log('XXXXXX');
-    }
-
     if (n.isNonScriptText) {
       // Simple text node: regexes allow us to classify.
       const candidates = new Set<Component>(
@@ -279,8 +275,10 @@ export function paymentsFromOrderDetailDocUsingTopology(
 
 export function paymentsFromDetailPage(
   detailDoc: HTMLDocument,
+  detailUrl: string,
   defaultOrderDate: Date | null,
   defaultTotal: string,
+  scheduler: request_scheduler.IRequestScheduler,
 ): Promise<Payments> {
   function strategy0(): Promise<Payments> {
     const nodes = extraction.findMultipleNodeValues(
@@ -329,9 +327,10 @@ export function paymentsFromDetailPage(
   // uses cooked html
   async function strategy2(): Promise<Payments> {
     const cookedResponse = await iframeWorker.fetchURL(
-      detailDoc.URL,
+      detailUrl,
       '//*[contains(@class, "pmts-payments-instrument-details")]',
       'paymentsFromDetailPage strategy2',
+      scheduler,
     );
 
     const cookedHtml = cookedResponse.html;

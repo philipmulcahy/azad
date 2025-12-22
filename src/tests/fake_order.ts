@@ -64,12 +64,15 @@ export function orderFromTestData(
     const json: string = fs.readFileSync(path, 'utf8');
     const order_dump = JSON.parse(json);
     const url_map: request_scheduler.string_string_map = {};
+    const cooked_url_map: request_scheduler.string_string_map = {};
 
-    // TODO Contrive a way for www.amazon.com and similar to be replaced
-    //      with www.azadexample.com.
+    // TODO Contrive a way for www.amazon.com and similar to be replaced with
+    //      www.azadexample.com instead of having to hack input JSON files.
     url_map[order_dump.list_url] = order_dump.list_html;
     url_map[order_dump.detail_url] = order_dump.detail_html;
     url_map[order_dump.payments_url] = order_dump.invoice_html;
+
+    cooked_url_map[order_dump.detail_url] = order_dump.detail_html_cooked ?? '';
 
     ['item_data', 'tracking_data'].forEach( map_type => {
       const data = order_dump[map_type] as Record<string, string>;
@@ -84,7 +87,12 @@ export function orderFromTestData(
     });
 
     const scheduler = request_scheduler.create_overlaid(
-      'testing', url_map, ()=>Promise.resolve(null), statistics);
+      'testing',
+      url_map,
+      cooked_url_map,
+      () => Promise.resolve(null),
+      statistics,
+    );
 
     const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;
 

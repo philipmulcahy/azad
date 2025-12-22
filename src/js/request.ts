@@ -101,10 +101,12 @@ function makeDynamicFetchTask(
   url: string,
   readyXPath: string,
   purpose: string,
+  scheduler: request_scheduler.IRequestScheduler,
 ): IFetcher {
   return {
     execute: async function(): Promise<Event>{
-      const response = await iframeWorker.fetchURL(url, readyXPath, purpose);
+      const response = await iframeWorker.fetchURL(
+        url, readyXPath, purpose, scheduler);
 
       return {
         target: {
@@ -258,9 +260,7 @@ class AzadRequest<T> {
 
   async C_Send(): Promise<void> {
     this.check_state(base.State.DEQUEUED);
-    const url_map = this._scheduler.overlay_url_map();
-
-    if (Object.keys(url_map).length != 0) {
+    if (this._scheduler.isOverlaid) {
       return this.L_Overlaid();
     } else {
       this.change_state(base.State.SENT);
@@ -282,11 +282,8 @@ class AzadRequest<T> {
   }
 
   async L_Overlaid(): Promise<void> {
-    const url_map: request_scheduler.string_string_map
-                   = this._scheduler.overlay_url_map();
-
-    if (this._url in url_map) {
-      const response_text = url_map[this._url];
+    if (this._url in this._scheduler.overlay_url_map) {
+      const response_text = this._scheduler.overlay_url_map[this._url];
 
       const fake_event: Event = {
         target: {
@@ -465,7 +462,8 @@ export async function makeAsyncDynamicRequest<T>(
   debug_context: string,
 ): Promise<T> {
   console.log(`makeAsyncDynamicRequest(${url}, ${request_type}, ...) starting`);
-  const fetcher = makeDynamicFetchTask(url, readyXPath, debug_context);
+  const fetcher = makeDynamicFetchTask(
+    url, readyXPath, debug_context, scheduler);
   
   try {
     const req = new AzadRequest(

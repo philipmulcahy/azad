@@ -9,6 +9,7 @@
 import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
 import * as order_list_page from './order_list_page';
+import * as request_scheduler from './request_scheduler';
 import * as urls from './url';
 import * as util from './util';
 
@@ -19,9 +20,11 @@ let _isBusinessAccount: boolean|null = null;
  * this module.
  * @returns true if the account that doc
  */
-export async function isBusinessAccount(): Promise<boolean> {
+export async function isBusinessAccount(
+  scheduler: request_scheduler.IRequestScheduler,
+): Promise<boolean> {
   if (_isBusinessAccount == null) {
-    const doc = await getBaseOrdersPage();
+    const doc = await getBaseOrdersPage(scheduler);
 
     const hasBusinessAccountPicker = extraction.findMultipleNodeValues(
       '//*[@class="abnav-accountfor"]',
@@ -125,7 +128,10 @@ export function getBaseOrdersPageURL() {
 // }
 
 const BTB_KEY_XPATH_0 = '//option[contains(@value, "yoAllOrders-")]';
-const BTB_KEY_XPATH_1 = '//select[@name="selectedB2BGroupKey"]/option[starts-with(@value, "B2B:")]';
+
+const BTB_KEY_XPATH_1 = '//select[@name="selectedB2BGroupKey"]/' +
+                        'option[starts-with(@value, "B2B:")]';
+
 const BTB_KEY_XPATH_2 = '//div[contains(@class, "yohtmlc-order-id")]';
 const BTB_KEY_XPATHS = [
   BTB_KEY_XPATH_0,
@@ -133,11 +139,17 @@ const BTB_KEY_XPATHS = [
   BTB_KEY_XPATH_2,
 ].join('|');
 
-async function getBaseOrdersPage(): Promise<HTMLDocument> {
+async function getBaseOrdersPage(
+  requestScheduler: request_scheduler.IRequestScheduler,
+): Promise<HTMLDocument> {
   const baseUrl = getBaseOrdersPageURL();
 
   const response = await iframeWorker.fetchURL(
-    baseUrl, BTB_KEY_XPATHS, 'get base orders page url');
+    baseUrl,
+    BTB_KEY_XPATHS,
+    'get base orders page url',
+    requestScheduler,
+  );
 
   const html = response.html;
   const doc = util.parseStringToDOM(html);

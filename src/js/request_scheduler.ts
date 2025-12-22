@@ -31,7 +31,17 @@ export interface IRequestScheduler {
   isLive(): boolean;
   purpose(): string;
   stats(): stats.Statistics;
-  overlay_url_map(): string_string_map;
+
+  get isOverlaid(): boolean  // If there are any entries in overlay_url_map
+                             // then all responses will be drawn from the two
+                             // overlay maps.
+                             // TODO: replace "overlay" with a better word.
+
+  // HTML that has not had a chance to self-modify.
+  get overlay_url_map(): string_string_map;
+
+  // HTML that has been self-modified by its own scripts.
+  get cooked_overlay_url_map(): string_string_map;
 }
 
 class RequestTracker {
@@ -82,6 +92,7 @@ class RequestScheduler {
 
   _stats: stats.Statistics;
   _overlay_url_map: string_string_map = {};
+  _cooked_overlay_url_map: string_string_map = {};
   _purpose: string;
 
   _queue: binary_heap.BinaryHeap = new binary_heap.BinaryHeap(
@@ -113,11 +124,13 @@ class RequestScheduler {
   constructor(
     purpose: string,
     overlay_url_map: string_string_map,
+    cooked_overlay_url_map: string_string_map,
     get_background_port: () => Promise<chrome.runtime.Port|null>,
     statistics: stats.Statistics,
   ) {
     this._purpose = purpose;
     this._overlay_url_map = overlay_url_map;
+    this._cooked_overlay_url_map = cooked_overlay_url_map;
     this._get_background_port = get_background_port;
     this._stats = statistics;
     console.log('constructing new RequestScheduler');
@@ -125,7 +138,19 @@ class RequestScheduler {
   }
 
   purpose(): string { return this._purpose; }
-  overlay_url_map(): string_string_map { return this._overlay_url_map; }
+
+  get isOverlaid(): boolean {
+    return !(
+      Object.keys(this._overlay_url_map).length == 0 &&
+      Object.keys(this._cooked_overlay_url_map).length == 0
+    );
+  }
+
+  get overlay_url_map(): string_string_map { return this._overlay_url_map; }
+
+  get cooked_overlay_url_map(): string_string_map {
+    return this._cooked_overlay_url_map;
+  }
 
   schedule(task: PrioritisedTask, stateful: request_base.UntypedRequest) {
     const id = this._sequence_number;
@@ -255,15 +280,16 @@ export function create(
   statistics: stats.Statistics,
 ): IRequestScheduler {
   return new RequestScheduler(
-    purpose, {}, background_port_getter, statistics);
+    purpose, {}, {}, background_port_getter, statistics);
 }
 
 export function create_overlaid(
   purpose: string,
   url_map: string_string_map,
+  cooked_url_map: string_string_map,
   background_port_getter: () => Promise<chrome.runtime.Port | null>,
   statistics: stats.Statistics,
 ): IRequestScheduler {
   return new RequestScheduler(
-    purpose, url_map, background_port_getter, statistics);
+    purpose, url_map, cooked_url_map, background_port_getter, statistics);
 }

@@ -484,6 +484,7 @@ export async function assembleDiagnostics(
       sync_order.detail_url,
       '',  // empty xpath: wait for the timeout to expire, but then succeed.
       'assembleDiagnostics detail_html_cooked',
+      getScheduler(),
     ).then(response => {diagnostics['detail_html_cooked'] = response.html;}),
 
     single_fetch.checkedStaticFetch(util.defaulted(sync_order.payments_url, ''))

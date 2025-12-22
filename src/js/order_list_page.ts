@@ -29,13 +29,17 @@ async function getExpectedOrderCount(
   site: string,
   year: number,
   urlGenerator: headerPageUrlGenerator,
+  scheduler: request_scheduler.IRequestScheduler,
 ): Promise<number> {
   const aUrl = await urlGenerator(site, year, 0);
   const url = aUrl.url;
   const pageReadyXpath = '//span[@class="num-orders"]';
 
   const response = await iframeWorker.fetchURL(
-    url, pageReadyXpath, 'get expected order count');
+    url, pageReadyXpath,
+    'get expected order count',
+    scheduler,
+  );
 
   const doc = util.parseStringToDOM(response.html);
 
@@ -161,7 +165,7 @@ export async function getHeaders(
     urlGenerator: headerPageUrlGenerator
   ): Promise<order_header.IOrderHeader[]> {
     let expected_order_count = await getExpectedOrderCount(
-      site, year, urlGenerator);
+      site, year, urlGenerator, scheduler);
 
     console.log(`setting expected order count to ${expected_order_count}`);
 
@@ -207,7 +211,7 @@ export async function getHeaders(
     return headers;
   }
 
-  const isBusinessAcct: boolean = await business.isBusinessAccount();
+  const isBusinessAcct: boolean = await business.isBusinessAccount(scheduler);
 
   const urlGenerators: headerPageUrlGenerator[] = isBusinessAcct ?
     [business.getOrderHeadersSequencePageURL] :

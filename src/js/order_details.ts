@@ -57,7 +57,7 @@ export async function extractDetailPromise(
     shipments.forEach(
       s => console.log('shipment: ' + s.toString()));
     return {
-      details: extractDetailFromDoc(header, doc),
+      details: extractDetailFromDoc(header, url, doc, scheduler),
       items: await get_items(
         header,
         doc.documentElement,
@@ -113,7 +113,9 @@ async function get_items(
 
 function extractDetailFromDoc(
   header: order_header.IOrderHeader,
+  url: string,
   doc: HTMLDocument,
+  scheduler: request_scheduler.IRequestScheduler,
 ): IOrderDetails {
   const context = 'id:' + header.id;
   const who = function(): string {
@@ -516,8 +518,10 @@ function extractDetailFromDoc(
   function payments(): Promise<payment.Payments>{
     return payment.paymentsFromDetailPage(
       doc,
+      url,
       order_date,
-      total
+      total,
+      scheduler,
     );
   }
 

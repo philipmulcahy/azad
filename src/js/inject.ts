@@ -167,7 +167,7 @@ function handleMessageFromBackground(pageType: string, msg: any): void {
       handleMessageFromBackgroundToRootContentPage(msg);
       break;
     case 'azad_iframe_worker':
-      iframeWorker.handleInstructionsResponse(msg);
+      iframeWorker.handleInstructionsResponse(msg, getScheduler());
       break;
     default:
       console.warn('unknown pageType:', pageType);
@@ -259,7 +259,7 @@ function initialiseContentScript() {
   const inIframe = pageType.isIframe();
 
   if (!inIframe) {
-    periods.init(ports.getBackgroundPort);
+    periods.init(ports.getBackgroundPort, getScheduler());
   }
 }
 
