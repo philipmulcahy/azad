@@ -137,12 +137,151 @@ function payments_from_invoice(
   return payments;
 }
 
+
+// exported only for testing purposes
+export function paymentsFromOrderDetailDocUsingTopology(
+  doc: HTMLDocument,
+  defaultOrderDate: Date | null,
+  defaultTotal: string,
+): Promise<Payments> {
+  // Indentation here reflects expected topology to help understand code: it has
+  // no significance to the actual behaviour of the code.
+  enum Component {
+    PAYMENT_SOURCES = 'payment_sources',  // composite, no entry in patterns below.
+      PAYMENT_SOURCE = 'payment_source',  // composite, no entry in patterns below.
+        GIFT_CARD = 'gift_card',
+  //    or
+        CARD_DETAILS = 'card_details',  // composite, no entry in patterns below.
+          CARD_NAME = 'card_name',
+          CARD_SEPERATOR = 'card_seperator',
+          CARD_DIGITS = 'card_digits',
+  }
+
+  const patterns = new Map<Component, RegExp>([
+    // blanked digits or 'ending in'
+    [Component.CARD_SEPERATOR, new RegExp('([•*]{3,4}|ending in)')],
+
+    [Component.CARD_DIGITS, new RegExp('([0-9]{3,4})')],
+    [Component.CARD_NAME, new RegExp('([A-Za-z][A-Za-z0-9. ]{2,49})')],
+
+    [Component.GIFT_CARD,
+     new RegExp('(Amazon Gift Card|Amazon-Geschenkgutschein)')],
+  ]);
+
+  // This function has grown to feel sordid, and hard to understand.
+  // I would like instead to adopt one of the following strategies:
+  // 1) write BNF including replacing the regular expressions.
+  // 2) identify the leaf components with regex, and then BNF driven parser.
+  function classifyNode(n: ClassedNode<Component>): Set<Component> {
+    if (n.directText.includes('ending in')) {
+      console.log('XXXXXX');
+    }
+
+    if (n.isNonScriptText) {
+      // Simple text node: regexes allow us to classify.
+      const candidates = new Set<Component>(
+        [...patterns.keys()].filter(p => n.match(p) != null));
+
+      const cardDigitsToLeft: boolean = n.hasSiblingToLeft(
+        s => s.components.has(Component.CARD_SEPERATOR)
+      );
+
+      if (candidates.has(Component.CARD_DIGITS)) {
+          if (cardDigitsToLeft) {
+            candidates.clear();
+            candidates.add(Component.CARD_DIGITS);
+          } else if (!candidates.has(Component.CARD_SEPERATOR)) {
+            candidates.delete(Component.CARD_DIGITS);
+          }
+      }
+
+      return candidates;
+    }
+
+    // We need to look below ourselves to figure out what we might be.
+    const possibles: Set<Component> = new Set<Component>();
+    const descendants = n.classedDescendants;
+
+    function countDescendants(cn: Component): number {
+      return descendants.filter(d => d.components.has(cn)).length;
+    }
+
+    if (
+      countDescendants(Component.PAYMENT_SOURCES) == 0 && (
+        countDescendants(Component.PAYMENT_SOURCE) >= 1
+      )
+    ) {
+      possibles.add(Component.PAYMENT_SOURCES);
+    }
+
+    if (
+      countDescendants(Component.PAYMENT_SOURCE) == 0 &&
+      (
+        (
+          countDescendants(Component.CARD_DETAILS) == 1 &&
+          countDescendants(Component.GIFT_CARD) == 0
+        ) || (
+          countDescendants(Component.CARD_DETAILS) == 0 &&
+          countDescendants(Component.GIFT_CARD) == 1
+        )
+      )
+    ) {
+      possibles.add(Component.PAYMENT_SOURCE);
+    }
+
+    if (
+      countDescendants(Component.GIFT_CARD) == 0 &&
+      countDescendants(Component.CARD_DETAILS) == 0 &&
+      countDescendants(Component.PAYMENT_SOURCE) == 0 &&
+      countDescendants(Component.CARD_NAME) >= 1 &&
+      countDescendants(Component.CARD_SEPERATOR) == 1 &&
+      countDescendants(Component.CARD_DIGITS) == 1
+    ) {
+      possibles.add(Component.CARD_DETAILS);
+    }
+
+    if (
+      countDescendants(Component.CARD_DETAILS) == 0 &&
+      countDescendants(Component.PAYMENT_SOURCE) == 0 &&
+      countDescendants(Component.GIFT_CARD) == 1
+    ) {
+      possibles.add(Component.GIFT_CARD);
+    }
+
+    return possibles;
+  }
+
+  const t = new TopologicalScrape<Component>(
+    patterns,
+    classifyNode,
+    doc.documentElement,
+  );
+
+  const sources = t.classified
+    .filter(n => n.components.has(Component.PAYMENT_SOURCE))
+    .map(n => n.text);
+
+  if (sources.length == 1) {
+    const source = sources[0];
+
+    const paymentString =  [
+      source,
+      defaultOrderDate ? dateToDateIsoString(defaultOrderDate) : '?',
+      defaultTotal,
+    ].join(': ');
+
+    return Promise.resolve([paymentString]);
+  } else {
+    return Promise.resolve(sources);
+  }
+}
+
+
 export function paymentsFromDetailPage(
   detailDoc: HTMLDocument,
   defaultOrderDate: Date | null,
   defaultTotal: string,
 ): Promise<Payments> {
-
   function strategy0(): Promise<Payments> {
     const nodes = extraction.findMultipleNodeValues(
       '//*[contains(@class, "paystationpaymentmethod")]',
@@ -175,132 +314,16 @@ export function paymentsFromDetailPage(
     );
   }
 
-  function useTopology(doc: HTMLDocument): Promise<Payments> {
-    // Indentation here reflects expected topology to help understand code: it has
-    // no significance to the actual behaviour of the code.
-    enum Component {
-      PAYMENT_SOURCES = 'payment_sources',  // composite, no entry in patterns below.
-        PAYMENT_SOURCE = 'payment_source',  // composite, no entry in patterns below.
-          GIFT_CARD = 'gift_card',
-    //    or
-          CARD_DETAILS = 'card_details',  // composite, no entry in patterns below.
-            CARD_NAME = 'card_name',
-            BLANKED_DIGITS = 'blanked_digits',
-             CARD_DIGITS = 'card_digits',
-    }
-
-    const patterns = new Map<Component, RegExp>([
-      [Component.BLANKED_DIGITS, new RegExp('([•*]{3,4})')],
-      [Component.CARD_DIGITS, new RegExp('([0-9]{3,4})')],
-      [Component.CARD_NAME, new RegExp('([A-Za-z][A-Za-z0-9. ]{2,49})')],
-      [Component.GIFT_CARD,
-       new RegExp('(Amazon Gift Card|Amazon-Geschenkgutschein)')],
-    ]);
-
-    // This function has grown to feel sordid, and hard to understand.
-    // I would like instead to adopt one of the following strategies:
-    // 1) write BNF including replacing the regular expressions.
-    // 2) identify the leaf components with regex, and then BNF driven parser.
-    function classifyNode(n: ClassedNode<Component>): Set<Component> {
-      if (n.isNonScriptText) {
-        // Simple text node: regexes allow us to classify.
-        const candidates = new Set<Component>(
-          [...patterns.keys()].filter(p => n.match(p) != null));
-
-        if (candidates.has(Component.CARD_DIGITS)) {
-            if (n.hasSiblingToLeft(
-              s => s.components.has(Component.BLANKED_DIGITS)
-            )) {
-              candidates.clear();
-              candidates.add(Component.CARD_DIGITS);
-            } else {
-              candidates.delete(Component.CARD_DIGITS);
-            }
-        }
-
-        return candidates;
-      }
-
-      // We need to look below ourselves to figure out what we might be.
-      const possibles: Set<Component> = new Set<Component>();
-      const descendants = n.classedDescendants;
-
-      function countDescendants(cn: Component): number {
-        return descendants.filter(d => d.components.has(cn)).length;
-      }
-
-      if (
-        countDescendants(Component.PAYMENT_SOURCES) == 0 && (
-          countDescendants(Component.PAYMENT_SOURCE) >= 1
-        )      ) {
-        possibles.add(Component.PAYMENT_SOURCES);
-      }
-
-      if (
-        countDescendants(Component.PAYMENT_SOURCE) == 0 &&
-        (
-          (
-            countDescendants(Component.CARD_DETAILS) == 1 &&
-            countDescendants(Component.GIFT_CARD) == 0
-          ) || (
-            countDescendants(Component.CARD_DETAILS) == 0 &&
-            countDescendants(Component.GIFT_CARD) == 1
-          )
-        )
-      ) {
-        possibles.add(Component.PAYMENT_SOURCE);
-      }
-
-      if (
-        countDescendants(Component.GIFT_CARD) == 0 &&
-        countDescendants(Component.CARD_DETAILS) == 0 &&
-        countDescendants(Component.PAYMENT_SOURCE) == 0 &&
-        countDescendants(Component.CARD_NAME) >= 1 &&
-        countDescendants(Component.BLANKED_DIGITS) == 1 &&
-        countDescendants(Component.CARD_DIGITS) == 1
-      ) {
-        possibles.add(Component.CARD_DETAILS);
-      }
-
-      if (
-        countDescendants(Component.CARD_DETAILS) == 0 &&
-        countDescendants(Component.PAYMENT_SOURCE) == 0 &&
-        countDescendants(Component.GIFT_CARD) == 1
-      ) {
-        possibles.add(Component.GIFT_CARD);
-      }
-
-      return possibles;
-    }
-
-    const t = new TopologicalScrape<Component>(
-      patterns,
-      classifyNode,
-      doc.documentElement,
-    );
-
-    const sources = t.classified
-      .filter(n => n.components.has(Component.PAYMENT_SOURCE))
-      .map(n => n.text);
-
-    if (sources.length == 1) {
-      const source = sources[0];
-
-      const paymentString =  [
-        source,
-        defaultOrderDate ? dateToDateIsoString(defaultOrderDate) : '?',
-        defaultTotal,
-      ].join(': ');
-
-      return Promise.resolve([paymentString]);
-    } else {
-      return Promise.resolve(sources);
-    }
-  }
 
   // uses raw html
   function strategy1(): Promise<Payments> {
-    return Promise.resolve(useTopology(detailDoc));
+    return Promise.resolve(
+      paymentsFromOrderDetailDocUsingTopology(
+        detailDoc,
+        defaultOrderDate,
+        defaultTotal,
+      )
+    );
   }
 
   // uses cooked html
@@ -313,7 +336,11 @@ export function paymentsFromDetailPage(
 
     const cookedHtml = cookedResponse.html;
     const cookedDoc = util.parseStringToDOM(cookedHtml);
-    return useTopology(cookedDoc);
+    return paymentsFromOrderDetailDocUsingTopology(
+      cookedDoc,
+      defaultOrderDate,
+      defaultTotal,
+    );
   }
 
   return strategy.firstMatchingStrategyAsync<Payments>(
