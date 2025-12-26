@@ -115,6 +115,8 @@ async function extractYears(): Promise<number[]> {
   }
 }
 
+
+// exported only for testing
 export function getYearsFromDoc(orders_page_doc: HTMLDocument): number[] {
   type Strategy = (orders_page_doc: HTMLDocument) => number[];
 
@@ -166,6 +168,7 @@ export function getYearsFromDoc(orders_page_doc: HTMLDocument): number[] {
   return strategy.firstMatchingStrategy('getYears', strategies, []);
 }
 
+// Called by content pages
 export async function scrapeAndAdvertise(
   getBackgroundPort: ()=>Promise<chrome.runtime.Port|null>
 ): Promise<void>
