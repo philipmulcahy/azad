@@ -8,26 +8,51 @@ import * as strategy from './strategy';
 import * as urls from './url';
 import * as util from './util';
 
-let setYears: (years: number[])=>void;
+type YearsCacheValue = {
+  expiryTimestampMillis: number;
+  years: number[];
+};
 
-const yearsPromise = new Promise<number[]>((resolve, _reject) => {
-  let years: number[] = [];
+export class YearsCache {
+  private static CACHE_KEY = 'YEARS';
 
-  setYears = function(years: number[]) {
-    resolve(years);
-  };
-});
+  private static get() {
+    return cacheStuff.createLocalCache('PERIODS');
+  }
 
-function getCache() {
-  return cacheStuff.createLocalCache('PERIODS');
-}
+  static clear() {
+    this.get().clear();
+  }
 
-export function clearCache() {
-  getCache().clear();
-}
+  // returns [] if anything goes wrong,
+  // such as expiry of the previously stored entry
+  // or there being no entry there, or it being corrupt.
+  static async readYears(): Promise<number[]> {
+    try {
+      const nowTimestampMillis: number = new Date().getTime();
+      const result = await this.get().get(this.CACHE_KEY);
+      const decoded = JSON.parse(result) as YearsCacheValue;
+      if (nowTimestampMillis > decoded.expiryTimestampMillis) {
+        throw new Error('cached years value too old');
+      }
+      return decoded.years;
+    } catch (_) {
+      return Promise.resolve([]);
+    }
+  }
 
-function getYears(): Promise<number[]> {
-  return yearsPromise;
+  static async writeYears(years: number[]): Promise<void> {
+    const now = new Date().getTime();
+    const expiry = now + 24 * 60 * 60 * 1000;  // 24h later.
+
+    const cacheValue: YearsCacheValue = {
+      expiryTimestampMillis: expiry,
+      years
+    };
+
+    await this.get().set(this.CACHE_KEY, years);
+    return;
+  }
 }
 
 async function getPeriods(): Promise<number[]> {
@@ -46,28 +71,16 @@ export async function advertisePeriods(
   getBackgroundPort: ()=>Promise<chrome.runtime.Port|null>
 ): Promise<void> {
   const periods = await getPeriods();
-  const noPeriods = periods.length == 0;
   const bg_port = await getBackgroundPort();
-  const inIframeWorker = pageType.isWorker();
 
   if (bg_port) {
     try {
-      if (noPeriods && !inIframeWorker) {
-        console.log('no periods found in naked page -> try iframe worker');
-        const url = await getUrl();
+      console.log('advertising periods', periods);
 
-        bg_port.postMessage({
-          action: 'scrape_periods',
-          url: url,
-        });
-      } else {
-        console.log('advertising periods', periods);
-
-        bg_port.postMessage({
-          action: 'advertise_periods',
-          periods: periods,
-        });
-      }
+      bg_port.postMessage({
+        action: 'advertise_periods',
+        periods: periods,
+      });
     } catch (ex) {
       console.warn(
         'periods.advertisePeriods got: ', ex,
@@ -90,15 +103,26 @@ async function getUrl(): Promise<string> {
   return url;
 }
 
-async function extractYears(): Promise<number[]> {
-  const years_key = 'YEARS';
+async function getYears(): Promise<number[]> {
 
-  const cached = util.defaulted<number []>(await getCache().get(years_key), []);
-  if (cached.length != 0) {
-    console.log('extractYears() returning cached value', cached);
-    return cached;
+  // Only called if we've not got a valid cached value.
+  async function reallyGetYears(): Promise<number[]> {
+    const years = await getYearsFromHtml();
+    await YearsCache.writeYears(years);
+    return years;
   }
 
+  return strategy.firstMatchingStrategyAsync<number[]>(
+    'periods.getYears()',
+    [
+      YearsCache.readYears,
+      reallyGetYears,
+    ],
+    []
+  );
+}
+
+async function getYearsFromHtml(): Promise<number[]> {
   const url = await getUrl();
 
   async function getDoc(): Promise<Document> {
@@ -115,9 +139,8 @@ async function extractYears(): Promise<number[]> {
 
   try {
     const doc = await getDoc();
-    const years: number[] = get_years(doc);
+    const years: number[] = yearsFromDoc(doc);
     console.log('extractYears() returning ', years);
-    getCache().set(years_key, years);
     return years;
   } catch (exception) {
     console.error('extractYears() caught:', exception);
@@ -125,13 +148,13 @@ async function extractYears(): Promise<number[]> {
   }
 }
 
-export function get_years(orders_page_doc: HTMLDocument): number[] {
-  type Strategy = (orders_page_doc: HTMLDocument) => number[];
+export function yearsFromDoc(ordersPage: HTMLDocument): number[] {
+  type Strategy = () => number[];
 
-  const  strategy0: Strategy = function(doc: HTMLDocument) {
+  const  strategy0: Strategy = function() {
     const snapshot: Node[] = extraction.findMultipleNodeValues(
       '//select[@name="orderFilter" or @name="timeFilter"]/option[@value]',
-      doc.documentElement,
+      ordersPage.documentElement,
     );
 
     const years = snapshot
@@ -152,10 +175,10 @@ export function get_years(orders_page_doc: HTMLDocument): number[] {
     return years;
   };
 
-  const  strategy1: Strategy = function(doc: HTMLDocument) {
+  const  strategy1: Strategy = function() {
     const snapshot: Node[] = extraction.findMultipleNodeValues(
       '//select[@id="timeFilterDropdown"]/option',
-      doc.documentElement,
+      ordersPage.documentElement,
     );
 
     const years = snapshot
@@ -172,15 +195,9 @@ export function get_years(orders_page_doc: HTMLDocument): number[] {
     return years;
   };
 
-  const strategies = [strategy0, strategy1].map(s => () => s(orders_page_doc));
-  return strategy.firstMatchingStrategy('getYears', strategies, []);
-}
-
-export async function init(
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port|null>
-): Promise<void>
-{
-  const years = await extractYears();
-  setYears(years);
-  advertisePeriods(getBackgroundPort);
+  return strategy.firstMatchingStrategy(
+    'getYears',
+    [strategy0, strategy1],
+    []
+  );
 }

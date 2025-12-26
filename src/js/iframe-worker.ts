@@ -36,40 +36,6 @@
 // thanks https://asciiflow.com/
 //
 /////////////////////////////////////////////////
-// Get Years
-/////////////////////////////////////////////////
-//
-//  ┌─────┐┌──────────┐┌───────┐┌──────┐┌──────┐
-//  │POPUP││BACKGROUND││CONTENT││IFRAME││AMAZON│
-//  └─┬───┘└─────┬────┘└───┬───┘└───┬──┘└───┬──┘
-//    │          │         │        │       │
-//  1 │          │ action! │        │       │
-//    │         │││◄───────┤        │       │
-//    │         │││        │        │       │
-//    │         │││ action!│        │       │
-//  2 │         ││├──────►1│        │       │
-//    │         │││        │ setup  │       │
-//  3 │ remember│││        ├──────►1│       │
-//    │ proposed│││        │        │       │
-//    │ action  │││ what do│I do?   │       │
-//  4 │         │││◄───────┼────────┤       │
-//    │         │││        │        │       │
-//    │         │││  here's│what    │       │
-//  5 │         ││├────────┼───────►│ data? │
-//  6 │          │         │        ├──────►│
-//    │          │         │        │       │
-//    │          │         │        │ data  │
-//  7 │          │      results     │◄──────┤
-//  8 │          │◄────────┼────────┤       │
-//    │          │         │        │       │
-//    │ display  │         │        │       │
-//  9 │◄─────────┤         │        │       │
-//    │          │         │        │       │
-//    │          │ remove  │        │       │
-//    │          │ iframe  │        │       │
-// 10 │          ├───────►*│        │       │
-//
-/////////////////////////////////////////////////
 // Get Processed/Cooked HTML
 /////////////////////////////////////////////////
 //
@@ -108,7 +74,6 @@
 import * as extraction from './extraction';
 import * as inject from './inject';
 import * as pageType from './page_type';
-import * as periods from './periods';
 import * as ports from './ports';
 import * as transaction from './transaction';
 import * as urls from './url';
@@ -334,9 +299,6 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
   const action = msg.action;
 
   switch (action) {
-    case 'scrape_periods':
-      periods.advertisePeriods(ports.getBackgroundPort);
-      break;
     case 'scrape_transactions':
       {
         if (

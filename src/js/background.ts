@@ -132,25 +132,6 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
   try {
     console.log('handleMessageFromContentScript handling', msg.action);
     switch (msg.action) {
-      case 'scrape_periods':
-        {
-          console.log(
-            'a content script asked for an iframe to discover periods');
-
-          const guid = uuidv4();
-          msg.guid = guid;
-          const purpose = 'scrape years';
-          iframeWorkerTaskSpecs.set(guid, msg);
-
-          sendToOneContentPage({
-            action: 'start_iframe_worker',
-            url: msg.url,
-            guid,
-            purpose,
-          });
-        }
-
-        break;
       case 'advertise_periods':
         console.log('forwarding advertise_periods', msg.period);
 
