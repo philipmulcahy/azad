@@ -2,7 +2,7 @@
 
 type ControlPortMessagePeriods = {
     action: string;
-    periods: number[];
+    years: number[];
 }
 
 type ControlPortMessageAuth = {

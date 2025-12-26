@@ -8,16 +8,6 @@ import * as strategy from './strategy';
 import * as urls from './url';
 import * as util from './util';
 
-let setYears: (years: number[])=>void;
-
-const yearsPromise = new Promise<number[]>((resolve, _reject) => {
-  let years: number[] = [];
-
-  setYears = function(years: number[]) {
-    resolve(years);
-  };
-});
-
 function getCache() {
   return cacheStuff.createLocalCache('PERIODS');
 }
@@ -26,8 +16,8 @@ export function clearCache() {
   getCache().clear();
 }
 
-function getYears(): Promise<number[]> {
-  return yearsPromise;
+async function getYears(): Promise<number[]> {
+  return TODO;
 }
 
 async function getPeriods(): Promise<number[]> {
@@ -102,7 +92,7 @@ async function extractYears(): Promise<number[]> {
   const url = await getUrl();
 
   async function getDoc(): Promise<Document> {
-    console.log('fetching', url, 'for getYears()');
+    console.log('fetching', url, 'for extractYears()');
     const readyXPath = '//option[contains(@id, "timeFilterDropdown")]';
 
     const response = await iframeWorker.fetchURL(
@@ -115,7 +105,7 @@ async function extractYears(): Promise<number[]> {
 
   try {
     const doc = await getDoc();
-    const years: number[] = get_years(doc);
+    const years: number[] = getYearsFromDoc(doc);
     console.log('extractYears() returning ', years);
     getCache().set(years_key, years);
     return years;
@@ -125,7 +115,7 @@ async function extractYears(): Promise<number[]> {
   }
 }
 
-export function get_years(orders_page_doc: HTMLDocument): number[] {
+export function getYearsFromDoc(orders_page_doc: HTMLDocument): number[] {
   type Strategy = (orders_page_doc: HTMLDocument) => number[];
 
   const  strategy0: Strategy = function(doc: HTMLDocument) {
@@ -176,11 +166,10 @@ export function get_years(orders_page_doc: HTMLDocument): number[] {
   return strategy.firstMatchingStrategy('getYears', strategies, []);
 }
 
-export async function init(
+export async function scrapeAndAdvertise(
   getBackgroundPort: ()=>Promise<chrome.runtime.Port|null>
 ): Promise<void>
 {
   const years = await extractYears();
-  setYears(years);
   advertisePeriods(getBackgroundPort);
 }

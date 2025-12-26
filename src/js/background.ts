@@ -4,6 +4,7 @@
 
 import * as cachestuff from './cachestuff';
 import * as crypto from './crypto';
+import * as date from './date';
 import * as extpay from './extpay_client';
 import * as msg from './message_types';
 import * as remoteLog from './remote_log';
@@ -228,6 +229,19 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
           }
         )();
         break;
+      case 'years':
+        {
+          settings.storeString('available_years', JSON.stringify({
+            years: msg.years,
+            expiry: new Date().getTime() + (24 * 60 * 60 * 1000),  // +24h
+          }));
+
+          control_port.postMessage({
+            action: 'years',
+            years: msg.years,
+          });
+        }
+        break;
       default:
         console.debug('unknown action: ' + msg.action);
         break;
@@ -242,6 +256,28 @@ async function handleMessageFromControl(msg: any) {
   try {
     console.log('handleMessageFromControl handling', msg);
     switch (msg.action) {
+      case 'get_years':
+        {
+          try {
+            const cachedString = await settings.getString('available_years');
+            const cached = JSON.parse(cachedString);
+            const now = date.dateToDateIsoString(new Date());
+            const expiry= cached.expiry;
+
+            if (now > expiry) {
+              throw(new Error('cached years expired'));
+            }
+
+            control_port.postMessage({
+              action: 'years',
+              years: cached.years,
+            });
+          } catch(_) {
+            console.log('sending get_years to content page');
+            sendToOneContentPage({action: 'get_years'});
+          }
+        }
+        break;
       case 'scrape_years':
       case 'scrape_range':
         await async function() {
