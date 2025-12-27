@@ -415,6 +415,11 @@ async function waitForXPathToMatch(
   const DEADLINE_MILLIS = 10 * 1000;
   const INCREMENT_MILLIS = 500;
   const url = doc.documentURI;
+  const backgroundPort = await ports.getBackgroundPort();
+
+  function sendKeepAlive() {
+    backgroundPort?.postMessage({action: 'keepalive'});
+  }
 
   function matched(): boolean {
     if (xpath == '') {
@@ -442,6 +447,7 @@ async function waitForXPathToMatch(
 
   while (elapsedMillis <= DEADLINE_MILLIS) {
     console.log(`waitForXPathToMatch waiting ${INCREMENT_MILLIS} ${url} ${xpath}`);
+    sendKeepAlive();
     await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
     elapsedMillis += INCREMENT_MILLIS;
     console.log(`waitForXPathToMatch elapsedMillis ${elapsedMillis}, ${url}, ${xpath}`);
@@ -455,6 +461,7 @@ async function waitForXPathToMatch(
   // One last time after the timer has expired, because there's no guarantee
   // that we've tested even once so far.
   if (matched() || xpath == '' ) {
+    sendKeepAlive();
     return true;
   }
 

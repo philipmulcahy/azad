@@ -21,7 +21,7 @@ export class YearsCache {
   }
 
   static clear() {
-    this.get().clear();
+    YearsCache.get().clear();
   }
 
   // returns [] if anything goes wrong,
@@ -30,7 +30,7 @@ export class YearsCache {
   static async readYears(): Promise<number[]> {
     try {
       const nowTimestampMillis: number = new Date().getTime();
-      const result = await this.get().get(this.CACHE_KEY);
+      const result = await YearsCache.get().get(YearsCache.CACHE_KEY);
       const decoded = JSON.parse(result) as YearsCacheValue;
       if (nowTimestampMillis > decoded.expiryTimestampMillis) {
         throw new Error('cached years value too old');
@@ -50,44 +50,33 @@ export class YearsCache {
       years
     };
 
-    await this.get().set(this.CACHE_KEY, years);
+    const packedValue = JSON.stringify(cacheValue);
+
+    await YearsCache.get().set(YearsCache.CACHE_KEY, packedValue);
     return;
   }
 }
 
-async function getPeriods(): Promise<number[]> {
-  const years = await getYears();
+export async function getPeriods(fromCacheOnly: boolean = false): Promise<number[]> {
+  const years = await getYears(fromCacheOnly);
   const periods = years.length == 0 ? [] : [1, 2, 3].concat(years);
   return periods;
 }
 
 export async function getLatestYear(): Promise<number> {
-  const all_years = [...await getYears()];
+  const all_years = [...await getYears(true)];
   all_years.sort();
   return all_years.at(-1) ?? -1;
 }
 
-export async function advertisePeriods(
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port|null>
-): Promise<void> {
+export async function advertisePeriods(): Promise<void> {
   const periods = await getPeriods();
-  const bg_port = await getBackgroundPort();
 
-  if (bg_port) {
-    try {
-      console.log('advertising periods', periods);
-
-      bg_port.postMessage({
-        action: 'advertise_periods',
-        periods: periods,
-      });
-    } catch (ex) {
-      console.warn(
-        'periods.advertisePeriods got: ', ex,
-        ', perhaps caused by disconnected bg_port?');
-    }
-  } else {
-    console.warn('periods.advertisePeriods got no background port');
+  try {
+    console.log('advertising periods', periods);
+  } catch (ex) {
+    console.warn(
+      'periods.advertisePeriods caught: ', ex);
   }
 }
 
@@ -103,10 +92,15 @@ async function getUrl(): Promise<string> {
   return url;
 }
 
-async function getYears(): Promise<number[]> {
+async function getYears(fromCacheOnly: boolean): Promise<number[]> {
 
   // Only called if we've not got a valid cached value.
   async function reallyGetYears(): Promise<number[]> {
+    if (fromCacheOnly) {
+      throw new Error(
+        'Our caller only wants us to query the cached value, and it looks ' +
+        'like that didn\'t work.');
+    }
     const years = await getYearsFromHtml();
     await YearsCache.writeYears(years);
     return years;
@@ -196,7 +190,7 @@ export function yearsFromDoc(ordersPage: HTMLDocument): number[] {
   };
 
   return strategy.firstMatchingStrategy(
-    'getYears',
+    'yearsFromDoc',
     [strategy0, strategy1],
     []
   );

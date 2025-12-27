@@ -257,7 +257,7 @@ function initialiseContentScript() {
   registerContentScript(isWorker);
 
   if (!pageType.isIframe()) {
-    periods.advertisePeriods(ports.getBackgroundPort);
+    periods.advertisePeriods()
   }
 }
 
