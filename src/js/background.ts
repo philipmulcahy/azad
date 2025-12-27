@@ -13,7 +13,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
-let advertised_periods: number[] = [];
 
 class IframeWorkerTaskMap {
   _map: Map<string, any>;
@@ -132,36 +131,6 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
   try {
     console.log('handleMessageFromContentScript handling', msg.action);
     switch (msg.action) {
-      case 'scrape_periods':
-        {
-          console.log(
-            'a content script asked for an iframe to discover periods');
-
-          const guid = uuidv4();
-          msg.guid = guid;
-          const purpose = 'scrape years';
-          iframeWorkerTaskSpecs.set(guid, msg);
-
-          sendToOneContentPage({
-            action: 'start_iframe_worker',
-            url: msg.url,
-            guid,
-            purpose,
-          });
-        }
-
-        break;
-      case 'advertise_periods':
-        console.log('forwarding advertise_periods', msg.period);
-
-        advertised_periods = [
-          ...Array.from(
-            new Set<number>(msg.periods)
-          ),
-        ].sort((a, b) => a - b);
-
-        advertisePeriods();
-        break;
       case 'fetch_url':
         {
           console.log('initiating fetch_url using iframe', msg);
@@ -344,7 +313,6 @@ function registerConnectionListener() {
           handleMessageFromControl(msg);
         });
 
-        advertisePeriods();
         break;
 
       default:
@@ -423,25 +391,6 @@ function registerMessageListener() {
         console.trace('ignoring action: ' + request.action);
     }
   });
-}
-
-function advertisePeriods() {
-  if (control_port) {
-    console.log('advertising periods', advertised_periods);
-
-    try {
-      control_port.postMessage({
-        action: 'advertise_periods',
-        periods: advertised_periods,
-      });
-    } catch (ex) {
-      console.warn(
-        'background.advertisePeriods caught: ', ex,
-        ', perhaps caused by trying to post to a disconnected control_port?');
-    }
-  } else {
-    console.log('Cannot advertise periods yet: no control port is set.');
-  }
 }
 
 async function handleAuthorisationRequest(

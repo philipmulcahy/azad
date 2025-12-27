@@ -36,40 +36,6 @@
 // thanks https://asciiflow.com/
 //
 /////////////////////////////////////////////////
-// Get Years
-/////////////////////////////////////////////////
-//
-//  ┌─────┐┌──────────┐┌───────┐┌──────┐┌──────┐
-//  │POPUP││BACKGROUND││CONTENT││IFRAME││AMAZON│
-//  └─┬───┘└─────┬────┘└───┬───┘└───┬──┘└───┬──┘
-//    │          │         │        │       │
-//  1 │          │ action! │        │       │
-//    │         │││◄───────┤        │       │
-//    │         │││        │        │       │
-//    │         │││ action!│        │       │
-//  2 │         ││├──────►1│        │       │
-//    │         │││        │ setup  │       │
-//  3 │ remember│││        ├──────►1│       │
-//    │ proposed│││        │        │       │
-//    │ action  │││ what do│I do?   │       │
-//  4 │         │││◄───────┼────────┤       │
-//    │         │││        │        │       │
-//    │         │││  here's│what    │       │
-//  5 │         ││├────────┼───────►│ data? │
-//  6 │          │         │        ├──────►│
-//    │          │         │        │       │
-//    │          │         │        │ data  │
-//  7 │          │      results     │◄──────┤
-//  8 │          │◄────────┼────────┤       │
-//    │          │         │        │       │
-//    │ display  │         │        │       │
-//  9 │◄─────────┤         │        │       │
-//    │          │         │        │       │
-//    │          │ remove  │        │       │
-//    │          │ iframe  │        │       │
-// 10 │          ├───────►*│        │       │
-//
-/////////////////////////////////////////////////
 // Get Processed/Cooked HTML
 /////////////////////////////////////////////////
 //
@@ -108,7 +74,6 @@
 import * as extraction from './extraction';
 import * as inject from './inject';
 import * as pageType from './page_type';
-import * as periods from './periods';
 import * as ports from './ports';
 import * as request_scheduler from './request_scheduler';
 import * as transaction from './transaction';
@@ -323,7 +288,9 @@ export async function fetchURL(
   });
 
   try {
-    const port: chrome.runtime.Port = await ports.getBackgroundPort() as chrome.runtime.Port;
+    const port: chrome.runtime.Port
+      = await ports.getBackgroundPort() as chrome.runtime.Port;
+
     port.postMessage(requestMsg);
     console.log('fetchURL requested', url, xpath, guid);
   } catch (ex) {
@@ -335,7 +302,6 @@ export async function fetchURL(
 
 export async function handleInstructionsResponse(
   msg: any,
-  scheduler: request_scheduler.IRequestScheduler,
 ): Promise<void> {
   if (!pageType.isWorker()) {
     console.error('cannot start iframe task from outside an iframe');
@@ -344,9 +310,6 @@ export async function handleInstructionsResponse(
   const action = msg.action;
 
   switch (action) {
-    case 'scrape_periods':
-      periods.advertisePeriods(ports.getBackgroundPort, scheduler);
-      break;
     case 'scrape_transactions':
       {
         if (
@@ -383,7 +346,7 @@ export async function handleInstructionsResponse(
       {
         if (msg.url != document.documentURI) {
           console.debug(
-            'fetch_url wants', msg.url, 'but this iframe has', document.documentURI
+            'fetch_url wants', msg.url, 'but iframe has', document.documentURI
           );
         } else {
           const completionXPath: string = msg.xpath;
@@ -463,6 +426,11 @@ async function waitForXPathToMatch(
   const DEADLINE_MILLIS = 10 * 1000;
   const INCREMENT_MILLIS = 500;
   const url = doc.documentURI;
+  const backgroundPort = await ports.getBackgroundPort();
+
+  function sendKeepAlive() {
+    backgroundPort?.postMessage({action: 'keepalive'});
+  }
 
   function matched(): boolean {
     if (xpath == '') {
@@ -489,10 +457,15 @@ async function waitForXPathToMatch(
   }
 
   while (elapsedMillis <= DEADLINE_MILLIS) {
-    console.log(`waitForXPathToMatch waiting ${INCREMENT_MILLIS} ${url} ${xpath}`);
+    console.log(
+      `waitForXPathToMatch waiting ${INCREMENT_MILLIS} ${url} ${xpath}`);
+
+    sendKeepAlive();
     await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
     elapsedMillis += INCREMENT_MILLIS;
-    console.log(`waitForXPathToMatch elapsedMillis ${elapsedMillis}, ${url}, ${xpath}`);
+
+    console.log(
+      `waitForXPathToMatch elapsedMillis ${elapsedMillis}, ${url}, ${xpath}`);
 
     if (matched()) {
       console.log(`waitForXPathToMatch complete ${url} ${xpath}`);
@@ -503,6 +476,7 @@ async function waitForXPathToMatch(
   // One last time after the timer has expired, because there's no guarantee
   // that we've tested even once so far.
   if (matched() || xpath == '' ) {
+    sendKeepAlive();
     return true;
   }
 

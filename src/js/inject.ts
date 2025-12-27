@@ -167,7 +167,7 @@ function handleMessageFromBackground(pageType: string, msg: any): void {
       handleMessageFromBackgroundToRootContentPage(msg);
       break;
     case 'azad_iframe_worker':
-      iframeWorker.handleInstructionsResponse(msg, getScheduler());
+      iframeWorker.handleInstructionsResponse(msg);
       break;
     default:
       console.warn('unknown pageType:', pageType);
@@ -230,7 +230,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
     case 'clear_cache':
       getScheduler().cache().clear();
       transaction.clearCache();
-      periods.clearCache();
+      periods.YearsCache.clear();
       notice.showNotificationBar(
         'Amazon Order History Reporter Chrome' +
           ' Extension\n\n' +
@@ -256,10 +256,8 @@ function initialiseContentScript() {
   const isWorker = pageType.isWorker();
   registerContentScript(isWorker);
 
-  const inIframe = pageType.isIframe();
-
-  if (!inIframe) {
-    periods.init(ports.getBackgroundPort, getScheduler());
+  if (!pageType.isIframe()) {
+    periods.advertisePeriods(getScheduler());
   }
 }
 
