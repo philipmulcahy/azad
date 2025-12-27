@@ -7,6 +7,7 @@ const $ = require('jquery');
 import * as settings from './settings';
 import * as util from './util';
 import * as git_hash from './git_hash';
+import * as periods from './periods';
 
 $(document).ready(function() {
   $('body').on(
@@ -80,13 +81,6 @@ function connectToBackground() {
 
   background_port.onMessage.addListener( msg => {
     switch(msg.action) {
-      case 'advertise_periods':
-        {
-          console.info('control got periods advertisement');
-          const periods = msg.periods;
-          handleAdvertisePeriods(periods);
-        }
-        break;
       case 'statistics_update':
         console.info('control got statistics update');
         {
@@ -121,11 +115,23 @@ function connectToBackground() {
     {action: 'check_feature_authorized', feature_id: 'premium_preview'});
 }
 
-async function handleAdvertisePeriods(periods: number[]): Promise<void> {
-  const months = periods.filter(p => (p <= 12));
-  const years = periods.filter(p => (p >= 2000));
-  await showMonthsButtons(months);
-  showYearButtons(years);
+function startPeriodsLoop(): void {
+  let oldPeriods: number[] = [];
+
+  async function checkPeriods(): Promise<void> {
+    const newPeriods: number[] = await periods.getPeriods(true);
+
+    if (!util.arrayEquals(newPeriods, oldPeriods)) {
+      const months = newPeriods.filter(p => (p <= 12));
+      const years = newPeriods.filter(p => (p >= 2000));
+      oldPeriods = newPeriods;
+      await showMonthsButtons(months);
+      showYearButtons(years);
+    }
+  }
+
+  checkPeriods();
+  setInterval(checkPeriods, 1000)
 }
 
 function handleAuthorisationMessage(authorised: boolean): void {
@@ -323,6 +329,7 @@ function init() {
   connectToBackground();
   registerActionButtons();
   registerPageButtons();
+  startPeriodsLoop();
 }
 
 $(document).ready( () => init() );

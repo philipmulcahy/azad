@@ -7,7 +7,7 @@ function testOneGetYearsTarget(name: string) {
 
   const html_text = fs.readFileSync(filePath, 'utf8');
   const doc = new jsdom.JSDOM(html_text).window.document;
-  const years: number[] = periods.get_years(doc);
+  const years: number[] = periods.yearsFromDoc(doc);
 
   const result = {
     test_id: 'GET_YEAR_NUMBERS_' + filePath,

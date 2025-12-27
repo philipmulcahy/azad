@@ -230,7 +230,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
     case 'clear_cache':
       getScheduler().cache().clear();
       transaction.clearCache();
-      periods.clearCache();
+      periods.YearsCache.clear();
       notice.showNotificationBar(
         'Amazon Order History Reporter Chrome' +
           ' Extension\n\n' +
@@ -256,10 +256,8 @@ function initialiseContentScript() {
   const isWorker = pageType.isWorker();
   registerContentScript(isWorker);
 
-  const inIframe = pageType.isIframe();
-
-  if (!inIframe) {
-    periods.init(ports.getBackgroundPort);
+  if (!pageType.isIframe()) {
+    periods.advertisePeriods()
   }
 }
 

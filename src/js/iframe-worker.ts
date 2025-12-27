@@ -36,40 +36,6 @@
 // thanks https://asciiflow.com/
 //
 /////////////////////////////////////////////////
-// Get Years
-/////////////////////////////////////////////////
-//
-//  ┌─────┐┌──────────┐┌───────┐┌──────┐┌──────┐
-//  │POPUP││BACKGROUND││CONTENT││IFRAME││AMAZON│
-//  └─┬───┘└─────┬────┘└───┬───┘└───┬──┘└───┬──┘
-//    │          │         │        │       │
-//  1 │          │ action! │        │       │
-//    │         │││◄───────┤        │       │
-//    │         │││        │        │       │
-//    │         │││ action!│        │       │
-//  2 │         ││├──────►1│        │       │
-//    │         │││        │ setup  │       │
-//  3 │ remember│││        ├──────►1│       │
-//    │ proposed│││        │        │       │
-//    │ action  │││ what do│I do?   │       │
-//  4 │         │││◄───────┼────────┤       │
-//    │         │││        │        │       │
-//    │         │││  here's│what    │       │
-//  5 │         ││├────────┼───────►│ data? │
-//  6 │          │         │        ├──────►│
-//    │          │         │        │       │
-//    │          │         │        │ data  │
-//  7 │          │      results     │◄──────┤
-//  8 │          │◄────────┼────────┤       │
-//    │          │         │        │       │
-//    │ display  │         │        │       │
-//  9 │◄─────────┤         │        │       │
-//    │          │         │        │       │
-//    │          │ remove  │        │       │
-//    │          │ iframe  │        │       │
-// 10 │          ├───────►*│        │       │
-//
-/////////////////////////////////////////////////
 // Get Processed/Cooked HTML
 /////////////////////////////////////////////////
 //
@@ -108,7 +74,6 @@
 import * as extraction from './extraction';
 import * as inject from './inject';
 import * as pageType from './page_type';
-import * as periods from './periods';
 import * as ports from './ports';
 import * as transaction from './transaction';
 import * as urls from './url';
@@ -334,9 +299,6 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
   const action = msg.action;
 
   switch (action) {
-    case 'scrape_periods':
-      periods.advertisePeriods(ports.getBackgroundPort);
-      break;
     case 'scrape_transactions':
       {
         if (
@@ -453,6 +415,11 @@ async function waitForXPathToMatch(
   const DEADLINE_MILLIS = 10 * 1000;
   const INCREMENT_MILLIS = 500;
   const url = doc.documentURI;
+  const backgroundPort = await ports.getBackgroundPort();
+
+  function sendKeepAlive() {
+    backgroundPort?.postMessage({action: 'keepalive'});
+  }
 
   function matched(): boolean {
     if (xpath == '') {
@@ -480,6 +447,7 @@ async function waitForXPathToMatch(
 
   while (elapsedMillis <= DEADLINE_MILLIS) {
     console.log(`waitForXPathToMatch waiting ${INCREMENT_MILLIS} ${url} ${xpath}`);
+    sendKeepAlive();
     await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
     elapsedMillis += INCREMENT_MILLIS;
     console.log(`waitForXPathToMatch elapsedMillis ${elapsedMillis}, ${url}, ${xpath}`);
@@ -493,6 +461,7 @@ async function waitForXPathToMatch(
   // One last time after the timer has expired, because there's no guarantee
   // that we've tested even once so far.
   if (matched() || xpath == '' ) {
+    sendKeepAlive();
     return true;
   }
 
