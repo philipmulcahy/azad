@@ -63,16 +63,16 @@ export function classifyNode(n: ClassedNode<Component>): Set<Component> {
       [...patterns.keys()].filter(p => n.match(p) != null));
 
     if (candidates.has(Component.CARD_DIGITS)) {
-        if (n.hasSiblingToLeft(
-          s => s.components.has(Component.BLANKED_DIGITS)
-        )) {
-          candidates.clear();
-          candidates.add(Component.CARD_DIGITS);
-        } else if (candidates.has(Component.CARD_NAME) && candidates.has(Component.BLANKED_DIGITS)) {
-          candidates.delete(Component.VENDOR);
-        } else {
-          candidates.delete(Component.CARD_DIGITS);
-        }
+      if (n.hasSiblingToLeft(
+        s => s.components.has(Component.BLANKED_DIGITS)
+      )) {
+        candidates.clear();
+        candidates.add(Component.CARD_DIGITS);
+      } else if (candidates.has(Component.CARD_NAME) && candidates.has(Component.BLANKED_DIGITS)) {
+        candidates.delete(Component.VENDOR);
+      } else {
+        candidates.delete(Component.CARD_DIGITS);
+      }
     }
 
     if (candidates.has(Component.ORDER_ID)) {

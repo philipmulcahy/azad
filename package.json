@@ -7,7 +7,7 @@
     "main": "background.js",
     "scripts": {
         "init": "npm install --init",
-        "clean": "rm -rf azad*.zip build/* build-node/* src/js/git_hash.ts src/generated/*",
+        "clean": "rm -rf azad*.zip build/* build-node/* src/generated/*",
         "generate_code": "node utils/generate_code.js",
         "build": "npm run clean; node utils/generate_code.js; npm run lint && node utils/build.js",
         "doc": "npx typedoc --entryPointStrategy Expand src/js",

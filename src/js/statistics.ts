@@ -1,6 +1,6 @@
 /* Copyright(c) 2020-2025 Philip Mulcahy. */
 
-import * as gitHash from './git_hash';
+import * as gitHash from '../generated/git_hash';
 import * as urls from './url';
 
 export const OStatsKey = {
