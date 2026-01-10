@@ -40,6 +40,8 @@ Check out [commercial_features.md](doc/commercial_features.md) for more detail. 
 * Thanks for the amazing Amazon Order History plugin. What an excellent cause as well.
 * Thank you! First, for the great and useful tool you've created; second, for paying all that effort forward to something as meaningful and important as Princess Alice. You are a good man.
 * Great extension. Saves a ton of time vs doing this manually. Amazon really is shafting their users here. One plus would to report the entire address or scape the postal code...
+* Just a life saver. In 20 years this is the only chrome extension I have ever bothered to write a review for. Thank you!
+And, well worth the $15/year for the premium features if you need them.
 
 # Help!
 
