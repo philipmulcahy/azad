@@ -64,8 +64,10 @@ function generateParsers() {
   console.log('Building ANTLR grammar...');
 
   const fullCommand = `${javaExec} -jar "${jarPath}" ` +
-                      `-Dlanguage=JavaScript -o "${outputPath}" -visitor ` +
+                      `-Dlanguage=TypeScript -o "${outputPath}" -visitor ` +
                       `-no-listener "${grammarPath}"`;
+
+  console.log(fullCommand);
 
   try {
     subProcess.execSync(fullCommand, { stdio: 'inherit' });

@@ -1,9 +1,12 @@
 import * as fs from 'fs';
+const cheerio = require('cheerio');
+import type { CheerioAPI } from 'cheerio';
 const jsdom = require('jsdom');
 
 // Note that we do not import transaction0 or transaction1...
 // ...they are abstracted by transaction.
 import * as tn from '../../js/transaction';
+import * as tn2 from '../../js/transaction2';
 
 type Difference = string;
 
@@ -179,6 +182,30 @@ describe (
       'transaction amazon.ca Siddhant-k',
       () => scrapeAndVerify(
         './src/tests/azad_test_data/transactions/Siddhant-k/2025-08-26')
+    );
+  }
+);
+
+describe (
+  'parse flat table and obfuscated attributes transaction pages',
+
+  () => {
+    test(
+      'benro 2025-12-29 (.com first known example)',
+      () => {
+        const html: string = fs.readFileSync(
+          './src/tests/azad_test_data/transactions/benro/2025-12-29.html',
+          'utf8'
+        );
+
+        const c: CheerioAPI = cheerio.load(html);
+        c('style, script, img, link[rel="stylesheet"]').remove();
+        c('*').contents().filter((_i, el) => el.type === 'comment').remove();
+        const strippedHtml = c.html();
+        const doc = new jsdom.JSDOM(strippedHtml).window.document;
+        const transactions = tn2.extractPageOfTransactions(doc);
+        console.log(transactions);
+      }
     );
   }
 );
