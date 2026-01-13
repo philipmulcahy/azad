@@ -55,9 +55,6 @@ export const patterns = new Map<Component, RegExp>([
 // 2) identify the leaf components with regex, and then BNF driven parser.
 export function classifyNode(n: ClassedNode<Component>): Set<Component> {
   if (n.isNonScriptText) {
-    if (n.directText.includes('4840')) {
-      console.log('HERE!');
-    }
 
     // Simple text node: regexes allow us to classify.
     const candidates = new Set<Component>(
@@ -156,5 +153,7 @@ export function extractPageOfTransactions(doc: Document): Transaction[] {
     doc.documentElement,
   );
 
+  const tss = t.classified.filter(c => c.components.has(Component.TRANSACTIONS_BOX));
+  tss.map(ts => console.log(ts.text));
   return [];
 }

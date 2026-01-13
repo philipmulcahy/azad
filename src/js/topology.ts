@@ -159,7 +159,29 @@ export class ClassedNode<TEnum> {
   }
 
   get text(): string {
-    return this.element.textContent ?? '';
+    return [...this.element.childNodes]
+      .map(
+        n => {
+          if (n.nodeName.toLowerCase() == '#text') {
+            return n.textContent;
+          }
+
+          if (this._owner._elementMap.has(n)) {
+            const cn = this._owner._elementMap.get(n);
+            const txt = cn.text;  // recurse
+
+            if (n.nodeName.toLowerCase() == 'div') {
+              return txt + '\n';
+            }
+
+            return txt;
+          }
+        }
+      )
+      .join(' ')
+      .replace(/\s*\n\s*/g, '\n')
+      .replace(/ +/, ' ')
+      .replace(/^\s+|\s+$/, '');
   }
 
   get isNonScriptText(): boolean {
