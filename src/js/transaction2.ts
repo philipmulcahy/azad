@@ -44,7 +44,8 @@ export const patterns = new Map<Component, RegExp>([
   [Component.ORDER_ID, util.orderIdRegExp()],
 
   [Component.PAYMENT_STATUS,
-   new RegExp('(Pending|Completed|Charged|Berechnet|Erstattet|Ausstehend)')],
+   new RegExp(
+    '(Pending|In Progress|Completed|Charged|Berechnet|Erstattet|Ausstehend)')],
 
   [Component.VENDOR, new RegExp('((?:[A-Za-z][A-Za-z. ]{1,20}[A-Za-z])?)')],
 ]);
@@ -132,12 +133,41 @@ export function classifyNode(n: ClassedNode<Component>): Set<Component> {
     possibles.add(Component.PAYMENT_SOURCE);
   }
 
+  function firstXBeforeAnyY(x: Component, y: Component): boolean {
+
+    // returns -1 if not found
+    function posFirst(c: Component): number {
+      let i = 0;
+
+      for (const cs of descendants.map(d => d.components)) {
+        if (cs.has(c)) {
+          return i;
+        }
+
+        ++i;
+      }
+
+      return -1;
+    }
+
+    const posX = posFirst(x);
+    const posY = posFirst(y);
+
+    if (posX != -1 && posY != -1 && posX < posY) {
+      return true;
+    }
+
+    return false;
+  }
+
   if (
     countDescendants(Component.TRANSACTIONS_BOX) == 0 &&
+    countDescendants(Component.PAYMENT_STATUS) >= 1 &&
+    countDescendants(Component.DATE) >= 1 &&
     countDescendants(Component.PAYMENT_SOURCE) >= 1 &&
     countDescendants(Component.CURRENCY_AMOUNT) >= 1 &&
     countDescendants(Component.ORDER_ID) >= 1 &&
-    countDescendants(Component.DATE) >= 1
+    firstXBeforeAnyY(Component.PAYMENT_STATUS, Component.DATE) 
   ) {
     possibles.clear();
     possibles.add(Component.TRANSACTIONS_BOX);
@@ -154,6 +184,6 @@ export function extractPageOfTransactions(doc: Document): Transaction[] {
   );
 
   const tss = t.classified.filter(c => c.components.has(Component.TRANSACTIONS_BOX));
-  tss.map(ts => console.log(ts.text));
+  tss.map(ts => console.log(ts.linesString));
   return [];
 }

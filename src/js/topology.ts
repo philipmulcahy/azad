@@ -158,7 +158,14 @@ export class ClassedNode<TEnum> {
      .trim();
   }
 
+  // return textcontent from this.element (may not be pretty!)
   get text(): string {
+    return this.element.textContent ?? '';
+  }
+  
+  // Guaranteed to put either one space or one newline between every element's
+  // text. Created to make it easier for ANTLR4 parsing.
+  get linesString(): string {
     return [...this.element.childNodes]
       .map(
         n => {
@@ -167,8 +174,8 @@ export class ClassedNode<TEnum> {
           }
 
           if (this._owner._elementMap.has(n)) {
-            const cn = this._owner._elementMap.get(n);
-            const txt = cn.text;  // recurse
+            const cn = this._owner._elementMap.get(n)!;
+            const txt = cn.linesString;  // recurse
 
             if (n.nodeName.toLowerCase() == 'div') {
               return txt + '\n';
@@ -176,11 +183,13 @@ export class ClassedNode<TEnum> {
 
             return txt;
           }
+
+          return '';
         }
       )
       .join(' ')
       .replace(/\s*\n\s*/g, '\n')
-      .replace(/ +/, ' ')
+      .replace(/ +/g, ' ')
       .replace(/^\s+|\s+$/, '');
   }
 
