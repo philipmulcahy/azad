@@ -14,18 +14,18 @@ import {ClassedNode, TopologicalScrape} from './topology';
 // no significance to the actual behaviour of the code.
 export enum Component {
   TRANSACTIONS_BOX = 'transactions_box',
-    DATE = 'date',
-    ORDER_ID = 'order_id',
-    CURRENCY_AMOUNT = 'currency_amount',
-    PAYMENT_SOURCE = 'payment_source',  // composite, no entry in patterns below.
-      GIFT_CARD = 'gift_card',
-      //  or
-      CARD_DETAILS = 'card_details',  // composite, no entry in patterns below.
-        CARD_NAME = 'card_name',
-        BLANKED_DIGITS = 'blanked_digits',
-        CARD_DIGITS = 'card_digits',
     PAYMENT_STATUS = 'payment_status',
-    VENDOR = 'vendor',
+      DATE = 'date',
+      ORDER_ID = 'order_id',
+      CURRENCY_AMOUNT = 'currency_amount',
+      PAYMENT_SOURCE = 'payment_source',  // composite, no entry in patterns below.
+        GIFT_CARD = 'gift_card',
+        //  or
+        CARD_DETAILS = 'card_details',  // composite, no entry in patterns below.
+          CARD_NAME = 'card_name',
+          BLANKED_DIGITS = 'blanked_digits',
+          CARD_DIGITS = 'card_digits',
+      VENDOR = 'vendor',
 }
 
 export const patterns = new Map<Component, RegExp>([

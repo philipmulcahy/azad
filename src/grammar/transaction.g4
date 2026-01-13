@@ -2,17 +2,6 @@ grammar transaction;
 
 // --- PARSER RULES ---
 
-transactions_page:
-    useless_preamble NL
-    status_transaction_groups
-    NL?
-    ;
-
-status_transaction_groups:
-    status_transaction_group
-    (NL status_transaction_group)*
-    ;
-
 status_transaction_group:
     status NL
     dated_transactions_group
@@ -39,7 +28,7 @@ dateless_transaction :
 date : MONTH HWS DAY_OF_MONTH COMMA HWS year ;
 
 payment_source_and_amount :  
-    card_issuer HWS FOUR_ASTERISKS card_digits HWS CURRENCY_AMOUNT
+    card_issuer HWS FOUR_ASTERISKS card_digits NL CURRENCY_AMOUNT
     ;
 
 card_issuer : VISA
