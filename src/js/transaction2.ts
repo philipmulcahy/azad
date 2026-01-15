@@ -10,6 +10,11 @@ import * as util from './util';
 import {Transaction} from './transaction';
 import {ClassedNode, TopologicalScrape} from './topology';
 
+import {CharStream, CommonTokenStream} from 'antlr4';
+import transactionLexer from '../generated/transactionLexer';
+import transactionParser, { Status_transaction_groupContext, Dated_transactionsContext, Dateless_transactionContext } from '../generated/transactionParser';
+import transactionVisitor from '../generated/transactionVisitor';
+
 // Indentation here reflects expected topology to help understand code: it has
 // no significance to the actual behaviour of the code.
 export enum Component {
@@ -167,13 +172,82 @@ export function classifyNode(n: ClassedNode<Component>): Set<Component> {
     countDescendants(Component.PAYMENT_SOURCE) >= 1 &&
     countDescendants(Component.CURRENCY_AMOUNT) >= 1 &&
     countDescendants(Component.ORDER_ID) >= 1 &&
-    firstXBeforeAnyY(Component.PAYMENT_STATUS, Component.DATE) 
+    firstXBeforeAnyY(Component.PAYMENT_STATUS, Component.DATE)
   ) {
     possibles.clear();
     possibles.add(Component.TRANSACTIONS_BOX);
   }
 
   return possibles;
+}
+
+export class TransactionMapper extends transactionVisitor<void> {
+  private transactions: Transaction[] = [];
+  private currentStatus: string = "";
+  private currentDate: Date = new Date();
+
+  public mapAll(tree: Status_transaction_groupContext): Transaction[] {
+    this.visit(tree);
+    return this.transactions;
+  };
+
+  override visitStatus_transaction_group = (ctx: Status_transaction_groupContext): void => {
+    this.currentStatus = ctx.status().getText();
+    this.visitChildren(ctx);
+  };
+
+  override visitDated_transactions = (ctx: Dated_transactionsContext): void => {
+    const d = ctx.date();
+    const dateStr = `${d.MONTH().getText()} ${d.DAY_OF_MONTH().getText()}, ${d.year().getText()}`;
+
+    // Convert the string components into a real Date object
+    this.currentDate = new Date(dateStr);
+
+    this.visitChildren(ctx);
+  };
+
+  override visitDateless_transaction = (ctx: Dateless_transactionContext): void => {
+    const payCtx = ctx.payment_source_and_amount();
+
+    // 1. Convert Amount: Strip everything except digits, decimal, and minus sign
+    const rawAmount = payCtx.CURRENCY_AMOUNT().getText();
+    const numericAmount = parseFloat(rawAmount.replace(/[^\d.-]/g, ''));
+
+    // 2. Format Card Info
+    const cardInfo = `${payCtx.card_issuer().getText()} **** ${payCtx.card_digits().getText()}`;
+
+    // 3. Extract ALL Order IDs
+    // Because we used '+' in the grammar, ctx.ORDER_ID() returns an array
+    const allOrderIds = ctx.ORDER_ID_list().map(idNode => idNode.getText());
+
+    const transaction: Transaction = {
+        date: this.currentDate,
+        cardInfo: cardInfo,
+        orderIds: allOrderIds,
+        amount: numericAmount,
+        vendor: ctx.vendor().getText()
+    };
+
+    this.transactions.push(transaction);
+  };
+}
+
+function parseTransactionBlock(text: string): Transaction[] {
+  const inputStream = new CharStream(text);
+
+  // 2. Initialize Lexer and Parser
+  const lexerInstance = new transactionLexer(inputStream);
+  const tokenStream = new CommonTokenStream(lexerInstance);
+  const parserInstance = new transactionParser(tokenStream);
+
+  // 3. Generate the tree starting from your top-level rule
+  const tree = parserInstance.status_transaction_group();
+
+  // 4. Use your Visitor to map the tree to your objects
+  const visitorInstance = new TransactionMapper();
+
+  // mapAll() returns the array we built inside the visitor
+  return visitorInstance.mapAll(tree);
 }
 
 export function extractPageOfTransactions(doc: Document): Transaction[] {
@@ -185,5 +259,9 @@ export function extractPageOfTransactions(doc: Document): Transaction[] {
 
   const tss = t.classified.filter(c => c.components.has(Component.TRANSACTIONS_BOX));
   tss.map(ts => console.log(ts.linesString));
-  return [];
+
+  const transactions = tss.flatMap(
+    ts => parseTransactionBlock(ts.linesString));
+
+  return transactions;
 }

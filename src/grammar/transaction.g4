@@ -13,7 +13,7 @@ dated_transactions_group:
     ;
 
 dated_transactions :
-    date NL 
+    date NL
     dateless_transaction?
     (NL dateless_transaction)*
     ;
@@ -21,44 +21,44 @@ dated_transactions :
 dateless_transaction :
     payment_source_and_amount NL
     (PENDING NL)?
-    ORDER_HEADER ORDER_ID NL
+    (ORDER_HEADER ORDER_ID NL)+
     vendor
     ;
 
 date : MONTH HWS DAY_OF_MONTH COMMA HWS year ;
 
-payment_source_and_amount :  
+payment_source_and_amount :
     card_issuer HWS FOUR_ASTERISKS card_digits NL CURRENCY_AMOUNT
     ;
 
 card_issuer : VISA
             | AMEX
             ;
-    
+
 vendor : AMAZON_COM
-       | AMAZON_MKTP 
+       | AMAZON_MKTP
        ;
 
 useless_preamble :
     line NL
-    line 
+    line
     transactions_start
     line
     ;
-    
-transactions_start: 
+
+transactions_start:
     NL TRANSACTIONS NL ;
-    
+
 line: (text_item | HWS)* ;
 
-text_item : WORD 
-          | MONTH    
+text_item : WORD
+          | MONTH
           | keyword
-          | SYMBOL 
+          | SYMBOL
           | SPECIAL_CHAR
           | COMMA
           ;
-   
+
 status : IN_PROGRESS | COMPLETED ;
 
 keyword : ORDER_HEADER
@@ -71,7 +71,7 @@ keyword : ORDER_HEADER
         | IN_PROGRESS
         | COMPLETED
         ;
-        
+
 year : FOUR_DIGITS_STARTING_WITH_2;
 
 card_digits : FOUR_DIGITS_STARTING_WITH_2
@@ -96,18 +96,18 @@ CURRENCY_AMOUNT:
     ;
 
 // 2. The Month Rule - NO PARENTHESES AT ALL
-MONTH : 'January' 
-      | 'February' 
-      | 'March' 
-      | 'April' 
-      | 'May' 
-      | 'June' 
-      | 'July' 
-      | 'August' 
-      | 'September' 
-      | 'October' 
-      | 'November' 
-      | 'December' 
+MONTH : 'January'
+      | 'February'
+      | 'March'
+      | 'April'
+      | 'May'
+      | 'June'
+      | 'July'
+      | 'August'
+      | 'September'
+      | 'October'
+      | 'November'
+      | 'December'
       ;
 
 // 3. Flattened Patterns
