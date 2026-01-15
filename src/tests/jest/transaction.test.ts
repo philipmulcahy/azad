@@ -105,7 +105,7 @@ describe('can read some transactions', () => {
       const transactions = scrapePageOfTransactionsFromCannedHtml(
         './src/tests/azad_test_data/transactions/benro/2025-12-29.html');
 
-      expect(transactions.length).toEqual(20);
+      expect(transactions.length).toEqual(16);
   });
 
   test(
@@ -204,7 +204,7 @@ describe (
         const strippedHtml = c.html();
         const doc = new jsdom.JSDOM(strippedHtml).window.document;
         const transactions = tn2.extractPageOfTransactions(doc);
-        console.log(transactions);
+        expect(transactions.length).toEqual(16);
       }
     );
   }

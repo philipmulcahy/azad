@@ -13,8 +13,7 @@ dated_transactions_group:
     ;
 
 dated_transactions :
-    date NL
-    dateless_transaction?
+    date
     (NL dateless_transaction)*
     ;
 

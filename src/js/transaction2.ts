@@ -257,8 +257,8 @@ export function extractPageOfTransactions(doc: Document): Transaction[] {
     doc.documentElement,
   );
 
-  const tss = t.classified.filter(c => c.components.has(Component.TRANSACTIONS_BOX));
-  tss.map(ts => console.log(ts.linesString));
+  const tss = t.classified.filter(
+    c => c.components.has(Component.TRANSACTIONS_BOX));
 
   const transactions = tss.flatMap(
     ts => parseTransactionBlock(ts.linesString));
