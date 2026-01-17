@@ -161,13 +161,13 @@ describe (
     );
 
     test(
-      'transaction amazon.co.uk pmulcahy I',
+      'transaction amazon.co.uk pmulcahy I.',
       () => scrapeAndVerify(
         './src/tests/azad_test_data/transactions/philipmulcahy/2025-06-08')
     );
 
     test(
-      'transaction amazon.co.uk pmulcahy II',
+      'transaction amazon.co.uk pmulcahy II.',
       () => scrapeAndVerify(
         './src/tests/azad_test_data/transactions/philipmulcahy/2025-11-10')
     );

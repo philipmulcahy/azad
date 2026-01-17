@@ -33,6 +33,22 @@ export enum Component {
       VENDOR = 'vendor',
 }
 
+const statusStrings = [
+  'In Progress',
+  'Completed',
+  'Pending',
+  'Completed',
+  'Charged',
+  'Berechnet',
+  'Erstattet',
+  'Ausstehend',
+];
+
+const alternatedStatus = new RegExp(
+  `(${statusStrings.join('|')})`,
+  'i',
+);
+
 export const patterns = new Map<Component, RegExp>([
   [Component.BLANKED_DIGITS, new RegExp('([•*]{3,4})')],
   [Component.CARD_DIGITS, new RegExp('([0-9]{3,4})')],
@@ -47,18 +63,10 @@ export const patterns = new Map<Component, RegExp>([
    new RegExp('(Amazon Gift Card|Amazon-Geschenkgutschein)')],
 
   [Component.ORDER_ID, util.orderIdRegExp()],
-
-  [Component.PAYMENT_STATUS,
-   new RegExp(
-    '(Pending|In Progress|Completed|Charged|Berechnet|Erstattet|Ausstehend)')],
-
+  [Component.PAYMENT_STATUS, alternatedStatus],
   [Component.VENDOR, new RegExp('((?:[A-Za-z][A-Za-z. ]{1,20}[A-Za-z])?)')],
 ]);
 
-// This function has grown to feel sordid, and hard to understand.
-// I would like instead to adopt one of the following strategies:
-// 1) write BNF including replacing the regular expressions.
-// 2) identify the leaf components with regex, and then BNF driven parser.
 export function classifyNode(n: ClassedNode<Component>): Set<Component> {
   if (n.isNonScriptText) {
 
@@ -233,21 +241,26 @@ export class TransactionMapper extends transactionVisitor<void> {
 }
 
 function parseTransactionBlock(text: string): Transaction[] {
-  const inputStream = new CharStream(text);
+  try {
+    const inputStream = new CharStream(text);
 
-  // 2. Initialize Lexer and Parser
-  const lexerInstance = new transactionLexer(inputStream);
-  const tokenStream = new CommonTokenStream(lexerInstance);
-  const parserInstance = new transactionParser(tokenStream);
+    // 2. Initialize Lexer and Parser
+    const lexerInstance = new transactionLexer(inputStream);
+    const tokenStream = new CommonTokenStream(lexerInstance);
+    const parserInstance = new transactionParser(tokenStream);
 
-  // 3. Generate the tree starting from your top-level rule
-  const tree = parserInstance.status_transaction_group();
+    // 3. Generate the tree starting from your top-level rule
+    const tree = parserInstance.status_transaction_group();
 
-  // 4. Use your Visitor to map the tree to your objects
-  const visitorInstance = new TransactionMapper();
+    // 4. Use your Visitor to map the tree to your objects
+    const visitorInstance = new TransactionMapper();
 
-  // mapAll() returns the array we built inside the visitor
-  return visitorInstance.mapAll(tree);
+    // mapAll() returns the array we built inside the visitor
+    return visitorInstance.mapAll(tree);
+  } catch (error) {
+    console.warn('Error parsing transaction block:', error);
+    return [];
+  }
 }
 
 export function extractPageOfTransactions(doc: Document): Transaction[] {
@@ -258,10 +271,31 @@ export function extractPageOfTransactions(doc: Document): Transaction[] {
   );
 
   const tss = t.classified.filter(
-    c => c.components.has(Component.TRANSACTIONS_BOX));
+    c => c.components.has(Component.TRANSACTIONS_BOX)
+  );
 
-  const transactions = tss.flatMap(
-    ts => parseTransactionBlock(ts.linesString));
+  function viabilityPredicate(s: string): boolean {
+    const match = new RegExp(
+      `^\\s*(${alternatedStatus.source})\\s`,
+      'i'
+    ).exec(s);
 
+    if (match) {
+      return true;
+    }
+
+    return false;
+  }
+
+  const tsStrings: string[] = tss
+    .map(ts => ts.linesString)
+    .filter(viabilityPredicate);
+
+  if (tsStrings.length == 0) {
+    console.log('no viable transaction blocks found to parse');
+    return [];
+  }
+
+  const transactions = tsStrings.flatMap(parseTransactionBlock);
   return transactions;
 }

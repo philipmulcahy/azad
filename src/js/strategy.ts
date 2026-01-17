@@ -118,6 +118,7 @@ export function bestMatchingStrategy<T>(
   type ScoredResult = {
     result: T,
     score: number,  // -ve means invalid
+    iStrategy: number,
   };
 
   function run(iStrategy: number): ScoredResult {
@@ -125,7 +126,8 @@ export function bestMatchingStrategy<T>(
       if (!isValid(t)) {
         return {
           result: defaultValue,
-           score: -1
+          score: -1,
+          iStrategy,
         };
       }
 
@@ -134,6 +136,7 @@ export function bestMatchingStrategy<T>(
       return {
         result: t,
         score,
+        iStrategy,
       };
     }
 
@@ -150,6 +153,7 @@ export function bestMatchingStrategy<T>(
     return {
       result: defaultValue,
       score: -1,
+      iStrategy,
     };
   }
 
@@ -158,7 +162,7 @@ export function bestMatchingStrategy<T>(
 
   for (const r of results) {
     if (r.score == maxScore && r.score >= 0) {
-      statistics.StrategyStats.reportSuccess(callSiteName, results.indexOf(r));
+      statistics.StrategyStats.reportSuccess(callSiteName, r.iStrategy);
       return r.result;
     }
   }
