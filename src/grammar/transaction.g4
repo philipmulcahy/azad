@@ -68,11 +68,7 @@ DASH           : '-' ;
 PLUS           : '+' ;
 CURRENCY       : '$' ;
 FOUR_ASTERISKS : '****' ;
-SYMBOL         : [#!./()&] ;
 
 // All whitespace and newlines are sent to the hidden channel.
 // The parser never sees them, but they still exist in the token stream.
 WS : [ \t\r\n]+ -> channel(HIDDEN) ;
-
-WORD         : [a-zA-Z]+ ;
-SPECIAL_CHAR : ~[a-zA-Z0-9 \t\r\n] ;
