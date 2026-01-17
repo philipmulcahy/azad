@@ -102,8 +102,6 @@ function extractSingleTransaction(
     vendor,
   };
 
-  console.debug('extractSingleTransaction returning', transaction);
-
   return transaction;
 }
 
