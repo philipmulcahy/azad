@@ -10,7 +10,7 @@ import * as util from './util';
 import {Transaction} from './transaction';
 import {ClassedNode, TopologicalScrape} from './topology';
 
-import {CharStream, CommonTokenStream} from 'antlr4';
+import {BailErrorStrategy, CharStream, CommonTokenStream} from 'antlr4';
 import transactionLexer from '../generated/transactionLexer';
 import transactionParser, { Status_transaction_groupContext, Dated_transactionsContext, Dateless_transactionContext } from '../generated/transactionParser';
 import transactionVisitor from '../generated/transactionVisitor';
@@ -243,22 +243,27 @@ export class TransactionMapper extends transactionVisitor<void> {
 function parseTransactionBlock(text: string): Transaction[] {
   try {
     const inputStream = new CharStream(text);
-
-    // 2. Initialize Lexer and Parser
     const lexerInstance = new transactionLexer(inputStream);
     const tokenStream = new CommonTokenStream(lexerInstance);
     const parserInstance = new transactionParser(tokenStream);
 
-    // 3. Generate the tree starting from your top-level rule
+    // 1. SILENCE: Remove the default listeners that print to console.error
+    // This stops the "line X:Y recognition error" messages.
+    lexerInstance.removeErrorListeners();
+    parserInstance.removeErrorListeners();
+
+    // 2. BAIL: Stop at the first error instead of trying to "recover"
+    // The default strategy is what generates "extraneous input" logs.
+    // BailErrorStrategy throws a ParseCancellationException and STOPS.
+    parserInstance._errHandler = new BailErrorStrategy();
+
     const tree = parserInstance.status_transaction_group();
-
-    // 4. Use your Visitor to map the tree to your objects
     const visitorInstance = new TransactionMapper();
-
-    // mapAll() returns the array we built inside the visitor
     return visitorInstance.mapAll(tree);
+
   } catch (error) {
-    console.warn('Error parsing transaction block:', error);
+    // 3. DISCARD: We catch the ParseCancellationException here.
+    // We return [] silently, letting the strategy runner move on.
     return [];
   }
 }
