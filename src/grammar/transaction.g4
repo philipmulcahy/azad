@@ -91,7 +91,7 @@ IN_PROGRESS  : 'In Progress' ;
 COMPLETED    : 'Completed' ;
 
 CURRENCY_AMOUNT:
-    DASH? CURRENCY DECIMAL
+    (DASH|PLUS)? CURRENCY DECIMAL
     ;
 
 // 2. The Month Rule - NO PARENTHESES AT ALL
@@ -122,6 +122,7 @@ DAY_OF_MONTH                    : [0-2] [0-9]
 // 4. Symbols (Tokens, not fragments)
 COMMA          : ',' ;
 DASH           : '-' ;
+PLUS           : '+' ;
 CURRENCY       : '$' ;
 FOUR_ASTERISKS : '****' ;
 SYMBOL         : [#!./()&,] ;
