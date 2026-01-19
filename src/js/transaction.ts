@@ -1,6 +1,7 @@
 import * as cacheStuff from './cachestuff';
 import * as extraction from './extraction';
 const lzjs = require('lzjs');
+import * as stats from './statistics';
 import * as strategy from './strategy';
 import * as transaction0 from './transaction0';
 import * as transaction1 from './transaction1';
@@ -235,6 +236,8 @@ async function extractAllTransactionsWithScrolling(
   // Amazon's scripts have stopped adding more.
 
   const cachedTransactions = await getTransactionsFromCache();
+  const statistics = new stats.Statistics();
+  statistics.increment(stats.OStatsKey.RUNNING_COUNT);
 
   const maxCachedTimestamp = Math.max(
     ...cachedTransactions.map(t => t.date.getTime())
@@ -249,31 +252,157 @@ async function extractAllTransactionsWithScrolling(
   // latest and greatest take from the page we're on
   let page: Transaction[] = [];
 
-  while(scrollLoopShouldContinue()) {
+  const helpers = {
+    scrollLoopShouldContinue: function (): boolean {
+      const haveCachedTransactions = cachedTransactions.length > 0;
+      const isOverlapped = helpers.overlapped();
+      const wellDry = helpers.theWellIsDry();
+
+      if (helpers.tooManyScrolls()) {
+        // experience (during testing) has revealed that an Amazon data
+        // endpoint that's loaded by scrolling serves HTTP429 (with no declared
+        // end time). Let's not accidentally get ourselves locked out.
+        console.log('should not continue scrolling loop because we\'ve scrolled too many times');
+        return false;
+      }
+
+      if (haveCachedTransactions && isOverlapped) {
+        console.log('should not continue scrolling loop because we\'ve overlapped with cached results');
+        return false;
+      }
+
+      if (!wellDry) {
+        return true;
+      }
+
+      console.warn('should not continue scrolling loop because we\'re in an unexpected state');
+      return false;
+    },
+
+    // The transactions we have managed to fetch in this scrape
+    // overlapp (chronologically) with the transactions we got from the
+    // extension's cache if this function returns true. If it returns false
+    // then we should continue scraping.
+    overlapped: function(): boolean {
+      return page.map(t => t.date.getTime())
+                 .some(d => d < maxCachedTimestamp);
+    },
+
+    // Has scrolling stopped giving us more transactions?
+    theWellIsDry: function(): boolean {
+      if (counts.length <= 1) {
+        return false;  // We don't know, because we've not tried hard enough yet.
+      }
+
+      return counts.at(-1) == counts.at(-3);  // compare last with third last.
+    },
+
+    tooManyScrolls: function(): boolean {
+      return counts.length >= 25;
+    },
+
+    commandScroll: function(): void {
+      console.log('scrolling down by one page');
+      const elem = helpers.findScrollableElem();
+
+      if (elem != undefined) {
+        elem.scrollIntoView();
+      } else {
+        console.log('no scrollable element found: failed to even try to scroll');
+      }
+    },
+
+    findScrollableElem: function(): HTMLElement | undefined {
+      return (
+        [...document.querySelectorAll(
+          'a[data-testid="transaction-link"]'
+        )].at(-1) as HTMLElement
+      ) ?? undefined;
+    },
+
+    getTransactionsFromPage: async function(): Promise<Transaction[]> {
+      let elapsedMillis: number = 0;
+      const DEADLINE_MILLIS = 10 * 1000;
+      const INCREMENT_MILLIS = 1000;
+
+      while (elapsedMillis <= DEADLINE_MILLIS) {
+        console.log('waiting', INCREMENT_MILLIS);
+        await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
+        elapsedMillis += INCREMENT_MILLIS;
+        console.log('elapsedMillis', elapsedMillis);
+        const page = extractPageOfTransactions(document);
+        console.log(`scraped ${page.length} transactions`);
+
+        if (page.length > 0) {
+          // Wait before trying one final time in case amazon code was still
+          // running when we sampled.
+          console.log(`waiting (once) before scraping one last time`);
+          await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
+          const finalTry = extractPageOfTransactions(document);
+          console.log(`scraped ${finalTry.length} transactions`);
+          return finalTry;
+        }
+      }
+
+      return [];
+    },
+
+    updateStatistics: function(): void {
+      statistics.set(stats.OStatsKey.PAGE_COUNT, counts.length);
+      statistics.set(stats.OStatsKey.COMPLETED_COUNT, page.length);
+
+      statistics.set(
+        stats.OStatsKey.CACHE_HIT_COUNT,
+        cachedTransactions.length,
+      );
+
+      statistics.set(
+        stats.OStatsKey.YEAR_COUNT,
+        new Set<number>(page.map(t => t.date.getFullYear())).size,
+      );
+
+      statistics.publish(
+        () => Promise.resolve(port),
+        'transactions'
+      );
+    },
+  };
+
+  while(helpers.scrollLoopShouldContinue()) {
     if (port) {
       port.postMessage({action: 'keepalive'});
+      helpers.updateStatistics();
     }
 
-    commandScroll();
+    helpers.commandScroll();
     const INCREMENT_MILLIS = 1000;
     await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
-    const latestScrape = await getTransactionsFromPage();
+    const latestScrape = await helpers.getTransactionsFromPage();
     console.log(`latest scrape got ${latestScrape.length} transactions`);
+
     try {
       const sortedByDate = latestScrape.map(t => t.date).sort();
       const oldestDateInLatestScrape = sortedByDate[0];
       const youngestDateInLatestScrape = sortedByDate.at(-1);
+
       console.log(
         `latest scrape: min timestamp ${oldestDateInLatestScrape}, ` +
         `max timestamp ${youngestDateInLatestScrape}`
       );
     } catch (_) {};
+
     page = mergeTransactions(page, latestScrape);
     console.log(`accumulated ${page.length} transactions`);
     counts.push(page.length);
   }
 
-  if (overlapped()) {
+  statistics.decrement(stats.OStatsKey.RUNNING_COUNT);  // we're done working.
+
+  if (port) {
+    helpers.updateStatistics();
+  }
+
+  if (helpers.overlapped()) {
     const mergedTransactions = mergeTransactions(page, cachedTransactions);
     console.log('overlapped, so cacheing merged transactions');
     putTransactionsInCache(mergedTransactions);
@@ -283,108 +412,15 @@ async function extractAllTransactionsWithScrolling(
     putTransactionsInCache(page);
     return page;
   }
-
-  function scrollLoopShouldContinue(): boolean {
-    const haveCachedTransactions = cachedTransactions.length > 0;
-    const isOverlapped = overlapped();
-    const wellDry = theWellIsDry();
-
-    if (tooManyScrolls()) {
-      // experience (during testing) has revealed that an Amazon data
-      // endpoint that's loaded by scrolling serves HTTP429 (with no declared
-      // end time). Let's not accidentally get ourselves locked out.
-      console.log('should not continue scrolling loop because we\'ve scrolled too many times');
-      return false;
-    }
-
-    if (haveCachedTransactions && isOverlapped) {
-      console.log('should not continue scrolling loop because we\'ve overlapped with cached results');
-      return false;
-    }
-
-    if (!wellDry) {
-      return true;
-    }
-
-    console.warn('should not continue scrolling loop because we\'re in an unexpected state');
-    return false;
-  }
-
-  // The transactions we have managed to fetch in this scrape
-  // overlapp (chronologically) with the transactions we got from the
-  // extension's cache if this function returns true. If it returns false
-  // then we should continue scraping.
-  function overlapped(): boolean {
-    return page.map(t => t.date.getTime())
-               .some(d => d < maxCachedTimestamp);
-  }
-
-  // Has scrolling stopped giving us more transactions?
-  function theWellIsDry(): boolean {
-    if (counts.length <= 1) {
-      return false;  // We don't know, because we've not tried hard enough yet.
-    }
-
-    return counts.at(-1) == counts.at(-3);  // compare last with third last.
-  }
-
-  function tooManyScrolls(): boolean {
-    return counts.length >= 25;
-  }
-
-  function commandScroll(): void {
-    console.log('scrolling down by one page');
-
-    const elem = findScrollableElem();
-
-    if (elem != undefined) {
-      elem.scrollIntoView();
-    } else {
-      console.log('no scrollable element found: failed to even try to scroll');
-    }
-  }
-
-  function findScrollableElem(): HTMLElement | undefined {
-    return (
-      [...document.querySelectorAll(
-        'a[data-testid="transaction-link"]'
-      )].at(-1) as HTMLElement
-    ) ?? undefined;
-  }
-
-  async function getTransactionsFromPage(): Promise<Transaction[]> {
-    let elapsedMillis: number = 0;
-    const DEADLINE_MILLIS = 10 * 1000;
-    const INCREMENT_MILLIS = 1000;
-
-    while (elapsedMillis <= DEADLINE_MILLIS) {
-      console.log('waiting', INCREMENT_MILLIS);
-      await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
-      elapsedMillis += INCREMENT_MILLIS;
-      console.log('elapsedMillis', elapsedMillis);
-      const page = extractPageOfTransactions(document);
-      console.log(`scraped ${page.length} transactions`);
-
-      if (page.length > 0) {
-        // Wait before trying one final time in case amazon code was still
-        // running when we sampled.
-        console.log(`waiting (once) before scraping one last time`);
-        await new Promise(r => setTimeout(r, INCREMENT_MILLIS));
-        const finalTry = extractPageOfTransactions(document);
-        console.log(`scraped ${finalTry.length} transactions`);
-        return finalTry;
-      }
-    }
-
-    return [];
-  }
 }
 
 async function getTransactionsFromCache(): Promise<Transaction[]> {
   const compressed = await getCache().get(CACHE_KEY);
+
   if (!compressed) {
     return [];
   }
+
   const s = lzjs.decompress(compressed);
   const ts = restoreDateObjects(JSON.parse(s));
   return ts;
