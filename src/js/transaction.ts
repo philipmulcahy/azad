@@ -153,6 +153,13 @@ async function extractAllTransactionsWithNextButton(
   }
 
   let allKnownTransactions = await getTransactionsFromCache();
+  const countFromCache = allKnownTransactions.length;
+  let page: Transaction[] = [];
+  let pageCount: number = 0;
+
+  const statistics = new stats.Statistics();
+  statistics.increment(stats.OStatsKey.RUNNING_COUNT);
+  updateStatistics();
 
   const maxCachedTimestamp = Math.max(
     ...allKnownTransactions.map(t => t.date.getTime()));
@@ -162,9 +169,10 @@ async function extractAllTransactionsWithNextButton(
   while(shouldContinue) {
     if (port) {
       port.postMessage({action: 'keepalive'});
+      updateStatistics();
     }
 
-    const page = await retryingExtractPageOfTransactions();
+    page = await retryingExtractPageOfTransactions();
     console.log('scraped', page.length, 'transactions');
 
     const minNewTimestamp = Math.min(
@@ -197,6 +205,12 @@ async function extractAllTransactionsWithNextButton(
   }
 
   putTransactionsInCache(allKnownTransactions);
+  statistics.decrement(stats.OStatsKey.RUNNING_COUNT);  // we're done working.
+
+  if (port) {
+    updateStatistics();
+  }
+
   return allKnownTransactions;
 
   function findUsableNextButton(): HTMLInputElement | undefined {
@@ -210,6 +224,23 @@ async function extractAllTransactionsWithNextButton(
     } catch(_) {
       return undefined;
     }
+  }
+
+  function updateStatistics(): void {
+    statistics.set(stats.OStatsKey.PAGE_COUNT, pageCount);
+    statistics.set(stats.OStatsKey.COMPLETED_COUNT, page.length);
+    statistics.set(stats.OStatsKey.CACHE_HIT_COUNT, countFromCache);
+
+    statistics.set(
+      stats.OStatsKey.YEAR_COUNT,
+      new Set<number>(
+        allKnownTransactions.map(t => t.date.getFullYear())).size,
+    );
+
+    statistics.publish(
+      () => Promise.resolve(port),
+      'transactions'
+    );
   }
 }
 
@@ -348,23 +379,32 @@ async function extractAllTransactionsWithScrolling(
     },
 
     updateStatistics: function(): void {
-      statistics.set(stats.OStatsKey.PAGE_COUNT, counts.length);
-      statistics.set(stats.OStatsKey.COMPLETED_COUNT, page.length);
+      try {
+        statistics.set(stats.OStatsKey.PAGE_COUNT, counts.length);
+        statistics.set(stats.OStatsKey.COMPLETED_COUNT, page.length);
 
-      statistics.set(
-        stats.OStatsKey.CACHE_HIT_COUNT,
-        cachedTransactions.length,
-      );
+        statistics.set(
+          stats.OStatsKey.CACHE_HIT_COUNT,
+          cachedTransactions.length,
+        );
 
-      statistics.set(
-        stats.OStatsKey.YEAR_COUNT,
-        new Set<number>(page.map(t => t.date.getFullYear())).size,
-      );
+        const years = new Set<number>(
+          [page, cachedTransactions]
+            .flatMap(ts => ts.map(t => t.date.getFullYear()))
+        );
 
-      statistics.publish(
-        () => Promise.resolve(port),
-        'transactions'
-      );
+        statistics.set(
+          stats.OStatsKey.YEAR_COUNT,
+          years.size,
+        );
+
+        statistics.publish(
+          () => Promise.resolve(port),
+          'transactions'
+        );
+      } catch (ex) {
+        console.warn(`Caught ${ex} while publishing transactions stats.`);
+      }
     },
   };
 
