@@ -57,6 +57,12 @@ Feature requests: if there's a github ticket outstanding for the same thing,
 please add your thoughts there rather than making a new one. You can signal
 your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.19
+---------------
+#390 Show transaction scraping progress in the control pop-up.
+#391 New, third transactions scraping strategy for when transaction layout
+     is flattened AND has obfuscated html attribute names.
+
 Changes 1.16.18
 ---------------
 #366 (Some) card details missing from payments.
@@ -84,15 +90,6 @@ Changes 1.16.15
      missing - now restored.
 #379 fix missing order date on some digital orders (maybe only subscriptions)
      Amazon have become quite inconsistent on letter case.
-
-Changes 1.16.14
----------------
-#359 strategy statistics reported to console log - allowing us to see what's
-     working, and how frequently.
-#374 increased consistency in how control popup passes instructions to pages.
-#380 Transactions recently started being paged using scrolling and dynamic
-     fetching rather than "next page" buttons for many users.
-     This fix delivers code that can scroll down through the transactions list.
 
 Source Code
 -------------
