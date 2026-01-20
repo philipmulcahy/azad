@@ -12,3 +12,5 @@ src/tests/azad_test_data
 tmp
 utils/remote_logs/.venv
 utils/*.svg
+src/generated/**
+src/grammar/.antlr

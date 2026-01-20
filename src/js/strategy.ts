@@ -101,3 +101,72 @@ function isValid<T>(t: T): boolean {
 
   return true;
 }
+
+/*
+ * Execute all strategies, catching and swallowing any exceptions.
+ * Return the result that score the highest (most +ve) according to fScore.
+ * Null, empty strings and isNaN values are considered as bad as exceptions.
+ * Negative scores are considered to signify an invalid result.
+ * If no element returns a valid T, then return defaultValue.
+*/
+export function bestMatchingStrategy<T>(
+  callSiteName: string,  // used to identify the stats for this call site.
+  strategies: Array<()=>T>,
+  fScore: (t: T) => number,
+  defaultValue: T,
+): T {
+  type ScoredResult = {
+    result: T,
+    score: number,  // -ve means invalid
+    iStrategy: number,
+  };
+
+  function run(iStrategy: number): ScoredResult {
+    function scorer(t: T): ScoredResult{
+      if (!isValid(t)) {
+        return {
+          result: defaultValue,
+          score: -1,
+          iStrategy,
+        };
+      }
+
+      const score = fScore(t);
+
+      return {
+        result: t,
+        score,
+        iStrategy,
+      };
+    }
+
+    try {
+      const strategy = strategies[iStrategy];
+      const candidate = strategy();
+      const scored = scorer(candidate);
+      return scored;
+    } catch (_ex) {
+      console.debug(
+        `${iStrategy} blew up.`);
+    }
+
+    return {
+      result: defaultValue,
+      score: -1,
+      iStrategy,
+    };
+  }
+
+  const results = strategies.map((_, i) => run(i));
+  const maxScore = Math.max(...results.map(r => r.score));
+
+  for (const r of results) {
+    if (r.score == maxScore && r.score >= 0) {
+      statistics.StrategyStats.reportSuccess(callSiteName, r.iStrategy);
+      return r.result;
+    }
+  }
+
+  statistics.StrategyStats.reportFailure(callSiteName);
+  return defaultValue;
+}

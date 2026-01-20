@@ -2,7 +2,7 @@
 
 cd $(dirname $0)/..
 
-HASH_FILE=src/js/git_hash.ts
+HASH_FILE=src/generated/git_hash.ts
 HASH=$(git rev-parse HEAD)
 DIRT=$(git status --porcelain=v2)
 

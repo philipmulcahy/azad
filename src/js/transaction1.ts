@@ -1,4 +1,4 @@
-/* Copyright(c) 2025 Philip Mulcahy. */
+/* Copyright(c) 2025..2026 Philip Mulcahy. */
 
 ///////////////////////////////////////////////////////////////////////////////
 // Use "topology" based strategy to parse transaction pages.
@@ -13,9 +13,9 @@ import {ClassedNode, TopologicalScrape} from './topology';
 // no significance to the actual behaviour of the code.
 export enum Component {
   TRANSACTION = 'transaction',  // composite, no entry in patterns below.
-    CURRENCY_AMOUNT = 'currency_amount',
     DATE = 'date',
     ORDER_ID = 'order_id',
+    CURRENCY_AMOUNT = 'currency_amount',
     PAYMENT_SOURCE = 'payment_source',  // composite, no entry in patterns below.
       GIFT_CARD = 'gift_card',
 //    or
@@ -43,7 +43,7 @@ export const patterns = new Map<Component, RegExp>([
   [Component.ORDER_ID, util.orderIdRegExp()],
 
   [Component.PAYMENT_STATUS,
-   new RegExp('(Pending|Charged|Berechnet|Erstattet|Ausstehend)')],
+   new RegExp('(Pending|Completed|Charged|Berechnet|Erstattet|Ausstehend)')],
 
   [Component.VENDOR, new RegExp('((?:[A-Za-z][A-Za-z. ]{1,20}[A-Za-z])?)')],
 ]);
@@ -59,14 +59,16 @@ export function classifyNode(n: ClassedNode<Component>): Set<Component> {
       [...patterns.keys()].filter(p => n.match(p) != null));
 
     if (candidates.has(Component.CARD_DIGITS)) {
-        if (n.hasSiblingToLeft(
-          s => s.components.has(Component.BLANKED_DIGITS)
-        )) {
-          candidates.clear();
-          candidates.add(Component.CARD_DIGITS);
-        } else {
-          candidates.delete(Component.CARD_DIGITS);
-        }
+      if (n.hasSiblingToLeft(
+        s => s.components.has(Component.BLANKED_DIGITS)
+      )) {
+        candidates.clear();
+        candidates.add(Component.CARD_DIGITS);
+      } else if (candidates.has(Component.CARD_NAME) && candidates.has(Component.BLANKED_DIGITS)) {
+        candidates.delete(Component.VENDOR);
+      } else {
+        candidates.delete(Component.CARD_DIGITS);
+      }
     }
 
     if (candidates.has(Component.ORDER_ID)) {
@@ -218,7 +220,6 @@ function transactionFromElement(elem: ClassedNode<Component>): Transaction {
       ),
     };
 
-    console.debug('transactionFromElement returning', t);
     return t;
   } catch (ex) {
     console.warn(

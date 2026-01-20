@@ -5,6 +5,7 @@ import * as stats from './statistics';
 import * as strategy from './strategy';
 import * as transaction0 from './transaction0';
 import * as transaction1 from './transaction1';
+import * as transaction2 from './transaction2';
 
 function getCache() {
   return cacheStuff.createLocalCache('TRANSACTIONS');
@@ -77,19 +78,29 @@ function filterTransactionsByDateRange(
   start: Date,
   end: Date,
 ): Transaction[] {
-  const url = document.URL;
-  const paramString = url.split('?')[1];
   return transactions.filter(t => t.date >= start && t.date <= end);
 }
 
 export function extractPageOfTransactions(
   doc: Document
 ): Transaction[] {
-  const strategies = [transaction0, transaction1].map(
-    t => () => t.extractPageOfTransactions(doc));
+  const strategies = [
+    transaction0,
+    transaction1,
+    transaction2,
+  ].map(
+    t => () => t.extractPageOfTransactions(doc)
+  );
 
-  return strategy.firstMatchingStrategy(
-    'extractPageOfTransactions', strategies, []);
+  return strategy.bestMatchingStrategy(
+    'extractPageOfTransactions',
+    strategies,
+
+    // More is better unless it's just too much.
+    transactions => transactions.length < 1000 ? transactions.length : -1,
+  
+    [],
+  );
 }
 
 async function retryingExtractPageOfTransactions(): Promise<Transaction[]> {
