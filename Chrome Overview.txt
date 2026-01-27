@@ -57,6 +57,18 @@ Feature requests: if there's a github ticket outstanding for the same thing,
 please add your thoughts there rather than making a new one. You can signal
 your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.19
+---------------
+#390 Show transaction scraping progress in the control pop-up.
+#391 New, third transactions scraping strategy for when transaction layout
+     is flattened AND has obfuscated html attribute names.
+
+Changes 1.16.18
+---------------
+#366 (Some) card details missing from payments.
+#375, #386 (Some) gift payments missing.
+#381 Cache available years: faster start up, particularly for new users.
+
 Changes 1.16.17
 ---------------
 #361 Some transaction refunds were not signed correctly.
@@ -78,31 +90,6 @@ Changes 1.16.15
      missing - now restored.
 #379 fix missing order date on some digital orders (maybe only subscriptions)
      Amazon have become quite inconsistent on letter case.
-
-Changes 1.16.14
----------------
-#359 strategy statistics reported to console log - allowing us to see what's
-     working, and how frequently.
-#374 increased consistency in how control popup passes instructions to pages.
-#380 Transactions recently started being paged using scrolling and dynamic
-     fetching rather than "next page" buttons for many users.
-     This fix delivers code that can scroll down through the transactions list.
-
-Changes 1.16.13
----------------
-#353 giftwrap confused with gift card payment.
-#354 missing VAT on some orders.
-#364 initial support for .ie (Ireland) - embarassingly for me and everyone
-     else, this was not ever considered until now!
-#366 missing .ca payments.
-Various performance, logging transparency and reliability improvements.
-
-Changes 1.16.12
----------------
-#338 more robust transaction scraping in the face of adversarially obfuscated
-     html being intermittently served to some users.
-#347 restored many shipment.delivered status values (new amazon html layout).
-#348 missing category scraping for items fixed (new amazon html layout).
 
 Source Code
 -------------

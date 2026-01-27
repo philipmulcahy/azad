@@ -1,6 +1,6 @@
 /* Copyright(c) 2020-2025 Philip Mulcahy. */
 
-import * as gitHash from './git_hash';
+import * as gitHash from '../generated/git_hash';
 import * as urls from './url';
 
 export const OStatsKey = {
@@ -9,6 +9,8 @@ export const OStatsKey = {
   COMPLETED_COUNT: 2,
   CACHE_HIT_COUNT: 3,
   ERROR_COUNT: 4,
+  PAGE_COUNT: 5,  // originally added to show progress of transaction scraping.
+  YEAR_COUNT: 6,  // originally added to show progress of transaction scraping.
 };
 
 export type StatsKey = typeof OStatsKey[keyof typeof OStatsKey];
@@ -23,6 +25,8 @@ export class Statistics {
     [OStatsKey.COMPLETED_COUNT]: 0,
     [OStatsKey.CACHE_HIT_COUNT]: 0,
     [OStatsKey.ERROR_COUNT]: 0,
+    [OStatsKey.PAGE_COUNT]: 0,
+    [OStatsKey.YEAR_COUNT]: 0,
   };
 
   increment(key: StatsKey): void {
@@ -63,9 +67,9 @@ export class Statistics {
       }
 
       port.postMessage({
-          action: 'statistics_update',
-          statistics: s,
-          purpose: purpose,
+        action: 'statistics_update',
+        statistics: s,
+        purpose: purpose,
       });
     } catch(ex) {
       console.debug('statistics.publish threw ', ex);
@@ -73,17 +77,17 @@ export class Statistics {
   }
 }
 
-class Key {
+class CounterKey {
   readonly _labels: Map<string, string>;
 
   constructor(labels: Map<string, string>) {
     this._labels = new Map<string, string>(labels);
   }
 
-  setLabel(labelName: string, labelValue: string): Key {
+  setLabel(labelName: string, labelValue: string): CounterKey {
     const augmented = new Map<string, string>(this._labels);
     augmented.set(labelName, labelValue);
-    return new Key(augmented);
+    return new CounterKey(augmented);
   }
 
   toString(): string {
@@ -111,11 +115,11 @@ export class Counters {
     return Counters._localStats;
   }
 
-  increment(counterGroup: string, key: Key): void {
+  increment(counterGroup: string, key: CounterKey): void {
     this.incrementBy(counterGroup, key, 1);
   }
 
-  incrementBy(counterGroup: string, key: Key, count: number): void {
+  incrementBy(counterGroup: string, key: CounterKey, count: number): void {
     const completeKey = key.setLabel('group', counterGroup)
                            .setLabel('git_hash', Counters._gitHash)
                            .setLabel('site', Counters._site);
@@ -224,11 +228,11 @@ class CounterGroup {
     this.groupName = groupName;
   }
 
-  increment(key: Key) {
+  increment(key: CounterKey) {
     Counters.stats.increment(this.groupName, key);
   }
 
-  incrementBy(key: Key, count: number) {
+  incrementBy(key: CounterKey, count: number) {
     Counters.stats.incrementBy(this.groupName, key, count);
   }
 }
@@ -240,7 +244,7 @@ export class StrategyStats {
     const labels = new Map<string, string>();
     labels.set('call_site_name', callSiteName);
     labels.set('strategy_index', strategyIndex.toString());
-    const key = new Key(labels);
+    const key = new CounterKey(labels);
     this.group.increment(key);
   }
 
@@ -255,14 +259,14 @@ export class UrlStats {
   static reportSuccess(urlPattern: string, successfulFetchCount: number) {
     const labels = new Map<string, string>();
     labels.set('url_pattern', urlPattern);
-    const key = new Key(labels);
+    const key = new CounterKey(labels);
     this.group.incrementBy(key, successfulFetchCount);
   }
 
   static reportFailure(urlPattern: string) {
     const labels = new Map<string, string>();
     labels.set('url_pattern', urlPattern);
-    const key = new Key(labels);
+    const key = new CounterKey(labels);
     this.group.increment(key);
   }
 }

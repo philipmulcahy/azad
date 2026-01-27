@@ -6,7 +6,7 @@ const $ = require('jquery');
 
 import * as settings from './settings';
 import * as util from './util';
-import * as git_hash from './git_hash';
+import * as git_hash from '../generated/git_hash';
 import * as periods from './periods';
 
 $(document).ready(function() {

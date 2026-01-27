@@ -8,7 +8,7 @@ import * as business from './business';
 import * as csv from './csv';
 import {dateToDateIsoString} from './date';
 import * as extraction from './extraction';
-import * as git_hash from './git_hash';
+import * as git_hash from '../generated/git_hash';
 import * as iframeWorker from './iframe-worker';
 const lzjs = require('lzjs');
 import * as notice from './notice';

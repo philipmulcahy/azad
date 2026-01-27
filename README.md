@@ -40,6 +40,8 @@ Check out [commercial_features.md](doc/commercial_features.md) for more detail. 
 * Thanks for the amazing Amazon Order History plugin. What an excellent cause as well.
 * Thank you! First, for the great and useful tool you've created; second, for paying all that effort forward to something as meaningful and important as Princess Alice. You are a good man.
 * Great extension. Saves a ton of time vs doing this manually. Amazon really is shafting their users here. One plus would to report the entire address or scape the postal code...
+* Just a life saver. In 20 years this is the only chrome extension I have ever bothered to write a review for. Thank you!
+And, well worth the $15/year for the premium features if you need them.
 
 # Help!
 
@@ -98,7 +100,8 @@ If you look in the extension logs (see below), a clue that this is appropriate i
 
 The extension needs to be updated by developers to learn the new layout.
 
-Please check to see that no-one else has filed a ticket for the same problem. If they have, join in the fun on that ticket rather than making your own "me-too" ticket.
+Please check to see that no-one else has filed a [ticket](https://github.com/philipmulcahy/azad/issues) for the same problem.
+If they have, you should join in the fun on that ticket rather than making your own "me-too" ticket.
 
 At some point you're going to need to work with us by providing debug data (logs, order debug json files and screenshots) and testing experimental versions of the extension. I don't have direct access to your orders (or likely your country's version of Amazon), so if you're not willing to help, please don't waste everybody's time with a ticket - your issue cannot be fixed without your help.
 
