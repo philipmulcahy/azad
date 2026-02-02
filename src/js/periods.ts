@@ -44,7 +44,7 @@ export class YearsCache {
 
   static async writeYears(years: number[]): Promise<void> {
     const now = new Date().getTime();
-    const expiry = now + 24 * 60 * 60 * 1000;  // 24h later.
+    const expiry = now + (2 * 24 * 60 * 60 * 1000);  // 48h later.
 
     const cacheValue: YearsCacheValue = {
       expiryTimestampMillis: expiry,
