@@ -21,12 +21,21 @@ async function initialiseBackgroundPort(): Promise<void> {
   // @ts-ignore null IS allowed as first arg to connect.
   background_port = chrome.runtime.connect(null, {name: portName});
 
+  function sendOneKeepalive() {
+    background_port?.postMessage({action: 'keepalive'});
+  }
+
+  const keepaliveIntervalId = setInterval(sendOneKeepalive, 10_000);
+
   background_port.onDisconnect.addListener( _port => {
+    console.log(`background port disconnected ${pgType} ${portName}}`);
+    clearInterval(keepaliveIntervalId);
     background_port = null;
   });
 }
 
-export async function getBackgroundPort(): Promise<chrome.runtime.Port | null> {
+export async function getBackgroundPort(): Promise<chrome.runtime.Port | null>
+{
   if (!background_port) {
     await initialiseBackgroundPort();
   }
