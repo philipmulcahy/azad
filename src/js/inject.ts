@@ -4,30 +4,22 @@
 
 import * as azad_order from './order';
 import * as azad_table from './table';
-import * as business from './business';
-import * as csv from './csv';
 import {dateToDateIsoString} from './date';
-import * as extraction from './extraction';
 import * as git_hash from '../generated/git_hash';
 import * as iframeWorker from './iframe-worker';
-const lzjs = require('lzjs');
 import * as notice from './notice';
 import * as periods from './periods';
 import * as pageType from './page_type';
 import * as ports from './ports';
 import * as request_scheduler from './request_scheduler';
-import * as settings from './settings';
 import * as signin from './signin';
 import * as stats from './statistics';
 import * as transaction from './transaction';
 import * as urls from './url';
 
 let scheduler: request_scheduler.IRequestScheduler | null = null;
-let years: number[] = [];
 let stats_timeout: NodeJS.Timeout | null = null;
-
 const SITE: string = urls.getSite();
-
 const _stats = new stats.Statistics();
 
 function getScheduler(): request_scheduler.IRequestScheduler {
@@ -257,7 +249,7 @@ function initialiseContentScript() {
   registerContentScript(isWorker);
 
   if (!pageType.isIframe()) {
-    periods.advertisePeriods()
+    periods.advertisePeriods();
   }
 }
 
