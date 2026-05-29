@@ -10,72 +10,88 @@ import * as remoteLog from './remote_log';
 import * as settings from './settings';
 import { v4 as uuidv4 } from 'uuid';
 
+export interface FetchUrlMessage {
+  action: 'fetch_url';
+  guid: string;
+  url?: string;
+  purpose?: string;
+}
+
+export interface GetIframeTaskInstructionsMessage {
+  action: 'get_iframe_task_instructions';
+  guid: string;
+}
+
+export interface RemoteLogMessage {
+  action: 'remote_log_with_user_id';
+  log_msg: Record<string, string>;
+}
+
+export interface RelayToParentMessage {
+  action: 'relay_to_parent';
+  msg: BackgroundMessage;
+}
+
+export interface CheckFeatureAuthorizedMessage {
+  action: 'check_feature_authorized';
+  feature_id: string;
+}
+
+export interface ScrapeMessage {
+  action: 'scrape_years' | 'scrape_range' | 'scrape_transactions';
+  table_type?: string;
+  client?: string;
+  guid?: string;
+  url?: string;
+  purpose?: string;
+}
+
+export interface FallbackPayloadMessage {
+  action:
+    | 'start_iframe_worker'
+    | 'statistics_update'
+    | 'keepalive'
+    | 'transactions'
+    | 'show_payment_ui'
+    | 'show_extpay_login_ui'
+    | 'show_extpay_console'
+    | 'clear_cache'
+    | 'force_logout'
+    | 'abort'
+    | 'dump_order_detail';
+  [key: string]: unknown;
+}
+
 export type BackgroundMessage =
-  | {
-      action: 'fetch_url';
-      guid: string;
-      url?: string;
-      purpose?: string;
-    }
-  | {
-      action: 'get_iframe_task_instructions';
-      guid: string;
-    }
-  | {
-      action: 'remote_log_with_user_id';
-      log_msg: Record<string, string>;
-    }
-  | {
-      action: 'relay_to_parent';
-      msg: BackgroundMessage;
-    }
-  | {
-      action: 'check_feature_authorized';
-      feature_id: string;
-    }
-  | {
-      action: 'scrape_years' | 'scrape_range' | 'scrape_transactions';
-      table_type?: string;
-      client?: string;
-      guid?: string;
-      url?: string;
-      purpose?: string;
-    }
-  | {
-      action:
-        | 'start_iframe_worker'
-        | 'statistics_update'
-        | 'keepalive'
-        | 'transactions'
-        | 'show_payment_ui'
-        | 'show_extpay_login_ui'
-        | 'show_extpay_console'
-        | 'clear_cache'
-        | 'force_logout'
-        | 'abort'
-        | 'dump_order_detail';
-      [key: string]: unknown;
-    };
+  | FetchUrlMessage
+  | GetIframeTaskInstructionsMessage
+  | RemoteLogMessage
+  | RelayToParentMessage
+  | CheckFeatureAuthorizedMessage
+  | ScrapeMessage
+  | FallbackPayloadMessage;
+
+type IframeTaskMessage = FetchUrlMessage | ScrapeMessage;
 
 const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
 
 class IframeWorkerTaskMap {
-  _map: Map<string, BackgroundMessage>;
+  _map: Map<string, IframeTaskMessage>;
 
   constructor() {
-    this._map = new Map<string, BackgroundMessage>();
+    this._map = new Map<string, IframeTaskMessage>();
   }
 
   has(guid: string): boolean {
     return this._map.has(guid);
   }
 
-  get(guid: string): BackgroundMessage | undefined {
+  get(guid: string): IframeTaskMessage | undefined {
     return this._map.get(guid);
   }
 
-  set(guid: string, instructions: BackgroundMessage) {
+  set(guid: string, instructions: IframeTaskMessage) {
     this._map.set(guid, instructions);
   }
 
@@ -151,7 +167,7 @@ export async function sendToOneContentPage(msg: BackgroundMessage) {
 
 async function relayToParentOfIframe(
   sender: chrome.runtime.MessageSender,
-  msg: BackgroundMessage,
+  msg: RelayToParentMessage,
 ) {
   const tabId = sender?.tab?.id?.toString() ?? '?';
 
@@ -164,11 +180,11 @@ async function relayToParentOfIframe(
     p => (p.sender?.tab?.id?.toString() ?? '?') == tabId);
 
   const target = sameTabPorts[0] ?? null;
-  if (target && msg.action === 'relay_to_parent') {
+  if (target) {
     const nestedMsg = msg.msg;
     console.log('relaying msg to parent', nestedMsg.action, nestedMsg);
     target.postMessage(nestedMsg);
-  } else if (!target) {
+  } else {
     console.warn('relayToParentOfIframe: no parent port found.');
   }
 }
