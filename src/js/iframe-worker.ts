@@ -72,12 +72,9 @@
 /////////////////////////////////////////////////
 
 import * as extraction from './extraction';
-import * as inject from './inject';
 import * as pageType from './page_type';
 import * as ports from './ports';
 import * as transaction from './transaction';
-import * as urls from './url';
-import * as util from './util';
 import { v4 as uuidv4 } from 'uuid';
 
 const IFRAME_CLASS = 'azad-iframe-worker';
@@ -201,7 +198,6 @@ export function removeIframeWorker(guid: string): void {
   if (candidates.hasOwnProperty(guid)) {
     const iframe = candidates?.namedItem(guid) as HTMLIFrameElement;
     const container = iframe.parentNode as HTMLDivElement;
-    const box = container.parentNode as HTMLDivElement;
     iframe.remove();
     container.remove();
     console.log(`removed iframe ${guid}`);
@@ -495,7 +491,6 @@ async function getBakedHtml(
   }
 
   console.log(`getBakedHtml(${url}, ${completionXPath}) starting`);
-  const matched = await waitForXPathToMatch(document, completionXPath);
   const bakedHtml = document.documentElement.outerHTML;
 
   if (bakedHtml == '') {
