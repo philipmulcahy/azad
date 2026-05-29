@@ -10,10 +10,52 @@ import * as remoteLog from './remote_log';
 import * as settings from './settings';
 import { v4 as uuidv4 } from 'uuid';
 
-type BackgroundMessage = {
-  action: string;
-  [key: string]: unknown;
-};
+export type BackgroundMessage =
+  | {
+      action: 'fetch_url';
+      guid: string;
+      url?: string;
+      purpose?: string;
+    }
+  | {
+      action: 'get_iframe_task_instructions';
+      guid: string;
+    }
+  | {
+      action: 'remote_log_with_user_id';
+      log_msg: Record<string, string>;
+    }
+  | {
+      action: 'relay_to_parent';
+      msg: BackgroundMessage;
+    }
+  | {
+      action: 'check_feature_authorized';
+      feature_id: string;
+    }
+  | {
+      action: 'scrape_years' | 'scrape_range' | 'scrape_transactions';
+      table_type?: string;
+      client?: string;
+      guid?: string;
+      url?: string;
+      purpose?: string;
+    }
+  | {
+      action:
+        | 'start_iframe_worker'
+        | 'statistics_update'
+        | 'keepalive'
+        | 'transactions'
+        | 'show_payment_ui'
+        | 'show_extpay_login_ui'
+        | 'show_extpay_console'
+        | 'clear_cache'
+        | 'force_logout'
+        | 'abort'
+        | 'dump_order_detail';
+      [key: string]: unknown;
+    };
 
 const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
@@ -66,7 +108,6 @@ export async function sendToOneContentPage(msg: BackgroundMessage) {
       active: true, lastFocusedWindow: true
     });
 
-    // sorted for consistency
     const keys = Object.keys(content_ports)
       .filter(k => k.startsWith('azad_inject:'))
       .sort((a,b) => {
@@ -123,11 +164,11 @@ async function relayToParentOfIframe(
     p => (p.sender?.tab?.id?.toString() ?? '?') == tabId);
 
   const target = sameTabPorts[0] ?? null;
-  if (target) {
-    const nestedMsg = msg.msg as BackgroundMessage;
+  if (target && msg.action === 'relay_to_parent') {
+    const nestedMsg = msg.msg;
     console.log('relaying msg to parent', nestedMsg.action, nestedMsg);
     target.postMessage(nestedMsg);
-  } else {
+  } else if (!target) {
     console.warn('relayToParentOfIframe: no parent port found.');
   }
 }
@@ -140,14 +181,12 @@ function handleMessageFromContentScript(msg: BackgroundMessage, port: chrome.run
         {
           console.log('initiating fetch_url using iframe', msg);
 
-          if (typeof msg.guid === 'string') {
-            iframeWorkerTaskSpecs.set(
-              msg.guid,
-              msg,
-            );
-          }
+          iframeWorkerTaskSpecs.set(
+            msg.guid,
+            msg,
+          );
 
-          const purpose = (msg.purpose as string) ?? 'fetch url';
+          const purpose = msg.purpose ?? 'fetch url';
 
           sendToOneContentPage({
             action: 'start_iframe_worker',
@@ -160,7 +199,6 @@ function handleMessageFromContentScript(msg: BackgroundMessage, port: chrome.run
       case 'statistics_update':
         if (control_port) {
           try {
-            // Bypass strict structural mismatch on the multiplexed control pipe wrapper
             control_port?.postMessage(msg as any);
           } catch (ex) {
             console.debug(
@@ -171,13 +209,12 @@ function handleMessageFromContentScript(msg: BackgroundMessage, port: chrome.run
         break;
       case 'get_iframe_task_instructions':
         {
-          const guid = msg.guid as string;
-          if (!iframeWorkerTaskSpecs.has(guid)) {
-            console.error('I have no instruction for guid:', guid);
+          if (!iframeWorkerTaskSpecs.has(msg.guid)) {
+            console.error('I have no instruction for guid:', msg.guid);
             break;
           }
 
-          const instructions = iframeWorkerTaskSpecs.get(guid);
+          const instructions = iframeWorkerTaskSpecs.get(msg.guid);
           if (instructions) {
             port.postMessage(instructions);
           }
@@ -202,17 +239,14 @@ function handleMessageFromContentScript(msg: BackgroundMessage, port: chrome.run
           async () => {
             const userId = await extpay.getLoginId();
             const encryptedUserId = crypto.encrypt(userId);
-            // Type as string values to satisfy remoteLog signature constraints
-            const logMsg = msg.log_msg as Record<string, string>;
-            if (logMsg) {
-              logMsg.userid = encryptedUserId;
-              await remoteLog.log(logMsg);
-            }
+            const logMsg = msg.log_msg;
+            logMsg.userid = encryptedUserId;
+            await remoteLog.log(logMsg);
           }
         )();
         break;
       default:
-        console.debug('unknown action: ' + msg.action);
+        console.debug('unknown action: ' + (msg as any).action);
         break;
     }
   } catch(e) {
@@ -232,14 +266,17 @@ async function handleMessageFromControl(msg: BackgroundMessage) {
           if (table_type == 'transactions') {
             const guid = uuidv4();
             const purpose = 'scrape transactions';
-            msg.action = 'scrape_transactions';
-            msg.client = 'Azad UI';
-            msg.guid = guid;
 
-            // No site prefix: background page doesn't know about prefixes!
+            const updatedMsg: BackgroundMessage = {
+              ...msg,
+              action: 'scrape_transactions',
+              client: 'Azad UI',
+              guid: guid
+            };
+
             const url = '/cpe/yourpayments/transactions';
 
-            iframeWorkerTaskSpecs.set(guid, msg);
+            iframeWorkerTaskSpecs.set(guid, updatedMsg);
 
             sendToOneContentPage(
               {action: 'start_iframe_worker', url, guid, purpose}
@@ -252,9 +289,7 @@ async function handleMessageFromControl(msg: BackgroundMessage) {
 
         break;
       case 'check_feature_authorized':
-        if (typeof msg.feature_id === 'string') {
-          handleAuthorisationRequest(msg.feature_id, control_port);
-        }
+        handleAuthorisationRequest(msg.feature_id, control_port);
         break;
       case 'show_payment_ui':
         console.log('got show_payment_ui request');
@@ -278,7 +313,7 @@ async function handleMessageFromControl(msg: BackgroundMessage) {
         broadcastToRootContentPages(msg);
         break;
       default:
-        console.warn('unknown action: ' + msg.action);
+        console.warn('unknown action: ' + (msg as any).action);
         break;
     }
   } catch(e) {
