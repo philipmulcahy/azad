@@ -81,7 +81,19 @@ const IFRAME_CLASS = 'azad-iframe-worker';
 const IFRAME_CONTAINER_CLASS = 'azad-iframe-worker-container';
 const IFRAME_BOX_ID = 'azad-iframe-box';
 
-async function relayToParent(msg: any) {
+export type IframeInstructionMessage =
+  | { action: 'scrape_transactions'; client?: string; start_date?: string; end_date?: string; years?: string[] }
+  | { action: 'fetch_url'; url: string; xpath: string; guid: string };
+
+export type FetchUrlResponseWithGuid = {
+  action: 'fetch_url_response';
+  guid: string;
+  status: string;
+  html: string;
+  url: string;
+};
+
+async function relayToParent(msg: Record<string, unknown> | FetchUrlResponseWithGuid) {
   if (!pageType.isWorker()) {
     console.error(
       'Only an iframe worker can ask for a message to be relayed to its ' +
@@ -195,7 +207,7 @@ export function removeIframeWorker(guid: string): void {
   const candidates: HTMLCollectionOf<Element>
     = document.getElementsByClassName(IFRAME_CLASS);
   
-  if (candidates.hasOwnProperty(guid)) {
+  if (Object.prototype.hasOwnProperty.call(candidates, guid)) {
     const iframe = candidates?.namedItem(guid) as HTMLIFrameElement;
     const container = iframe.parentNode as HTMLDivElement;
     iframe.remove();
@@ -220,11 +232,11 @@ function removeThisIframe(): void {
 
   const guid = window.name;
 
-  relayToParent({
+  void relayToParent({
     action: 'remove_iframe_worker',
     url: document.URL,
     guid,
-  });
+  } as Record<string, unknown>);
 
   console.log(`removeThisIframe ${guid}`);
 }
@@ -235,6 +247,7 @@ function removeThisIframe(): void {
  *
  * @param url the URL whose HTML we desire.
  * @param xpath that will match when the HTML is properly "baked".
+ * @param purpose visual note about why this execution task is active
  * @returns
  */
 export async function fetchURL(
@@ -255,23 +268,24 @@ export async function fetchURL(
   const result = new Promise<FetchResponse>(async function (resolve, reject) {
     const port: chrome.runtime.Port = await ports.getBackgroundPort() as chrome.runtime.Port;
 
-    port.onMessage.addListener((msg) => {
-      if (msg.action != 'fetch_url_response') {
+    port.onMessage.addListener((msg: unknown) => {
+      const response = msg as FetchUrlResponseWithGuid;
+      if (response.action != 'fetch_url_response') {
         return;
       }
 
-      if (msg.guid != guid) {
+      if (response.guid != guid) {
         return;
       }
 
-      if (msg.status != 'OK') {
-        reject(msg.status);
+      if (response.status != 'OK') {
+        reject(response.status);
         return;
       }
 
       resolve({
         url,
-        html: msg.html,
+        html: response.html,
       });
     });
   });
@@ -287,30 +301,31 @@ export async function fetchURL(
   return result;
 }
 
-export async function handleInstructionsResponse(msg: any): Promise<void> {
+export async function handleInstructionsResponse(msg: unknown): Promise<void> {
   if (!pageType.isWorker()) {
     console.error('cannot start iframe task from outside an iframe');
   }
 
-  const action = msg.action;
+  const typedMsg = msg as IframeInstructionMessage;
+  const action = typedMsg.action;
 
   switch (action) {
     case 'scrape_transactions':
       {
         if (
-          msg.hasOwnProperty('start_date') &&
-          msg.hasOwnProperty('end_date')
+          Object.prototype.hasOwnProperty.call(typedMsg, 'start_date') &&
+          Object.prototype.hasOwnProperty.call(typedMsg, 'end_date')
         ) {
-          const startDate = new Date(msg.start_date);
-          const endDate = new Date(msg.end_date);
+          const startDate = new Date((typedMsg as any).start_date!);
+          const endDate = new Date((typedMsg as any).end_date!);
           transaction.reallyScrapeAndPublish(
             ports.getBackgroundPort,
             startDate,
             endDate,
-            msg.client,
+            typedMsg.client ?? '',
           );
-        } else if (msg.hasOwnProperty('years')) {
-          const years = (msg.years as string[]).map(ys => +ys).sort();
+        } else if (Object.prototype.hasOwnProperty.call(typedMsg, 'years')) {
+          const years = (typedMsg.years as string[]).map(ys => +ys).sort();
           const minYear = years.at(0)!;
           const maxYear = years.at(-1)!;
           const startDate = new Date(minYear, 0);
@@ -320,7 +335,7 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
             ports.getBackgroundPort,
             startDate,
             endDate,
-            msg.client,
+            typedMsg.client ?? '',
           );
 
           await removeThisIframe();
@@ -329,25 +344,25 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
       break;
     case 'fetch_url':
       {
-        if (msg.url != document.documentURI) {
+        if (typedMsg.url != document.documentURI) {
           console.debug(
-            'fetch_url wants', msg.url, 'but this iframe has', document.documentURI
+            'fetch_url wants', typedMsg.url, 'but this iframe has', document.documentURI
           );
         } else {
-          const completionXPath: string = msg.xpath;
-          const guid: string = msg.guid;
+          const completionXPath: string = typedMsg.xpath;
+          const guid: string = typedMsg.guid;
           let html = '';
           let status = 'OK';
 
           try {
-            html = await getBakedHtml(msg.url, completionXPath);
+            html = await getBakedHtml(typedMsg.url, completionXPath);
           } catch (ex) {
             status = ex as string;
           }
 
           await relayToParent({
             action: 'fetch_url_response',
-            url: msg.url,
+            url: typedMsg.url,
             html,
             guid,
             status,
@@ -359,7 +374,7 @@ export async function handleInstructionsResponse(msg: any): Promise<void> {
       break;
     default:
       console.warn(
-        'iframe-worker.handleInstructionsResponse cannot handle', msg);
+        'iframe-worker.handleInstructionsResponse cannot handle', typedMsg);
   }
 }
 
@@ -400,7 +415,7 @@ function removeIframeContainerIfPresentAndEmpty(): void {
  * If it doesn't match for long enough, the function times out + returns false.
  * If it matches, it immediately returns true.
  * @param xpath - xpath string to attempt matching. If empty then match after
- *                timing out.
+ * timing out.
  * @returns boolean: true for matched, false for timed out.
  */
 async function waitForXPathToMatch(
@@ -471,9 +486,7 @@ async function waitForXPathToMatch(
  * A: To allow site javascript to run, mutating the document.
  * @param url - xpath string to attempt matching.
  * @param completionXPath - xpath string to attempt matching. If empty, then
- *        completion is deemed after 10s.
- * @param guid - unique identifier of the request, so that the recipient of the
-                 the result knows it is for them.
+ * completion is deemed after 10s.
  * @returns string: "baked" html.
  * @throws string: comments on failure.
  */
