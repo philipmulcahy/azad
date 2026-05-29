@@ -19,21 +19,21 @@ const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
 
 class IframeWorkerTaskMap {
-  _map: Map<string, any>;
+  _map: Map<string, BackgroundMessage>;
 
   constructor() {
-    this._map = new Map<string, any>();
+    this._map = new Map<string, BackgroundMessage>();
   }
 
   has(guid: string): boolean {
     return this._map.has(guid);
   }
 
-  get(guid: string): any {
+  get(guid: string): BackgroundMessage | undefined {
     return this._map.get(guid);
   }
 
-  set(guid: string, instructions: any) {
+  set(guid: string, instructions: BackgroundMessage) {
     this._map.set(guid, instructions);
   }
 
@@ -174,7 +174,9 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
           }
 
           const instructions = iframeWorkerTaskSpecs.get(msg.guid);
-          port.postMessage(instructions);
+          if (instructions) {
+            port.postMessage(instructions);
+          }
         }
 
         break;
