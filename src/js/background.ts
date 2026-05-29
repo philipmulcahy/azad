@@ -132,7 +132,7 @@ async function relayToParentOfIframe(
   }
 }
 
-function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
+function handleMessageFromContentScript(msg: BackgroundMessage, port: chrome.runtime.Port) {
   try {
     console.log('handleMessageFromContentScript handling', msg.action);
     switch (msg.action) {
@@ -140,12 +140,14 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         {
           console.log('initiating fetch_url using iframe', msg);
 
-          iframeWorkerTaskSpecs.set(
-            msg.guid,
-            msg,
-          );
+          if (typeof msg.guid === 'string') {
+            iframeWorkerTaskSpecs.set(
+              msg.guid,
+              msg,
+            );
+          }
 
-          const purpose = msg.purpose ?? 'fetch url';
+          const purpose = (msg.purpose as string) ?? 'fetch url';
 
           sendToOneContentPage({
             action: 'start_iframe_worker',
@@ -158,7 +160,8 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
       case 'statistics_update':
         if (control_port) {
           try {
-            control_port?.postMessage(msg);
+            // Bypass strict structural mismatch on the multiplexed control pipe wrapper
+            control_port?.postMessage(msg as any);
           } catch (ex) {
             console.debug(
               'cannot post stats msg to non-existent control port');
@@ -168,12 +171,13 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         break;
       case 'get_iframe_task_instructions':
         {
-          if (!iframeWorkerTaskSpecs.has(msg.guid)) {
-            console.error('I have no instruction for guid:', msg.guid);
+          const guid = msg.guid as string;
+          if (!iframeWorkerTaskSpecs.has(guid)) {
+            console.error('I have no instruction for guid:', guid);
             break;
           }
 
-          const instructions = iframeWorkerTaskSpecs.get(msg.guid);
+          const instructions = iframeWorkerTaskSpecs.get(guid);
           if (instructions) {
             port.postMessage(instructions);
           }
@@ -198,9 +202,12 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
           async () => {
             const userId = await extpay.getLoginId();
             const encryptedUserId = crypto.encrypt(userId);
-            const logMsg = msg.log_msg;
-            logMsg.userid = encryptedUserId;
-            await remoteLog.log(logMsg);
+            // Type as string values to satisfy remoteLog signature constraints
+            const logMsg = msg.log_msg as Record<string, string>;
+            if (logMsg) {
+              logMsg.userid = encryptedUserId;
+              await remoteLog.log(logMsg);
+            }
           }
         )();
         break;
@@ -214,7 +221,7 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
   }
 }
 
-async function handleMessageFromControl(msg: any) {
+async function handleMessageFromControl(msg: BackgroundMessage) {
   try {
     console.log('handleMessageFromControl handling', msg);
     switch (msg.action) {
@@ -245,7 +252,9 @@ async function handleMessageFromControl(msg: any) {
 
         break;
       case 'check_feature_authorized':
-        handleAuthorisationRequest(msg.feature_id, control_port);
+        if (typeof msg.feature_id === 'string') {
+          handleAuthorisationRequest(msg.feature_id, control_port);
+        }
         break;
       case 'show_payment_ui':
         console.log('got show_payment_ui request');
@@ -308,7 +317,7 @@ function registerConnectionListener() {
           });
 
           port.onMessage.addListener((msg) => {
-            handleMessageFromContentScript(msg, port);
+            handleMessageFromContentScript(msg as BackgroundMessage, port);
           });
         }
 
@@ -317,7 +326,7 @@ function registerConnectionListener() {
         control_port = port;
 
         port.onMessage.addListener(async (msg) => {
-          handleMessageFromControl(msg);
+          handleMessageFromControl(msg as BackgroundMessage);
         });
 
         break;
