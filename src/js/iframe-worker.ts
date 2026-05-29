@@ -250,7 +250,7 @@ function removeThisIframe(): void {
  * @param purpose visual note about why this execution task is active
  * @returns
  */
-export async function fetchURL(
+export function fetchURL(
   url: string,
   xpath: string,
   purpose: string,
@@ -265,40 +265,41 @@ export async function fetchURL(
     purpose,
   };
 
-  const result = new Promise<FetchResponse>(async function (resolve, reject) {
-    const port: chrome.runtime.Port = await ports.getBackgroundPort() as chrome.runtime.Port;
-
-    port.onMessage.addListener((msg: unknown) => {
-      const response = msg as FetchUrlResponseWithGuid;
-      if (response.action != 'fetch_url_response') {
+  return new Promise<FetchResponse>((resolve, reject) => {
+    ports.getBackgroundPort().then((port) => {
+      if (!port) {
+        reject('Could not obtain background port');
         return;
       }
 
-      if (response.guid != guid) {
-        return;
-      }
+      port.onMessage.addListener((msg: unknown) => {
+        const response = msg as FetchUrlResponseWithGuid;
+        if (response.action != 'fetch_url_response') {
+          return;
+        }
 
-      if (response.status != 'OK') {
-        reject(response.status);
-        return;
-      }
+        if (response.guid != guid) {
+          return;
+        }
 
-      resolve({
-        url,
-        html: response.html,
+        if (response.status != 'OK') {
+          reject(response.status);
+          return;
+        }
+
+        resolve({
+          url,
+          html: response.html,
+        });
       });
+
+      port.postMessage(requestMsg);
+      console.log('fetchURL requested', url, xpath, guid);
+    }).catch((ex) => {
+      console.error('failed to post message to background script', ex);
+      reject(ex);
     });
   });
-
-  try {
-    const port: chrome.runtime.Port = await ports.getBackgroundPort() as chrome.runtime.Port;
-    port.postMessage(requestMsg);
-    console.log('fetchURL requested', url, xpath, guid);
-  } catch (ex) {
-    console.error('failed to post message to background script', ex);
-  }
-
-  return result;
 }
 
 export async function handleInstructionsResponse(msg: unknown): Promise<void> {
@@ -316,8 +317,9 @@ export async function handleInstructionsResponse(msg: unknown): Promise<void> {
           Object.prototype.hasOwnProperty.call(typedMsg, 'start_date') &&
           Object.prototype.hasOwnProperty.call(typedMsg, 'end_date')
         ) {
-          const startDate = new Date((typedMsg as any).start_date!);
-          const endDate = new Date((typedMsg as any).end_date!);
+          const dateMessage = typedMsg as { start_date: string; end_date: string; client?: string };
+          const startDate = new Date(dateMessage.start_date);
+          const endDate = new Date(dateMessage.end_date);
           transaction.reallyScrapeAndPublish(
             ports.getBackgroundPort,
             startDate,
@@ -418,7 +420,7 @@ function removeIframeContainerIfPresentAndEmpty(): void {
  * timing out.
  * @returns boolean: true for matched, false for timed out.
  */
-async function waitForXPathToMatch(
+export async function waitForXPathToMatch(
   doc: HTMLDocument,
   xpath: string,
 ): Promise<boolean> {
