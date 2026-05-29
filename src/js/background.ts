@@ -8,8 +8,12 @@ import * as extpay from './extpay_client';
 import * as msg from './message_types';
 import * as remoteLog from './remote_log';
 import * as settings from './settings';
-import * as util from './util';
 import { v4 as uuidv4 } from 'uuid';
+
+type BackgroundMessage = {
+  action: string;
+  [key: string]: unknown;
+};
 
 const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
@@ -40,7 +44,7 @@ class IframeWorkerTaskMap {
 
 const iframeWorkerTaskSpecs = new IframeWorkerTaskMap();
 
-function broadcastToRootContentPages(msg: any): void {
+function broadcastToRootContentPages(msg: BackgroundMessage): void {
   const rootKeys = Object.keys(content_ports).filter(
     k => k.startsWith('azad_inject'));
 
@@ -55,7 +59,7 @@ function broadcastToRootContentPages(msg: any): void {
   }
 }
 
-export async function sendToOneContentPage(msg: any) {
+export async function sendToOneContentPage(msg: BackgroundMessage) {
   async function getBestContentPort(): Promise<chrome.runtime.Port|null> {
 
     const [activeTab] = await chrome.tabs.query({
@@ -106,7 +110,7 @@ export async function sendToOneContentPage(msg: any) {
 
 async function relayToParentOfIframe(
   sender: chrome.runtime.MessageSender,
-  msg: any,
+  msg: BackgroundMessage,
 ) {
   const tabId = sender?.tab?.id?.toString() ?? '?';
 
@@ -116,12 +120,13 @@ async function relayToParentOfIframe(
   const rootPorts = rootKeys.map(k => content_ports[k]);
 
   const sameTabPorts = rootPorts.filter(
-    p => p.sender?.tab?.id?.toString() ?? '?' == tabId);
+    p => (p.sender?.tab?.id?.toString() ?? '?') == tabId);
 
   const target = sameTabPorts[0] ?? null;
   if (target) {
-    console.log('relaying msg to parent', msg.msg.action, msg.msg);
-    target.postMessage(msg.msg);
+    const nestedMsg = msg.msg as BackgroundMessage;
+    console.log('relaying msg to parent', nestedMsg.action, nestedMsg);
+    target.postMessage(nestedMsg);
   } else {
     console.warn('relayToParentOfIframe: no parent port found.');
   }
