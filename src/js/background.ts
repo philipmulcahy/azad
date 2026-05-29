@@ -46,10 +46,15 @@ export interface ScrapeMessage {
   purpose?: string;
 }
 
+export interface StatisticsUpdateMessage {
+  action: 'statistics_update';
+  periods: number[];
+  [key: string]: unknown;
+}
+
 export interface FallbackPayloadMessage {
   action:
     | 'start_iframe_worker'
-    | 'statistics_update'
     | 'keepalive'
     | 'transactions'
     | 'show_payment_ui'
@@ -69,6 +74,7 @@ export type BackgroundMessage =
   | RelayToParentMessage
   | CheckFeatureAuthorizedMessage
   | ScrapeMessage
+  | StatisticsUpdateMessage
   | FallbackPayloadMessage;
 
 type IframeTaskMessage = FetchUrlMessage | ScrapeMessage;
@@ -215,7 +221,8 @@ function handleMessageFromContentScript(msg: BackgroundMessage, port: chrome.run
       case 'statistics_update':
         if (control_port) {
           try {
-            control_port?.postMessage(msg as any);
+            // Evaluated implicitly now because of structural StatisticsUpdateMessage definition
+            control_port.postMessage(msg);
           } catch (ex) {
             console.debug(
               'cannot post stats msg to non-existent control port');
@@ -262,7 +269,7 @@ function handleMessageFromContentScript(msg: BackgroundMessage, port: chrome.run
         )();
         break;
       default:
-        console.debug('unknown action: ' + (msg as any).action);
+        console.debug('unknown action: ' + (msg as BackgroundMessage).action);
         break;
     }
   } catch(e) {
@@ -305,7 +312,7 @@ async function handleMessageFromControl(msg: BackgroundMessage) {
 
         break;
       case 'check_feature_authorized':
-        handleAuthorisationRequest(msg.feature_id, control_port);
+        handleAuthorisationRequest(msg, control_port);
         break;
       case 'show_payment_ui':
         console.log('got show_payment_ui request');
@@ -329,7 +336,7 @@ async function handleMessageFromControl(msg: BackgroundMessage) {
         broadcastToRootContentPages(msg);
         break;
       default:
-        console.warn('unknown action: ' + (msg as any).action);
+        console.warn('unknown action: ' + (msg as BackgroundMessage).action);
         break;
     }
   } catch(e) {
@@ -461,12 +468,12 @@ function registerMessageListener() {
 }
 
 async function handleAuthorisationRequest(
-  feature_id: string,
+  msg: CheckFeatureAuthorizedMessage,
   control_port: msg.ControlPort | null
 ): Promise<void> {
   const ext_pay_authorised = await extpay.check_authorised();
 
-  const authorised = feature_id == 'premium_preview' ?
+  const authorised = msg.feature_id == 'premium_preview' ?
     ext_pay_authorised :
     false;
 
