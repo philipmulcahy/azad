@@ -43,7 +43,7 @@ function setStatsTimeout() {
   stats_timeout = setTimeout(
     () => {
       setStatsTimeout();
-      sendStatsMsg();
+      void sendStatsMsg();
     },
     2000
   );
@@ -80,7 +80,7 @@ async function fetchAndShowOrdersByYears(
     years,
     getScheduler(),
     latestYear,
-    (_date: Date|null) => true,  // DateFilter predicate
+    () => true,
   );
 
   return azad_table.display(
@@ -116,10 +116,10 @@ async function fetchAndShowOrdersByRange(
     getScheduler(),
     latest_year,
     function (d: Date|null): boolean {
-      if (typeof(d) === 'undefined') {
+      if (!d) {
         return false;
       }
-      return d! >= start_date && d! <= end_date;  // DateFilter
+      return d >= start_date && d <= end_date;
     },
   );
 
@@ -135,16 +135,16 @@ async function registerContentScript(isIframeWorker: boolean) {
     bg_port.onMessage.addListener(
       msg => {
         try {
-          handleMessageFromBackground(pgType, msg);
+          handleMessageFromBackground(pgType, msg as Record<string, unknown>);
         } catch (ex) {
-          console.error(`msg handler caught ${ex} while processing ${msg}`
+          console.error(`msg handler caught ${ex} while processing ${JSON.stringify(msg)}`
           );
         }
       }
     );
 
     if (isIframeWorker) {
-      iframeWorker.requestInstructions(ports.getBackgroundPort);
+      void iframeWorker.requestInstructions(ports.getBackgroundPort);
     }
   } else {
     console.warn('no background port in registerContentScript()');
@@ -153,40 +153,41 @@ async function registerContentScript(isIframeWorker: boolean) {
   console.log('script registered');
 }
 
-function handleMessageFromBackground(pageType: string, msg: any): void {
+function handleMessageFromBackground(pageType: string, msg: Record<string, unknown>): void {
   switch(pageType) {
     case 'azad_inject':
       handleMessageFromBackgroundToRootContentPage(msg);
       break;
     case 'azad_iframe_worker':
-      iframeWorker.handleInstructionsResponse(msg);
+      void iframeWorker.handleInstructionsResponse(msg);
       break;
     default:
       console.warn('unknown pageType:', pageType);
   }
 }
 
-function handleMessageFromBackgroundToRootContentPage(msg: any): void {
-  switch(msg.action) {
+function handleMessageFromBackgroundToRootContentPage(msg: Record<string, unknown>): void {
+  const action = msg.action as string;
+  switch(action) {
     case 'dump_order_detail':
       resetScheduler('dump_order_detail');
-      azad_table.dumpOrderDiagnostics(msg.order_id, getScheduler);
+      azad_table.dumpOrderDiagnostics(msg.order_id as string, getScheduler);
       break;
     case 'scrape_years':
       {
-        const years = msg.years;
-        const client: string = msg.client;
+        const years = msg.years as number[] | undefined;
+        const client = msg.client as string;
         if (years) {
-          fetchAndShowOrdersByYears(years, client);
+          void fetchAndShowOrdersByYears(years, client);
         }
       }
       break;
     case 'scrape_range':
       {
-        const start_date: Date = new Date(msg.start_date);
-        const end_date: Date = new Date(msg.end_date);
-        const client: string = msg.client;
-        fetchAndShowOrdersByRange(
+        const start_date: Date = new Date(msg.start_date as string);
+        const end_date: Date = new Date(msg.end_date as string);
+        const client = msg.client as string;
+        void fetchAndShowOrdersByRange(
           start_date,
           end_date,
           true,
@@ -196,21 +197,21 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       break;
     case 'start_iframe_worker':
       {
-        const url = urls.normalizeUrl(msg.url, urls.getSite());
-        iframeWorker.createIframe(url, msg.guid, msg.purpose);
+        const url = urls.normalizeUrl(msg.url as string, urls.getSite());
+        iframeWorker.createIframe(url, msg.guid as string, msg.purpose as string);
       }
       break;
     case 'remove_iframe_worker':
-      iframeWorker.removeIframeWorker(msg.guid);
+      iframeWorker.removeIframeWorker(msg.guid as string);
       break;
     case 'transactions':
       {
         console.log('got transactions', msg.transactions);
-        const client: string = msg.client;
-        (async ()=>{
+        const client = msg.client as string;
+        void (async ()=>{
           if (!pageType.isWorker()) {
             await azad_table.displayTransactions(
-              msg.transactions,
+              msg.transactions as transaction.Transaction[],
               true,
               ports.getBackgroundPort,
               client,
@@ -237,7 +238,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: any): void {
       resetScheduler('aborted');
       break;
     default:
-      console.debug('inject.ts ignoring msg.action: ' + msg.action);
+      console.debug('inject.ts ignoring msg.action: ' + action);
   }
 }
 
@@ -246,10 +247,10 @@ function initialiseContentScript() {
   console.log(git_hash.text());
 
   const isWorker = pageType.isWorker();
-  registerContentScript(isWorker);
+  void registerContentScript(isWorker);
 
   if (!pageType.isIframe()) {
-    periods.advertisePeriods();
+    void periods.advertisePeriods();
   }
 }
 
