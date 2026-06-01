@@ -130,6 +130,7 @@ export async function sendToOneContentPage(msg: BackgroundMessage) {
       active: true, lastFocusedWindow: true
     });
 
+    // sorted for consistency
     const keys = Object.keys(content_ports)
       .filter(k => k.startsWith('azad_inject:'))
       .sort((a,b) => {

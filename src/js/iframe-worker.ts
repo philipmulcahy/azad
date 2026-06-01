@@ -506,6 +506,7 @@ async function getBakedHtml(
   }
 
   console.log(`getBakedHtml(${url}, ${completionXPath}) starting`);
+  await waitForXPathToMatch(document, completionXPath);
   const bakedHtml = document.documentElement.outerHTML;
 
   if (bakedHtml == '') {
