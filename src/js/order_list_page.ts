@@ -4,9 +4,7 @@ import * as business from './business';
 import * as dom2json from './dom2json';
 import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
-import * as notice from './notice';
 import * as order_header from './order_header';
-import * as req from './request';
 import * as request from './request';
 import * as request_scheduler from './request_scheduler';
 import * as sprintf from 'sprintf-js';
@@ -17,7 +15,7 @@ import * as util from './util';
 export interface AttributedUrl{
   template: string;
   url: string;
-};
+}
 
 type headerPageUrlGenerator = (
   site: string,
@@ -105,7 +103,7 @@ async function get_page_of_headers(
     (evt) => translateOrdersPage(evt, year.toString()),
     pageReadyXpath,
     scheduler,
-    '',  // priority
+    priority,
     nocache,
     `order_list_page.get_page_of_headers: ${start_order_number}`,  // context
   ) as Promise<OrderHeaderPageData>;
@@ -128,7 +126,7 @@ async function get_page_of_headers(
     return pageData;
   } catch (err) {
     console.warn(
-      `get_page_of_headers blew up while fetching or processing: ${err}`)
+      `get_page_of_headers blew up while fetching or processing: ${err}`);
 
     throw err;
   }
