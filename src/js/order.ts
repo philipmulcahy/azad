@@ -229,7 +229,7 @@ class Order implements IOrder{
   pst(): Promise<string> {
     return this._detail_dependent_promise( detail => detail.pst );
   }
-  refund(): Promise<string> {
+ refund(): Promise<string> {
     return this._detail_dependent_promise( detail => detail.refund );
   }
   invoice_url(): Promise<string> {
@@ -337,10 +337,10 @@ export async function assembleDiagnostics(
   order: IOrder,
   getScheduler: () => request_scheduler.IRequestScheduler,
 )
-  : Promise<Record<string, any>>
+  : Promise<Record<string, unknown>>
 {
   const sync_order = await order.sync();
-  const diagnostics: Record<string, any> = {};
+  const diagnostics: Record<string, unknown> = {};
   const field_names: (keyof ISyncOrder)[] = [
     'id',
     'list_url',
@@ -353,7 +353,7 @@ export async function assembleDiagnostics(
 
   field_names.forEach(
     (field_name: keyof ISyncOrder) => {
-      const value: any = sync_order[field_name];
+      const value: unknown = sync_order[field_name];
       diagnostics[<string>(field_name)] = value;
     }
   );
@@ -410,7 +410,7 @@ export async function assembleDiagnostics(
       getScheduler,
     ).then(
       (text: string) => { diagnostics['list_html'] = text; },
-      (err: any) => {
+      (err: unknown) => {
         console.warn(`list_html fetch for order diagnostics failed: ${err}`);
         diagnostics['list_html'] = JSON.stringify(err);
       }
@@ -436,7 +436,7 @@ export async function assembleDiagnostics(
     },
     error_msg => {
       getScheduler().abort();
-      notice.showNotificationBar(error_msg, document);
+      notice.showNotificationBar(String(error_msg), document);
       return diagnostics;
     }
   );
