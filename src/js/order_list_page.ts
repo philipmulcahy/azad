@@ -293,7 +293,7 @@ type OrderHeaderPageData = {
 };
 
 function translateOrdersPage(
-  evt: any,
+  evt: request.Event,
   period: string,  // log description of the period we are fetching orders for.
 ): OrderHeaderPageData {
   try {
@@ -306,11 +306,13 @@ function translateOrdersPage(
 }
 
 function reallyTranslateOrdersPage(
-  evt: any,
+  evt: request.Event,
   period: string,  // log description of the period we are fetching orders for.
 ): OrderHeaderPageData {
-  const doc = util.parseStringToDOM(evt.target.responseText);
-  const expectedOrderCount = getExpectedOrderCountFromHeaderDoc(doc, evt.target.url);
+  const xhr = evt.target as XMLHttpRequest;
+  const doc = util.parseStringToDOM(xhr.responseText);
+  // @ts-expect-error: url property added dynamically by tracking infrastructure
+  const expectedOrderCount = getExpectedOrderCountFromHeaderDoc(doc, xhr.url);
   let ordersElem;
 
   try {
@@ -346,12 +348,12 @@ function reallyTranslateOrdersPage(
   if ( !serialized_order_elems.length ) {
     console.error(
       'no order elements in converted order list page for ' + period + ': ' +
-      evt.target.responseURL
+      xhr.responseURL
     );
   }
 
   const headers = order_elems.map(
-    elem => order_header.extractOrderHeader(elem, evt.target.responseURL));
+    elem => order_header.extractOrderHeader(elem, xhr.responseURL));
 
   return {
     headers,
