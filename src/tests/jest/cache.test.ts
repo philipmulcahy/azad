@@ -38,7 +38,7 @@ describe('cache operations', () => {
             },
         },
     });
-    const retrieved = await cache.get('test_key') as any;
+    const retrieved = await cache.get('X') as any;
     expect(retrieved.a.b.c.d.e).toEqual(true);
   });
 
@@ -56,7 +56,7 @@ describe('cache operations', () => {
     cache.clear();
     cache.set('my_order', order);
 
-    const retrieved = await cache.get('parent_key') as any;
+    const retrieved = await cache.get('my_order') as any;
     const item_parent = await retrieved.items[0].parent_order;
     const other_child_parent = await retrieved.child_thing.parent_order;
 
