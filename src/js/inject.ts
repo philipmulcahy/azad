@@ -74,12 +74,10 @@ async function fetchAndShowOrdersByYears(
 
   const purpose: string = years.join(', ');
   resetScheduler(purpose);
-  const latestYear: number = await periods.getLatestYear();
 
   const orderPromises = azad_order.getOrdersByYear(
     years,
     getScheduler(),
-    latestYear,
     () => true,
   );
 
@@ -108,13 +106,11 @@ async function fetchAndShowOrdersByRange(
     + dateToDateIsoString(end_date);
 
   resetScheduler(purpose);
-  const latest_year: number = await periods.getLatestYear();
 
   const orders = azad_order.getOrdersByRange(
     start_date,
     end_date,
     getScheduler(),
-    latest_year,
     function (d: Date|null): boolean {
       if (!d) {
         return false;

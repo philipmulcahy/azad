@@ -11,7 +11,6 @@ import * as order_details from './order_details';
 import * as order_header from './order_header';
 import * as olp from './order_list_page';
 import * as order_impl from './order_impl';
-import * as signin from './signin';
 import * as shipment from './shipment';
 import * as request_scheduler from './request_scheduler';
 import * as single_fetch from './single_fetch';
@@ -68,61 +67,6 @@ export interface ISyncOrder extends azad_entity.IEntity {
   subscribe_and_save: string;
   vat: string;
   who: string;
-}
-
-class SyncOrder implements ISyncOrder {
-  id: string = '';
-  detail_url: string = '';
-  invoice_url: string = '';
-  list_url: string = '';
-  payments_url: string = '';
-  date: Date|null = null;
-  gift: string = '';
-  gst: string = '';
-  shipments: shipment.IShipment[] = [];
-  item_list: item.IItem[] = [];
-  payments: string[] = [];
-  postage: string = '';
-  postage_refund: string = '';
-  pst: string = '';
-  refund: string = '';
-  site: string = '';
-  total: string = '';
-  us_tax: string = '';
-  subscribe_and_save: string = '';
-  vat: string = '';
-  who: string = '';
-
-  constructor(rhs: ISyncOrder) {
-    Object.assign(this, rhs);
-  }
-
-  unsync(): IOrder {
-    return {
-      sync: ()=>Promise.resolve(this),
-      id: ()=>Promise.resolve(this.id),
-      detail_url: ()=>Promise.resolve(this.detail_url),
-      invoice_url: ()=>Promise.resolve(this.invoice_url),
-      list_url: ()=>Promise.resolve(this.list_url),
-      payments_url: ()=>Promise.resolve(this.payments_url),
-      date: ()=>Promise.resolve(this.date),
-      gift: ()=>Promise.resolve(this.gift),
-      gst: ()=>Promise.resolve(this.gst),
-      shipments: ()=>Promise.resolve(this.shipments),
-      item_list: ()=>Promise.resolve(this.item_list),
-      payments: ()=>Promise.resolve(this.payments),
-      postage: ()=>Promise.resolve(this.postage),
-      postage_refund: ()=>Promise.resolve(this.postage_refund),
-      pst: ()=>Promise.resolve(this.pst),
-      refund: ()=>Promise.resolve(this.refund),
-      site: ()=>Promise.resolve(this.site),
-      total: ()=>Promise.resolve(this.total),
-      us_tax: ()=>Promise.resolve(this.us_tax),
-      subscribe_and_save: ()=>Promise.resolve(this.subscribe_and_save),
-      vat: ()=>Promise.resolve(this.vat),
-      who: ()=>Promise.resolve(this.who),
-    };
-  }
 }
 
 class Order implements IOrder{
@@ -310,14 +254,12 @@ async function fetchYear(
 export async function getOrdersByYear(
   years: number[],
   scheduler: request_scheduler.IRequestScheduler,
-  latest_year: number,
   date_filter: date.DateFilter,
 ): Promise<IOrder[]> {
   try {
     const orderss = await Promise.all(
       years.map(
         function(year: number): Promise<IOrder[]> {
-          const nocache_top_level = (year == latest_year);
           return fetchYear(year, scheduler, date_filter);
         }
       )
@@ -333,7 +275,6 @@ export async function getOrdersByRange(
   start_date: Date,
   end_date: Date,
   scheduler: request_scheduler.IRequestScheduler,
-  latest_year: number,
   date_filter: date.DateFilter,
 ): Promise<IOrder[]> {
   console.assert(start_date < end_date);
@@ -347,7 +288,6 @@ export async function getOrdersByRange(
 
   const order_years = years.map(
     year => {
-      const nocache_top_level = latest_year == year;
       return fetchYear(year, scheduler, date_filter);
     }
   );
