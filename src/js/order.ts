@@ -396,11 +396,12 @@ export async function get_legacy_items(order: IOrder)
 export async function assembleDiagnostics(
   order: IOrder,
   getScheduler: () => request_scheduler.IRequestScheduler,
-)
-  : Promise<Record<string, any>>
+): Promise<Record<string, any>>
 {
   const sync_order = await order.sync();
   const diagnostics: Record<string, any> = {};
+  const problems: string[] = [];
+
   const field_names: (keyof ISyncOrder)[] = [
     'id',
     'list_url',
@@ -411,14 +412,21 @@ export async function assembleDiagnostics(
     'who',
   ];
 
+  const entries: Record<string, Promise<string|Record<string, string>>> = {};
+
   field_names.forEach(
     (field_name: keyof ISyncOrder) => {
-      const value: any = sync_order[field_name];
-      diagnostics[<string>(field_name)] = value;
+      try {
+        const value: any = sync_order[field_name];
+        entries[<string>(field_name)] = Promise.resolve(value);
+      } catch(ex) {
+        const exStr = JSON.stringify(ex);
+        const msg = 'Failed while capturing ' + field_name + ': ' + exStr;
+        console.warn(msg);
+        problems.push(msg);
+      }
     }
   );
-
-  diagnostics['items'] = await get_legacy_items(order);
 
   async function getUrlHtmlMap(urls: string[]): Promise<Record<string, string>>
   {
@@ -447,8 +455,6 @@ export async function assembleDiagnostics(
     return data;
   }
 
-  diagnostics['item_data'] = await get_item_data(sync_order);
-
   async function get_tracking_data(
     order: ISyncOrder,
   ): Promise<Record<string, string>> {
@@ -457,10 +463,12 @@ export async function assembleDiagnostics(
     return data;
   }
 
-  diagnostics['tracking_data'] = await get_tracking_data(sync_order);
+  Object.entries({
+    'items': get_legacy_items(order),
 
-  return Promise.all([
-    single_fetch.checkedDynamicFetch(
+    'tracking_data': get_tracking_data(sync_order),
+
+    'list_html': single_fetch.checkedDynamicFetch(
       util.defaulted(sync_order.list_url, ''),  // url
       'orderListHtmlForDebug',
 
@@ -468,38 +476,44 @@ export async function assembleDiagnostics(
       '//div[@id="orderCard"]//div[@id="orderCardHeader"]|//div[contains(@class, "order-card")]',
 
       getScheduler,
-    ).then(
-      (text: string) => { diagnostics['list_html'] = text; },
-      (err: any) => {
-        console.warn(`list_html fetch for order diagnostics failed: ${err}`);
-        diagnostics['list_html'] = JSON.stringify(err);
-      }
     ),
 
-    single_fetch.checkedStaticFetch(util.defaulted(sync_order.detail_url, ''))
-      .then((response: Response) => response.text())
-      .then((text: string) => { diagnostics['detail_html'] = text; }),
+    'detail_html': single_fetch.checkedStaticFetch(
+      util.defaulted(sync_order.detail_url, '')
+    ).then((response: Response) => response.text()),
 
-    iframeWorker.fetchURL(
+    'detail_html_cooked':  iframeWorker.fetchURL(
       sync_order.detail_url,
       '',  // empty xpath: wait for the timeout to expire, but then succeed.
       'assembleDiagnostics detail_html_cooked',
-    ).then(response => {diagnostics['detail_html_cooked'] = response.html;}),
+    ).then(response => response.html),
 
-    single_fetch.checkedStaticFetch(util.defaulted(sync_order.payments_url, ''))
-      .then((response: Response) => response.text())
-      .then((text: string) => {diagnostics['invoice_html'] = text;}),
-  ]).then(
-    () => {
-      getScheduler().abort();
-      return diagnostics;
-    },
-    error_msg => {
-      getScheduler().abort();
-      notice.showNotificationBar(error_msg, document);
-      return diagnostics;
-    }
+    'invoice_html': single_fetch.checkedStaticFetch(
+      util.defaulted(sync_order.payments_url, '')
+    ).then((response: Response) => response.text()),
+  }).forEach(entry => entries[entry[0]] = entry[1]);
+
+  const moreEntriesSettled = await Promise.allSettled(
+    Object.entries(entries)
+      .map(async e => ({key: e[0], value: await e[1]}))
   );
+
+  for (const entry of moreEntriesSettled) {
+    if (entry.status == 'rejected') {
+      const reason = entry.reason;
+      notice.showNotificationBar(reason, document);
+      console.warn(reason);
+      problems.push(reason);
+    } else if (entry.status == 'fulfilled') {
+      const key = entry.value.key;
+      const value = entry.value.value;
+      diagnostics[key] = value;
+    }
+  }
+
+  getScheduler().abort();
+  diagnostics['problems'] = problems;
+  return diagnostics;
 }
 
 export function create(
