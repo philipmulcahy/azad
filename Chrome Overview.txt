@@ -57,6 +57,16 @@ Feature requests: if there's a github ticket outstanding for the same thing,
 please add your thoughts there rather than making a new one. You can signal
 your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.20
+---------------
+#403 Show popup when a json order debug file is requested from the transactions
+     output table, explaining how to actually get the desired file.
+#406 Improve json order debug file generation reliability, particularly when
+     users aren't super speedy with requesting them once the output table has
+     rendered (this is a long way of admitting there was a race condition).
+#408 Faster availabilty of year scraping buttons even more than 48 hours after
+     last use of the extension.
+
 Changes 1.16.19
 ---------------
 #390 Show transaction scraping progress in the control pop-up.
@@ -68,28 +78,6 @@ Changes 1.16.18
 #366 (Some) card details missing from payments.
 #375, #386 (Some) gift payments missing.
 #381 Cache available years: faster start up, particularly for new users.
-
-Changes 1.16.17
----------------
-#361 Some transaction refunds were not signed correctly.
-#383 USA (and others?) digital orders not being discovered correctly, including
-     some from current year being included in scrapes for previous years.
-
-Changes 1.16.16
----------------
-#369, #372, #384 UK payments for physical orders restored after Amazon html
-                 "obfuscation", by generalising the strategy used for
-                 transactions. Depends on user supplied strings used to
-                 identify the relevant text in the order detail pages.
-                 We've got english and german. I await bug reports that'll
-                 enable me to tackle french, spanish etc.
-
-Changes 1.16.15
----------------
-#375 Some gift payment amounts (and a smaller number of order totals) went
-     missing - now restored.
-#379 fix missing order date on some digital orders (maybe only subscriptions)
-     Amazon have become quite inconsistent on letter case.
 
 Source Code
 -------------

@@ -3,7 +3,6 @@ import * as cacheStuff from './cachestuff';
 import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
 import * as pageType from './page_type';
-import * as requestScheduler from './request_scheduler';
 import * as signin from './signin';
 import * as strategy from './strategy';
 import * as urls from './url';
@@ -44,7 +43,7 @@ export class YearsCache {
 
   static async writeYears(years: number[]): Promise<void> {
     const now = new Date().getTime();
-    const expiry = now + (2 * 24 * 60 * 60 * 1000);  // 48h later.
+    const expiry = now + (90 * 24 * 60 * 60 * 1000);  // ~3 months later.
 
     const cacheValue: YearsCacheValue = {
       expiryTimestampMillis: expiry,
@@ -58,27 +57,30 @@ export class YearsCache {
   }
 }
 
-function yearsToPeriods(years: number[]) {
-  return years.length == 0 ? [] : [1, 2, 3].concat(years);
+function getCurrentYear(): number {
+  return new Date().getUTCFullYear()
 }
 
-export async function getPeriods(
-  scheduler: requestScheduler.IRequestScheduler,
-): Promise<number[]> {
-  const years = await getYears(scheduler);
-  return yearsToPeriods(years);
+export async function getPeriods(fromCacheOnly: boolean = false): Promise<number[]> {
+  const years = await getYears(fromCacheOnly);
+
+  // Make sure we have the current year, even if we've not been told about it
+  // by Amazon, so that in January users can see their new stuff before the
+  // (sometimes slow) available years discovery process has completed.
+  const yearsWithThisYear = [...new Set([...years, getCurrentYear()])].sort();
+
+  const periods = yearsWithThisYear.length == 0 ? [] : [1, 2, 3].concat(years);
+  return periods;
 }
 
 export async function getLatestYear(): Promise<number> {
-  const all_years = [...await getYearsFromCache()];
+  const all_years = [...await getYears(true)];
   all_years.sort();
   return all_years.at(-1) ?? -1;
 }
 
-export async function advertisePeriods(
-  scheduler: requestScheduler.IRequestScheduler
-): Promise<void> {
-  const periods = await getPeriods(scheduler);
+export async function advertisePeriods(): Promise<void> {
+  const periods = await getPeriods();
 
   try {
     console.log('advertising periods', periods);
@@ -88,10 +90,8 @@ export async function advertisePeriods(
   }
 }
 
-async function getUrl(
-  scheduler: requestScheduler.IRequestScheduler
-): Promise<string> {
-  const isBusinessAcct = await business.isBusinessAccount(scheduler);
+async function getUrl(): Promise<string> {
+  const isBusinessAcct = await business.isBusinessAccount();
 
   const url = isBusinessAcct ?
     business.getBaseOrdersPageURL():
@@ -102,20 +102,16 @@ async function getUrl(
   return url;
 }
 
-export async function getPeriodsFromCache(): Promise<number[]> {
-  return yearsToPeriods(await getYearsFromCache());
-}
+async function getYears(fromCacheOnly: boolean): Promise<number[]> {
 
-function getYearsFromCache(): Promise<number[]> {
-  return YearsCache.readYears();
-}
-
-async function getYears(
-  scheduler: requestScheduler.IRequestScheduler
-): Promise<number[]> {
   // Only called if we've not got a valid cached value.
   async function reallyGetYears(): Promise<number[]> {
-    const years = await getYearsFromHtml(scheduler);
+    if (fromCacheOnly) {
+      throw new Error(
+        'Our caller only wants us to query the cached value, and it looks ' +
+        'like that didn\'t work.');
+    }
+    const years = await getYearsFromHtml();
     await YearsCache.writeYears(years);
     return years;
   }
@@ -123,24 +119,22 @@ async function getYears(
   return strategy.firstMatchingStrategyAsync<number[]>(
     'periods.getYears()',
     [
-      getYearsFromCache,
+      YearsCache.readYears,
       reallyGetYears,
     ],
     []
   );
 }
 
-async function getYearsFromHtml(
-  scheduler: requestScheduler.IRequestScheduler
-): Promise<number[]> {
-  const url = await getUrl(scheduler);
+async function getYearsFromHtml(): Promise<number[]> {
+  const url = await getUrl();
 
   async function getDoc(): Promise<Document> {
     console.log('fetching', url, 'for getYears()');
     const readyXPath = '//option[contains(@id, "timeFilterDropdown")]';
 
     const response = await iframeWorker.fetchURL(
-      url, readyXPath, 'extract available years', scheduler);
+      url, readyXPath, 'extract available years');
 
     const html = response.html;
     const doc = util.parseStringToDOM(html);

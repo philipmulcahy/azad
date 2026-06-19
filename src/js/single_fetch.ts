@@ -30,7 +30,6 @@ export async function checkedDynamicFetch(
 ) : Promise<string>
 {
   console.log(`checkedDynamicFetch(${url}, ${requestType}, ${readyXPath}, ...) starting`);
-  const stats = new statistics.Statistics;  // not going to be reported!
   const converter: request.EventConverter<string> = (evt: request.Event) => evt.target.responseText;
   const scheduler = await getScheduler();
 

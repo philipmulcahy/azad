@@ -513,28 +513,34 @@ export function dumpOrderDiagnostics(
   console.log('dumpOrderDiagnostics: ' + order_id);
   const order = order_map[order_id];
 
-  if (order) {
-    const utc_today = new Date().toISOString().substr(0,10);
-    const file_name = order_id + '_' + utc_today + '.json';
-
-    azad_order.assembleDiagnostics(order, getScheduler).then(
-      diagnostics => diagnostic_download.save_json_to_file(
-        diagnostics,
-        file_name
-      )
-    ).then(
-      () => notice.showNotificationBar(
-        'Debug file ' + file_name + ' saved.',
-        document
-      ),
-      err => {
-        const msg = 'Failed to create debug file: ' + file_name +
-          ' ' + err;
-        console.warn(msg);
-        notice.showNotificationBar(msg, document);
-      }
+  if (!order) {
+    window.alert(
+      `This is a message from Amazon Order History Reporter, not Amazon.\nOrder data not (yet) available.\nTo build an order dump file I need to have loaded the order on one of the order-focussed output tables:\n1. Click one of the first three radio buttons\n2. Scrape the year that has your chosen order (${order_id}) in it\n3. Retry the dump file generation for ${order_id} on the resulting table.`
     );
+
+    return;
   }
+
+  const utc_today = new Date().toISOString().substr(0,10);
+  const file_name = order_id + '_' + utc_today + '.json';
+
+  azad_order.assembleDiagnostics(order, getScheduler).then(
+    diagnostics => diagnostic_download.save_json_to_file(
+      diagnostics,
+      file_name
+    )
+  ).then(
+    () => notice.showNotificationBar(
+      'Debug file ' + file_name + ' saved.',
+      document
+    ),
+    err => {
+      const msg = 'Failed to create debug file: ' + file_name +
+        ' ' + err;
+      console.warn(msg);
+      notice.showNotificationBar(msg, document);
+    }
+  );
 }
 
 let lastSeenProgressRatio: number = -1.0;

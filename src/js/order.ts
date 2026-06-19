@@ -16,6 +16,7 @@ import * as shipment from './shipment';
 import * as request_scheduler from './request_scheduler';
 import * as single_fetch from './single_fetch';
 import * as strategy from './strategy';
+import * as timeout from './timeout';
 import * as urls from './url';
 import * as util from './util';
 
@@ -396,29 +397,16 @@ export async function get_legacy_items(order: IOrder)
 export async function assembleDiagnostics(
   order: IOrder,
   getScheduler: () => request_scheduler.IRequestScheduler,
-)
-  : Promise<Record<string, any>>
+): Promise<Record<string, any>>
 {
+
+  type Lookup = {
+    key: string,
+    promise: Promise<string|Record<string, string>>,
+  }
+
+  const problems: string[] = [];
   const sync_order = await order.sync();
-  const diagnostics: Record<string, any> = {};
-  const field_names: (keyof ISyncOrder)[] = [
-    'id',
-    'list_url',
-    'detail_url',
-    'payments_url',
-    'date',
-    'total',
-    'who',
-  ];
-
-  field_names.forEach(
-    (field_name: keyof ISyncOrder) => {
-      const value: any = sync_order[field_name];
-      diagnostics[<string>(field_name)] = value;
-    }
-  );
-
-  diagnostics['items'] = await get_legacy_items(order);
 
   async function getUrlHtmlMap(urls: string[]): Promise<Record<string, string>>
   {
@@ -447,8 +435,6 @@ export async function assembleDiagnostics(
     return data;
   }
 
-  diagnostics['item_data'] = await get_item_data(sync_order);
-
   async function get_tracking_data(
     order: ISyncOrder,
   ): Promise<Record<string, string>> {
@@ -457,10 +443,40 @@ export async function assembleDiagnostics(
     return data;
   }
 
-  diagnostics['tracking_data'] = await get_tracking_data(sync_order);
+  function makeLookup(
+    key: string,
+    promise: Promise<string | Record<string, string>>
+  ): Lookup {
+    const wrappedPromise = timeout.wrapPromise(promise, 60_000);
+    return {key, promise: wrappedPromise};
+  }
 
-  return Promise.all([
-    single_fetch.checkedDynamicFetch(
+  function doLookup(key: keyof ISyncOrder): Lookup {
+    try {
+      const value: any = sync_order[key];
+      return makeLookup(key, Promise.resolve(value)); 
+    } catch(ex) {
+      const exStr = JSON.stringify(ex);
+      const msg = 'Failed while capturing ' + key + ': ' + exStr;
+      console.warn(msg);
+      problems.push(msg.toString());
+      return makeLookup(key, Promise.resolve(''));
+    }
+  }
+
+  const lookups: Lookup[] = [
+    doLookup('id'),
+    doLookup('list_url'),
+    doLookup('detail_url'),
+    doLookup('payments_url'),
+    doLookup('date'),
+    doLookup('total'),
+    doLookup('who'),
+    makeLookup('items', get_legacy_items(order)),
+    makeLookup('item_data', get_item_data(sync_order)),
+    makeLookup('tracking_data', get_tracking_data(sync_order)),
+
+    makeLookup('list_html', single_fetch.checkedDynamicFetch(
       util.defaulted(sync_order.list_url, ''),  // url
       'orderListHtmlForDebug',
 
@@ -468,39 +484,41 @@ export async function assembleDiagnostics(
       '//div[@id="orderCard"]//div[@id="orderCardHeader"]|//div[contains(@class, "order-card")]',
 
       getScheduler,
-    ).then(
-      (text: string) => { diagnostics['list_html'] = text; },
-      (err: any) => {
-        console.warn(`list_html fetch for order diagnostics failed: ${err}`);
-        diagnostics['list_html'] = JSON.stringify(err);
-      }
-    ),
+    )),
 
-    single_fetch.checkedStaticFetch(util.defaulted(sync_order.detail_url, ''))
-      .then((response: Response) => response.text())
-      .then((text: string) => { diagnostics['detail_html'] = text; }),
+    makeLookup('detail_html', single_fetch.checkedStaticFetch(
+      util.defaulted(sync_order.detail_url, '')
+    ).then((response: Response) => response.text())),
 
-    iframeWorker.fetchURL(
+    makeLookup('detail_html_cooked',  iframeWorker.fetchURL(
       sync_order.detail_url,
       '',  // empty xpath: wait for the timeout to expire, but then succeed.
       'assembleDiagnostics detail_html_cooked',
       getScheduler(),
-    ).then(response => {diagnostics['detail_html_cooked'] = response.html;}),
+    ).then(response => response.html)),
 
-    single_fetch.checkedStaticFetch(util.defaulted(sync_order.payments_url, ''))
-      .then((response: Response) => response.text())
-      .then((text: string) => {diagnostics['invoice_html'] = text;}),
-  ]).then(
-    () => {
-      getScheduler().abort();
-      return diagnostics;
-    },
-    error_msg => {
-      getScheduler().abort();
-      notice.showNotificationBar(error_msg, document);
-      return diagnostics;
+    makeLookup('invoice_html', single_fetch.checkedStaticFetch(
+      util.defaulted(sync_order.payments_url, '')
+    ).then((response: Response) => response.text())),
+  ];
+
+  const diagnostics: Record<string, any> = {};
+
+  for (const lu of lookups) {
+    const key = lu.key;
+    try {
+      const value = await lu.promise;
+      diagnostics[key] = value;
+    } catch (ex) {
+      diagnostics[key] = '?';
+      const errStr = typeof(ex) === 'string' ? ex : (ex as Error).message;
+      problems.push(key + ': ' + errStr);
     }
-  );
+  }
+
+  getScheduler().abort();
+  diagnostics['problems'] = problems;
+  return diagnostics;
 }
 
 export function create(
