@@ -465,7 +465,7 @@ export async function assembleDiagnostics(
 
   Object.entries({
     'items': get_legacy_items(order),
-
+    'item_data': get_item_data(sync_order),
     'tracking_data': get_tracking_data(sync_order),
 
     'list_html': single_fetch.checkedDynamicFetch(
@@ -493,12 +493,12 @@ export async function assembleDiagnostics(
     ).then((response: Response) => response.text()),
   }).forEach(entry => entries[entry[0]] = entry[1]);
 
-  const moreEntriesSettled = await Promise.allSettled(
+  const entriesSettled = await Promise.allSettled(
     Object.entries(entries)
       .map(async e => ({key: e[0], value: await e[1]}))
   );
 
-  for (const entry of moreEntriesSettled) {
+  for (const entry of entriesSettled) {
     if (entry.status == 'rejected') {
       const reason = entry.reason;
       notice.showNotificationBar(reason, document);
