@@ -16,7 +16,7 @@ import * as shipment from './shipment';
 import * as request_scheduler from './request_scheduler';
 import * as single_fetch from './single_fetch';
 import * as strategy from './strategy';
-import * as tout from './timeout';
+import * as timeout from './timeout';
 import * as urls from './url';
 import * as util from './util';
 
@@ -399,35 +399,14 @@ export async function assembleDiagnostics(
   getScheduler: () => request_scheduler.IRequestScheduler,
 ): Promise<Record<string, any>>
 {
-  const sync_order = await order.sync();
-  const diagnostics: Record<string, any> = {};
+
+  type Lookup = {
+    key: string,
+    promise: Promise<string|Record<string, string>>,
+  }
+
   const problems: string[] = [];
-
-  const field_names: (keyof ISyncOrder)[] = [
-    'id',
-    'list_url',
-    'detail_url',
-    'payments_url',
-    'date',
-    'total',
-    'who',
-  ];
-
-  const entries: Record<string, Promise<string|Record<string, string>>> = {};
-
-  field_names.forEach(
-    (field_name: keyof ISyncOrder) => {
-      try {
-        const value: any = sync_order[field_name];
-        entries[<string>(field_name)] = Promise.resolve(value);
-      } catch(ex) {
-        const exStr = JSON.stringify(ex);
-        const msg = 'Failed while capturing ' + field_name + ': ' + exStr;
-        console.warn(msg);
-        problems.push(msg.toString());
-      }
-    }
-  );
+  const sync_order = await order.sync();
 
   async function getUrlHtmlMap(urls: string[]): Promise<Record<string, string>>
   {
@@ -464,12 +443,40 @@ export async function assembleDiagnostics(
     return data;
   }
 
-  Object.entries({
-    'items': get_legacy_items(order),
-    'item_data': get_item_data(sync_order),
-    'tracking_data': get_tracking_data(sync_order),
+  function makeLookup(
+    key: string,
+    promise: Promise<string | Record<string, string>>
+  ): Lookup {
+    const wrappedPromise = timeout.wrapPromise(promise, 60_000);
+    return {key, promise: wrappedPromise};
+  }
 
-    'list_html': single_fetch.checkedDynamicFetch(
+  function doLookup(key: keyof ISyncOrder): Lookup {
+    try {
+      const value: any = sync_order[key];
+      return makeLookup(key, Promise.resolve(value)); 
+    } catch(ex) {
+      const exStr = JSON.stringify(ex);
+      const msg = 'Failed while capturing ' + key + ': ' + exStr;
+      console.warn(msg);
+      problems.push(msg.toString());
+      return makeLookup(key, Promise.resolve(''));
+    }
+  }
+
+  const lookups: Lookup[] = [
+    doLookup('id'),
+    doLookup('list_url'),
+    doLookup('detail_url'),
+    doLookup('payments_url'),
+    doLookup('date'),
+    doLookup('total'),
+    doLookup('who'),
+    makeLookup('items', get_legacy_items(order)),
+    makeLookup('item_data', get_item_data(sync_order)),
+    makeLookup('tracking_data', get_tracking_data(sync_order)),
+
+    makeLookup('list_html', single_fetch.checkedDynamicFetch(
       util.defaulted(sync_order.list_url, ''),  // url
       'orderListHtmlForDebug',
 
@@ -477,44 +484,34 @@ export async function assembleDiagnostics(
       '//div[@id="orderCard"]//div[@id="orderCardHeader"]|//div[contains(@class, "order-card")]',
 
       getScheduler,
-    ),
+    )),
 
-    'detail_html': single_fetch.checkedStaticFetch(
+    makeLookup('detail_html', single_fetch.checkedStaticFetch(
       util.defaulted(sync_order.detail_url, '')
-    ).then((response: Response) => response.text()),
+    ).then((response: Response) => response.text())),
 
-    'detail_html_cooked':  iframeWorker.fetchURL(
+    makeLookup('detail_html_cooked',  iframeWorker.fetchURL(
       sync_order.detail_url,
       '',  // empty xpath: wait for the timeout to expire, but then succeed.
       'assembleDiagnostics detail_html_cooked',
-    ).then(response => response.html),
+    ).then(response => response.html)),
 
-    'invoice_html': single_fetch.checkedStaticFetch(
+    makeLookup('invoice_html', single_fetch.checkedStaticFetch(
       util.defaulted(sync_order.payments_url, '')
-    ).then((response: Response) => response.text()),
-  }).forEach(entry => entries[entry[0]] = entry[1]);
+    ).then((response: Response) => response.text())),
+  ];
 
-  const settled = await Promise.allSettled(
-    Object.entries(entries)
-      .map(
-        async function(entry) {
-          const key = entry[0];
-          const value = await tout.wrapPromise(entry[1], 30_000);
-          return {key, value};
-        }
-      )
-  );
+  const diagnostics: Record<string, any> = {};
 
-  for (const entry of settled) {
-    if (entry.status == 'rejected') {
-      const reason = entry.reason;
-      notice.showNotificationBar(reason, document);
-      console.warn(reason);
-      problems.push(reason.toString());
-    } else if (entry.status == 'fulfilled') {
-      const key = entry.value.key;
-      const value = entry.value.value;
+  for (const lu of lookups) {
+    const key = lu.key;
+    try {
+      const value = await lu.promise;
       diagnostics[key] = value;
+    } catch (ex) {
+      diagnostics[key] = '?';
+      const errStr = typeof(ex) === 'string' ? ex : (ex as Error).message;
+      problems.push(key + ': ' + errStr);
     }
   }
 
