@@ -31,7 +31,7 @@ export class YearsCache {
     try {
       const nowTimestampMillis: number = new Date().getTime();
       const result = await YearsCache.get().get(YearsCache.CACHE_KEY);
-      const decoded = JSON.parse(result) as YearsCacheValue;
+      const decoded = JSON.parse(result as string) as YearsCacheValue;
       if (nowTimestampMillis > decoded.expiryTimestampMillis) {
         throw new Error('cached years value too old');
       }

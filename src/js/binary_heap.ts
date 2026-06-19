@@ -4,41 +4,41 @@
 
 'use strict';
 
-export class BinaryHeap {
-    content: any[];
-    scoreFunction: any;
+export class BinaryHeap<T> {
+    content: T[];
+    scoreFunction: (element: T) => string;
 
     // TODO: This was class written/cribbed before I (Philip) started using npm
     // and webpack. It is extremely unlikely there isn't a viable npm module
     // that would fit the bill and allow us to reduce the amount of code in
     // this extension.
-    constructor(scoreFunction: any) {
+    constructor(scoreFunction: (element: T) => string) {
         this.content = [];
         this.scoreFunction = scoreFunction;
     }
 
-    push(element: any): void {
+    push(element: T): void {
         // Add the new element to the end of the array.
         this.content.push(element);
         // Allow it to bubble up.
         this.bubbleUp(this.content.length - 1);
     }
 
-    pop(): any {
+    pop(): T | undefined {
         // Store the first element so we can return it later.
         const result = this.content[0];
         // Get the element at the end of the array.
         const end = this.content.pop();
         // If there are any elements left, put the end element at the
         // start, and let it sink down.
-        if (this.content.length > 0) {
+        if (this.content.length > 0 && end !== undefined) {
             this.content[0] = end;
             this.sinkDown(0);
         }
         return result;
     }
 
-    remove(node: any) {
+    remove(node: T): void {
         const length = this.content.length;
         // To remove a value, we must search through the array to find
         // it.
@@ -52,18 +52,20 @@ export class BinaryHeap {
             if (i == length - 1) break;
             // Otherwise, we replace the removed element with the popped
             // one, and allow it to float up or sink down as appropriate.
-            this.content[i] = end;
-            this.bubbleUp(i);
-            this.sinkDown(i);
+            if (end !== undefined) {
+                this.content[i] = end;
+                this.bubbleUp(i);
+                this.sinkDown(i);
+            }
             break;
         }
     }
 
-    size() {
+    size(): number {
         return this.content.length;
     }
 
-    bubbleUp(n: number) {
+    bubbleUp(n: number): void {
         // Fetch the element that has to be moved.
         const element = this.content[n], score = this.scoreFunction(element);
         // When at 0, an element can not go up any further.
@@ -84,7 +86,7 @@ export class BinaryHeap {
         }
     }
 
-    sinkDown(n: number) {
+    sinkDown(n: number): void {
         // Look up the target element and its score.
         const length = this.content.length;
         const element = this.content[n];
@@ -97,7 +99,7 @@ export class BinaryHeap {
             // This is used to store the new position of the element,
             // if any.
             let swap = null;
-            let child1Score = null;
+            let child1Score: string | null = null;
             // If the first child exists (is inside the array)...
             if (child1N < length) {
                 // Look it up and compute its score.
@@ -111,7 +113,7 @@ export class BinaryHeap {
             if (child2N < length) {
                 const child2 = this.content[child2N];
                 const child2Score = this.scoreFunction(child2);
-                if (child2Score < ( !swap ? elemScore : child1Score))
+                if (child2Score < ( !swap ? elemScore : child1Score as string))
                     swap = child2N;
             }
 

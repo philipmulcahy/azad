@@ -84,8 +84,12 @@ class RequestScheduler {
   _overlay_url_map: string_string_map = {};
   _purpose: string;
 
-  _queue: binary_heap.BinaryHeap = new binary_heap.BinaryHeap(
-    (item: any): number => item.priority
+  _queue = new binary_heap.BinaryHeap<IdentifiedTask>(
+    (item: IdentifiedTask): string => {
+      const task: PrioritisedTask = item.task;
+      const priority: string = task.priority;
+      return priority;
+    }
   );
 
   _tracker: RequestTracker = new RequestTracker();

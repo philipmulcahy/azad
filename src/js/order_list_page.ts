@@ -4,9 +4,7 @@ import * as business from './business';
 import * as dom2json from './dom2json';
 import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
-import * as notice from './notice';
 import * as order_header from './order_header';
-import * as req from './request';
 import * as request from './request';
 import * as request_scheduler from './request_scheduler';
 import * as sprintf from 'sprintf-js';
@@ -17,7 +15,7 @@ import * as util from './util';
 export interface AttributedUrl{
   template: string;
   url: string;
-};
+}
 
 type headerPageUrlGenerator = (
   site: string,
@@ -105,7 +103,7 @@ async function get_page_of_headers(
     (evt) => translateOrdersPage(evt, year.toString()),
     pageReadyXpath,
     scheduler,
-    '',  // priority
+    priority,
     nocache,
     `order_list_page.get_page_of_headers: ${start_order_number}`,  // context
   ) as Promise<OrderHeaderPageData>;
@@ -128,7 +126,7 @@ async function get_page_of_headers(
     return pageData;
   } catch (err) {
     console.warn(
-      `get_page_of_headers blew up while fetching or processing: ${err}`)
+      `get_page_of_headers blew up while fetching or processing: ${err}`);
 
     throw err;
   }
@@ -295,7 +293,7 @@ type OrderHeaderPageData = {
 };
 
 function translateOrdersPage(
-  evt: any,
+  evt: request.Event,
   period: string,  // log description of the period we are fetching orders for.
 ): OrderHeaderPageData {
   try {
@@ -308,11 +306,13 @@ function translateOrdersPage(
 }
 
 function reallyTranslateOrdersPage(
-  evt: any,
+  evt: request.Event,
   period: string,  // log description of the period we are fetching orders for.
 ): OrderHeaderPageData {
-  const doc = util.parseStringToDOM(evt.target.responseText);
-  const expectedOrderCount = getExpectedOrderCountFromHeaderDoc(doc, evt.target.url);
+  const xhr = evt.target as XMLHttpRequest;
+  const doc = util.parseStringToDOM(xhr.responseText);
+  // @ts-expect-error: url property added dynamically by tracking infrastructure
+  const expectedOrderCount = getExpectedOrderCountFromHeaderDoc(doc, xhr.url);
   let ordersElem;
 
   try {
@@ -348,12 +348,12 @@ function reallyTranslateOrdersPage(
   if ( !serialized_order_elems.length ) {
     console.error(
       'no order elements in converted order list page for ' + period + ': ' +
-      evt.target.responseURL
+      xhr.responseURL
     );
   }
 
   const headers = order_elems.map(
-    elem => order_header.extractOrderHeader(elem, evt.target.responseURL));
+    elem => order_header.extractOrderHeader(elem, xhr.responseURL));
 
   return {
     headers,

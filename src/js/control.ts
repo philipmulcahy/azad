@@ -2,22 +2,32 @@
 
 'use strict';
 
-const $ = require('jquery');
-
+import $ from 'jquery';
 import * as settings from './settings';
 import * as util from './util';
 import * as git_hash from '../generated/git_hash';
 import * as periods from './periods';
 
+interface BackgroundMessage {
+  action: string;
+  statistics?: {
+    QUEUED_COUNT: number;
+    RUNNING_COUNT: number;
+    [key: string]: number;
+  };
+  purpose?: string;
+  authorisation_status?: boolean;
+}
+
 $(document).ready(function() {
   $('body').on(
     'click',
     'a',
-    function(event: Event) {
+    function(event: JQuery.ClickEvent) {
       const a: HTMLAnchorElement = event.currentTarget as HTMLAnchorElement;
       const href: string|null = a.getAttribute('href');
-      if (typeof(href) != 'undefined') {
-        chrome.tabs.create({url: href!});
+      if (href !== null && typeof(href) != 'undefined') {
+        chrome.tabs.create({url: href});
       }
       return false;
     }
@@ -34,24 +44,25 @@ function activateIdle(): void {
   actionsShowOnly(['azad_clear_cache', 'azad_force_logout', 'azad_hide_controls']);
 }
 
-function activateScrapingUI(years: number[]): void {
+function activateScrapingUI(years: number[] | string | undefined): void {
   console.log('activateScrapingUI');
   actionsShowOnly(['azad_stop', 'azad_hide_controls']);
   try {
-    updateStateText(
-      'scraping ' + (Array.isArray(years) ? years.join(',') : years)
-    );
+    const yearsText = typeof years !== 'undefined'
+      ? (Array.isArray(years) ? years.join(',') : years)
+      : '';
+    updateStateText('scraping ' + yearsText);
   } catch (ex) {
     console.log('control.activateScrapingUI blew up with: ', ex);
   }
 }
 
-function activateDone(purpose: string): void {
+function activateDone(purpose: string | undefined): void {
   console.log('activateDone');
   actionsShowOnly([
     'azad_clear_cache', 'azad_force_logout', 'azad_hide_controls'
   ]);
-  updateStateText(purpose);
+  updateStateText(purpose || '');
 }
 
 function actionsShowOnly(button_ids: string[]): void {
@@ -76,14 +87,14 @@ let background_port: chrome.runtime.Port|null = null;
 function connectToBackground() {
   console.log('connectToBackground');
 
-  // @ts-ignore: tsc objects to null first parameter for connect();
+  // @ts-expect-error: tsc objects to null first parameter for connect();
   background_port = chrome.runtime.connect(null, { name: 'azad_control' });
 
-  background_port.onMessage.addListener( msg => {
+  background_port.onMessage.addListener( (msg: BackgroundMessage) => {
     switch(msg.action) {
       case 'statistics_update':
         console.info('control got statistics update');
-        {
+        if (msg.statistics) {
           const text = Object.entries(msg.statistics)
           .map(([k,v]) => {return k + ':' + v;})
           .join('; ');
@@ -102,7 +113,7 @@ function connectToBackground() {
       case 'authorisation_status':
         {
           console.info('control got authorisation_status message');
-          const authorised = msg.authorisation_status;
+          const authorised = msg.authorisation_status ?? false;
           handleAuthorisationMessage(authorised);
         }
         break;
@@ -131,7 +142,7 @@ function startPeriodsLoop(): void {
   }
 
   checkPeriods();
-  setInterval(checkPeriods, 1000)
+  setInterval(checkPeriods, 1000);
 }
 
 function handleAuthorisationMessage(authorised: boolean): void {
@@ -260,8 +271,9 @@ async function showMonthsButtons(month_counts: number[]): Promise<void> {
   console.log('showMonthButtons(...) buttons wired up');
 }
 
-async function handleYearClick(evt: { target: { value: any; }; }) {
-  const year: number = parseInt(evt.target.value);
+async function handleYearClick(evt: JQuery.TriggeredEvent<HTMLElement, undefined, HTMLElement, HTMLElement>) {
+  const button = evt.target as HTMLButtonElement;
+  const year: number = parseInt(button.value);
   const years: number[] = [year];
   activateScrapingUI(years);
   const tableType = await settings.getString('azad_table_type');
@@ -292,8 +304,9 @@ function setVersion() {
   elem.textContent = text;
 }
 
-async function handleMonthsClick(evt: { target: { value: any; }; }) {
-  const month_count = Number(evt.target.value);
+async function handleMonthsClick(evt: JQuery.TriggeredEvent<HTMLElement, undefined, HTMLElement, HTMLElement>) {
+  const button = evt.target as HTMLButtonElement;
+  const month_count = Number(button.value);
   const end_date = new Date();
   const start_date = util.subtract_months(end_date, month_count);
   activateScrapingUI([month_count]);

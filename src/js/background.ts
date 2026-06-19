@@ -8,28 +8,96 @@ import * as extpay from './extpay_client';
 import * as msg from './message_types';
 import * as remoteLog from './remote_log';
 import * as settings from './settings';
-import * as util from './util';
 import { v4 as uuidv4 } from 'uuid';
+
+export interface FetchUrlMessage {
+  action: 'fetch_url';
+  guid: string;
+  url?: string;
+  purpose?: string;
+}
+
+export interface GetIframeTaskInstructionsMessage {
+  action: 'get_iframe_task_instructions';
+  guid: string;
+}
+
+export interface RemoteLogMessage {
+  action: 'remote_log_with_user_id';
+  log_msg: Record<string, string>;
+}
+
+export interface RelayToParentMessage {
+  action: 'relay_to_parent';
+  msg: BackgroundMessage;
+}
+
+export interface CheckFeatureAuthorizedMessage {
+  action: 'check_feature_authorized';
+  feature_id: string;
+}
+
+export interface ScrapeMessage {
+  action: 'scrape_years' | 'scrape_range' | 'scrape_transactions';
+  table_type?: string;
+  client?: string;
+  guid?: string;
+  url?: string;
+  purpose?: string;
+}
+
+export interface StatisticsUpdateMessage {
+  action: 'statistics_update';
+  periods: number[];
+  [key: string]: unknown;
+}
+
+export interface FallbackPayloadMessage {
+  action:
+    | 'start_iframe_worker'
+    | 'keepalive'
+    | 'transactions'
+    | 'show_payment_ui'
+    | 'show_extpay_login_ui'
+    | 'show_extpay_console'
+    | 'clear_cache'
+    | 'force_logout'
+    | 'abort'
+    | 'dump_order_detail';
+  [key: string]: unknown;
+}
+
+export type BackgroundMessage =
+  | FetchUrlMessage
+  | GetIframeTaskInstructionsMessage
+  | RemoteLogMessage
+  | RelayToParentMessage
+  | CheckFeatureAuthorizedMessage
+  | ScrapeMessage
+  | StatisticsUpdateMessage
+  | FallbackPayloadMessage;
+
+type IframeTaskMessage = FetchUrlMessage | ScrapeMessage;
 
 const content_ports: Record<string, chrome.runtime.Port> = {};
 let control_port: msg.ControlPort | null = null;
 
 class IframeWorkerTaskMap {
-  _map: Map<string, any>;
+  _map: Map<string, IframeTaskMessage>;
 
   constructor() {
-    this._map = new Map<string, any>();
+    this._map = new Map<string, IframeTaskMessage>();
   }
 
   has(guid: string): boolean {
     return this._map.has(guid);
   }
 
-  get(guid: string): any {
+  get(guid: string): IframeTaskMessage | undefined {
     return this._map.get(guid);
   }
 
-  set(guid: string, instructions: any) {
+  set(guid: string, instructions: IframeTaskMessage) {
     this._map.set(guid, instructions);
   }
 
@@ -40,7 +108,7 @@ class IframeWorkerTaskMap {
 
 const iframeWorkerTaskSpecs = new IframeWorkerTaskMap();
 
-function broadcastToRootContentPages(msg: any): void {
+function broadcastToRootContentPages(msg: BackgroundMessage): void {
   const rootKeys = Object.keys(content_ports).filter(
     k => k.startsWith('azad_inject'));
 
@@ -55,7 +123,7 @@ function broadcastToRootContentPages(msg: any): void {
   }
 }
 
-export async function sendToOneContentPage(msg: any) {
+export async function sendToOneContentPage(msg: BackgroundMessage) {
   async function getBestContentPort(): Promise<chrome.runtime.Port|null> {
 
     const [activeTab] = await chrome.tabs.query({
@@ -106,7 +174,7 @@ export async function sendToOneContentPage(msg: any) {
 
 async function relayToParentOfIframe(
   sender: chrome.runtime.MessageSender,
-  msg: any,
+  msg: RelayToParentMessage,
 ) {
   const tabId = sender?.tab?.id?.toString() ?? '?';
 
@@ -116,18 +184,19 @@ async function relayToParentOfIframe(
   const rootPorts = rootKeys.map(k => content_ports[k]);
 
   const sameTabPorts = rootPorts.filter(
-    p => p.sender?.tab?.id?.toString() ?? '?' == tabId);
+    p => (p.sender?.tab?.id?.toString() ?? '?') == tabId);
 
   const target = sameTabPorts[0] ?? null;
   if (target) {
-    console.log('relaying msg to parent', msg.msg.action, msg.msg);
-    target.postMessage(msg.msg);
+    const nestedMsg = msg.msg;
+    console.log('relaying msg to parent', nestedMsg.action, nestedMsg);
+    target.postMessage(nestedMsg);
   } else {
     console.warn('relayToParentOfIframe: no parent port found.');
   }
 }
 
-function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
+function handleMessageFromContentScript(msg: BackgroundMessage, port: chrome.runtime.Port) {
   try {
     console.log('handleMessageFromContentScript handling', msg.action);
     switch (msg.action) {
@@ -153,7 +222,8 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
       case 'statistics_update':
         if (control_port) {
           try {
-            control_port?.postMessage(msg);
+            // Evaluated implicitly now because of structural StatisticsUpdateMessage definition
+            control_port.postMessage(msg);
           } catch (ex) {
             console.debug(
               'cannot post stats msg to non-existent control port');
@@ -169,7 +239,9 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
           }
 
           const instructions = iframeWorkerTaskSpecs.get(msg.guid);
-          port.postMessage(instructions);
+          if (instructions) {
+            port.postMessage(instructions);
+          }
         }
 
         break;
@@ -198,7 +270,7 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
         )();
         break;
       default:
-        console.debug('unknown action: ' + msg.action);
+        console.debug('unknown action: ' + (msg as BackgroundMessage).action);
         break;
     }
   } catch(e) {
@@ -207,7 +279,7 @@ function handleMessageFromContentScript(msg: any, port: chrome.runtime.Port) {
   }
 }
 
-async function handleMessageFromControl(msg: any) {
+async function handleMessageFromControl(msg: BackgroundMessage) {
   try {
     console.log('handleMessageFromControl handling', msg);
     switch (msg.action) {
@@ -218,14 +290,17 @@ async function handleMessageFromControl(msg: any) {
           if (table_type == 'transactions') {
             const guid = uuidv4();
             const purpose = 'scrape transactions';
-            msg.action = 'scrape_transactions';
-            msg.client = 'Azad UI';
-            msg.guid = guid;
 
-            // No site prefix: background page doesn't know about prefixes!
+            const updatedMsg: BackgroundMessage = {
+              ...msg,
+              action: 'scrape_transactions',
+              client: 'Azad UI',
+              guid: guid
+            };
+
             const url = '/cpe/yourpayments/transactions';
 
-            iframeWorkerTaskSpecs.set(guid, msg);
+            iframeWorkerTaskSpecs.set(guid, updatedMsg);
 
             sendToOneContentPage(
               {action: 'start_iframe_worker', url, guid, purpose}
@@ -238,7 +313,7 @@ async function handleMessageFromControl(msg: any) {
 
         break;
       case 'check_feature_authorized':
-        handleAuthorisationRequest(msg.feature_id, control_port);
+        handleAuthorisationRequest(msg, control_port);
         break;
       case 'show_payment_ui':
         console.log('got show_payment_ui request');
@@ -262,7 +337,7 @@ async function handleMessageFromControl(msg: any) {
         broadcastToRootContentPages(msg);
         break;
       default:
-        console.warn('unknown action: ' + msg.action);
+        console.warn('unknown action: ' + (msg as BackgroundMessage).action);
         break;
     }
   } catch(e) {
@@ -301,7 +376,7 @@ function registerConnectionListener() {
           });
 
           port.onMessage.addListener((msg) => {
-            handleMessageFromContentScript(msg, port);
+            handleMessageFromContentScript(msg as BackgroundMessage, port);
           });
         }
 
@@ -310,7 +385,7 @@ function registerConnectionListener() {
         control_port = port;
 
         port.onMessage.addListener(async (msg) => {
-          handleMessageFromControl(msg);
+          handleMessageFromControl(msg as BackgroundMessage);
         });
 
         break;
@@ -394,12 +469,12 @@ function registerMessageListener() {
 }
 
 async function handleAuthorisationRequest(
-  feature_id: string,
+  msg: CheckFeatureAuthorizedMessage,
   control_port: msg.ControlPort | null
 ): Promise<void> {
   const ext_pay_authorised = await extpay.check_authorised();
 
-  const authorised = feature_id == 'premium_preview' ?
+  const authorised = msg.feature_id == 'premium_preview' ?
     ext_pay_authorised :
     false;
 

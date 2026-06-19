@@ -38,7 +38,7 @@ function makeXHRTask(
           reject(msg);
         };
 
-        xhr.onload = (evt: ProgressEvent<EventTarget>): void => {
+        xhr.onload = (): void => {
           console.debug('got response for', url);
 
           if (!scheduler.isLive) {
@@ -67,7 +67,12 @@ function makeXHRTask(
             } else {
               const msg = 'Finished ' + url;
               console.debug(msg);
-              resolve(evt as any as Event);
+              resolve({
+                target: {
+                  responseText: xhr.responseText,
+                  responseURL: xhr.responseURL,
+                }
+              });
               return;
             }
           } catch (ex) {
@@ -81,7 +86,7 @@ function makeXHRTask(
 
         xhr.timeout = 20000;  // 20 seconds
 
-        xhr.ontimeout = (_evt: any): void => {
+        xhr.ontimeout = (): void => {
           if (scheduler.isLive()) {
             const msg = 'Timed out while fetching: ' + url;
             console.warn(msg);
@@ -123,7 +128,7 @@ export type Event = {
   }
 };
 
-export type EventConverter<T> = (evt: Event) => T;
+export type EventConverter<T> = (evt: Event) => T | Promise<T>;
 
 // Embedding this code in AzadRequest.constructor means initialisation order
 // nightmares - at least we keep the mess isolated by doing it in a dedicated
@@ -133,8 +138,8 @@ function make_promise_with_callbacks<T>(): {
   reject: (s: string)=>void,
   promise: Promise<T>,
 } {
-  let resolve: (t: T)=>void = (_t)=>{};
-  let reject: (s: string)=>void = (_s)=>{};
+  let resolve: (t: T)=>void = () => {};
+  let reject: (s: string)=>void = () => {};
   const promise: Promise<T> = new Promise<T>( (res, rej) => {
     resolve = res;
     reject= rej;
@@ -351,14 +356,14 @@ class AzadRequest<T> {
   async H_Convert(evt: Event): Promise<void> {
     this.check_state(base.State.RESPONDED);
 
-    const protected_converter = async (evt: any): Promise<T|null> => {
+    const protected_converter = async (convertEvt: Event): Promise<T|null> => {
       try {
         console.debug(
           'protected_converter', this._debug_context, this._url,
           'priority', this._priority,
         );
 
-        const t: T = await this._event_converter(evt);
+        const t: T = await this._event_converter(convertEvt);
         return t;
       } catch (ex) {
         console.error(

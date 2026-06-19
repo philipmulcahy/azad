@@ -1,6 +1,7 @@
 /* Copyright(c) 2019-2023 Philip Mulcahy. */
 
 import * as util from './util';
+import * as lzjs from 'lzjs';
 
 ///////////////////////////////////////////////////////////////////////////////
 // SOME AZAD CACHEING PRINCIPLES
@@ -36,29 +37,27 @@ import * as util from './util';
 
 "use strict";
 
-const lzjs = require('lzjs');
-
 interface Store {
-  get(key: string): Promise<any>,
-  keys(): Promise<string[]>,
-  set(key: string, value: any): Promise<void>,
-  remove(key: string): Promise<void>,
+  get(key: string): Promise<unknown>;
+  keys(): Promise<string[]>;
+  set(key: string, value: unknown): Promise<void>;
+  remove(key: string): Promise<void>;
 }
 
 // Only intended to allow tests to work outside of a chrome extension,
 // where chrome.storage.local is not available.
 function CreateMockStore(): Store {
-  const _store: any[string] = {};
+  const _store: Record<string, unknown> = {};
 
   return {
-    get: function(key: string): Promise<any> {
+    get: function(key: string): Promise<unknown> {
       const value = _store[key];
       return Promise.resolve(value);
     },
     keys: function(): Promise<string[]> {
       return Promise.resolve(Object.keys(_store));
     },
-    set: async function(key: string, value: any) {
+    set: async function(key: string, value: unknown) {
       _store[key] = value;
     },
     remove: async function(key: string): Promise<void> {
@@ -110,8 +109,8 @@ export function registerCacheListenerInBackgroundPage() {
 // service worker.
 function CreateRealStoreProxy(): Store {
   return {
-    get: async function(key: string): Promise<any> {
-      return new Promise<any>( resolve => {
+    get: async function(key: string): Promise<unknown> {
+      return new Promise<unknown>( resolve => {
         chrome.runtime.sendMessage(
           {
             action: 'azad-cache-get',
@@ -125,7 +124,7 @@ function CreateRealStoreProxy(): Store {
       });
     },
     keys: async function(): Promise<string[]> {
-      return new Promise<any>( resolve => {
+      return new Promise<string[]>( resolve => {
         chrome.runtime.sendMessage(
           {
             action: 'azad-cache-getkeys',
@@ -134,8 +133,8 @@ function CreateRealStoreProxy(): Store {
         );
       });
     },
-    set: async function(key: string, value: any): Promise<void> {
-      return new Promise<any>( resolve => {
+    set: async function(key: string, value: unknown): Promise<void> {
+      return new Promise<void>( resolve => {
         chrome.runtime.sendMessage(
           {
             action: 'azad-cache-set',
@@ -147,7 +146,7 @@ function CreateRealStoreProxy(): Store {
       });
     },
     remove: async function(key: string): Promise<void> {
-      return new Promise<any>( resolve => {
+      return new Promise<void>( resolve => {
         chrome.runtime.sendMessage(
           {
             action: 'azad-cache-remove',
@@ -164,28 +163,28 @@ function CreateRealStoreProxy(): Store {
 // This only works in your background/service-worker page.
 function CreateRealStore(): Store {
   return {
-    get: async function(key: string): Promise<any> {
-      const entries = (await chrome.storage.local.get(key)) as Record<string,any>;
+    get: async function(key: string): Promise<unknown> {
+      const entries = (await chrome.storage.local.get(key)) as Record<string, unknown>;
       if (Object.keys(entries).length) {
         return Object.values(entries)[0];
       }
       return null;
     },
     keys: async function(): Promise<string[]> {
-      const entries: (any[string])[] = await new Promise<any> (
-        resolve => chrome.storage.local.get(null, resolve)
+      const entries = await new Promise<Record<string, unknown>>(
+        resolve => chrome.storage.local.get(null, items => resolve(items || {}))
       );
       const keys = Object.keys(entries);
       return keys;
     },
-    set: function(key: string, value: any): Promise<void> {
-      const entry: any[string] = {};
+    set: function(key: string, value: unknown): Promise<void> {
+      const entry: Record<string, unknown> = {};
       entry[key] = value;
       return chrome.storage.local.set(entry);
     },
     remove: async function(key: string): Promise<void> {
       return new Promise<void>(
-        resolve => chrome.storage.local.remove(key, resolve)
+        resolve => chrome.storage.local.remove(key, () => resolve())
       );
     },
   };
@@ -212,50 +211,63 @@ const store: Store = CreateStore();
 // Replace datey strings with equivalent Dates.
 // Why? Because JSON.stringify and then JSON.parse
 // causes Date objects to be converted to strings.
-function restoreDates(obj: any) {
-  if (typeof(obj) == 'object' && obj != null) {
+function restoreDates(obj: unknown) {
+  if (typeof obj === 'object' && obj !== null) {
+    const record = obj as Record<string, unknown>;
 
     // restore any immediate child date values
-    Object.keys(obj).filter(key => key.endsWith('date'))
-      .filter(key => typeof(obj[key]) == 'string')
+    Object.keys(record).filter(key => key.endsWith('date'))
+      .filter(key => typeof record[key] === 'string')
       .forEach(key => {
-        const value = obj[key];
+        const value = record[key] as string;
 
         try {
           const date = new Date(value);
-          obj[key] = date;
+          record[key] = date;
         } catch(ex) {
           console.warn('tried to create Date from ' + value + ' for ' + key);
         }
       });
 
     // recurse
-    Object.values(obj).forEach(v => restoreDates(v));
+    Object.values(record).forEach(v => restoreDates(v));
   }
 }
 
 // Find broken parent promises and fix 'em.
 // Why? Because JSON.stringify/JSON.parse causes
 // Promises to be replaced with empty objects.
-function restoreParentPromises(obj: any) {
-  function recursivelyRestore(obj: object, parent: object|null) {
-    for (const [key, value] of Object.entries(obj)) {
-      if (typeof value == 'object' && value != null) {
-        if (Object.keys(value).length == 0) {  // don't zap actual data
+function restoreParentPromises(obj: unknown) {
+  function recursivelyRestore(currentObj: Record<string, unknown>, parent: Record<string, unknown> | null) {
+    for (const [key, value] of Object.entries(currentObj)) {
+      if (typeof value === 'object' && value !== null) {
+        const nestedRecord = value as Record<string, unknown>;
+        if (Object.keys(nestedRecord).length === 0) {  // don't zap actual data
           if (parent && key.startsWith('parent_') ) {
             const parent_promise = Promise.resolve(parent);
-            (obj as {[key:string]:any})[key] = parent_promise;
+            currentObj[key] = parent_promise;
           }
         } else if (Array.isArray(value)) {  // non empty object
-          value.forEach( child => recursivelyRestore(child, obj) );
+          value.forEach( child => {
+            if (typeof child === 'object' && child !== null) {
+              recursivelyRestore(child as Record<string, unknown>, currentObj);
+            }
+          });
         } else {
-          recursivelyRestore(value, obj);
+          recursivelyRestore(nestedRecord, currentObj);
         }
       }
     }
   }
 
-  recursivelyRestore(obj, null);
+  if (typeof obj === 'object' && obj !== null) {
+    recursivelyRestore(obj as Record<string, unknown>, null);
+  }
+}
+
+interface PackedCacheEntry {
+  timestamp: number;
+  value: string;
 }
 
 class LocalCacheImpl {
@@ -274,31 +286,30 @@ class LocalCacheImpl {
     return this.key_stem + key;
   }
 
-  reallySet(real_key: string, value: any): Promise<void> {
-    const entry: {[key: string]: any;}  = {};
-
-    entry[real_key] = JSON.stringify({
+  reallySet(real_key: string, value: unknown): Promise<void> {
+    const serializedValue = JSON.stringify({
       timestamp: millisNow(),
       value: lzjs.compress(JSON.stringify(value)),
     });
 
-    return store.set(real_key, entry[real_key]);
+    return store.set(real_key, serializedValue);
   }
 
-  async set(key: string, value: any): Promise<void> {
-    if (util.is_promise(value)) {
-      value = await value;
+  async set(key: string, value: unknown): Promise<void> {
+    let resolvedValue = value;
+    if (util.is_promise(resolvedValue)) {
+      resolvedValue = await (resolvedValue as Promise<unknown>);
     }
 
     const real_key: string = this.buildRealKey(key);
 
     try {
-      this.reallySet(real_key, value);
+      await this.reallySet(real_key, resolvedValue);
     } catch(error) {
       console.log('failed to set ' + key + ': ' + error);
-      this.trim();
+      await this.trim();
       try {
-        this.reallySet(real_key, value);
+        await this.reallySet(real_key, resolvedValue);
       } catch (second_error) {
         console.warn(
           'couldn\'t save ' + key + ' to cache on second attempt'
@@ -309,21 +320,21 @@ class LocalCacheImpl {
     }
   }
 
-  async get(key: string): Promise<any> {
+  async get(key: string): Promise<unknown> {
     const real_key: string = this.buildRealKey(key);
 
     try {
-      const encoded = await store.get(real_key)!;
+      const encoded = await store.get(real_key);
 
-      if (encoded == null) {
+      if (encoded == null || typeof encoded !== 'string') {
         console.debug('cachestuff.get did not find ', key);
-        throw key + ' not found';
+        throw new Error(key + ' not found');
       }
 
-      let packed: any = null;
+      let packed: PackedCacheEntry | null = null;
 
       try {
-        packed = JSON.parse(encoded);
+        packed = JSON.parse(encoded) as PackedCacheEntry;
       } catch (ex) {
         console.error(
           'JSON.parse blew up with: ' + ex + ' while unpacking: ' + encoded
@@ -331,15 +342,15 @@ class LocalCacheImpl {
         throw ex;
       }
 
-      if (!packed) {
-        throw key + ' not found';
+      if (!packed || !packed.value) {
+        throw new Error(key + ' not found');
       }
 
       ++this.hit_count;
       const decompressed = lzjs.decompress(packed.value);
 
       try {
-        const result: object = JSON.parse(decompressed);
+        const result = JSON.parse(decompressed) as Record<string, unknown>;
         restoreDates(result);
         restoreParentPromises(result);
         return result;
@@ -350,8 +361,6 @@ class LocalCacheImpl {
         );
         throw ex;
       }
-
-      return null;
     } catch(err) {
       console.debug('cachestuff.get caught ', err, ' for ', key);
       return undefined;
@@ -377,24 +386,26 @@ class LocalCacheImpl {
     const real_keys: string[] = await this.getRealKeys();
     const timestamps_by_key: Record<string, number> = {};
 
-    real_keys.forEach( async function(key) {
+    for (const key of real_keys) {
       try {
         const encoded = await store.get(key);
-        try {
-          const decoded = JSON.parse(encoded!);
-          timestamps_by_key[key] = decoded.timestamp;
-        } catch(ex) {
-          console.error(
-            'JSON.parse blew up with: ' + ex + ' while unpacking: ' + encoded
-          );
+        if (typeof encoded === 'string') {
+          try {
+            const decoded = JSON.parse(encoded) as PackedCacheEntry;
+            timestamps_by_key[key] = decoded.timestamp;
+          } catch(ex) {
+            console.error(
+              'JSON.parse blew up with: ' + ex + ' while unpacking: ' + encoded
+            );
+          }
         }
       } catch(error) {
         console.debug('couldn\'t get timestamp for key: ' + key);
       }
-    });
+    }
 
     const timestamps = Object.values(timestamps_by_key);
-    timestamps.sort();
+    timestamps.sort((a, b) => a - b);
 
     const cutoff_timestamp = timestamps[
       Math.floor(real_keys.length * 0.25)
@@ -402,12 +413,12 @@ class LocalCacheImpl {
 
     let removed_count = 0;
 
-    Object.keys(timestamps_by_key).forEach( key => {
+    for (const key of Object.keys(timestamps_by_key)) {
       if (timestamps_by_key[key] <= cutoff_timestamp) {
-        store.remove(key);
+        await store.remove(key);
         ++removed_count;
       }
-    });
+    }
 
     console.log('removed ' + removed_count + ' entries');
   }
@@ -416,15 +427,15 @@ class LocalCacheImpl {
     console.log('clearing cache');
     const keys = await this.getRealKeys();
 
-    keys.forEach( key => {
-      store.remove(key);
-    });
+    for (const key of keys) {
+      await store.remove(key);
+    }
   }
 }
 
 export interface Cache {
-  set: (key: string, value: any) => void;
-  get: (key: string) => Promise<any>;
+  set: (key: string, value: unknown) => void;
+  get: (key: string) => Promise<unknown>;
   clear: () => void;
   hitCount: () => number;
 }
@@ -433,9 +444,9 @@ export function createLocalCache(cache_name: string): Cache {
   const cache = new LocalCacheImpl(cache_name);
 
   return {
-    set: (key: string, value: any) => cache.set(key, value),
+    set: (key: string, value: unknown) => { void cache.set(key, value); },
     get: (key: string) => cache.get(key),
-    clear: () => cache.clear(),
+    clear: () => { void cache.clear(); },
     hitCount: () => cache.hitCount(),
   };
 }
