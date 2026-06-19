@@ -18,6 +18,7 @@ export enum Delivered {
   YES = 1,
   NO = 2,
   UNKNOWN = 3,
+  RETURNED = 4,
 }
 
 export interface IShipment {
@@ -231,20 +232,34 @@ function get_refund(shipment_elem: HTMLElement): string {
 }
 
 function is_delivered(shipment_elem: HTMLElement): Delivered {
-  const attr = shipment_elem.getAttribute('class');
+  const classAttr = shipment_elem.getAttribute('class');
 
-  if ((attr as string).includes('shipment-is-delivered')) {
+  if ((classAttr as string)?.includes('shipment-is-delivered')) {
     return Delivered.YES;
   }
 
-  const text = shipment_elem.textContent?.toLowerCase().trim() ?? '';
+  const isDeliveredText = shipment_elem.textContent?.toLowerCase().trim() ?? '';
 
-  if (text.includes('delivered')) {
+  if (isDeliveredText.includes('delivered')) {
     return Delivered.YES;
   }
 
-  if (text.includes('arriving')) {
+  if (isDeliveredText.includes('arriving')) {
     return Delivered.NO;
+  }
+
+  const shipmentStatusElems = extraction.findMultipleNodeValues(
+    './/*[contains(@class, "status-message")]',
+    shipment_elem,
+    'shipment status'
+  );
+
+  const shipmentStatusText = shipmentStatusElems.map(n => n?.textContent??'')
+                                                .join(' ')
+                                                .toLowerCase();
+
+  if (shipmentStatusText.includes('return complete')) {
+    return Delivered.RETURNED;
   }
 
   return Delivered.UNKNOWN;
