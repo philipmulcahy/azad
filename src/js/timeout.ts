@@ -8,13 +8,17 @@
  * or rejects if the timeout is reached first.
  */
 export function wrapPromise<T>(promise: Promise<T>, ms: number): Promise<T> {
-  // Create a promise that rejects after the specified milliseconds
+  let timerId: ReturnType<typeof setTimeout> | undefined;
+
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
+    timerId = setTimeout(() => {
       reject(new Error(`Promise timed out after ${ms}ms`));
     }, ms);
   });
 
-  // Race the original promise against the timeout
-  return Promise.race([promise, timeoutPromise]);
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timerId !== undefined) {
+      clearTimeout(timerId);
+    }
+  });
 }
