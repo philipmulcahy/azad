@@ -16,6 +16,7 @@ import * as shipment from './shipment';
 import * as request_scheduler from './request_scheduler';
 import * as single_fetch from './single_fetch';
 import * as strategy from './strategy';
+import * as tout from './timeout';
 import * as urls from './url';
 import * as util from './util';
 
@@ -423,7 +424,7 @@ export async function assembleDiagnostics(
         const exStr = JSON.stringify(ex);
         const msg = 'Failed while capturing ' + field_name + ': ' + exStr;
         console.warn(msg);
-        problems.push(msg);
+        problems.push(msg.toString());
       }
     }
   );
@@ -493,17 +494,23 @@ export async function assembleDiagnostics(
     ).then((response: Response) => response.text()),
   }).forEach(entry => entries[entry[0]] = entry[1]);
 
-  const entriesSettled = await Promise.allSettled(
+  const settled = await Promise.allSettled(
     Object.entries(entries)
-      .map(async e => ({key: e[0], value: await e[1]}))
+      .map(
+        async function(entry) {
+          const key = entry[0];
+          const value = await tout.wrapPromise(entry[1], 30_000);
+          return {key, value};
+        }
+      )
   );
 
-  for (const entry of entriesSettled) {
+  for (const entry of settled) {
     if (entry.status == 'rejected') {
       const reason = entry.reason;
       notice.showNotificationBar(reason, document);
       console.warn(reason);
-      problems.push(reason);
+      problems.push(reason.toString());
     } else if (entry.status == 'fulfilled') {
       const key = entry.value.key;
       const value = entry.value.value;
