@@ -44,7 +44,7 @@ export function init(cols: Promise<colspec.ColSpec[]>) {
           col_spec.sum = sum_col(api.column(col_index));
           col_spec.pageSum = sum_col(
             api.column(col_index, {page: 'current'}));
-            $(api.column(col_index).footer() as string | HTMLElement).html(
+            $(api.column(col_index).footer() as HTMLElement).html(
               sprintf.sprintf(
                 'page=%s; all=%s',
                 col_spec.pageSum.toFixed(2),
