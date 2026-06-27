@@ -1,19 +1,13 @@
 import * as fs from 'fs';
-import { compareLists } from './transaction.test';
-import { Transaction } from '../../js/transaction';
 import {
-  extractPageOfTransactions,
   classifyNode,
   Component,
   patterns,
 } from '../../js/transaction1';
 import {
-  ClassedNode,
   TopologicalScrape,
 } from '../../js/topology';
-
-const jsdom = require('jsdom');
-
+import * as jsdom from 'jsdom';
 
 describe(
   'transaction date regex',
