@@ -6,7 +6,6 @@ import * as azad_entity from './entity';
 import * as date from './date';
 import * as iframeWorker from './iframe-worker';
 import * as item from './item';
-import * as notice from './notice';
 import * as order_details from './order_details';
 import * as order_header from './order_header';
 import * as olp from './order_list_page';
@@ -393,8 +392,12 @@ export async function assembleDiagnostics(
 
   function doLookup(key: keyof ISyncOrder): Lookup {
     try {
-      const value: any = sync_order[key];
-      return makeLookup(key, Promise.resolve(value)); 
+      const value: unknown = sync_order[key];
+
+      return makeLookup(
+        key,
+        Promise.resolve(value as string | Record<string, string>)
+      );
     } catch(ex) {
       const exStr = JSON.stringify(ex);
       const msg = 'Failed while capturing ' + key + ': ' + exStr;
@@ -421,6 +424,7 @@ export async function assembleDiagnostics(
       'orderListHtmlForDebug',
 
       // ready_xpath: TODO - derive from mainline scraping code, DRY!
+      // eslint-disable-next-line no-multi-str
       '//div[@id="orderCard"]//div[@id="orderCardHeader"]|//div[contains(@class, "order-card")]',
 
       getScheduler,
@@ -441,7 +445,7 @@ export async function assembleDiagnostics(
     ).then((response: Response) => response.text())),
   ];
 
-  const diagnostics: Record<string, any> = {};
+  const diagnostics: Record<string, unknown> = {};
 
   for (const lu of lookups) {
     const key = lu.key;
