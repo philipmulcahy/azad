@@ -1,7 +1,7 @@
 import * as fs from 'fs';
-const cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 import type { CheerioAPI } from 'cheerio';
-const jsdom = require('jsdom');
+import * as jsdom from 'jsdom';
 
 // Note that we do not import transaction0 or transaction1...
 // ...they are abstracted by transaction.
