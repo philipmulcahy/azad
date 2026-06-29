@@ -38,12 +38,18 @@ describe('cache operations', () => {
             },
         },
     });
-    const retrieved = await cache.get('X') as any;
+    const retrieved = await cache.get('X') as { a: { b: { c: { d: { e: boolean } } } } };
     expect(retrieved.a.b.c.d.e).toEqual(true);
   });
 
   test('restore parent', async () => {
-    const order: any = {
+    interface MockOrder {
+      a: string;
+      items: { parent_order: Promise<MockOrder> | null }[];
+      child_thing: { parent_order: Promise<MockOrder> | null };
+    }
+
+    const order: MockOrder = {
       a: 'A',
       items: [{parent_order: null}],
       child_thing: {parent_order: null}
@@ -56,12 +62,12 @@ describe('cache operations', () => {
     cache.clear();
     cache.set('my_order', order);
 
-    const retrieved = await cache.get('my_order') as any;
+    const retrieved = await cache.get('my_order') as MockOrder;
     const item_parent = await retrieved.items[0].parent_order;
     const other_child_parent = await retrieved.child_thing.parent_order;
 
-    expect(item_parent.a).toEqual('A');
-    expect(other_child_parent.a).toEqual('A');
+    expect(item_parent!.a).toEqual('A');
+    expect(other_child_parent!.a).toEqual('A');
   });
 
 });
