@@ -165,7 +165,7 @@ function strategy0(
           '1'
         ).trim()
       );
-    } catch(ex: any) {
+    } catch(ex) {
       qty = 1;
       if (!String(ex).includes('match')) {
         console.log(ex);
@@ -366,7 +366,7 @@ function strategy4(
           '1'
         ).trim()
       );
-    } catch(ex: any) {
+    } catch(ex) {
       qty = 1;
       if (!String(ex).includes('match')) {
         console.log(ex);
@@ -433,7 +433,7 @@ function strategy5(
   );
 
   const description = lines[0];
-  const seller = lines[1];
+  const _seller = lines[1];
   const quantity = +(lines[2]!);
   const price = itemCells[1]?.textContent?.trim();
   const url =  urls.normalizeUrl(
