@@ -425,8 +425,7 @@ function extractDetailFromDoc(
         // 4:     "$"
         // 5:     "0.00"
         try {
-          // @ts-ignore stop complaining: you're in a try block!
-          a = a.match(util.moneyRegEx())[1];
+          a = a.match(util.moneyRegEx())?.[1] ?? null;
         } catch {
           a = null;
         }
