@@ -1,4 +1,4 @@
-/* Copyright(c) 2021 Philip Mulcahy. */
+/* Copyright(c) 2021-2026 Philip Mulcahy. */
 
 import * as azad_item from './item';
 import * as azad_order from './order';
@@ -14,10 +14,11 @@ export function field_from_entity(
     entity: IEntity,
     field_name: string
 ): Field {
-    function is_order(value: any): boolean {
-      // You may well sniff at this: type erasure has its moments.
-      return Object(value) === value && 'item_list' in value;
+    function is_order(value: unknown): value is { item_list: unknown } {
+      // We check if value is a non-null object, then safely look for the key
+      return typeof value === 'object' && value !== null && 'item_list' in value;
     }
+
     const value = is_order(entity) ?
         (entity as azad_order.IOrder)[field_name as keyof azad_order.IOrder] :
         (entity as azad_item.IItem)[field_name as keyof azad_item.IItem];
