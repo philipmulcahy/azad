@@ -1,14 +1,14 @@
-/* Copyright(c) 2023 Philip Mulcahy. */
+/* Copyright(c) 2023-2026 Philip Mulcahy. */
 
 'use strict';
 
-const ep = require('ExtPay');
+import ExtPay from 'extpay';
 
 // Apparently (https://github.com/glench/ExtPay#manifest-v3)
 // we should fetch a new ExtPay reference each time we need one (for async code)
 // but only initialise once with startBackground.
-function getExtPay(): any {
-  return ep.default('amazon-order-history-reporter-premium-annual');
+function getExtPay(): ReturnType<typeof ExtPay> {
+  return ExtPay('amazon-order-history-reporter-premium-annual');
 }
 
 try {
@@ -47,5 +47,5 @@ export async function display_console() {
 
 export async function getLoginId(): Promise<string> {
   const user = await getExtPay().getUser(); 
-  return user.email;
+  return user.email ?? '';
 }
