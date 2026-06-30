@@ -1,21 +1,15 @@
-/* Copyright(c) 2018 Philip Mulcahy. */
-
-/* jshint strict: true, esversion: 6 */
+/* Copyright(c) 2018-2026 Philip Mulcahy. */
 
 "use strict";
 
-// 2020-05 moment's typing is not 'normal'.
-// See https://stackoverflow.com/questions/36648231/how-can-moment-js-be-imported-with-typescript
-// and also esModuleInterop = true in tsconfig.js
-const moment = require('moment');
-
+import moment, { Moment } from 'moment';
 import { sprintf } from 'sprintf-js';
 
-function localDateFromMoment(m: any): string {
+function localDateFromMoment(m: Moment): string {
     const d = m.toDate();
     return sprintf(
         '%d-%02d-%02d',
-        d.getYear()+1900, d.getMonth()+1, d.getDate()
+        d.getFullYear(), d.getMonth()+1, d.getDate()
     );
 }
 
@@ -74,7 +68,6 @@ export function getDateRegex(): RegExp {
     ])).sort().join('|') + ')';
 
     const year = '(?:20\\d\\d)';
-  
     const date = '(?:[012]?\\d|3[01])';
 
     const patterns = [
