@@ -48,7 +48,7 @@ export async function extractDetailPromise(
   }
 
   async function event_converter(
-    evt: req.Event
+    evt: req.AzadResponseEvent
   ): Promise<IOrderDetailsAndItems> {
     const doc = util.parseStringToDOM( evt.target.responseText );
     const url = evt.target.responseURL;

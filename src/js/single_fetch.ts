@@ -29,7 +29,11 @@ export async function checkedDynamicFetch(
 ) : Promise<string>
 {
   console.log(`checkedDynamicFetch(${url}, ${requestType}, ${readyXPath}, ...) starting`);
-  const converter: request.EventConverter<string> = (evt: request.Event) => evt.target.responseText;
+
+  const converter: request.EventConverter<string> = (
+    evt: request.AzadResponseEvent
+  ) => evt.target.responseText;
+
   const scheduler = await getScheduler();
 
   try {
