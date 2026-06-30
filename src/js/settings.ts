@@ -7,10 +7,10 @@ import * as ui_messages from  './ui_messages';
 
 const EXTENSION_KEY = 'azad_settings';
 
-function getSettings(entries: {[key: string]: any;} ): Record<string, any> {
-  const encoded_settings = entries[EXTENSION_KEY];
+function getSettings(entries: Record<string, unknown>): Record<string, unknown> {
+  const encoded_settings = entries[EXTENSION_KEY] as string;
   try{
-    return JSON.parse(encoded_settings);
+    return JSON.parse(encoded_settings) as Record<string, unknown>;
   } catch (ex) {
     console.error(
       'JSON.parse blew up with:' + ex +  ' while parsing: ' +
@@ -59,7 +59,7 @@ function updateCheckBoxElement(elem: HTMLElement, value: boolean) {
 
 async function updateCheckboxElements(
   elements: Record<string, HTMLElement>,
-  values: Record<string, boolean>
+  values: Record<string, unknown>
 ): Promise<void> {
   console.info('settings.updateCheckboxElements(...)');
   const preview_authorised = await getBoolean('preview_features_enabled');
