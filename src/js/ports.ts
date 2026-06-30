@@ -17,9 +17,7 @@ async function initialiseBackgroundPort(): Promise<void> {
   const portUID: string = new Date().getUTCMilliseconds().toString();
   const pgType = pageType.getPageType();
   const portName = `${pgType}:${portUID}`;
-
-  // @ts-ignore null IS allowed as first arg to connect.
-  background_port = chrome.runtime.connect(null, {name: portName});
+  background_port = chrome.runtime.connect({name: portName});
 
   function sendOneKeepalive() {
     background_port?.postMessage({action: 'keepalive'});
