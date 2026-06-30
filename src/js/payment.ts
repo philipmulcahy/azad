@@ -321,19 +321,6 @@ export async function fetch_payments(
     ]);
   }
 
-  const event_converter = function(evt: ProgressEvent<XMLHttpRequest>): Payments {
-    const invoiceDoc = util.parseStringToDOM(evt.target?.responseText ?? '');
-
-    const payments = payments_from_invoice(
-      invoiceDoc,
-      orderHeader.date,
-      orderHeader.total ?? '',
-    );
-
-    // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
-    return payments;
-  };
-
   const url = orderHeader.payments_url;
 
   if (!url) {
@@ -344,7 +331,21 @@ export async function fetch_payments(
     const payments = await req.makeAsyncStaticRequest<Payments>(
       url,
       'fetch_payments',
-      event_converter,
+      function(evt: req.Event): Payments {
+        if (!evt.target?.responseText) {
+          throw new Error('XHR responseText unavailable');
+        }
+
+        const invoiceDoc = util.parseStringToDOM(evt.target.responseText);
+
+        const payments = payments_from_invoice(
+          invoiceDoc,
+          orderHeader.date,
+          orderHeader.total ?? '',
+        );
+
+        return payments;
+      },
       scheduler,
       util.defaulted(orderHeader.id, '9999'), // priority
       false,  // nocache,
