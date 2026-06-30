@@ -1,12 +1,10 @@
 /* Copyright(c) 2023 Philip Mulcahy. */
 
 import * as date from './date';
-import * as extraction from './extraction';
 import * as order_details from './order_details';
 import * as order_header from './order_header';
 import * as pmt from './payment';
 import * as request_scheduler from './request_scheduler';
-import * as util from './util';
 
 export class OrderImpl {
   header: order_header.IOrderHeader;
