@@ -321,8 +321,8 @@ export async function fetch_payments(
     ]);
   }
 
-  const event_converter = function(evt: any): Payments {
-    const invoiceDoc = util.parseStringToDOM(evt.target.responseText);
+  const event_converter = function(evt: ProgressEvent<XMLHttpRequest>): Payments {
+    const invoiceDoc = util.parseStringToDOM(evt.target?.responseText ?? '');
 
     const payments = payments_from_invoice(
       invoiceDoc,
