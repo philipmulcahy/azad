@@ -5,7 +5,6 @@
 'use strict';
 
 import * as save_file from './save_file';
-import * as send_file from './send_file';
 
 function string_or_null(s: string | null | undefined) {
   if (s) {
