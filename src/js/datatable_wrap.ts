@@ -1,23 +1,32 @@
 /* Copyright(c) 2024 Philip Mulcahy. */
 
-const $ = require('jquery');
+import $ from 'jquery';
+import 'datatables.net';
 import * as colspec from './colspec';
 import * as sprintf from 'sprintf-js';
 import * as util from './util';
 
-let datatable: any = null;
+interface IDataTableInstance {
+  rows: () => { invalidate: () => void };
+  draw: () => void;
+  destroy: () => void;
+}
+
+let datatable: IDataTableInstance | null = null;
 
 export function init(cols: Promise<colspec.ColSpec[]>) {
-  datatable = (<any>$('#azad_order_table')).DataTable({
+  const tableElement = $('#azad_order_table') as unknown as { DataTable: (config: unknown) => IDataTableInstance };
+
+  datatable = tableElement.DataTable({
     'bPaginate': true,
     'lengthMenu': [
       [10, 25, 50, 100, -1],
       [10, 25, 50, 100, 'All'] ],
-    'footerCallback': function() {
-      const api = this.api();
+    'footerCallback': function(this: { api: () => unknown }) {
+      const api = this.api() as { column: (idx: number, options?: unknown) => { data: () => (string | number)[], footer: () => unknown } };
       let col_index = 0;
       cols.then( cols => cols.forEach( col_spec => {
-        const sum_col = function(col: any) {
+        const sum_col = function(col: { data: () => (string | number)[] }) {
           const data = col.data();
           if (data) {
             const sum = data
@@ -35,7 +44,7 @@ export function init(cols: Promise<colspec.ColSpec[]>) {
           col_spec.sum = sum_col(api.column(col_index));
           col_spec.pageSum = sum_col(
             api.column(col_index, {page: 'current'}));
-            $(api.column(col_index).footer()).html(
+            $(api.column(col_index).footer() as HTMLElement).html(
               sprintf.sprintf(
                 'page=%s; all=%s',
                 col_spec.pageSum.toFixed(2),

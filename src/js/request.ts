@@ -15,7 +15,7 @@ interface IResponse<T> {
 }
 
 interface IFetcher {
-  execute(): Promise<Event>;
+  execute(): Promise<AzadResponseEvent>;
 }
 
 function makeXHRTask(
@@ -24,7 +24,7 @@ function makeXHRTask(
 ): IFetcher {
   return {
     execute: () => {
-      const eventPromise = new Promise<Event>( (resolve, reject) => {
+      const eventPromise = new Promise<AzadResponseEvent>( (resolve, reject) => {
         const xhr = new XMLHttpRequest();
         console.log('opening xhr on ' + url);
         xhr.open('GET', url, true);
@@ -108,7 +108,7 @@ function makeDynamicFetchTask(
   purpose: string,
 ): IFetcher {
   return {
-    execute: async function(): Promise<Event>{
+    execute: async function(): Promise<AzadResponseEvent>{
       const response = await iframeWorker.fetchURL(url, readyXPath, purpose);
 
       return {
@@ -121,14 +121,14 @@ function makeDynamicFetchTask(
   };
 }
 
-export type Event = {
+export type AzadResponseEvent = {
   target: {
     responseText: string;
     responseURL: string;
   }
 };
 
-export type EventConverter<T> = (evt: Event) => T | Promise<T>;
+export type EventConverter<T> = (evt: AzadResponseEvent) => T | Promise<T>;
 
 // Embedding this code in AzadRequest.constructor means initialisation order
 // nightmares - at least we keep the mess isolated by doing it in a dedicated
@@ -293,12 +293,12 @@ class AzadRequest<T> {
     if (this._url in url_map) {
       const response_text = url_map[this._url];
 
-      const fake_event: Event = {
+      const fake_event: AzadResponseEvent = {
         target: {
           responseURL: this._url,
           responseText: response_text,
         }
-      } as Event;
+      } as AzadResponseEvent;
 
       setTimeout(() => this.E_Response(fake_event));
       return Promise.resolve();
@@ -316,7 +316,7 @@ class AzadRequest<T> {
     setTimeout(() => this.IJK_Success(converted), 0);
   }
 
-  E_Response(evt: Event) {
+  E_Response(evt: AzadResponseEvent) {
     this.check_state([base.State.SENT, base.State.DEQUEUED]);
     this.change_state(base.State.RESPONDED);
     this._scheduler.stats().increment(stats.OStatsKey.COMPLETED_COUNT);
@@ -353,10 +353,10 @@ class AzadRequest<T> {
     }
   }
 
-  async H_Convert(evt: Event): Promise<void> {
+  async H_Convert(evt: AzadResponseEvent): Promise<void> {
     this.check_state(base.State.RESPONDED);
 
-    const protected_converter = async (convertEvt: Event): Promise<T|null> => {
+    const protected_converter = async (convertEvt: AzadResponseEvent): Promise<T|null> => {
       try {
         console.debug(
           'protected_converter', this._debug_context, this._url,

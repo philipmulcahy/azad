@@ -167,13 +167,13 @@ export class Counters {
       sum._stats.set(ks, v);
     }
 
-    return sum
+    return sum;
   }
 
   static async load(): Promise<Counters> {
     const results = await chrome.storage.local.get(Counters.storageKey);
 
-    if (results.hasOwnProperty(Counters.storageKey)) {
+    if (Object.prototype.hasOwnProperty.call(results, Counters.storageKey)) {
       const json = results[Counters.storageKey] as string;
       return Counters.deserialize(json);
     }
@@ -182,7 +182,7 @@ export class Counters {
   }
 
   async save(): Promise<void> {
-    const json = this.serialize()
+    const json = this.serialize();
     return chrome.storage.local.set({[Counters.storageKey]: json});
   }
 

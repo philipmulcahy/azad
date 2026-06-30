@@ -202,7 +202,8 @@ export function paymentsFromDetailPage(
       if (n.isNonScriptText) {
         // Simple text node: regexes allow us to classify.
         const candidates = new Set<Component>(
-          [...patterns.keys()].filter(p => n.match(p) != null));
+          Array.from(patterns.keys()).filter(p => n.match(p) != null)
+        );
 
         if (candidates.has(Component.CARD_DIGITS)) {
             if (n.hasSiblingToLeft(
@@ -305,6 +306,23 @@ export function paymentsFromDetailPage(
   );
 }
 
+function paymentsFromResponseEvent(
+  evt: req.AzadResponseEvent,
+  orderHeader: order_header.IOrderHeader,
+): Payments {
+  if (!evt.target?.responseText) {
+    throw new Error('XHR responseText unavailable');
+  }
+
+  const invoiceDoc = util.parseStringToDOM(evt.target.responseText);
+
+  return payments_from_invoice(
+    invoiceDoc,
+    orderHeader.date,
+    orderHeader.total ?? '',
+  );
+}
+
 export async function fetch_payments(
   scheduler: request_scheduler.IRequestScheduler,
   orderHeader: order_header.IOrderHeader,
@@ -321,19 +339,6 @@ export async function fetch_payments(
     ]);
   }
 
-  const event_converter = function(evt: any): Payments {
-    const invoiceDoc = util.parseStringToDOM(evt.target.responseText);
-
-    const payments = payments_from_invoice(
-      invoiceDoc,
-      orderHeader.date,
-      orderHeader.total ?? '',
-    );
-
-    // ["American Express ending in 1234: 12 May 2019: £83.58", ...]
-    return payments;
-  };
-
   const url = orderHeader.payments_url;
 
   if (!url) {
@@ -344,7 +349,7 @@ export async function fetch_payments(
     const payments = await req.makeAsyncStaticRequest<Payments>(
       url,
       'fetch_payments',
-      event_converter,
+      (evt) => paymentsFromResponseEvent(evt, orderHeader),
       scheduler,
       util.defaulted(orderHeader.id, '9999'), // priority
       false,  // nocache,

@@ -2,8 +2,6 @@ import * as business from './business';
 import * as cacheStuff from './cachestuff';
 import * as extraction from './extraction';
 import * as iframeWorker from './iframe-worker';
-import * as pageType from './page_type';
-import * as signin from './signin';
 import * as strategy from './strategy';
 import * as urls from './url';
 import * as util from './util';
@@ -58,7 +56,7 @@ export class YearsCache {
 }
 
 function getCurrentYear(): number {
-  return new Date().getUTCFullYear()
+  return new Date().getUTCFullYear();
 }
 
 export async function getPeriods(fromCacheOnly: boolean = false): Promise<number[]> {

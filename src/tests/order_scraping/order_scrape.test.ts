@@ -4,9 +4,8 @@ import * as azad_item from '../../js/item';
 import * as azad_order from '../../js/order';
 import * as statistics from '../../js/statistics';
 import {dateToDateIsoString} from '../../js/date';
-import * as fs from 'fs';
 import * as order_data from '../fake_order';
-const process = require('process');
+import process from 'process';
 import * as util from '../../js/util';
 
 interface ITestResult {
@@ -14,7 +13,6 @@ interface ITestResult {
   passed: boolean;
   defects: string[];
 }
-
 
 async function testOneOrderTarget(
     target: order_data.ITestTarget
@@ -43,7 +41,7 @@ async function testOneOrderTarget(
   const order = maybe_order as azad_order.IOrder;
 
   // 2023-07 reinstate legacy items property.
-  (order as any)['items'] = () => azad_order.get_legacy_items(order);
+  (order as unknown as Record<string, unknown>)['items'] = () => azad_order.get_legacy_items(order);
 
   const expected = order_data.expectedFromTestData(
     target.order_id,
@@ -56,7 +54,7 @@ async function testOneOrderTarget(
   async function validateKey(key: string): Promise<void> {
     try {
       let expected_value = util.defaulted(expected[key], '');
-      const actual_value_promise = (order as Record<string, any>)[key]();
+      const actual_value_promise = (order as unknown as Record<string, () => Promise<unknown>>)[key]();
       let actual_value = await actual_value_promise;
       console.log('key:', key, expected_value, actual_value);
 
@@ -65,16 +63,18 @@ async function testOneOrderTarget(
       }
 
       if ( key == 'item_list' ) {
-        function strip_uninteresting_fields (
+        const strip_uninteresting_fields = (
           item_list: azad_item.IItem[]
-        ): azad_item.IItem[] {
+        ): azad_item.IItem[] => {
           item_list.forEach( item => {
             [
               'order_date', 'order_id', 'order_detail_url', 'order_header'
-            ].forEach( key => { delete (item as any)[key]; } );
+            ].forEach( key => {
+              delete (item as unknown as Record<string, unknown>)[key];
+            });
           });
           return item_list;
-        }
+        };
 
         expected_value = strip_uninteresting_fields(
           expected_value as azad_item.IItem[]
@@ -85,9 +85,9 @@ async function testOneOrderTarget(
         );
       }
       if ( key == 'shipments' ) {
-        actual_value.forEach( (shipment: any) =>
+        (actual_value as { items: { order_header?: unknown }[] }[]).forEach( shipment =>
           shipment.items.forEach(
-            (item: any) => { delete item.order_header; }
+            item => { delete item.order_header; }
           )
         );
       }
@@ -107,7 +107,7 @@ async function testOneOrderTarget(
     }
   }
 
-  const key_validation_promises = keys.map(validateKey); 
+  const key_validation_promises = keys.map(validateKey);
 
   return Promise.all(key_validation_promises).then( () => {
     if (result.defects.length == 0) {
@@ -118,9 +118,10 @@ async function testOneOrderTarget(
   });
 }
 
-function byOrderId(orderId: string) {
-  return (target: order_data.ITestTarget) => target.order_id == orderId;
-}
+// Commented out to satisfy @typescript-eslint/no-unused-vars unless filters below are active
+// function byOrderId(orderId: string) {
+//   return (target: order_data.ITestTarget) => target.order_id == orderId;
+// }
 
 async function runAllOrderTests():  Promise<ITestResult[]> {
   const targets = order_data.discoverTestData()
@@ -149,7 +150,7 @@ async function runAllOrderTests():  Promise<ITestResult[]> {
     // .filter(byOrderId('203-5431933-7437105'))  // @philipmulcahy
     // .filter(byOrderId('203-6059583-9048313'))  // @philipmulcahy
     // .filter(byOrderId('204-1776211-0905112'))  // @philipmulcahy
-    // .filter(byOrderId('205-1380848-8821960'),  // Chris Lambert-Shiels #353 fired-and-forgotten 2025-09
+    // .filter(byOrderId('205-1380848-8821960'))  // Chris Lambert-Shiels #353 fired-and-forgotten 2025-09
     // .filter(byOrderId('205-7528990-3423569'))
     // .filter(byOrderId('206-1563844-4321133'))
     // .filter(byOrderId('249-0382082-2380604'))  // @leyton01 amazon.com.au

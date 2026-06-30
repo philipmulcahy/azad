@@ -1,10 +1,10 @@
-/* Copyright(c) 2019 Philip Mulcahy. */
+/* Copyright(c) 2019-2026 Philip Mulcahy. */
 /* jshint strict: true, esversion: 6 */
 
 "use strict";
 
 import * as save_file from './save_file';
 
-export function save_json_to_file(obj: any, filename: string) {
+export function save_json_to_file(obj: unknown, filename: string) {
     save_file.save(JSON.stringify(obj), filename);
 }

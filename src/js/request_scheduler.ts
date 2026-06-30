@@ -202,7 +202,6 @@ class RequestScheduler {
     setTimeout(
       async () => {
         this._executeSomeIfPossible();
-        const port = await this._get_background_port();
         this.stats().publish(this._get_background_port, this._purpose);
         this._checkDone();
       }

@@ -197,7 +197,7 @@ export class TransactionMapper extends transactionVisitor<void> {
   public mapAll(tree: Status_transaction_groupContext): Transaction[] {
     this.visit(tree);
     return this.transactions;
-  };
+  }
 
   override visitStatus_transaction_group = (ctx: Status_transaction_groupContext): void => {
     this.currentStatus = ctx.status().getText();

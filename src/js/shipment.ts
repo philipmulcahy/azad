@@ -92,7 +92,7 @@ export async function get_shipments(
   return shipments;
 }
 
-function id_from_tracking_page(evt: req.Event): string {
+function id_from_tracking_page(evt: req.AzadResponseEvent): string {
   const html_text = evt.target.responseText;
   const doc = util.parseStringToDOM(html_text);
   const body = doc.body;

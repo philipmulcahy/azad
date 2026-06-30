@@ -4,7 +4,6 @@ import * as notice from './notice';
 import * as request from './request';
 import * as request_scheduler from './request_scheduler';
 import * as signin from './signin';
-import * as statistics from './statistics';
 
 export function checkedStaticFetch(url: string): Promise<Response> {
   return fetch(url).then(
@@ -30,7 +29,11 @@ export async function checkedDynamicFetch(
 ) : Promise<string>
 {
   console.log(`checkedDynamicFetch(${url}, ${requestType}, ${readyXPath}, ...) starting`);
-  const converter: request.EventConverter<string> = (evt: request.Event) => evt.target.responseText;
+
+  const converter: request.EventConverter<string> = (
+    evt: request.AzadResponseEvent
+  ) => evt.target.responseText;
+
   const scheduler = await getScheduler();
 
   try {

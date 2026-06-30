@@ -293,7 +293,7 @@ type OrderHeaderPageData = {
 };
 
 function translateOrdersPage(
-  evt: request.Event,
+  evt: request.AzadResponseEvent,
   period: string,  // log description of the period we are fetching orders for.
 ): OrderHeaderPageData {
   try {
@@ -306,7 +306,7 @@ function translateOrdersPage(
 }
 
 function reallyTranslateOrdersPage(
-  evt: request.Event,
+  evt: request.AzadResponseEvent,
   period: string,  // log description of the period we are fetching orders for.
 ): OrderHeaderPageData {
   const xhr = evt.target as XMLHttpRequest;

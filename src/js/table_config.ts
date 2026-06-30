@@ -15,7 +15,7 @@ import * as util from './util';
 
 
 export function getCols(table_type: string): Promise<colspec.ColSpec[]> {
-  const waits: Promise<any>[] = [];
+  const waits: Promise<boolean>[] = [];
   const results: colspec.ColSpec[] = [];
 
   // TODO: this should be a(n) map/object and lookup func.
@@ -293,14 +293,14 @@ const ORDER_COLS: colspec.ColSpec[] = [
         const ul = td.ownerDocument!.createElement('ul');
         td.textContent = '';
 
-        payments.forEach( async (payment: any) => {
+        payments.forEach( async (payment: unknown) => {
           const li = document.createElement('li');
           ul.appendChild(li);
           const detail_url = await (order as azad_order.IOrder).detail_url();
 
           li.innerHTML = util.safe_new_tab_link(
             detail_url,
-            (payment ? payment : '-') + '; '
+            (payment ? String(payment) : '-') + '; '
           );
         });
         datatable_wrap.invalidate();
@@ -483,8 +483,8 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
       entity: azad_entity.IEntity,
       td: HTMLElement
     ): Promise<null> {
-      const shipment = entity as order_util.IEnrichedShipment;
-      const shipment_id = shipment.shipment_id;
+      const shipment_obj = entity as order_util.IEnrichedShipment;
+      const shipment_id = shipment_obj.shipment_id;
       td.innerHTML = shipment_id;
       return Promise.resolve(null);
     },
@@ -496,9 +496,9 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
       entity: azad_entity.IEntity,
       td: HTMLElement
     ): Promise<null> {
-      const shipment = entity as order_util.IEnrichedShipment;
-      const order_id: string = shipment.order.id;
-      const order_detail_url = shipment.order.detail_url;
+      const shipment_obj = entity as order_util.IEnrichedShipment;
+      const order_id: string = shipment_obj.order.id;
+      const order_detail_url = shipment_obj.order.detail_url;
       td.innerHTML = util.safe_new_tab_link(order_detail_url, order_id);
       return Promise.resolve(null);
     },
@@ -509,8 +509,8 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
       entity: azad_entity.IEntity,
       td: HTMLElement
     ): Promise<null> {
-      const shipment = entity as order_util.IEnrichedShipment;
-      const order_detail_url = shipment.order.detail_url;
+      const shipment_obj = entity as order_util.IEnrichedShipment;
+      const order_detail_url = shipment_obj.order.detail_url;
       td.innerHTML = order_detail_url;
       return Promise.resolve(null);
     },
@@ -522,16 +522,16 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
       entity: azad_entity.IEntity,
       td: HTMLElement
     ): Promise<null> {
-      const shipment = entity as order_util.IEnrichedShipment;
-      const order_date = shipment.order.date;
+      const shipment_obj = entity as order_util.IEnrichedShipment;
+      const order_date = shipment_obj.order.date;
       td.innerHTML = order_date ? dateToDateIsoString(order_date): '?';
       return Promise.resolve(null);
     },
     is_numeric: false,
   }, {
     field_name: 'delivered',
-    render_func: async function(shipment_obj: azad_entity.IEntity, td: HTMLElement) {
-      const s = shipment_obj as order_util.IEnrichedShipment;
+    render_func: async function(shipment_entity: azad_entity.IEntity, td: HTMLElement) {
+      const s = shipment_entity as order_util.IEnrichedShipment;
       const statusString = shipment.Delivered[s.delivered];
       td.textContent = statusString;
       return null;
@@ -633,15 +633,14 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
     },
     is_numeric: false,
     hide_in_browser: true,
-  },
-  {
+  }, {
     field_name: 'vendor',
     render_func: function(
       entity: azad_entity.IEntity,
       td: HTMLElement
     ): Promise<null> {
-      const transaction = entity as transaction.Transaction;
-      const vendor = transaction.vendor;
+      const transaction_obj = entity as transaction.Transaction;
+      const vendor = transaction_obj.vendor;
       td.innerHTML = vendor;
       return Promise.resolve(null);
     },
@@ -653,8 +652,8 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
       entity: azad_entity.IEntity,
       td: HTMLElement
     ): Promise<null> {
-      const transaction = entity as transaction.Transaction;
-      const cardInfo = transaction.cardInfo;
+      const transaction_obj = entity as transaction.Transaction;
+      const cardInfo = transaction_obj.cardInfo;
       td.innerHTML = cardInfo;
       return Promise.resolve(null);
     },
@@ -665,8 +664,8 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
       entity: azad_entity.IEntity,
       td: HTMLElement
     ): Promise<null> {
-      const transaction = entity as transaction.Transaction;
-      const amount = transaction.amount;
+      const transaction_obj = entity as transaction.Transaction;
+      const amount = transaction_obj.amount;
       td.innerText = amount.toString();
       return Promise.resolve(null);
     },

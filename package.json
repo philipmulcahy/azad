@@ -11,7 +11,7 @@
         "generate_code": "node utils/generate_code.js",
         "build": "npm run clean; node utils/generate_code.js; npm run lint && node utils/build.js",
         "doc": "npx typedoc --entryPointStrategy Expand src/js",
-        "lint": "tsc --strict --alwaysStrict --noEmit --noUnusedParameters --noImplicitReturns --noImplicitOverride --noImplicitThis --noFallthroughCasesInSwitch",
+        "lint": "tsc -p tsconfig.json --strict --alwaysStrict --noEmit --noUnusedParameters --noImplicitReturns --noImplicitOverride --noImplicitThis --noFallthroughCasesInSwitch",
         "eslint": "eslint --ignore-path .gitignore --ext .js,.ts .",
         "package": "utils/package.sh",
         "private_package": "npm run package; cp azad.zip azad_$(git log -1 | grep commit | sed 's/^commit //' | cut -c 1-8 | head -1).zip",
@@ -28,6 +28,7 @@
     },
     "devDependencies": {
         "@types/jest": "^29.5.14",
+        "@types/jsdom": "^20.0.1",
         "@types/node-forge": "^1.3.1",
         "@types/urlsafe-base64": "^1.0.31",
         "@typescript-eslint/eslint-plugin": "^6.5.0",

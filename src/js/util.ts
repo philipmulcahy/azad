@@ -40,6 +40,7 @@ export function parseStringToDOM(html: string) {
         // We don't use jsdom all the time, because it in turn requires the
         // fs module which isn't available in browsers. (This was difficult
         // to debug!).
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const jsdom = require('jsdom');  // eslint-disable-line no-undef
         return new jsdom.JSDOM(html).window.document;
     }
@@ -112,11 +113,16 @@ export function floatVal(v: string | number): number {
   return candidate;
 }
 
-export function isNumeric(n: any) {
-    return !isNaN(parseFloat(n)) && isFinite(n);
+export function isNumeric(n: unknown): boolean {
+    const parsed = parseFloat(String(n));
+    return !isNaN(parsed) && isFinite(Number(n));
 }
 
-export function addButton(name: string, cb: any, button_class: string) {
+export function addButton(
+  name: string,
+  cb: (this: GlobalEventHandlers, ev: MouseEvent) => unknown,
+  button_class: string
+) {
     removeButton(name);
     const a = document.createElement('button');
     if(typeof(button_class) === 'undefined') {
@@ -256,14 +262,11 @@ export function subtract_months(date: Date, months: number): Date {
   return result;
 }
 
-export function is_promise(candidate: any): boolean {
-  if (typeof(candidate) != 'object') {
+export function is_promise(candidate: unknown): boolean {
+  if (candidate === null || typeof candidate !== 'object') {
     return false;
   }
-  if ('then' in candidate) {
-    return true;
-  }
-  return false;
+  return 'then' in candidate && typeof (candidate as { then: unknown }).then === 'function';
 }
 
 export function safe_new_tab_link(url: string, title: string): string {

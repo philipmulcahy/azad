@@ -1,5 +1,7 @@
 /* Copyright(c) 2025 Philip Mulcahy. */
 
+/* eslint-disable @typescript-eslint/no-var-requires */
+
 const subProcess = require('child_process');
 const path = require('path');
 const fs = require('fs');

@@ -5,7 +5,7 @@
 import * as azad_order from '../js/order';
 import * as extraction from '../js/extraction';
 import * as fs from 'fs';
-const jsdom = require('jsdom');
+import * as jsdom from 'jsdom';
 import * as order_header from '../js/order_header';
 import * as request_scheduler from '../js/request_scheduler';
 import * as stats from '../js/statistics';
@@ -135,7 +135,7 @@ export function expectedFromTestData(
   order_id: string,
   collection_date: string,
   site: string
-): Record<string, any> {
+): Record<string, unknown> {
   const path = sitePath(site)
              + '/expected/' + order_id + '_' + collection_date + '.json';
   const json: string = fs.readFileSync(path, 'utf8');

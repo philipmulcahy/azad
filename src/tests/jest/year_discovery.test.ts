@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-const jsdom = require('jsdom');
+import * as jsdom from 'jsdom';
 import * as periods from '../../js/periods';
 
 function testOneGetYearsTarget(name: string) {

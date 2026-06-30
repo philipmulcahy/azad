@@ -1,6 +1,6 @@
 /* Copyright(c) 2016-2024 Philip Mulcahy. */
 
-const $ = require('jquery');
+import $ from 'jquery';
 import 'datatables';
 import * as azad_entity from './entity';
 import * as azad_order from './order';
@@ -61,7 +61,6 @@ function appendCell(
     (
       async function(): Promise<void> {
         const field_name: string | undefined = col_spec.value_promise_func_name;
-        const id = (entity as any)?.impl?.header?.id ?? 'null id';
 
         if (typeof(field_name) == 'undefined') {
           const msg = 'empty field name not expected';

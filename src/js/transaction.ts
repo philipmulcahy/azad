@@ -1,11 +1,19 @@
+/* Copyright(c) 2026 Philip Mulcahy. */
+
 import * as cacheStuff from './cachestuff';
 import * as extraction from './extraction';
-const lzjs = require('lzjs');
+import * as lzjsImport from 'lzjs';
 import * as stats from './statistics';
 import * as strategy from './strategy';
 import * as transaction0 from './transaction0';
 import * as transaction1 from './transaction1';
 import * as transaction2 from './transaction2';
+
+// Cleanly cast the untyped third-party module import to a structural signature
+const lzjs = lzjsImport as unknown as {
+  compress: (s: string) => string;
+  decompress: (s: string) => string;
+};
 
 function getCache() {
   return cacheStuff.createLocalCache('TRANSACTIONS');
@@ -166,7 +174,7 @@ async function extractAllTransactionsWithNextButton(
   let allKnownTransactions = await getTransactionsFromCache();
   const countFromCache = allKnownTransactions.length;
   let page: Transaction[] = [];
-  let pageCount: number = 0;
+  const pageCount = 0;
 
   const statistics = new stats.Statistics();
   statistics.increment(stats.OStatsKey.RUNNING_COUNT);
@@ -440,7 +448,9 @@ async function extractAllTransactionsWithScrolling(
         `latest scrape: min timestamp ${oldestDateInLatestScrape}, ` +
         `max timestamp ${youngestDateInLatestScrape}`
       );
-    } catch (_) {};
+    } catch (_) {
+      /* ignore date-logging errors */
+    }
 
     page = mergeTransactions(page, latestScrape);
     console.log(`accumulated ${page.length} transactions`);
@@ -466,7 +476,7 @@ async function extractAllTransactionsWithScrolling(
 }
 
 async function getTransactionsFromCache(): Promise<Transaction[]> {
-  const compressed = await getCache().get(CACHE_KEY);
+  const compressed = await getCache().get(CACHE_KEY) as string | null;
 
   if (!compressed) {
     return [];

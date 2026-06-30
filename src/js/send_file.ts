@@ -15,14 +15,18 @@ export async function send(
 
     try {
       console.log(`Sending Msg:"${msg}" to Ext ID: ${targetExtensionId}`);
-      const response = await new Promise<any>((resolve, reject) => {
-        chrome.runtime.sendMessage(targetExtensionId, msg, (response: any) => {
-          if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
-          } else {
-            resolve(response);
+      const response = await new Promise<unknown>((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          targetExtensionId,
+          msg,
+          (response: unknown) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve(response);
+            }
           }
-        });
+        );
       });
       console.log(`Data Sent!`, response);
     } catch(error) {

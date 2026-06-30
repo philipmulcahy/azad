@@ -4,7 +4,7 @@
 
 import * as util from './util';
 import * as statistics from './statistics';
-const xpath = require('xpath');
+import * as xpath from 'xpath';
 
 "use strict";
 
@@ -214,7 +214,9 @@ export function findMultipleNodeValues(
 
 function getXPathResult() {
   if (typeof(XPathResult) === 'undefined') {
-    return xpath.XPathResult;
+    return (
+      xpath as unknown as { XPathResult: typeof XPathResult }
+    ).XPathResult;
   }
 
   return XPathResult;

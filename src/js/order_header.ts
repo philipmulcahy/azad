@@ -2,7 +2,6 @@
 
 import * as date from './date';
 import * as extraction from './extraction';
-import * as sprintf from 'sprintf-js';
 import * as strategy from './strategy';
 import * as urls from './url';
 import * as util from './util';
