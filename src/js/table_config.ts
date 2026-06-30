@@ -15,7 +15,7 @@ import * as util from './util';
 
 
 export function getCols(table_type: string): Promise<colspec.ColSpec[]> {
-  const waits: Promise<any>[] = [];
+  const waits: Promise<boolean>[] = [];
   const results: colspec.ColSpec[] = [];
 
   // TODO: this should be a(n) map/object and lookup func.
@@ -293,14 +293,14 @@ const ORDER_COLS: colspec.ColSpec[] = [
         const ul = td.ownerDocument!.createElement('ul');
         td.textContent = '';
 
-        payments.forEach( async (payment: any) => {
+        payments.forEach( async (payment: unknown) => {
           const li = document.createElement('li');
           ul.appendChild(li);
           const detail_url = await (order as azad_order.IOrder).detail_url();
 
           li.innerHTML = util.safe_new_tab_link(
             detail_url,
-            (payment ? payment : '-') + '; '
+            (payment ? String(payment) : '-') + '; '
           );
         });
         datatable_wrap.invalidate();
@@ -640,8 +640,8 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
       entity: azad_entity.IEntity,
       td: HTMLElement
     ): Promise<null> {
-      const transaction = entity as transaction.Transaction;
-      const vendor = transaction.vendor;
+      const transaction_obj = entity as transaction.Transaction;
+      const vendor = transaction_obj.vendor;
       td.innerHTML = vendor;
       return Promise.resolve(null);
     },
@@ -653,8 +653,8 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
       entity: azad_entity.IEntity,
       td: HTMLElement
     ): Promise<null> {
-      const transaction = entity as transaction.Transaction;
-      const cardInfo = transaction.cardInfo;
+      const transaction_obj = entity as transaction.Transaction;
+      const cardInfo = transaction_obj.cardInfo;
       td.innerHTML = cardInfo;
       return Promise.resolve(null);
     },
@@ -665,8 +665,8 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
       entity: azad_entity.IEntity,
       td: HTMLElement
     ): Promise<null> {
-      const transaction = entity as transaction.Transaction;
-      const amount = transaction.amount;
+      const transaction_obj = entity as transaction.Transaction;
+      const amount = transaction_obj.amount;
       td.innerText = amount.toString();
       return Promise.resolve(null);
     },
