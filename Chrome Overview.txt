@@ -57,6 +57,15 @@ Feature requests: if there's a github ticket outstanding for the same thing,
 please add your thoughts there rather than making a new one. You can signal
 your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.21
+---------------
+#369 Improved scraping of returns refund amount (at order level, not item
+     level).
+#385 Improved reliability of order debug json dump file creation, plus
+     additional console logging.
+#??? Many non-functional code health improvements, now passing eslint with no
+     warnings or errors.
+
 Changes 1.16.20
 ---------------
 #403 Show popup when a json order debug file is requested from the transactions
@@ -72,12 +81,6 @@ Changes 1.16.19
 #390 Show transaction scraping progress in the control pop-up.
 #391 New, third transactions scraping strategy for when transaction layout
      is flattened AND has obfuscated html attribute names.
-
-Changes 1.16.18
----------------
-#366 (Some) card details missing from payments.
-#375, #386 (Some) gift payments missing.
-#381 Cache available years: faster start up, particularly for new users.
 
 Source Code
 -------------
