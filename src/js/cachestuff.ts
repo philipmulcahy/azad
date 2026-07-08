@@ -91,7 +91,7 @@ export function registerCacheListenerInBackgroundPage() {
                .then( response => responseCallback(response) );
           break;
         default:
-          console.trace('ignoring action:', request.action);
+          console.debug('ignoring action:', request.action);
           break;
       }
 

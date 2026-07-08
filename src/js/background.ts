@@ -463,7 +463,7 @@ function registerMessageListener() {
         chrome.tabs.create({ url: request.url });
         break;
       default:
-        console.trace('ignoring action: ' + request.action);
+        console.debug('ignoring action: ' + request.action);
     }
   });
 }
