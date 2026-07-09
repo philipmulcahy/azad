@@ -84,7 +84,7 @@ const chrome_extension_options = {
                         );
                     }
                 },
-                { from: "node_modules/datatables/media/css/jquery.dataTables.min.css" },
+                { from: "node_modules/datatables.net-dt/css/dataTables.dataTables.min.css" },
                 { from: "src/html/popup.html" },
                 { from: "src/img/icon128.png" },
                 { from: "src/img/icon48.png" },

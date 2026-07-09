@@ -238,12 +238,12 @@ function handleMessageFromBackgroundToRootContentPage(msg: Record<string, unknow
   }
 }
 
-function initialiseContentScript() {
+async function initialiseContentScript(): Promise<void> {
   console.log('Amazon Order History Reporter content script initialising');
   console.log(git_hash.text());
 
   const isWorker = pageType.isWorker();
-  void registerContentScript(isWorker);
+  await registerContentScript(isWorker);
 
   if (!pageType.isIframe()) {
     void periods.advertisePeriods();

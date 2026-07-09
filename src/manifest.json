@@ -53,7 +53,7 @@
         "https://www.amazon.sa/*"
       ],
       "css": [
-        "jquery.dataTables.min.css",
+        "dataTables.dataTables.min.css",
         "datatables_override.css",
         "inject.css"
       ],

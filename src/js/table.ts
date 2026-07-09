@@ -1,7 +1,6 @@
 /* Copyright(c) 2016-2024 Philip Mulcahy. */
 
 import $ from 'jquery';
-import 'datatables';
 import * as azad_entity from './entity';
 import * as azad_order from './order';
 import * as banner from './banner';
