@@ -303,3 +303,37 @@ export function arrayEquals<T>(a: T[], b: T[]) {
     a.length === b.length &&
     a.every((val, index) => val === b[index]);
 }
+
+/**
+ * Safely convert any caught exception into a useful, human-readable string.
+ * Capture messages, stack traces, objects, and primitives gracefully.
+ */
+export function stringifyError(ex: unknown): string {
+  if (ex === null) return 'null';
+  if (ex === undefined) return 'undefined';
+
+  // 1. Handle native or custom Error objects
+  if (ex instanceof Error) {
+    // If a stack trace exists, it usually contains the message + the stack.
+    // Otherwise, fall back to just the message.
+    return ex.stack || ex.message || String(ex);
+  }
+
+  // 2. Handle plain strings (avoids JSON.stringify's extra literal quotes)
+  if (typeof ex === 'string') {
+    return ex;
+  }
+
+  // 3. Handle numbers, booleans, symbols, etc.
+  if (typeof ex !== 'object') {
+    return String(ex);
+  }
+
+  // 4. Handle plain objects or arrays thrown by accident
+  try {
+    return JSON.stringify(ex);
+  } catch {
+    // If the object has a circular reference and JSON.stringify blows up.
+    return `[Unserializable Object: ${Object.prototype.toString.call(ex)}]`;
+  }
+}
