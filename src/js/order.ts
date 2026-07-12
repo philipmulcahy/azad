@@ -181,7 +181,16 @@ class Order implements IOrder{
       'order.payments resolution',
       [
         async () => util.defaulted(await this.impl.payments_promise, []),
-        async () => (await this.impl.detail_promise!).details.payments,
+        async () => {
+          try {
+            return (await this.impl.detail_promise!).details.payments
+          } catch (ex) {
+            console.warn(
+              'Couldn\'t get payments in second strategy because', ex);
+
+            throw(ex);
+          }
+        },
       ],
       [],
     );
@@ -297,7 +306,7 @@ export async function getOrdersByRange(
       const orderss = await util.get_settled_and_discard_rejects(order_years);
       return orderss;
     } catch (ex) {
-      console.error('failed to get order_years');
+      console.error('failed to get order_years', ex);
       return [[]];
     }
   }();
@@ -450,19 +459,55 @@ export async function assembleDiagnostics(
       getScheduler,
     )),
 
-    makeLookup('detail_html', () => single_fetch.checkedStaticFetch(
-      util.defaulted(sync_order.detail_url, '')
-    ).then((response: Response) => response.text())),
+    makeLookup(
+      'detail_html',
+      async () => {
+        try {
+          const response = await single_fetch.checkedStaticFetch(
+            util.defaulted(sync_order.detail_url, '')
+          );
 
-    makeLookup('detail_html_cooked',  () => iframeWorker.fetchURL(
-      sync_order.detail_url,
-      '',  // empty xpath: wait for the timeout to expire, but then succeed.
-      'assembleDiagnostics detail_html_cooked',
-    ).then(response => response.html)),
+          return response.text();
+        } catch (ex) {
+          console.warn(util.stringifyError(ex));
+          throw ex;
+        }
+      }
+    ),
 
-    makeLookup('invoice_html', () => single_fetch.checkedStaticFetch(
-      util.defaulted(sync_order.payments_url, '')
-    ).then((response: Response) => response.text())),
+    makeLookup(
+      'detail_html_cooked',
+      async () => {
+        try {
+          const response = await iframeWorker.fetchURL(
+            sync_order.detail_url,
+            '',  // empty xpath: wait for the timeout to expire, but then succeed.
+            'assembleDiagnostics detail_html_cooked',
+          );
+
+          return response.html;
+        } catch (ex) {
+          console.warn(util.stringifyError(ex));
+          throw ex;
+        }
+      }
+    ),
+
+    makeLookup(
+      'invoice_html',
+      async () => {
+        try {
+          const response = await single_fetch.checkedStaticFetch(
+            util.defaulted(sync_order.payments_url, '')
+          );
+
+          return response.text();
+        } catch (ex) {
+          console.warn(util.stringifyError(ex));
+          throw ex;
+        }
+      },
+    ),
   ];
 
   const diagnostics: Record<string, unknown> = {};
