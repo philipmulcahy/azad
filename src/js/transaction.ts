@@ -8,6 +8,7 @@ import * as strategy from './strategy';
 import * as transaction0 from './transaction0';
 import * as transaction1 from './transaction1';
 import * as transaction2 from './transaction2';
+import * as util from './util';
 
 // Cleanly cast the untyped third-party module import to a structural signature
 const lzjs = lzjsImport as unknown as {
@@ -31,11 +32,11 @@ type TransactionKey = keyof Transaction;
 
 export function getTransactionKeys(): TransactionKey[] {
   return [
-      'date',
-      'cardInfo',
-      'orderIds',
-      'amount',
-      'vendor'
+    'date',
+    'cardInfo',
+    'orderIds',
+    'amount',
+    'vendor'
   ];
 }
 
@@ -106,7 +107,7 @@ export function extractPageOfTransactions(
 
     // More is better unless it's just too much.
     transactions => transactions.length < 1000 ? transactions.length : -1,
-  
+
     [],
   );
 }
@@ -185,9 +186,9 @@ async function extractAllTransactionsWithNextButton(
 
   let shouldContinue = true;
 
-  while(shouldContinue) {
+  while (shouldContinue) {
     if (port) {
-      port.postMessage({action: 'keepalive'});
+      port.postMessage({ action: 'keepalive' });
       updateStatistics();
     }
 
@@ -201,9 +202,9 @@ async function extractAllTransactionsWithNextButton(
     allKnownTransactions = mergeTransactions(page, allKnownTransactions);
     const nextButton = findUsableNextButton();
     const nextButtonFound = nextButton !== undefined;
-    console.debug(`next page button ${nextButtonFound ? '': 'not '}found`);
+    console.debug(`next page button ${nextButtonFound ? '' : 'not '}found`);
     const overlappedWithCache = minNewTimestamp < maxCachedTimestamp
-                              && allKnownTransactions.length > 0;
+      && allKnownTransactions.length > 0;
 
     if (overlappedWithCache) {
       console.debug(
@@ -240,7 +241,7 @@ async function extractAllTransactionsWithNextButton(
         'finding transaction elements'
       ) as HTMLInputElement;
       return buttonInputElem ?? undefined;
-    } catch(_) {
+    } catch (_) {
       return undefined;
     }
   }
@@ -333,13 +334,13 @@ async function extractAllTransactionsWithScrolling(
     // overlapp (chronologically) with the transactions we got from the
     // extension's cache if this function returns true. If it returns false
     // then we should continue scraping.
-    overlapped: function(): boolean {
+    overlapped: function (): boolean {
       return page.map(t => t.date.getTime())
-                 .some(d => d < maxCachedTimestamp);
+        .some(d => d < maxCachedTimestamp);
     },
 
     // Has scrolling stopped giving us more transactions?
-    theWellIsDry: function(): boolean {
+    theWellIsDry: function (): boolean {
       if (counts.length <= 1) {
         return false;  // We don't know, because we've not tried hard enough yet.
       }
@@ -347,11 +348,11 @@ async function extractAllTransactionsWithScrolling(
       return counts.at(-1) == counts.at(-3);  // compare last with third last.
     },
 
-    tooManyScrolls: function(): boolean {
+    tooManyScrolls: function (): boolean {
       return counts.length >= 25;
     },
 
-    commandScroll: function(): void {
+    commandScroll: function (): void {
       console.log('scrolling down by one page');
       const elem = helpers.findScrollableElem();
 
@@ -362,7 +363,7 @@ async function extractAllTransactionsWithScrolling(
       }
     },
 
-    findScrollableElem: function(): HTMLElement | undefined {
+    findScrollableElem: function (): HTMLElement | undefined {
       return (
         [...document.querySelectorAll(
           'a[data-testid="transaction-link"]'
@@ -370,7 +371,7 @@ async function extractAllTransactionsWithScrolling(
       ) ?? undefined;
     },
 
-    getTransactionsFromPage: async function(): Promise<Transaction[]> {
+    getTransactionsFromPage: async function (): Promise<Transaction[]> {
       let elapsedMillis: number = 0;
       const DEADLINE_MILLIS = 10 * 1000;
       const INCREMENT_MILLIS = 1000;
@@ -397,7 +398,7 @@ async function extractAllTransactionsWithScrolling(
       return [];
     },
 
-    updateStatistics: function(): void {
+    updateStatistics: function (): void {
       try {
         statistics.set(stats.OStatsKey.PAGE_COUNT, counts.length);
         statistics.set(stats.OStatsKey.COMPLETED_COUNT, page.length);
@@ -427,9 +428,9 @@ async function extractAllTransactionsWithScrolling(
     },
   };
 
-  while(helpers.scrollLoopShouldContinue()) {
+  while (helpers.scrollLoopShouldContinue()) {
     if (port) {
-      port.postMessage({action: 'keepalive'});
+      port.postMessage({ action: 'keepalive' });
       helpers.updateStatistics();
     }
 
@@ -448,8 +449,10 @@ async function extractAllTransactionsWithScrolling(
         `latest scrape: min timestamp ${oldestDateInLatestScrape}, ` +
         `max timestamp ${youngestDateInLatestScrape}`
       );
-    } catch (_) {
-      /* ignore date-logging errors */
+    } catch (ex) {
+      const exs = util.stringifyError(ex);
+      const msg = `scrollLoop caught (and ignored): ${exs}`;
+      console.warn(msg);
     }
 
     page = mergeTransactions(page, latestScrape);
@@ -496,7 +499,7 @@ function putTransactionsInCache(ts: Transaction[]) {
 function restoreDateObjects(
   ts: Transaction[]
 ): Transaction[] {
-  return ts.map( t => {
+  return ts.map(t => {
     const copy = JSON.parse(JSON.stringify(t));
     copy.date = new Date(copy.date);
     return copy;

@@ -73,22 +73,48 @@ export function registerCacheListenerInBackgroundPage() {
       const store = CreateRealStore();
       switch(request.action) {
         case 'azad-cache-get':
-          store.get(request.key).then( value => {
-            responseCallback(value);
-            console.debug(
-              'azad-cache-get responding to', request.key, 'with', value);
-          });
+          store.get(request.key).then(
+            value => {
+              responseCallback(value);
+              console.debug(
+                'azad-cache-get responding to', request.key, 'with', value);
+            },
+            err => {
+              const errs = util.stringifyError(err);
+              const msg = `while handling azad-cache-get we caught: ${err}`;
+              console.debug(msg);
+            }
+          );
           break;
         case 'azad-cache-getkeys':
-          store.keys().then( keys => responseCallback(keys) );
+          store.keys().then(
+            keys => responseCallback(keys),
+            err => {
+              const errs = util.stringifyError(err);
+              const msg = `while handling azad-cache-getkeys we caught: ${err}`;
+              console.debug(msg);
+            },
+          );
           break;
         case 'azad-cache-set':
-          store.set(request.key, request.value)
-               .then( response => responseCallback(response) );
+          store.set(request.key, request.value).then(
+            response => responseCallback(response),
+            err => {
+              const errs = util.stringifyError(err);
+              const msg = `while handling azad-cache-set we caught: ${err}`;
+              console.debug(msg);
+            },
+          );
           break;
         case 'azad-cache-remove':
-          store.remove(request.key)
-               .then( response => responseCallback(response) );
+          store.remove(request.key).then(
+            response => responseCallback(response),
+            err => {
+              const errs = util.stringifyError(err);
+              const msg = `while handling azad-cache-remove we caught: ${err}`;
+              console.debug(msg);
+            },
+          );
           break;
         default:
           console.debug('ignoring action:', request.action);

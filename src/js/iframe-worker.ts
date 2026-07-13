@@ -75,6 +75,7 @@ import * as extraction from './extraction';
 import * as pageType from './page_type';
 import * as ports from './ports';
 import * as transaction from './transaction';
+import * as util from './util';
 import { v4 as uuidv4 } from 'uuid';
 
 const IFRAME_CLASS = 'azad-iframe-worker';
@@ -132,8 +133,8 @@ export function createIframe(
   container.setAttribute('class', IFRAME_CONTAINER_CLASS);
   getIframeContainer().appendChild(container);
 
-  const appendChild = function(
-    parent: Node, type: string, cls: string, text: string|null
+  const appendChild = function (
+    parent: Node, type: string, cls: string, text: string | null
   ): HTMLElement {
     const child = document.createElement(type);
     child.setAttribute('class', cls);
@@ -176,7 +177,7 @@ export function createIframe(
 
 // (4) Called from iframe worker to background
 export async function requestInstructions(
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>
+  getBackgroundPort: () => Promise<chrome.runtime.Port | null>
 ): Promise<void> {
   const guid = window.name;
   const port = await getBackgroundPort();
@@ -206,7 +207,7 @@ export function removeIframeWorker(guid: string): void {
 
   const candidates: HTMLCollectionOf<Element>
     = document.getElementsByClassName(IFRAME_CLASS);
-  
+
   if (Object.prototype.hasOwnProperty.call(candidates, guid)) {
     const iframe = candidates?.namedItem(guid) as HTMLIFrameElement;
     const container = iframe.parentNode as HTMLDivElement;
@@ -431,7 +432,7 @@ export async function waitForXPathToMatch(
   const backgroundPort = await ports.getBackgroundPort();
 
   function sendKeepAlive() {
-    backgroundPort?.postMessage({action: 'keepalive'});
+    backgroundPort?.postMessage({ action: 'keepalive' });
   }
 
   function matched(): boolean {
@@ -450,7 +451,10 @@ export async function waitForXPathToMatch(
         console.log(`waitForXpathToMatch matched ${url} ${xpath}`);
         return true;
       }
-    } catch (_ex) {
+    } catch (ex) {
+      const exs = util.stringifyError(ex);
+      const msg = `waitForXPathToMatch - match - findSingleNodeValue threw: ${exs}`;
+      console.debug(msg);
       // Do nothing: I should not have had findSingleNodeValue throw when it
       // doesn't find stuff.
     }
@@ -473,7 +477,7 @@ export async function waitForXPathToMatch(
 
   // One last time after the timer has expired, because there's no guarantee
   // that we've tested even once so far.
-  if (matched() || xpath == '' ) {
+  if (matched() || xpath == '') {
     sendKeepAlive();
     return true;
   }
@@ -497,8 +501,8 @@ async function getBakedHtml(
   completionXPath: string,
 ): Promise<string> {
   if (document.URL != url) {
-    const msg = 
-      'fetch_url instructions to this iframe expected url: ' +  url +
+    const msg =
+      'fetch_url instructions to this iframe expected url: ' + url +
       'but it is actually: ' + document.URL;
 
     console.error(msg);

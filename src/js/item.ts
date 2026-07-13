@@ -57,7 +57,7 @@ export function extractItems(
   ];
 
   const strategies = bareStrategies.map(
-    s => () => s(order_elem, order_header, context + ';extractItems') );
+    s => () => s(order_elem, order_header, context + ';extractItems'));
 
   const items = strategy.firstMatchingStrategy(
     'extractItems', strategies, []);
@@ -78,7 +78,7 @@ async function categoriseItems(
     if (!show_category_in_items_view) {
       return items;
     }
-  } catch(ex) {
+  } catch (ex) {
     console.log(
       'categoriseItems caught', ex,
       'when looking at settings: maybe we are doing regression testing?');
@@ -86,13 +86,16 @@ async function categoriseItems(
 
   const completions: Promise<void>[] = [];
 
-  items.forEach(async function(item: IItem) {
+  items.forEach(async function (item: IItem) {
     const category_promise = getCategoryForProduct(item.url, scheduler);
-    completions.push(category_promise.then(_ => {}));
+    completions.push(category_promise.then(_ => { }));
 
     try {
       item.category = await category_promise;
-    } catch (_) {
+    } catch (ex) {
+      const exs = util.stringifyError(ex);
+      const msg = `categorizeItems caught: ${exs}`;
+      console.debug(msg);
       // We don't care;
     }
   });
@@ -110,11 +113,11 @@ function getCategoryForProduct(
     'getCategoryForProduct',
     (evt) => {
       const productPage = util.parseStringToDOM(evt.target.responseText)
-                              .documentElement;
+        .documentElement;
 
       const raw = extraction.by_regex(
         'item_category',
-        [ '//*[@id="wayfinding-breadcrumbs_feature_div"]//ul', ],
+        ['//*[@id="wayfinding-breadcrumbs_feature_div"]//ul',],
         null,
         '',
         productPage,
@@ -137,15 +140,15 @@ function strategy0(
   context: string
 ): IItem[] {
   const item_xpath = './/div[' +
-  'contains(@class, "fixed-left-grid-inner") and ' +
+    'contains(@class, "fixed-left-grid-inner") and ' +
     './/a[contains(@href, "/gp/product/")] and ' +
-  './/*[contains(@class, "price")]' +
-  ']';
+    './/*[contains(@class, "price")]' +
+    ']';
   const itemElems: Node[] = extraction.findMultipleNodeValues(
     item_xpath,
     order_elem
   );
-  const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
+  const items: IItem[] = <IItem[]>itemElems.map(itemElem => {
     const link = <HTMLElement>extraction.findSingleNodeValue(
       './/a[@class="a-link-normal" and contains(@href, "/gp/product/") and not(img)]',
       <HTMLElement>itemElem,
@@ -165,7 +168,7 @@ function strategy0(
           '1'
         ).trim()
       );
-    } catch(ex) {
+    } catch (ex) {
       qty = 1;
       if (!String(ex).includes('match')) {
         console.log(ex);
@@ -179,7 +182,7 @@ function strategy0(
         context,
       );
       price = util.defaulted(priceElem.textContent, '').trim();
-    } catch(ex) {
+    } catch (ex) {
       console.warn('could not find price for: ' + description);
     }
     const asin = extract_asin_from_url(url);
@@ -206,7 +209,7 @@ function strategy1(
     '//*[contains(text(), "Ordered") or contains(text(), "Commandé")]/parent::*/parent::*/parent::*',
     order_elem
   );
-  const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
+  const items: IItem[] = <IItem[]>itemElems.map(itemElem => {
     const link = <HTMLElement>extraction.findSingleNodeValue(
       './/a[contains(@href, "/dp/")]',
       <HTMLElement>itemElem,
@@ -254,7 +257,7 @@ function strategy2(
     '//div[contains(@id, "orderDetails")]//a[contains(@href, "/product/")]/parent::*',
     order_elem
   );
-  const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
+  const items: IItem[] = <IItem[]>itemElems.map(itemElem => {
     const link = <HTMLElement>extraction.findSingleNodeValue(
       './/a[contains(@href, "/product/")]',
       <HTMLElement>itemElem,
@@ -286,7 +289,7 @@ function strategy2(
       category: '',
     };
   });
-  return items.filter( item => item.description != '' );
+  return items.filter(item => item.description != '');
 }
 
 // This strategy works for Amazon.com grocery orders in 2021.
@@ -299,7 +302,7 @@ function strategy3(
     '//div[contains(@class, "a-section")]//span[contains(@id, "item-total-price")]/parent::div/parent::div/parent::div',
     order_elem
   );
-  const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
+  const items: IItem[] = <IItem[]>itemElems.map(itemElem => {
     const link = <HTMLElement>extraction.findSingleNodeValue(
       './/a[contains(@class, "a-link-normal") and contains(@href, "/product/")]',
       <HTMLElement>itemElem,
@@ -317,7 +320,7 @@ function strategy3(
         context,
       );
       price = util.defaulted(priceElem.textContent, '').trim();
-    } catch(ex) {
+    } catch (ex) {
       console.warn('could not find price for: ' + description);
     }
     const asin = extract_asin_from_url(url);
@@ -346,7 +349,7 @@ function strategy4(
     item_xpath,
     order_elem
   );
-  const items: IItem[] = <IItem[]>itemElems.map( itemElem => {
+  const items: IItem[] = <IItem[]>itemElems.map(itemElem => {
     const link = <HTMLElement>extraction.findSingleNodeValue(
       './/div[@data-component="itemTitle"]//a',
       <HTMLElement>itemElem,
@@ -366,7 +369,7 @@ function strategy4(
           '1'
         ).trim()
       );
-    } catch(ex) {
+    } catch (ex) {
       qty = 1;
       if (!String(ex).includes('match')) {
         console.log(ex);
@@ -380,7 +383,7 @@ function strategy4(
         context,
       );
       price = util.defaulted(priceElem.textContent, '').trim();
-    } catch(ex) {
+    } catch (ex) {
       console.warn('could not find price for: ' + description);
     }
     const asin = extract_asin_from_url(url);
@@ -436,7 +439,7 @@ function strategy5(
   const _seller = lines[1];
   const quantity = +(lines[2]!);
   const price = itemCells[1]?.textContent?.trim();
-  const url =  urls.normalizeUrl(
+  const url = urls.normalizeUrl(
     `/gp/digital/your-account/order-summary.html?orderID=${order_header.id}`,
     urls.getSite()
   );

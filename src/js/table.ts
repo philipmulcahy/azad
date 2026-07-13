@@ -286,7 +286,12 @@ async function reallyDisplay(
 
   orders.forEach( order => {
     order.id().then(
-      id => { order_map[id] = order; }
+      id => { order_map[id] = order; },
+      err => {
+        const errs = util.stringifyError(err);
+        const msg = `reallyDisplay caught ${errs} while reading id`;
+        console.debug(msg);
+      },
     );
   });
 
