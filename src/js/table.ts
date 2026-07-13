@@ -286,7 +286,12 @@ async function reallyDisplay(
 
   orders.forEach( order => {
     order.id().then(
-      id => { order_map[id] = order; }
+      id => { order_map[id] = order; },
+      err => {
+        const errs = util.stringifyError(err);
+        const msg = `reallyDisplay caught ${errs} while reading id`;
+        console.debug(msg);
+      },
     );
   });
 
@@ -528,10 +533,11 @@ export function dumpOrderDiagnostics(
       file_name
     )
   ).then(
-    () => notice.showNotificationBar(
-      'Debug file ' + file_name + ' saved.',
-      document
-    ),
+    () => {
+      const msg = 'Debug file ' + file_name + ' saved.';
+      console.log(msg);
+      notice.showNotificationBar(msg, document);
+    },
     err => {
       const msg = 'Failed to create debug file: ' + file_name +
         ' ' + err;

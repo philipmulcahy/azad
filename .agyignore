@@ -1,0 +1,6 @@
+/build
+/build-node
+/dev-lib
+/node_modules
+/.DS_Store
+/.git

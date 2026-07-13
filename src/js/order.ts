@@ -181,7 +181,16 @@ class Order implements IOrder{
       'order.payments resolution',
       [
         async () => util.defaulted(await this.impl.payments_promise, []),
-        async () => (await this.impl.detail_promise!).details.payments,
+        async () => {
+          try {
+            return (await this.impl.detail_promise!).details.payments
+          } catch (ex) {
+            console.warn(
+              'Couldn\'t get payments in second strategy because', ex);
+
+            throw(ex);
+          }
+        },
       ],
       [],
     );
@@ -297,7 +306,7 @@ export async function getOrdersByRange(
       const orderss = await util.get_settled_and_discard_rejects(order_years);
       return orderss;
     } catch (ex) {
-      console.error('failed to get order_years');
+      console.error('failed to get order_years', ex);
       return [[]];
     }
   }();
@@ -355,10 +364,17 @@ export async function assembleDiagnostics(
       .filter(url => url != '' && url != null)
       .map(
         async url => {
-          const response = await single_fetch.checkedStaticFetch(url);
-          const html = await response.text();
-          data[url] = html;
-          return;
+          try {
+            const response = await single_fetch.checkedStaticFetch(url);
+            const html = await response.text();
+            data[url] = html;
+            return;
+          } catch (ex) {
+            const exs = util.stringifyError(ex);
+            const msg = 'Encountered error while fetching ' + url + ': ' + exs;
+            console.warn(msg);
+            problems.push(msg);
+          }
         }
       );
 
@@ -384,10 +400,23 @@ export async function assembleDiagnostics(
 
   function makeLookup(
     key: string,
-    promise: Promise<string | Record<string, string>>
+    getPromise: () => Promise<string | Record<string, string>>
   ): Lookup {
-    const wrappedPromise = timeout.wrapPromise(promise, 60_000);
-    return {key, promise: wrappedPromise};
+    try {
+      const promise = getPromise();
+      const wrappedPromise = timeout.wrapPromise(promise, 60_000);
+      return {key, promise: wrappedPromise};
+    } catch (ex) {
+      const exs = util.stringifyError(ex);
+      console.warn(`makeLookup failed to wrap promise for ${key}: ${exs}`);
+
+      return {
+        key,
+        promise: Promise.resolve(
+          `makeLookup failure: ${exs}`
+        )
+      };
+    }
   }
 
   function doLookup(key: keyof ISyncOrder): Lookup {
@@ -396,14 +425,14 @@ export async function assembleDiagnostics(
 
       return makeLookup(
         key,
-        Promise.resolve(value as string | Record<string, string>)
+        () => Promise.resolve(value as string | Record<string, string>)
       );
     } catch(ex) {
-      const exStr = JSON.stringify(ex);
+      const exStr = util.stringifyError(ex);
       const msg = 'Failed while capturing ' + key + ': ' + exStr;
       console.warn(msg);
-      problems.push(msg.toString());
-      return makeLookup(key, Promise.resolve(''));
+      problems.push(msg);
+      return makeLookup(key, () => Promise.resolve(''));
     }
   }
 
@@ -415,11 +444,11 @@ export async function assembleDiagnostics(
     doLookup('date'),
     doLookup('total'),
     doLookup('who'),
-    makeLookup('items', get_legacy_items(order)),
-    makeLookup('item_data', get_item_data(sync_order)),
-    makeLookup('tracking_data', get_tracking_data(sync_order)),
+    makeLookup('items', () => get_legacy_items(order)),
+    makeLookup('item_data', () => get_item_data(sync_order)),
+    makeLookup('tracking_data', () => get_tracking_data(sync_order)),
 
-    makeLookup('list_html', single_fetch.checkedDynamicFetch(
+    makeLookup('list_html', () => single_fetch.checkedDynamicFetch(
       util.defaulted(sync_order.list_url, ''),  // url
       'orderListHtmlForDebug',
 
@@ -430,19 +459,55 @@ export async function assembleDiagnostics(
       getScheduler,
     )),
 
-    makeLookup('detail_html', single_fetch.checkedStaticFetch(
-      util.defaulted(sync_order.detail_url, '')
-    ).then((response: Response) => response.text())),
+    makeLookup(
+      'detail_html',
+      async () => {
+        try {
+          const response = await single_fetch.checkedStaticFetch(
+            util.defaulted(sync_order.detail_url, '')
+          );
 
-    makeLookup('detail_html_cooked',  iframeWorker.fetchURL(
-      sync_order.detail_url,
-      '',  // empty xpath: wait for the timeout to expire, but then succeed.
-      'assembleDiagnostics detail_html_cooked',
-    ).then(response => response.html)),
+          return response.text();
+        } catch (ex) {
+          console.warn(util.stringifyError(ex));
+          throw ex;
+        }
+      }
+    ),
 
-    makeLookup('invoice_html', single_fetch.checkedStaticFetch(
-      util.defaulted(sync_order.payments_url, '')
-    ).then((response: Response) => response.text())),
+    makeLookup(
+      'detail_html_cooked',
+      async () => {
+        try {
+          const response = await iframeWorker.fetchURL(
+            sync_order.detail_url,
+            '',  // empty xpath: wait for the timeout to expire, but then succeed.
+            'assembleDiagnostics detail_html_cooked',
+          );
+
+          return response.html;
+        } catch (ex) {
+          console.warn(util.stringifyError(ex));
+          throw ex;
+        }
+      }
+    ),
+
+    makeLookup(
+      'invoice_html',
+      async () => {
+        try {
+          const response = await single_fetch.checkedStaticFetch(
+            util.defaulted(sync_order.payments_url, '')
+          );
+
+          return response.text();
+        } catch (ex) {
+          console.warn(util.stringifyError(ex));
+          throw ex;
+        }
+      },
+    ),
   ];
 
   const diagnostics: Record<string, unknown> = {};
@@ -454,7 +519,7 @@ export async function assembleDiagnostics(
       diagnostics[key] = value;
     } catch (ex) {
       diagnostics[key] = '?';
-      const errStr = typeof(ex) === 'string' ? ex : (ex as Error).message;
+      const errStr = util.stringifyError(ex);
       problems.push(key + ': ' + errStr);
     }
   }

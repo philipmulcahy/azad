@@ -23,8 +23,10 @@ SHIPMENT_COUNT=$( \
     ${JSON_FILE} \
 )
 
-for idx in $(seq ${SHIPMENT_COUNT}); do
-  zero_idx=$(($idx - 1))
-  jq -r "nth(${zero_idx}; .tracking_data | .[])" ${JSON_FILE} \
-    > "shipment_${zero_idx}.html"
-done
+if [ "$SHIPMENT_COUNT" -gt 0 ]; then
+  for idx in $(seq ${SHIPMENT_COUNT}); do
+    zero_idx=$(($idx - 1))
+    jq -r "nth(${zero_idx}; .tracking_data | .[])" ${JSON_FILE} \
+      > "shipment_${zero_idx}.html"
+  done
+fi
