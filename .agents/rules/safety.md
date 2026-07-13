@@ -1,0 +1,1 @@
+No writing or executing anything, anywhere without explicit permission.
