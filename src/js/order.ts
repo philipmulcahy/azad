@@ -183,7 +183,7 @@ class Order implements IOrder{
         async () => util.defaulted(await this.impl.payments_promise, []),
         async () => {
           try {
-            return (await this.impl.detail_promise!).details.payments
+            return (await this.impl.detail_promise!).details.payments;
           } catch (ex) {
             console.warn(
               'Couldn\'t get payments in second strategy because', ex);
@@ -519,7 +519,22 @@ export async function assembleDiagnostics(
       diagnostics[key] = value;
     } catch (ex) {
       diagnostics[key] = '?';
-      const errStr = util.stringifyError(ex);
+      let errStr = util.stringifyError(ex);
+      if (key === 'detail_html_cooked') {
+        const url = sync_order.detail_url;
+        const iframe = Array.from(document.querySelectorAll('iframe.azad-iframe-worker'))
+          .find(i => (i as HTMLIFrameElement).src.includes(url)) as HTMLIFrameElement | undefined;
+        if (iframe) {
+          try {
+            const currentUrl = iframe.contentWindow?.location.href;
+            errStr += ` (iframe URL: ${currentUrl})`;
+          } catch (secEx) {
+            errStr += ` (iframe redirected cross-origin or access blocked: ${util.stringifyError(secEx)})`;
+          }
+        } else {
+          errStr += ' (iframe not found in DOM)';
+        }
+      }
       problems.push(key + ': ' + errStr);
     }
   }
