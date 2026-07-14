@@ -81,7 +81,7 @@ export function registerCacheListenerInBackgroundPage() {
             },
             err => {
               const errs = util.stringifyError(err);
-              const msg = `while handling azad-cache-get we caught: ${err}`;
+              const msg = `while handling azad-cache-get we caught: ${errs}`;
               console.debug(msg);
             }
           );
@@ -91,7 +91,7 @@ export function registerCacheListenerInBackgroundPage() {
             keys => responseCallback(keys),
             err => {
               const errs = util.stringifyError(err);
-              const msg = `while handling azad-cache-getkeys we caught: ${err}`;
+              const msg = `while handling azad-cache-getkeys we caught: ${errs}`;
               console.debug(msg);
             },
           );
@@ -101,7 +101,7 @@ export function registerCacheListenerInBackgroundPage() {
             response => responseCallback(response),
             err => {
               const errs = util.stringifyError(err);
-              const msg = `while handling azad-cache-set we caught: ${err}`;
+              const msg = `while handling azad-cache-set we caught: ${errs}`;
               console.debug(msg);
             },
           );
@@ -111,7 +111,7 @@ export function registerCacheListenerInBackgroundPage() {
             response => responseCallback(response),
             err => {
               const errs = util.stringifyError(err);
-              const msg = `while handling azad-cache-remove we caught: ${err}`;
+              const msg = `while handling azad-cache-remove we caught: ${errs}`;
               console.debug(msg);
             },
           );
