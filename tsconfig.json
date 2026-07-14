@@ -13,5 +13,14 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "target": "ES2020"
-  }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "build",
+    "build-node",
+    "tmp"
+  ]
 }
