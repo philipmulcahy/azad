@@ -17,6 +17,7 @@ import * as strategy from './strategy';
 import * as timeout from './timeout';
 import * as urls from './url';
 import * as util from './util';
+import * as git_hash from '../generated/git_hash';
 
 export interface IOrder extends azad_entity.IEntity {
   id(): Promise<string>;
@@ -541,6 +542,15 @@ export async function assembleDiagnostics(
 
   getScheduler().abort();
   diagnostics['problems'] = problems;
+
+  diagnostics['meta'] = {
+    version: (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest)
+      ? chrome.runtime.getManifest().version
+      : 'unknown',
+    git_hash: git_hash.hash(),
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+    timestamp: new Date().toISOString(),
+  };
   return diagnostics;
 }
 
