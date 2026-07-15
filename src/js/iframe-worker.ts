@@ -417,11 +417,12 @@ function removeIframeContainerIfPresentAndEmpty(): void {
  * Repeatedly polls the document to see if xpath matches.
  * If it doesn't match for long enough, the function times out + returns false.
  * If it matches, it immediately returns true.
+ * @param doc - the doc we're observing.
  * @param xpath - xpath string to attempt matching. If empty then match after
- * timing out.
+ *                timing out.
  * @returns boolean: true for matched, false for timed out.
  */
-export async function waitForXPathToMatch(
+async function waitForXPathToMatch(
   doc: HTMLDocument,
   xpath: string,
 ): Promise<boolean> {
