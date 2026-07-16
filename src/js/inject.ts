@@ -246,6 +246,7 @@ async function initialiseContentScript(): Promise<void> {
   await registerContentScript(isWorker);
 
   if (!pageType.isIframe()) {
+    document.documentElement.setAttribute('data-azad-extension-id', chrome.runtime.id);
     void periods.advertisePeriods();
   }
 }
