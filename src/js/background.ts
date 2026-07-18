@@ -162,13 +162,14 @@ export async function sendToOneContentPage(msg: BackgroundMessage) {
 
   if (target) {
     try {
+      console.log(`AZAD_DIAGNOSTICS: sendToOneContentPage sending to target port`);
       target.postMessage(msg);
     } catch (ex) {
       console.warn(
         'sendToOneContentPage caught', ex, 'when trying to post msg');
     }
   } else {
-    console.log('no appropriate content page message port found');
+    console.warn(`AZAD_DIAGNOSTICS: sendToOneContentPage failed! no appropriate content page message port found. Current content_ports keys: ${Object.keys(content_ports).join(', ')}`);
   }
 }
 

@@ -90,6 +90,10 @@ function connectToBackground() {
   // @ts-expect-error: tsc objects to null first parameter for connect();
   background_port = chrome.runtime.connect(null, { name: 'azad_control' });
 
+  background_port.onDisconnect.addListener(() => {
+    console.warn('AZAD_DIAGNOSTICS: control.ts background_port disconnected');
+  });
+
   background_port.onMessage.addListener( (msg: BackgroundMessage) => {
     switch(msg.action) {
       case 'statistics_update':
