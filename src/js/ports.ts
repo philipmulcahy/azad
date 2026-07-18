@@ -3,6 +3,14 @@
 import * as pageType from './page_type';
 
 let background_port: chrome.runtime.Port | null = null;
+const messageListeners: ((msg: unknown) => void)[] = [];
+
+export function addMessageListener(listener: (msg: unknown) => void): void {
+  messageListeners.push(listener);
+  if (background_port) {
+    background_port.onMessage.addListener(listener);
+  }
+}
 
 async function initialiseBackgroundPort(): Promise<void> {
   const isWorker = pageType.isWorker();
@@ -17,7 +25,12 @@ async function initialiseBackgroundPort(): Promise<void> {
   const portUID: string = new Date().getUTCMilliseconds().toString();
   const pgType = pageType.getPageType();
   const portName = `${pgType}:${portUID}`;
+  console.log(`AZAD_DIAGNOSTICS: initialiseBackgroundPort creating new port ${portName}`);
   background_port = chrome.runtime.connect({name: portName});
+
+  for (const listener of messageListeners) {
+    background_port.onMessage.addListener(listener);
+  }
 
   function sendOneKeepalive() {
     background_port?.postMessage({action: 'keepalive'});
@@ -26,7 +39,7 @@ async function initialiseBackgroundPort(): Promise<void> {
   const keepaliveIntervalId = setInterval(sendOneKeepalive, 10_000);
 
   background_port.onDisconnect.addListener( _port => {
-    console.log(`background port disconnected ${pgType} ${portName}}`);
+    console.warn(`AZAD_DIAGNOSTICS: background port disconnected ${pgType} ${portName}`);
     clearInterval(keepaliveIntervalId);
     background_port = null;
   });

@@ -273,7 +273,7 @@ export function fetchURL(
         return;
       }
 
-      port.onMessage.addListener((msg: unknown) => {
+      ports.addMessageListener((msg: unknown) => {
         const response = msg as FetchUrlResponseWithGuid;
         if (response.action != 'fetch_url_response') {
           return;

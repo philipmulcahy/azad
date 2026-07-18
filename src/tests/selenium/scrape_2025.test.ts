@@ -25,7 +25,7 @@ describe('Amazon Order History Reporter E2E Scrape', () => {
     await driver.get(orderHistoryUrl);
 
     // Dynamic login helper: If sign-in is required, wait for user to complete it
-    let currentUrl = await driver.getCurrentUrl();
+    const currentUrl = await driver.getCurrentUrl();
     if (currentUrl.includes('signin') || currentUrl.includes('/ap/')) {
       console.log('============================================================');
       console.log('WARNING: Amazon sign-in required.');

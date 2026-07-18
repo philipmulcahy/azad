@@ -125,20 +125,20 @@ async function fetchAndShowOrdersByRange(
 
 async function registerContentScript(isIframeWorker: boolean) {
   const pgType = pageType.getPageType();
+
+  ports.addMessageListener(
+    msg => {
+      try {
+        handleMessageFromBackground(pgType, msg as Record<string, unknown>);
+      } catch (ex) {
+        console.error(`msg handler caught ${ex} while processing ${JSON.stringify(msg)}`);
+      }
+    }
+  );
+
   const bg_port = await ports.getBackgroundPort();
 
   if (bg_port) {
-    bg_port.onMessage.addListener(
-      msg => {
-        try {
-          handleMessageFromBackground(pgType, msg as Record<string, unknown>);
-        } catch (ex) {
-          console.error(`msg handler caught ${ex} while processing ${JSON.stringify(msg)}`
-          );
-        }
-      }
-    );
-
     if (isIframeWorker) {
       void iframeWorker.requestInstructions(ports.getBackgroundPort);
     }
@@ -146,7 +146,7 @@ async function registerContentScript(isIframeWorker: boolean) {
     console.warn('no background port in registerContentScript()');
   }
 
-  console.log('script registered');
+  console.log('AZAD_DIAGNOSTICS: inject.ts script registered with background port');
 }
 
 function handleMessageFromBackground(pageType: string, msg: Record<string, unknown>): void {
