@@ -88,11 +88,13 @@ describe('Amazon Order History Reporter E2E Scrape', () => {
         await yearButton.click();
         return true;
       } catch (err) {
-        if (
-          err.name === 'StaleElementReferenceError' ||
-          err.name === 'NoSuchElementError'
-        ) {
-          return false; // Retry in next iteration
+        if (err instanceof Error) {
+          if (
+            err.name === 'StaleElementReferenceError' ||
+            err.name === 'NoSuchElementError'
+          ) {
+            return false; // Retry in next iteration
+          }
         }
         throw err;
       }
@@ -131,7 +133,7 @@ describe('Amazon Order History Reporter E2E Scrape', () => {
       );
       await selectElement.sendKeys('All');
     } catch (e) {
-      console.warn('Could not select "All" from length dropdown, verifying first page of orders only:', e.message);
+      console.warn('Could not select "All" from length dropdown, verifying first page of orders only:', (e as Error).message);
     }
 
     // 7. Parse total count from the DataTable info element
