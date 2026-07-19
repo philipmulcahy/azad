@@ -13,7 +13,6 @@ import * as notice from './notice';
 import * as progress_bar from './progress_bar';
 import * as request_scheduler from './request_scheduler';
 import * as settings from './settings';
-import * as transaction from './transaction';
 import * as stats from './statistics';
 import * as table_config from './table_config';
 import * as util from './util';
@@ -117,13 +116,7 @@ function appendEntityRow(
   );
 }
 
-function addOrderTable(
-  doc: HTMLDocument,
-  orders: azad_order.IOrder[],
-  cols: Promise<colspec.ColSpec[]>
-): Promise<HTMLTableElement> {
-  return addTable(doc, orders, cols);
-}
+
 
 async function addItemTable(
   doc: HTMLDocument,
@@ -144,13 +137,7 @@ async function addShipmentsTable(
   return addTable(doc, shipments, cols);
 }
 
-function addTransactionTable(
-  doc: HTMLDocument,
-  transactions: transaction.Transaction[],
-  cols: Promise<colspec.ColSpec[]>
-): Promise<HTMLTableElement> {
-  return addTable(doc, transactions, cols);
-}
+
 
 async function addTable(
     doc: HTMLDocument,
@@ -269,42 +256,48 @@ async function addTable(
 }
 
 async function reallyDisplay(
-  orders: azad_order.IOrder[],
+  entities: azad_entity.IEntity[],
+  tableType: string,
   beautiful: boolean,
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
   client: string,
 ): Promise<HTMLTableElement> {
-  console.log('amazon_order_history_table.reallyDisplay starting');
+  console.log(`amazon_order_history_table.reallyDisplay starting for ${tableType}`);
 
-  for (const entry in order_map) {
-    delete order_map[entry];
+  if (tableType !== 'transactions') {
+    for (const entry in order_map) {
+      delete order_map[entry];
+    }
   }
 
   util.clearBody();
   banner.addBanner();
-  addProgressBar();
 
-  orders.forEach( order => {
-    order.id().then(
-      id => { order_map[id] = order; },
-      err => {
-        const errs = util.stringifyError(err);
-        const msg = `reallyDisplay caught ${errs} while reading id`;
-        console.debug(msg);
-      },
-    );
-  });
+  if (tableType !== 'transactions') {
+    addProgressBar();
+    const orders = entities as azad_order.IOrder[];
+    orders.forEach( order => {
+      order.id().then(
+        id => { order_map[id] = order; },
+        err => {
+          const errs = util.stringifyError(err);
+          const msg = `reallyDisplay caught ${errs} while reading id`;
+          console.debug(msg);
+        },
+      );
+    });
+  }
 
-  const tableType = await settings.getString('azad_table_type');
   const cols = table_config.getCols(tableType);
 
-  const table_promise = (tableType == 'orders') ?
-    addOrderTable(document, orders, cols) :
-    (tableType == 'items') ?
-      addItemTable(document, orders, cols) :
-      (tableType == 'shipments') ?
-        addShipmentsTable(document, orders, cols) :
-        (() => {throw('unsupported table type: ' + tableType);})();
+  let table_promise: Promise<HTMLTableElement>;
+  if (tableType === 'items') {
+    table_promise = addItemTable(document, entities as azad_order.IOrder[], cols);
+  } else if (tableType === 'shipments') {
+    table_promise = addShipmentsTable(document, entities as azad_order.IOrder[], cols);
+  } else {
+    table_promise = addTable(document, entities, cols);
+  }
 
   // Wait for table to be there before doing more html stuff.
   const table = await table_promise;
@@ -318,12 +311,12 @@ async function reallyDisplay(
       util.addButton(
         'plain table',
         function() { display(
-          Promise.resolve(orders), false, getBackgroundPort, client,
+          Promise.resolve(entities), tableType, false, getBackgroundPort, client,
         ); },
         'azad_table_button'
       );
 
-      addOrdersCsvButton(orders, getBackgroundPort);
+      addCsvButton(entities, tableType, getBackgroundPort);
       datatable_wrap.init(cols);
     } else {
       util.removeButton('plain table');
@@ -331,12 +324,12 @@ async function reallyDisplay(
       util.addButton(
         'data table',
         function() { display(
-          Promise.resolve(orders), true, getBackgroundPort, client,
+          Promise.resolve(entities), tableType, true, getBackgroundPort, client,
         ); },
         'azad_table_button'
       );
 
-      addOrdersCsvButton(orders, getBackgroundPort);
+      addCsvButton(entities, tableType, getBackgroundPort);
     }
   });
 
@@ -354,78 +347,15 @@ async function reallyDisplay(
   return table;
 }
 
-async function reallyDisplayTransactions(
-  transactions: transaction.Transaction[],
-  beautiful: boolean,
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
-  client: string,
-): Promise<HTMLTableElement> {
-  console.log('amazon_order_history_table.reallyDisplayTransactions starting');
 
-  util.clearBody();
-  banner.addBanner();
-
-  const tableType = await settings.getString('azad_table_type');
-  const cols = table_config.getCols(tableType);
-
-  if (tableType != 'transactions') {
-    throw('unsupported tableType: ' + tableType);
-  }
-
-  const table_promise = addTransactionTable(document, transactions, cols);
-
-  // Wait for table to be there before doing more html stuff.
-  const table = await table_promise;
-  banner.removeBanner();
-
-  $( () => {
-    if (beautiful) {
-      datatable_wrap.destroy();
-      util.removeButton('data table');
-
-      util.addButton(
-        'plain table',
-        () => reallyDisplayTransactions(
-          transactions, false, getBackgroundPort, client),
-        'azad_table_button'
-      );
-
-      addTransactionsCsvButton(transactions, getBackgroundPort);
-      datatable_wrap.init(cols);
-    } else {
-      util.removeButton('plain table');
-
-      util.addButton(
-        'data table',
-        () => reallyDisplayTransactions(
-          transactions, true, getBackgroundPort, client),
-        'azad_table_button'
-      );
-
-      addTransactionsCsvButton(transactions, getBackgroundPort);
-    }
-  });
-
-  (await getBackgroundPort())?.postMessage({
-    action: 'remote_log_with_user_id',
-    log_msg: {
-      operation: `display.${tableType}`,
-      status: 'complete',
-      rowCount: (table.rows.length).toString(),
-      client,
-    },
-  });
-
-  console.log('azad.reallyDisplayTransactions returning');
-  return table;
-}
 
 function addProgressBar(): void {
   progress_indicator = progress_bar.addProgressBar(document.body);
 }
 
-function addOrdersCsvButton(
-  orders: azad_order.IOrder[],
+function addCsvButton(
+  entities: azad_entity.IEntity[],
+  tableType: string,
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
 ): void {
   const title = "download spreadsheet ('.csv')";
@@ -434,7 +364,8 @@ function addOrdersCsvButton(
     title,
     async function() {
       const table: HTMLTableElement = await display(
-        Promise.resolve(orders),
+        Promise.resolve(entities),
+        tableType,
         false,
         getBackgroundPort,
         'Azad UI',
@@ -450,43 +381,21 @@ function addOrdersCsvButton(
   );
 }
 
-function addTransactionsCsvButton(
-  transactions: transaction.Transaction[],
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
-): void {
-  const title = "download spreadsheet ('.csv')";
-
-  util.addButton(
-    title,
-    async function() {
-      const table: HTMLTableElement = await displayTransactions(
-        transactions, false, getBackgroundPort, 'Azad UI',
-      );
-
-      const show_totals: boolean = await settings.getBoolean(
-        'show_totals_in_csv'
-      );
-
-      csv.download(table, show_totals);
-    },
-    'azad_table_button'
-  );
-}
-
 export async function display(
-  orders_promise: Promise<azad_order.IOrder[]>,
+  entities_promise: Promise<azad_entity.IEntity[]>,
+  tableType: string,
   beautiful: boolean,
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
   client: string,
 ): Promise<HTMLTableElement> {
-  const orders = await orders_promise;
-  console.log('amazon_order_history_table.display starting');
+  const entities = await entities_promise;
+  console.log(`amazon_order_history_table.display starting for ${tableType}`);
 
-  if (orders.length >= 500 && beautiful) {
+  if (entities.length >= 500 && beautiful) {
     beautiful = false;
 
     notice.showNotificationBar(
-      '500 or more orders found. That\'s a lot!\n' +
+      `500 or more ${tableType} found. That's a lot!\n` +
       'We\'ll start you off with a plain table to make display faster.\n' +
       'You can click the blue "datatable" button to restore sorting, filtering etc.',
       document
@@ -494,7 +403,8 @@ export async function display(
   }
 
   const table_promise: Promise<HTMLTableElement> = reallyDisplay(
-    orders,
+    entities,
+    tableType,
     beautiful,
     getBackgroundPort,
     client,
@@ -582,35 +492,4 @@ export function updateProgressBar(statistics: stats.Statistics): void {
   }
 }
 
-export async function displayTransactions(
-  transactions: transaction.Transaction[],
-  beautiful: boolean,
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
-  client: string,
-): Promise<HTMLTableElement> {
-  if (transactions.length >= 500) {
-    beautiful = false;
 
-    notice.showNotificationBar(
-      '500 or more transactions found. That\'s a lot!\n' +
-      'We\'ll start you off with a plain table to make display faster.\n' +
-      'You can click the blue "datatable" button to restore sorting, filtering etc.',
-      document
-    );
-  }
-
-  const table_promise: Promise<HTMLTableElement> = reallyDisplayTransactions(
-    transactions,
-    beautiful,
-    getBackgroundPort,
-    client,
-  );
-
-  console.log(
-    'amazon_order_history_table.display then func returning ' +
-      'table promise.'
-  );
-
-  console.log('amazon_order_history_table.display returning');
-  return table_promise;
-}
