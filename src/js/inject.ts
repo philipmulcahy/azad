@@ -62,6 +62,7 @@ function resetScheduler(purpose: string): void {
 async function fetchAndShowOrdersByYears(
   years: number[],
   client: string,
+  tableType: string,
 ): Promise<HTMLTableElement|undefined> {
 
   if ( document.visibilityState != 'visible' ) {
@@ -82,13 +83,14 @@ async function fetchAndShowOrdersByYears(
   );
 
   return azad_table.display(
-    orderPromises, true, ports.getBackgroundPort, client);
+    orderPromises, tableType, true, ports.getBackgroundPort, client);
 }
 
 async function fetchAndShowOrdersByRange(
   start_date: Date, end_date: Date,
   beautifulTable: boolean,
   client: string,
+  tableType: string,
 ): Promise<HTMLTableElement|undefined> {
   console.info(`fetchAndShowOrdersByRange(${start_date}, ${end_date})`);
 
@@ -120,7 +122,7 @@ async function fetchAndShowOrdersByRange(
   );
 
   return azad_table.display(
-    orders, beautifulTable, ports.getBackgroundPort, client);
+    orders, tableType, beautifulTable, ports.getBackgroundPort, client);
 }
 
 async function registerContentScript(isIframeWorker: boolean) {
@@ -173,8 +175,9 @@ function handleMessageFromBackgroundToRootContentPage(msg: Record<string, unknow
       {
         const years = msg.years as number[] | undefined;
         const client = msg.client as string;
+        const tableType = (msg.table_type as string) || 'orders';
         if (years) {
-          void fetchAndShowOrdersByYears(years, client);
+          void fetchAndShowOrdersByYears(years, client, tableType);
         }
       }
       break;
@@ -183,11 +186,13 @@ function handleMessageFromBackgroundToRootContentPage(msg: Record<string, unknow
         const start_date: Date = new Date(msg.start_date as string);
         const end_date: Date = new Date(msg.end_date as string);
         const client = msg.client as string;
+        const tableType = (msg.table_type as string) || 'orders';
         void fetchAndShowOrdersByRange(
           start_date,
           end_date,
           true,
           client,
+          tableType,
         );
       }
       break;
@@ -206,8 +211,9 @@ function handleMessageFromBackgroundToRootContentPage(msg: Record<string, unknow
         const client = msg.client as string;
         void (async ()=>{
           if (!pageType.isWorker()) {
-            await azad_table.displayTransactions(
-              msg.transactions as transaction.Transaction[],
+            await azad_table.display(
+              Promise.resolve(msg.transactions as transaction.Transaction[]),
+              'transactions',
               true,
               ports.getBackgroundPort,
               client,

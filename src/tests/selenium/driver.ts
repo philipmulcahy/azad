@@ -55,8 +55,7 @@ export async function initDriver(): Promise<SeleniumContext> {
   // Configure ChromeDriver to output verbose logs to a file in the workspace root
   const logPath = path.resolve(__dirname, '../../../chromedriver.log');
   const service = new chrome.ServiceBuilder()
-    .loggingTo(logPath)
-    .enableVerboseLogging();
+    .loggingTo(logPath);
 
   const driver = await new Builder()
     .forBrowser('chrome')
