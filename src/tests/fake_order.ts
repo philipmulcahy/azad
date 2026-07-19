@@ -9,6 +9,7 @@ import * as jsdom from 'jsdom';
 import * as order_header from '../js/order_header';
 import * as request_scheduler from '../js/request_scheduler';
 import * as stats from '../js/statistics';
+import * as xpaths from '../js/xpaths';
 
 ///////////////////////////////////////////////////////////////////////////////
 // TEST TYPES:
@@ -89,7 +90,7 @@ export function orderFromTestData(
 
   const list_doc = new jsdom.JSDOM(order_dump.list_html).window.document;
 
-  const order_elems_xpath = './/div[contains(concat(" ", normalize-space(@class), " "), "order ") or contains(concat(" ", normalize-space(@class), " "), "order-card ") or @id="orderCard"]';
+  const order_elems_xpath = xpaths.order_card_xpath;
 
   const order_elems = extraction.findMultipleNodeValues(
     order_elems_xpath,

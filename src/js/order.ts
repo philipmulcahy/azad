@@ -17,6 +17,7 @@ import * as strategy from './strategy';
 import * as timeout from './timeout';
 import * as urls from './url';
 import * as util from './util';
+import * as xpaths from './xpaths';
 import * as git_hash from '../generated/git_hash';
 
 export interface IOrder extends azad_entity.IEntity {
@@ -453,9 +454,8 @@ export async function assembleDiagnostics(
       util.defaulted(sync_order.list_url, ''),  // url
       'orderListHtmlForDebug',
 
-      // ready_xpath: TODO - derive from mainline scraping code, DRY!
-      // eslint-disable-next-line no-multi-str
-      '//div[@id="orderCard"]//div[@id="orderCardHeader"]|//div[contains(@class, "order-card")]',
+      // ready_xpath
+      xpaths.order_card_xpath,
 
       getScheduler,
     )),

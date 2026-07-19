@@ -11,7 +11,7 @@ import * as sprintf from 'sprintf-js';
 import * as statistics from './statistics';
 import * as urls from './url';
 import * as util from './util';
-
+import * as xpaths from './xpaths';
 export interface AttributedUrl{
   template: string;
   url: string;
@@ -333,10 +333,7 @@ function reallyTranslateOrdersPage(
   }
 
   const order_elems: HTMLElement[] = extraction.findMultipleNodeValues(
-    './/*['
-    + 'contains(concat(" ", normalize-space(@class), " "), " js-order-card ") '  // 2025 consumer accounts.
-    + 'or @id="orderCard"'  // 2025 business accounts (Amazon seems relaxed about id uniqueness).
-    + ']',
+    xpaths.order_card_xpath,
     ordersElem,
   ).map( node => <HTMLElement>node );
 
