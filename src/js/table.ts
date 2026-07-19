@@ -528,10 +528,20 @@ export function dumpOrderDiagnostics(
   const file_name = order_id + '_' + utc_today + '.json';
 
   azad_order.assembleDiagnostics(order, getScheduler).then(
-    diagnostics => diagnostic_download.save_json_to_file(
-      diagnostics,
-      file_name
-    )
+    async diagnostics => {
+      try {
+        const previous = await stats.Counters.load();
+        const updated = previous.add(stats.Counters.stats);
+        diagnostics['strategy_stats_last'] = JSON.parse(stats.Counters.stats.serialize());
+        diagnostics['strategy_stats_all'] = JSON.parse(updated.serialize());
+      } catch (ex) {
+        console.warn('Could not add statistics to diagnostics', ex);
+      }
+      return diagnostic_download.save_json_to_file(
+        diagnostics,
+        file_name
+      );
+    }
   ).then(
     () => {
       const msg = 'Debug file ' + file_name + ' saved.';
