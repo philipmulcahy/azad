@@ -37,7 +37,7 @@ export async function initDriver(): Promise<SeleniumContext> {
 
   const orderHistoryUrl = `https://www.${site}/gp/css/order-history`;
   const options = new chrome.Options();
-  
+
   // Path to build directory of extension
   const extensionPath = path.resolve(__dirname, '../../../build');
   options.addArguments(`--load-extension=${extensionPath}`);
@@ -57,7 +57,7 @@ export async function initDriver(): Promise<SeleniumContext> {
   const service = new chrome.ServiceBuilder()
     .loggingTo(logPath)
     .enableVerboseLogging();
-  
+
   const driver = await new Builder()
     .forBrowser('chrome')
     .setChromeOptions(options)
@@ -67,6 +67,11 @@ export async function initDriver(): Promise<SeleniumContext> {
   let extensionId = '';
   let amazonTab = '';
   try {
+    await updateExtension(driver);
+
+    // Switch to a new tab for Amazon to avoid origin restrictions from the chrome:// tab
+    await driver.switchTo().newWindow('tab');
+
     console.log(`Initial navigation to retrieve extension ID from content script: ${orderHistoryUrl}`);
     await driver.get(orderHistoryUrl);
     amazonTab = await driver.getWindowHandle();
@@ -112,4 +117,46 @@ export async function initDriver(): Promise<SeleniumContext> {
     amazonTab,
     popupTab
   };
+}
+
+export async function updateExtension(driver: WebDriver): Promise<void> {
+  console.log('Navigating to chrome://extensions to update unpacked extension...');
+  await driver.get('chrome://extensions/');
+
+  // Wait a moment for the extensions page to render its shadow dom
+  await driver.sleep(1000);
+
+  await driver.executeScript(`
+    try {
+      const manager = document.querySelector('extensions-manager');
+      const toolbar = manager.shadowRoot.querySelector('extensions-toolbar');
+
+      // Ensure Developer Mode is on so the Update button is visible
+      const devModeToggle = toolbar.shadowRoot.querySelector('#devMode');
+      if (devModeToggle && !devModeToggle.hasAttribute('checked') && devModeToggle.getAttribute('aria-pressed') !== 'true') {
+         devModeToggle.click();
+      }
+    } catch(e) {
+      console.error('Failed to toggle dev mode:', e);
+    }
+  `);
+
+  // A short delay to allow the update button to appear if we just toggled dev mode
+  await driver.sleep(500);
+
+  await driver.executeScript(`
+    try {
+      const manager = document.querySelector('extensions-manager');
+      const toolbar = manager.shadowRoot.querySelector('extensions-toolbar');
+      const updateBtn = toolbar.shadowRoot.querySelector('#updateNow');
+      if (updateBtn) {
+        updateBtn.click();
+      }
+    } catch(e) {
+      console.error('Failed to click update button:', e);
+    }
+  `);
+
+  // Give the browser time to process the timeout and reload the extension
+  await driver.sleep(2500);
 }
