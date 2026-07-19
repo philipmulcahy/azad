@@ -262,66 +262,56 @@ function extractDetailFromDoc(
   };
 
   const postage = function(): string {
-    return util.defaulted(
-      extraction.by_regex(
-        'orderdetails_postage',
-        [
-          ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
-            label => sprintf.sprintf(
-              '//div[contains(@id,"od-subtotals")]//' +
-              'span[.//text()[contains(.,"%s")]]/' +
-              'parent::div/following-sibling::div/span',
-              label
-            )
-          ).join('|')
-        ],
-        null,
-        null,
-        doc.documentElement,
-        context,
-      ),
-      ''
-    );
+    return extraction.by_regex(
+      'orderdetails_postage',
+      [
+        ['Postage', 'Shipping', 'Livraison', 'Delivery', 'Costi di spedizione'].map(
+          label => sprintf.sprintf(
+            '//div[contains(@id,"od-subtotals")]//' +
+            'span[.//text()[contains(.,"%s")]]/' +
+            'parent::div/following-sibling::div/span',
+            label
+          )
+        ).join('|')
+      ],
+      null,
+      '',
+      doc.documentElement,
+      context,
+    ) as string;
   };
 
   const postage_refund = function(): string {
-    return util.defaulted(
-      extraction.by_regex(
-        'orderdetails_postagerefund',
-        [
-          ['FREE Shipping'].map(
-            label => sprintf.sprintf(
-              '//div[contains(@id,"od-subtotals")]//' +
-              'span[.//text()[contains(.,"%s")]]/' +
-              'parent::div/following-sibling::div/span',
-              label
-            )
-          ).join('|')
-        ],
-        null,
-        null,
-        doc.documentElement,
-        context,
-      ),
-      ''
-    );
+    return extraction.by_regex(
+      'orderdetails_postagerefund',
+      [
+        ['FREE Shipping'].map(
+          label => sprintf.sprintf(
+            '//div[contains(@id,"od-subtotals")]//' +
+            'span[.//text()[contains(.,"%s")]]/' +
+            'parent::div/following-sibling::div/span',
+            label
+          )
+        ).join('|')
+      ],
+      null,
+      '',
+      doc.documentElement,
+      context,
+    ) as string;
   };
 
   const subscribe_and_save = function(): string {
-    let a = extraction.by_regex(
+    return extraction.by_regex(
       'orderdetails_subscribeandsave',
       [
         '//span[contains(text(), "Subscribe & Save:")]/../following-sibling::div/span/text()'
       ],
       util.moneyRegEx(),
-      null,
+      '',
       doc.documentElement,
       context,
-    );
-    if ( !a ) {
-      a = null;
-    }
-    return util.defaulted(a, '');
+    ) as string;
   };
 
   const vat = function(): string {
@@ -437,7 +427,7 @@ function extractDetailFromDoc(
   };
 
   const cad_gst = function(): string {
-    const a = extraction.by_regex(
+    return extraction.by_regex(
       'orderdetails_cadgst',
       [
         ['GST', 'HST'].map(
@@ -450,15 +440,14 @@ function extractDetailFromDoc(
         '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//span[contains(text(),"GST")]/parent::div/following-sibling::div/span',
       ],
       util.moneyRegEx(),
-      null,
+      '',
       doc.documentElement,
       context,
-    );
-    return util.defaulted(a, '');
+    ) as string;
   };
 
   const cad_pst = function(): string {
-    const a = extraction.by_regex(
+    return extraction.by_regex(
       'orderdetails_cadpst',
       [
         ['PST', 'RST', 'QST'].map(
@@ -471,11 +460,10 @@ function extractDetailFromDoc(
         '//div[contains(@class,"a-row pmts-summary-preview-single-item-amount")]//span[contains(text(),"PST")]/parent::div/following-sibling::div/span',
       ],
       util.moneyRegEx(),
-      null,
+      '',
       doc.documentElement,
       context,
-    );
-    return util.defaulted(a, '');
+    ) as string;
   };
 
   const refund = function(): string {
