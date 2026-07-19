@@ -34,11 +34,11 @@
         "@types/node-forge": "^1.3.1",
         "@types/selenium-webdriver": "^4.1.22",
         "@types/urlsafe-base64": "^1.0.31",
-        "@typescript-eslint/eslint-plugin": "^6.5.0",
-        "@typescript-eslint/parser": "^6.5.0",
+        "@typescript-eslint/eslint-plugin": "^7.6.0",
+        "@typescript-eslint/parser": "^7.6.0",
         "cheerio": "^1.1.2",
         "clean-webpack-plugin": "^4.0.0",
-        "copy-webpack-plugin": "^11.0.0",
+        "copy-webpack-plugin": "^14.0.0",
         "css-loader": "^6.7.3",
         "datatables.net-dt": "^2.3.8",
         "eslint": "^8.48.0",
@@ -70,15 +70,17 @@
         "jquery": "^3.6.4",
         "jsdom": "^21.1.1",
         "lzjs": "^1.3.0",
-        "mocha": "^10.2.0",
         "moment": "^2.29.4",
         "node-forge": "^1.3.1",
-        "serialize-javascript": "^6.0.1",
+        "serialize-javascript": "^7.0.7",
         "sprintf-js": "^1.1.2",
         "sprintf.js": "^0.1.4",
         "tsc": "^2.0.4",
         "urlsafe-base64": "^1.0.0",
         "uuid": "^11.1.0",
         "xpath": "0.0.32"
+    },
+    "allowScripts": {
+        "fsevents@2.3.3": true
     }
 }
