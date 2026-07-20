@@ -1,52 +1,35 @@
-digraph messaging {
+digraph MessagingArchitecture {
+    rankdir=LR;
+    nodesep=0.5;
+    ranksep=0.8;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", margin="0.2,0.1"];
+    edge [fontname="Helvetica", fontsize=10];
 
-	rankdir=LR;
+    // Graph Legend
+    label="Legend:\nSolid lines = Persistent Connection (port.postMessage)\nDashed lines = One-off Message (chrome.runtime.sendMessage)";
+    labelloc="t";
+    labeljust="c";
+    fontname="Helvetica";
+    fontsize=11;
+    fontcolor="#555555";
 
-  fontname="Helvetica,Arial,sans-serif"
-	node [fontname="Helvetica,Arial,sans-serif"]
-	edge [fontname="Helvetica,Arial,sans-serif"]
-	node [shape = circle];
+    // Nodes
+    SW [label="ServiceWorker\n(background.ts)", fillcolor="#f0f0ff", color="#a0a0ff", penwidth=2];
+    CP [label="Control Popup\n(control.ts)", fillcolor="#e0f7fa", color="#00acc1", penwidth=2];
+    Content [label="Content Pages\n(inject, cachestuff, signin, etc)", fillcolor="#f1f8e9", color="#7cb342", penwidth=2];
 
-  control -> background [label = "scrape_years" color = "green" penwidth = "2.0"];
-  control -> background [label = "scrape_range" color = "green"];
-  control -> background [label = "check_feature_authorized" color = "orange"];
-  control -> background [label = "show_payment_ui" color = "orange"];
-  control -> background [label = "show_extpay_login_ui" color = "orange"];
-  control -> background [label = "show_extpay_console" color = "orange"];
-  control -> background [label = "clear_cache" color = "red"];
-  control -> background [label = "force_logout" color = "red"];
-  control -> background [label = "abort" color = "red"];
+    // Connections (Solid Lines)
+    CP -> SW [label=" Commands:\nclear_cache, force_logout,\nshow_payment_ui, abort", color="#0055aa"];
+    SW -> CP [label=" Status updates,\nAuth check results", color="#0055aa"];
 
+    SW -> Content [label=" Broadcast:\ndump_order_detail", color="#00aa00"];
+    Content -> SW [label=" keepalive\n(prevents suspension)", color="#00aa00"];
 
-  content -> background [label = "transactions" color = "green"];
-  content -> background [label = "scrape_periods" color = "blue"];
-  content -> background [label = "advertise_periods" color = "blue"];
-  content -> background [label = "fetch_url"];
-  content -> background [label = "statistics_update" color = "silver"];
-  content -> background [label = "relayToParent"];
-  content -> background [label = "remote_log_with_user_id"];
-
-  content -> background [label = "remove_cookie" color = "red"];
-  content -> background [label = "open_tab" color = "silver"];
-
-  iframe -> background [label = "get_iframe_task_instructions"];
-  background -> iframe [label = "scrape_periods"];
-  background -> iframe [label = "scrape_transactions"];
-  background -> iframe [label = "fetch_url"];
-
-  background -> control [label = "advertise_periods" color = "blue"];
-  background -> control [label = "statistics_update" color = "silver"];
-  background -> control [label = "authorisation_status" color = "orange"];
+    // No-connection (Dotted Lines)
+    Content -> SW [style=dashed, label=" Cache Ops:\nget, set, getkeys, remove\n(via cachestuff.ts)", color="#d32f2f"];
+    SW -> Content [style=dashed, label=" Cache hits/misses\n(via responseCallback)", color="#d32f2f"];
+    
+    Content -> SW [style=dashed, label=" Auth Utils:\nopen_tab, remove_cookie\n(via signin.ts)", color="#d32f2f"];
 
 
-  background -> content [label = "dump_order_detail" color = "pink"];
-  background -> content [label = "scrape_range_and_dump_items" color = "pink"];
-  background -> content [label = "scrape_years" color = "green" penwidth = "2.0"];
-  background -> content [label = "scrape_range" color = "green"];
-  background -> content [label = "start_iframe_worker"];
-  background -> content [label = "remove_iframe_worker"];
-  background -> content [label = "transactions" color = "green"];
-  background -> content [label = "clear_cache" color = "red"];
-  background -> content [label = "force_logout" color = "red"];
-  background -> content [label = "abort" color = "red"];
 }
