@@ -1,7 +1,8 @@
 import { initDriver, SeleniumContext } from './driver';
+import { setupAndClearCache } from './scrape_helpers';
 import { By, until, WebDriver } from 'selenium-webdriver';
 
-describe('Amazon Order History Reporter E2E Scrape', () => {
+describe('Amazon Order History Reporter E2E Orders Scrape', () => {
   let ctx: SeleniumContext;
   let driver: WebDriver;
 
@@ -17,65 +18,21 @@ describe('Amazon Order History Reporter E2E Scrape', () => {
   });
 
   test('should clear cache and scrape 2025 orders successfully', async () => {
-    const site = process.env.AMAZON_SITE || 'amazon.com';
     const targetYear = process.env.SCRAPE_YEAR || '2025';
-    const orderHistoryUrl = `https://www.${site}/gp/css/order-history`;
 
-    console.log(`Navigating to Amazon Order History: ${orderHistoryUrl}`);
-    await driver.get(orderHistoryUrl);
-
-    // Dynamic login helper: If sign-in is required, wait for user to complete it
-    const currentUrl = await driver.getCurrentUrl();
-    if (currentUrl.includes('signin') || currentUrl.includes('/ap/')) {
-      console.log('============================================================');
-      console.log('WARNING: Amazon sign-in required.');
-      console.log('Please log in manually in the opened Chrome browser window.');
-      console.log('The test will resume automatically once sign-in completes.');
-      console.log('============================================================');
-
-      await driver.wait(async () => {
-        const url = await driver.getCurrentUrl();
-        return url.includes('order-history') || url.includes('/order-history/');
-      }, 300000); // Wait up to 5 minutes for manual sign-in
-      
-      console.log('Sign-in detected. Continuing test...');
-    }
-
-    // Ensure we are on the order history page and it's loaded
-    await driver.wait(until.elementLocated(By.tagName('body')), 20000);
-
-    // 1. Clear Cache Step
-    console.log('Switching to Popup tab...');
-    await driver.switchTo().window(ctx.popupTab);
-
-    console.log('Clicking clear cache button...');
-    const clearCacheBtn = await driver.wait(
-      until.elementLocated(By.id('azad_clear_cache')),
-      10000
-    );
-    await clearCacheBtn.click();
-
-    // 2. Switch back to Amazon tab to verify notification
-    console.log('Switching to Amazon tab to verify notification...');
-    await driver.switchTo().window(ctx.amazonTab);
-
-    // The notification container is injected at the top of body
-    console.log('Waiting for "Cache cleared" notification...');
-    await driver.wait(
-      until.elementLocated(By.id('azad_notification_bar_container')),
-      15000
-    );
-    const notification = await driver.wait(
-      until.elementLocated(By.className('azad_notification_bar')),
-      15000
-    );
-    const text = await notification.getText();
-    expect(text).toContain('Cache cleared');
-    console.log('Ephemeral notification "Cache cleared" verified successfully!');
+    await setupAndClearCache(driver, ctx);
 
     // 3. Start Scraping Step
     console.log('Switching back to Popup tab to start scrape...');
     await driver.switchTo().window(ctx.popupTab);
+
+    // Explicitly click the Orders radio button to ensure we don't accidentally scrape transactions from a previous test run
+    console.log('Selecting "Orders" table type...');
+    const ordersRadioBtn = await driver.wait(
+      until.elementLocated(By.id('azad_show_orders')),
+      10000
+    );
+    await ordersRadioBtn.click();
 
     // Wait for the year buttons to populate and click the target year button.
     // Handles potential StaleElementReferenceError if the popup re-renders the buttons.
@@ -85,8 +42,11 @@ describe('Amazon Order History Reporter E2E Scrape', () => {
         const yearButton = await driver.findElement(
           By.css(`.azad_year_button[value="${targetYear}"]`)
         );
-        await yearButton.click();
-        return true;
+        if (yearButton) {
+          await yearButton.click();
+          return true;
+        }
+        return false;
       } catch (err) {
         if (err instanceof Error) {
           if (

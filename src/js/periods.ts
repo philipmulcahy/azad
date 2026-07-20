@@ -67,7 +67,7 @@ export async function getPeriods(fromCacheOnly: boolean = false): Promise<number
   // (sometimes slow) available years discovery process has completed.
   const yearsWithThisYear = [...new Set([...years, getCurrentYear()])].sort();
 
-  const periods = yearsWithThisYear.length == 0 ? [] : [1, 2, 3].concat(years);
+  const periods = yearsWithThisYear.length == 0 ? [] : [1, 2, 3].concat(yearsWithThisYear);
   return periods;
 }
 

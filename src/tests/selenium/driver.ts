@@ -1,4 +1,4 @@
-import { Builder, WebDriver, By, until } from 'selenium-webdriver';
+import { Builder, WebDriver, By } from 'selenium-webdriver';
 import * as chrome from 'selenium-webdriver/chrome';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -79,17 +79,20 @@ export async function initDriver(): Promise<SeleniumContext> {
     await driver.manage().window().setRect({ x: 0, y: 0 });
     await driver.manage().window().maximize();
 
-    // Wait for the content script to inject the extension ID attribute on the HTML element
-    const htmlElement = await driver.wait(
-      until.elementLocated(By.tagName('html')),
-      15000
-    );
-
-    // Wait up to 10 seconds for the attribute to be populated by the content script
+    // Wait up to 20 seconds for the attribute to be populated by the content script
     await driver.wait(async () => {
-      extensionId = (await htmlElement.getAttribute('data-azad-extension-id')) || '';
+      try {
+        const htmlElem = await driver.findElement(By.tagName('html'));
+        extensionId = (await htmlElem.getAttribute('data-azad-extension-id')) || '';
+        if (extensionId === '') {
+          await driver.navigate().refresh();
+          await driver.sleep(1500);
+        }
+      } catch (e) {
+        // Ignore stale element or other errors during refresh
+      }
       return extensionId !== '';
-    }, 10000, 'Timed out waiting for extension ID from content script. Ensure the extension is built (npm run build) and loaded.');
+    }, 20000, 'Timed out waiting for extension ID from content script. Ensure the extension is built (npm run build) and loaded.');
 
     console.log(`Successfully retrieved Extension ID: ${extensionId}`);
   } catch (err) {
