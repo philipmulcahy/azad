@@ -115,9 +115,19 @@ function reallyExtractOrderHeader(
       return ddd;
     }
 
+    function strategy2(): Date {
+      // New Amazon page structure (as of 2026/08/16): order-header__header-list-item contains label and date in span
+      const xpaths = labels.map(label =>
+        `.//li[contains(@class,"order-header__header-list-item") and contains(text(),"${label.split(' ')[0]}")]//span`
+      );
+      const raw = extraction.getField2(xpaths, elem, '', context);
+      const ddd = new Date(date.normalizeDateString(util.defaulted(raw, '')));
+      return ddd;
+    }
+
     const dd: Date = strategy.firstMatchingStrategy<Date>(
       'orderHeaderDate',
-      [strategy0, strategy1],
+      [strategy0, strategy1, strategy2],
       new Date('invalid'),
     );
 
@@ -163,6 +173,7 @@ function reallyExtractOrderHeader(
     [
       './/div[contains(span,"Total")]/../div/span[contains(@class,"value")]',
       './/div[contains(span,"Total")]/../div[last()]/span',
+      './/li[contains(@class,"order-header__header-list-item") and contains(text(),"Total")]//span',
     ],
     elem,
     '',
