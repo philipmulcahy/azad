@@ -82,7 +82,7 @@ function generateParsers() {
 
 function updateGitHashFile() {
   try {
-    const result = subProcess.execSync(
+    subProcess.execSync(
       `node utils/updateGitHashFile.js`,
       { stdio: 'inherit' }
     );

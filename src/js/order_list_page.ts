@@ -3,7 +3,6 @@
 import * as business from './business';
 import * as dom2json from './dom2json';
 import * as extraction from './extraction';
-import * as iframeWorker from './iframe-worker';
 import * as order_header from './order_header';
 import * as request from './request';
 import * as request_scheduler from './request_scheduler';
@@ -23,40 +22,12 @@ type headerPageUrlGenerator = (
   startOrderIndex: number,
 ) => Promise<AttributedUrl>;
 
-async function getExpectedOrderCount(
-  site: string,
-  year: number,
-  urlGenerator: headerPageUrlGenerator,
-): Promise<number> {
-  const aUrl = await urlGenerator(site, year, 0);
-  const url = aUrl.url;
-  // Use order-card or yohtmlc-order-id as page-ready signal since num-orders no longer exists
-  const pageReadyXpath = '//*[contains(@class, "order-card") or contains(@class, "yohtmlc-order-id")]';
-
-  const response = await iframeWorker.fetchURL(
-    url, pageReadyXpath, 'get expected order count');
-
-  const doc = util.parseStringToDOM(response.html);
-
-  const expectedOrderCount = getExpectedOrderCountFromHeaderDoc();
-
-  return expectedOrderCount;
-}
-
-function getExpectedOrderCountFromHeaderDoc(): number {
-  // Note: Amazon no longer provides order count element (num-orders).
-  // Smart pagination now stops automatically when it encounters empty pages,
-  // so we just return a small default to kick off the first pagination request.
-  return 1;
-}
-
 async function get_page_of_headers(
   site: string,
   year: number,
   urlGenerator: headerPageUrlGenerator,
   start_order_number: number, // zero based
   scheduler: request_scheduler.IRequestScheduler,
-  updateExpectedOrderCount: (count: number)=>void,
 ): Promise<OrderHeaderPageData> {
   const aUrl = await urlGenerator(site, year, start_order_number);
   const url = aUrl.url;
@@ -78,7 +49,6 @@ async function get_page_of_headers(
 
   try {
     const pageData = await pdp;
-    updateExpectedOrderCount(pageData.expectedOrderCount);
     const headers = pageData.headers;
     const ids: string[] = headers.map(h => h.id);
     const idCount: number = ids.length;
@@ -126,32 +96,19 @@ export async function getHeaders(
   async function fetchHeadersForTemplate(
     urlGenerator: headerPageUrlGenerator
   ): Promise<order_header.IOrderHeader[]> {
-    let expected_order_count = await getExpectedOrderCount(
-      site, year, urlGenerator);
-
-    console.log(`setting expected order count to ${expected_order_count}`);
-
-    function updateExpectedOrderCount(count: number): void {
-      if (count > expected_order_count) {
-        console.log(
-          'updating expected order count ' +
-          `from ${expected_order_count} to ${count}`);
-
-        expected_order_count = count;
-      }
-    }
-
     const headerPromises: Promise<OrderHeaderPageData>[] = [];
 
-    // Without num-orders to tell us when to stop, we need to detect when to stop
+    // Without num-orders (previously conveniently embedded in html by Amazon)
+    // to tell us when to stop, we need to detect when to stop
     // Assumption: pagination goes in date order
     // Algorithm:
-    // 1. Kick off MAX_CONCURRENT paginations so that we can take advantage of parallelization
-    // 2. When a pagination comes back with zero results, we know we've gone past
-    //    the filter, so we don't have to start up any more paginations
+    // 1. Kick off MAX_CONCURRENT paginations so that we can take advantage of
+    // parallelization.
+    // 2. When a pagination comes back with zero results, we know we've gone
+    //    past the filter, so we don't have to start up any more paginations.
     //    Optional speed up:  Right now, we let dangling paginations bleed out
-    //         but we could stop them proactively.  I didn't think it was worth
-    //         the added complexity to do that. 
+    //         but we could stop them proactively.  I (nebosite@) didn't think
+    //         it was worth the added complexity to do that.
     let nextOrderIndex = 0;
     let shouldStopPagination = false;
     const MAX_CONCURRENT = 4;
@@ -160,11 +117,11 @@ export async function getHeaders(
     function createMoreRequests(): void {
       while (headerPromises.length < MAX_CONCURRENT && !shouldStopPagination) {
         console.log(
-          'creating header page request for order: ' + nextOrderIndex + ' onwards'
+          `creating header page request for order: ${nextOrderIndex} onwards`
         );
 
         const headersPageData = get_page_of_headers(
-          site, year, urlGenerator, nextOrderIndex, scheduler, updateExpectedOrderCount,
+          site, year, urlGenerator, nextOrderIndex, scheduler,
         );
 
         headerPromises.push(headersPageData);
@@ -187,14 +144,6 @@ export async function getHeaders(
     }
 
     const headers = pages.map(data => data?.headers || []).flat();
-
-    if (headers.length != expected_order_count) {
-      console.error(
-        `expected ${expected_order_count} orders, ` +
-        `but got ${headers.length}`
-      );
-    }
-
     return headers;
   }
 
@@ -294,7 +243,6 @@ function generateQueryString(
 
 type OrderHeaderPageData = {
   headers: order_header.IOrderHeader[],
-  expectedOrderCount: number,
 };
 
 function translateOrdersPage(
@@ -305,6 +253,7 @@ function translateOrdersPage(
     const opd = reallyTranslateOrdersPage(evt, period);
     return opd;
   } catch (ex) {
+    console.error('translateOrdersPage caught ', ex);
     throw ex;
   }
 }
@@ -315,7 +264,6 @@ function reallyTranslateOrdersPage(
 ): OrderHeaderPageData {
   const xhr = evt.target as XMLHttpRequest;
   const doc = util.parseStringToDOM(xhr.responseText);
-  const expectedOrderCount = getExpectedOrderCountFromHeaderDoc();
   let ordersElem;
 
   try {
@@ -357,7 +305,6 @@ function reallyTranslateOrdersPage(
 
   return {
     headers,
-    expectedOrderCount,
   };
 }
 

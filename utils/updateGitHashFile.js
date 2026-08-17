@@ -1,8 +1,11 @@
 /* Copyright(c) 2025 Philip Mulcahy. */
+/* Migrated from .sh to .sh by nebosite@ so it works on Windows - thank you! */
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const subProcess = require('child_process');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require('path');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const fs = require('fs');
 
 try {
