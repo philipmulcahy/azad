@@ -13,27 +13,21 @@ function removeDir(dirPath) {
   }
 }
 
-function removePattern(pattern) {
-  const dir = path.dirname(pattern);
-  const glob = path.basename(pattern);
+const projectRoot = path.join(__dirname, '..');
 
-  if (!fs.existsSync(dir)) return;
-
-  const files = fs.readdirSync(dir);
-  const regex = new RegExp('^' + glob.replace(/\*/g, '.*') + '$');
-
+// Clean up old zip files
+if (fs.existsSync(projectRoot)) {
+  const files = fs.readdirSync(projectRoot);
   files.forEach(file => {
-    if (regex.test(file)) {
-      const filePath = path.join(dir, file);
-      fs.rmSync(filePath, { recursive: true, force: true });
+    if (/^azad.*\.zip$/.test(file)) {
+      const filePath = path.join(projectRoot, file);
+      fs.rmSync(filePath, { force: true });
       console.log(`Removed: ${filePath}`);
     }
   });
 }
 
-const projectRoot = path.join(__dirname, '..');
-
-removePattern(path.join(projectRoot, 'azad*.zip'));
+// Clean up build directories
 removeDir(path.join(projectRoot, 'build'));
 removeDir(path.join(projectRoot, 'build-node'));
 removeDir(path.join(projectRoot, 'src', 'generated'));
