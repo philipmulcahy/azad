@@ -96,7 +96,7 @@ export async function getHeaders(
   async function fetchHeadersForTemplate(
     urlGenerator: headerPageUrlGenerator
   ): Promise<order_header.IOrderHeader[]> {
-    const headerPromises: Promise<OrderHeaderPageData>[] = [];
+    const allHeaders: order_header.IOrderHeader[] = [];
 
     // Without num-orders (previously conveniently embedded in html by Amazon)
     // to tell us when to stop, we need to detect when to stop
@@ -113,9 +113,10 @@ export async function getHeaders(
     let shouldStopPagination = false;
     const MAX_CONCURRENT = 4;
 
-    // Create initial batch of requests
-    function createMoreRequests(): void {
-      while (headerPromises.length < MAX_CONCURRENT && !shouldStopPagination) {
+    while (!shouldStopPagination) {
+      const batchPromises: Promise<OrderHeaderPageData>[] = [];
+
+      for (let i = 0; i < MAX_CONCURRENT; i++) {
         console.log(
           `creating header page request for order: ${nextOrderIndex} onwards`
         );
@@ -124,27 +125,29 @@ export async function getHeaders(
           site, year, urlGenerator, nextOrderIndex, scheduler,
         );
 
-        headerPromises.push(headersPageData);
+        batchPromises.push(headersPageData);
         nextOrderIndex += 10;
       }
-    }
 
-    // Start with initial batch
-    createMoreRequests();
+      const pages = await util.get_settled_and_discard_rejects(batchPromises);
 
-    const pages = await util.get_settled_and_discard_rejects(headerPromises);
+      let batchHasEmptyPage = false;
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        if (page && page.headers) {
+          allHeaders.push(...page.headers);
+          if (page.headers.length === 0) {
+            batchHasEmptyPage = true;
+          }
+        }
+      }
 
-    // Check if any page came back empty - if so, we've hit the end
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
-      if (page && page.headers && page.headers.length === 0) {
+      if (batchHasEmptyPage || pages.length === 0) {
         shouldStopPagination = true;
-        break;
       }
     }
 
-    const headers = pages.map(data => data?.headers || []).flat();
-    return headers;
+    return allHeaders;
   }
 
   // Catch errors from fetchHeadersForTemplate
