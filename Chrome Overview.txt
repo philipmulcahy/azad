@@ -57,6 +57,19 @@ Feature requests: if there's a github ticket outstanding for the same thing,
 please add your thoughts there rather than making a new one. You can signal
 your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.24
+---------------
+#417 1) Fixed "Failed to scrape for some .com users"
+        caused by site removing some html used by the extension.
+     2) Ported build scripts to js (from .sh) so that build works on windows.
+     Both parts were contributed in draft form by Eric Jorgensen,
+     aka @nebosite, who uses Azad to feed his Budgito tool
+     (https://github.com/nebosite/budgito). Thank you Eric!
+
+Changes 1.16.23
+---------------
+Not used.
+
 Changes 1.16.22
 ---------------
 #312, #327, #359, #367, #368, #414 Numerous reliability improvements and
@@ -74,16 +87,6 @@ Changes 1.16.21
      additional console logging.
 #??? Many non-functional code health improvements, now passing eslint with no
      warnings or errors.
-
-Changes 1.16.20
----------------
-#403 Show popup when a json order debug file is requested from the transactions
-     output table, explaining how to actually get the desired file.
-#406 Improve json order debug file generation reliability, particularly when
-     users aren't super speedy with requesting them once the output table has
-     rendered (this is a long way of admitting there was a race condition).
-#408 Faster availabilty of year scraping buttons even more than 48 hours after
-     last use of the extension.
 
 
 Source Code

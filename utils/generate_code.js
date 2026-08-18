@@ -81,15 +81,15 @@ function generateParsers() {
 }
 
 function updateGitHashFile() {
-  subProcess.exec('sh utils/updateGitHashFile.sh', (err, stdout, stderr) => {
-    if (err) {
-      console.error(err);
-      process.exit(1);
-    } else {
-      console.log(`stdout: ${stdout.toString()}`);
-      console.log(`stderr: ${stderr.toString()}`);
-    }
-  });
+  try {
+    subProcess.execSync(
+      `node utils/updateGitHashFile.js`,
+      { stdio: 'inherit' }
+    );
+  } catch (err) {
+    console.error('Failed to update git hash file');
+    process.exit(1);
+  }
 }
 
 generateParsers();

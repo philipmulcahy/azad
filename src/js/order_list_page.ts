@@ -3,7 +3,6 @@
 import * as business from './business';
 import * as dom2json from './dom2json';
 import * as extraction from './extraction';
-import * as iframeWorker from './iframe-worker';
 import * as order_header from './order_header';
 import * as request from './request';
 import * as request_scheduler from './request_scheduler';
@@ -23,72 +22,12 @@ type headerPageUrlGenerator = (
   startOrderIndex: number,
 ) => Promise<AttributedUrl>;
 
-async function getExpectedOrderCount(
-  site: string,
-  year: number,
-  urlGenerator: headerPageUrlGenerator,
-): Promise<number> {
-  const aUrl = await urlGenerator(site, year, 0);
-  const url = aUrl.url;
-  const pageReadyXpath = '//span[@class="num-orders"]';
-
-  const response = await iframeWorker.fetchURL(
-    url, pageReadyXpath, 'get expected order count');
-
-  const doc = util.parseStringToDOM(response.html);
-
-  const expectedOrderCount = getExpectedOrderCountFromHeaderDoc(
-    doc, response.url);
-
-  return expectedOrderCount;
-}
-
-function getExpectedOrderCountFromHeaderDoc(
-  doc: HTMLDocument,
-  url: string,  // for logging only
-): number {
-  const context = 'getExpectedOrderCount';
-
-  const countSpan = extraction.findSingleNodeValue(
-    '//span[@class="num-orders"]', doc.documentElement, context);
-
-  if ( !countSpan ) {
-    const msg = `Error: cannot find order count elem in: ${url}`;
-    console.error(msg);
-    throw(msg);
-  }
-
-  const textContent = countSpan.textContent;
-  const splits = textContent!.split(' ');
-
-  if (splits.length == 0) {
-    const msg = 'Error: not enough parts';
-    console.error(msg);
-    throw(msg);
-  }
-
-  const expectedOrderCount: number = parseInt(splits[0], 10);
-
-  console.log(
-    `Found ${expectedOrderCount} orders in ${url}`
-  );
-
-  if(isNaN(expectedOrderCount)) {
-    console.warn(
-      'Error: cannot find order count in ' + countSpan.textContent
-    );
-  }
-
-  return expectedOrderCount;
-}
-
 async function get_page_of_headers(
   site: string,
   year: number,
   urlGenerator: headerPageUrlGenerator,
   start_order_number: number, // zero based
   scheduler: request_scheduler.IRequestScheduler,
-  updateExpectedOrderCount: (count: number)=>void,
 ): Promise<OrderHeaderPageData> {
   const aUrl = await urlGenerator(site, year, start_order_number);
   const url = aUrl.url;
@@ -110,7 +49,6 @@ async function get_page_of_headers(
 
   try {
     const pageData = await pdp;
-    updateExpectedOrderCount(pageData.expectedOrderCount);
     const headers = pageData.headers;
     const ids: string[] = headers.map(h => h.id);
     const idCount: number = ids.length;
@@ -158,51 +96,70 @@ export async function getHeaders(
   async function fetchHeadersForTemplate(
     urlGenerator: headerPageUrlGenerator
   ): Promise<order_header.IOrderHeader[]> {
-    let expected_order_count = await getExpectedOrderCount(
-      site, year, urlGenerator);
+    const allHeaders: order_header.IOrderHeader[] = [];
 
-    console.log(`setting expected order count to ${expected_order_count}`);
+    // Without num-orders (previously conveniently embedded in html by Amazon)
+    // to tell us when to stop, we need to detect when to stop
+    // Assumption: pagination goes in date order
+    // Algorithm:
+    // 1. Kick off MAX_CONCURRENT paginations so that we can take advantage of
+    // parallelization.
+    // 2. When a pagination comes back with zero results, we know we've gone
+    //    past the filter, so we don't have to start up any more paginations.
+    //    Optional speed up:  Right now, we let dangling paginations bleed out
+    //         but we could stop them proactively.  I (nebosite@) didn't think
+    //         it was worth the added complexity to do that.
+    let nextOrderIndex = 0;
+    let shouldStopPagination = false;
+    const MAX_CONCURRENT = 4;
 
-    function updateExpectedOrderCount(count: number): void {
-      if (count > expected_order_count) {
+    while (!shouldStopPagination) {
+      const batchPromises: Promise<OrderHeaderPageData>[] = [];
+
+      for (let i = 0; i < MAX_CONCURRENT; i++) {
         console.log(
-          'updating expected order count ' +
-          `from ${expected_order_count} to ${count}`);
+          `creating header page request for order: ${nextOrderIndex} onwards`
+        );
 
-        expected_order_count = count;
+        const headersPageData = get_page_of_headers(
+          site, year, urlGenerator, nextOrderIndex, scheduler,
+        );
+
+        batchPromises.push(headersPageData);
+        nextOrderIndex += 10;
+      }
+
+      const pages = await util.get_settled_and_discard_rejects(batchPromises);
+
+      let batchHasEmptyPage = false;
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        if (page && page.headers) {
+          allHeaders.push(...page.headers);
+          if (page.headers.length === 0) {
+            batchHasEmptyPage = true;
+          }
+        }
+      }
+
+      if (batchHasEmptyPage || pages.length === 0) {
+        shouldStopPagination = true;
       }
     }
 
-    const headerPromises: Promise<OrderHeaderPageData>[] = [];
+    return allHeaders;
+  }
 
-    function notEnoughPagesRequested(): boolean {
-      const expectedPageCount = Math.floor((expected_order_count-1)/10)+1;
-      return headerPromises.length < expectedPageCount;
+  // Catch errors from fetchHeadersForTemplate
+  async function safelyFetchHeadersForTemplate(
+    urlGenerator: headerPageUrlGenerator
+  ): Promise<order_header.IOrderHeader[]> {
+    try {
+      return await fetchHeadersForTemplate(urlGenerator);
+    } catch (ex) {
+      console.error('[ERROR] fetchHeadersForTemplate threw:', ex);
+      return [];
     }
-
-    for(let iorder = 0; notEnoughPagesRequested(); iorder += 10) {
-      console.log(
-        'creating header page request for order: ' + iorder + ' onwards'
-      );
-
-      const headersPageData = get_page_of_headers(
-        site, year, urlGenerator, iorder, scheduler, updateExpectedOrderCount,
-      );
-
-      headerPromises.push(headersPageData);
-    }
-
-    const pages = await util.get_settled_and_discard_rejects(headerPromises);
-    const headers = pages.map(data => data.headers).flat();
-
-    if (headers.length != expected_order_count) {
-      console.error(
-        `expected ${expected_order_count} orders, ` +
-        `but got ${headers.length}`
-      );
-    }
-
-    return headers;
   }
 
   const isBusinessAcct: boolean = await business.isBusinessAccount();
@@ -216,7 +173,7 @@ export async function getHeaders(
       }
     );
 
-  const pheaderss = urlGenerators.map(ug => fetchHeadersForTemplate(ug));
+  const pheaderss = urlGenerators.map(ug => safelyFetchHeadersForTemplate(ug));
   const headerss = await util.get_settled_and_discard_rejects(pheaderss);
   const headers = headerss.flat();
   const deduped = dedupeHeaders(headers);
@@ -289,7 +246,6 @@ function generateQueryString(
 
 type OrderHeaderPageData = {
   headers: order_header.IOrderHeader[],
-  expectedOrderCount: number,
 };
 
 function translateOrdersPage(
@@ -311,8 +267,6 @@ function reallyTranslateOrdersPage(
 ): OrderHeaderPageData {
   const xhr = evt.target as XMLHttpRequest;
   const doc = util.parseStringToDOM(xhr.responseText);
-  // @ts-expect-error: url property added dynamically by tracking infrastructure
-  const expectedOrderCount = getExpectedOrderCountFromHeaderDoc(doc, xhr.url);
   let ordersElem;
 
   try {
@@ -354,7 +308,6 @@ function reallyTranslateOrdersPage(
 
   return {
     headers,
-    expectedOrderCount,
   };
 }
 
