@@ -13,15 +13,100 @@ function string_or_null(s: string | null | undefined) {
   return '';
 }
 
-export async function download(
-  table: HTMLTableElement,
-  sums_for_spreadsheet: boolean
-): Promise<void> {
-  const csv_string = make_csv_string(table, sums_for_spreadsheet);
-  await save_file.save(csv_string, 'amazon_order_history.csv');
+// Spreadsheets treat a cell that starts with = + - or @ as a formula, and
+// some skip a leading tab, carriage return or line feed first. Item titles and other
+// cells are sellers' text, so a title such as
+// =HYPERLINK("https://example.com","Click me") would be live when the CSV is
+// opened. An apostrophe in front makes such a cell plain text.
+// Amounts such as "-16.92" or "-£16.92" are left alone, so they stay numbers.
+export function neutraliseFormula(cell: string): string {
+  if (!/^[=+\-@\t\r\n]/.test(cell)) {
+    return cell;
+  }
+
+  const amount = /^[-+]?\s*(?:[£$€₹]|AUD|CAD|EUR|GBP|INR|USD)?\s*\d[\d.,\s]*$/;
+
+  if (amount.test(cell)) {
+    return cell;
+  }
+
+  return "'" + cell;
 }
 
-function make_csv_string(
+export async function download(
+  table: HTMLTableElement,
+  sums_for_spreadsheet: boolean,
+  file_name: string = 'amazon_order_history.csv',
+): Promise<void> {
+  const csv_string = make_csv_string(table, sums_for_spreadsheet);
+  await save_file.save(csv_string, file_name);
+}
+
+// The download's file name, after the table type and the period scraped
+// (issue #398): amazon_orders_history_2025.csv,
+// amazon_transactions_history_2026-07-08_to_2026-10-08.csv.
+export function filename(tableType: string, period: string): string {
+  const tidy = (s: string) => s.replace(/[^A-Za-z0-9-]+/g, '_')
+                               .replace(/^_+|_+$/g, '');
+
+  const parts = ['amazon', tidy(tableType) || 'order', 'history', tidy(period)];
+  return parts.filter(p => p).join('_') + '.csv';
+}
+
+// "2025"; "2023-2025" for consecutive years; "2019_2023" otherwise.
+export function yearsLabel(years: number[]): string {
+  const sorted = [...new Set(years)].sort((a, b) => a - b);
+
+  if (sorted.length == 0) {
+    return '';
+  }
+
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+
+  if (sorted.length > 1 && last - first == sorted.length - 1) {
+    return `${first}-${last}`;
+  }
+
+  return sorted.join('_');
+}
+
+// Whole calendar years (1 January 00:00 to 31 December 23:59:59.999, local
+// time, as iframe-worker builds them) give a yearsLabel; anything else is
+// "2026-07-08_to_2026-10-08", in local dates.
+export function periodLabel(start: Date, end: Date): string {
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return '';
+  }
+
+  const wholeYears =
+    start.getMonth() == 0 && start.getDate() == 1 &&
+    start.getHours() == 0 && start.getMinutes() == 0 &&
+    start.getSeconds() == 0 && start.getMilliseconds() == 0 &&
+    end.getMonth() == 11 && end.getDate() == 31 &&
+    end.getHours() == 23 && end.getMinutes() == 59 &&
+    end.getSeconds() == 59 && end.getMilliseconds() == 999;
+
+  if (wholeYears) {
+    const years: number[] = [];
+
+    for (let y = start.getFullYear(); y <= end.getFullYear(); ++y) {
+      years.push(y);
+    }
+
+    return yearsLabel(years);
+  }
+
+  const ymd = (d: Date) => [
+    d.getFullYear().toString(),
+    (d.getMonth() + 1).toString().padStart(2, '0'),
+    d.getDate().toString().padStart(2, '0'),
+  ].join('-');
+
+  return `${ymd(start)}_to_${ymd(end)}`;
+}
+
+export function make_csv_string(
   table: HTMLTableElement,
   sums_for_spreadsheet: boolean
 ): string {
@@ -43,7 +128,9 @@ function make_csv_string(
         } else {
           x = x.textContent;
         }
-        cell_array.push(string_or_null(x));
+        // Only cells from the table: the sums row below is meant to hold
+        // formulas.
+        cell_array.push(neutraliseFormula(string_or_null(x)));
       }
       result.push(cell_array);
     }

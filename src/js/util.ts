@@ -269,12 +269,40 @@ export function is_promise(candidate: unknown): boolean {
   return 'then' in candidate && typeof (candidate as { then: unknown }).then === 'function';
 }
 
-export function safe_new_tab_link(url: string, title: string): string {
+// For text that goes into HTML (element content or a quoted attribute).
+// null and undefined (e.g. a field missing from a cached entry) give ''.
+export function escapeHtml(s: string | null | undefined): string {
+  return String(s ?? '').replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+}
+
+// True for http(s) and relative URLs; false for javascript:, data: and the
+// like. Browsers ignore tabs and newlines anywhere in a URL, and leading
+// control characters and spaces, so we do too before reading the scheme.
+export function isSafeLinkUrl(url: string): boolean {
+  const cleaned = url.replace(/[\t\n\r]/g, '').replace(/^[\0- ]+/, '');
+  const scheme = cleaned.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/);
+  return !scheme || ['http', 'https'].includes(scheme[1].toLowerCase());
+}
+
+// Returns HTML for a link that opens in a new tab.
+// url and title come from scraped pages (item titles are sellers' text), so
+// both are escaped: a title like '<img src=x onerror=alert(1)>' shows as text.
+export function safe_new_tab_link(
+  url: string | null | undefined,
+  title: string | null | undefined,
+): string {
+  const u = url ?? '';
+  const href = u != '' && isSafeLinkUrl(u) ? u : '#';
+
   return '<a ' +
-         'href="' + url + '" ' +
+         'href="' + escapeHtml(href) + '" ' +
          'target="_blank" ' +
          'rel="noopener noreferrer"' +
-         '>' + title + '</a>';
+         '>' + escapeHtml(title) + '</a>';
 }
 
 /**

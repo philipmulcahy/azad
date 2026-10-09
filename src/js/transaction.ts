@@ -1,6 +1,7 @@
 /* Copyright(c) 2026 Philip Mulcahy. */
 
 import * as cacheStuff from './cachestuff';
+import * as csv from './csv';
 import * as extraction from './extraction';
 import * as lzjsImport from 'lzjs';
 import * as stats from './statistics';
@@ -75,6 +76,7 @@ export async function reallyScrapeAndPublish(
         transactions: filtered,
         url,
         client,
+        period: csv.periodLabel(startDate, endDate),  // for the csv file name
       });
     }
   } catch (ex) {

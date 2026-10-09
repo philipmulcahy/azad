@@ -194,13 +194,14 @@ const ORDER_COLS: colspec.ColSpec[] = [
         ul.appendChild(li);
         const t = s.transaction;
         const html = 'delivered: ' + shipment.Delivered[s.delivered] +
-          '; status: ' + s.status + (
-            s.tracking_link != '' ?
+          '; status: ' + util.escapeHtml(s.status) + (
+            s.tracking_link ?
               '; ' + util.safe_new_tab_link(s.tracking_link, 'tracking link') :
               ''
           ) + (
             t ?
-              ('; transaction: ' + t.payment_amount + ' ' + t.info_string) :
+              ('; transaction: ' + util.escapeHtml(
+                t.payment_amount + ' ' + t.info_string)) :
               ''
           );
         li.innerHTML = html;
@@ -348,7 +349,7 @@ const ITEM_COLS: colspec.ColSpec[] = [
     ): Promise<null> {
       const item = entity as azad_item.IItem;
       const order_detail_url = item.order_header.detail_url;
-      td.innerHTML = order_detail_url;
+      td.textContent = order_detail_url;
       return Promise.resolve(null);
     },
     is_numeric: false,
@@ -485,7 +486,7 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
     ): Promise<null> {
       const shipment_obj = entity as order_util.IEnrichedShipment;
       const shipment_id = shipment_obj.shipment_id;
-      td.innerHTML = shipment_id;
+      td.textContent = shipment_id;
       return Promise.resolve(null);
     },
     is_numeric: false,
@@ -511,7 +512,7 @@ const SHIPMENT_COLS: colspec.ColSpec[] = [
     ): Promise<null> {
       const shipment_obj = entity as order_util.IEnrichedShipment;
       const order_detail_url = shipment_obj.order.detail_url;
-      td.innerHTML = order_detail_url;
+      td.textContent = order_detail_url;
       return Promise.resolve(null);
     },
     is_numeric: false,
@@ -641,7 +642,7 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
     ): Promise<null> {
       const transaction_obj = entity as transaction.Transaction;
       const vendor = transaction_obj.vendor;
-      td.innerHTML = vendor;
+      td.textContent = vendor;
       return Promise.resolve(null);
     },
     is_numeric: false,
@@ -654,7 +655,7 @@ const TRANSACTION_COLS: colspec.ColSpec[] = [
     ): Promise<null> {
       const transaction_obj = entity as transaction.Transaction;
       const cardInfo = transaction_obj.cardInfo;
-      td.innerHTML = cardInfo;
+      td.textContent = cardInfo;
       return Promise.resolve(null);
     },
     is_numeric: false,

@@ -261,6 +261,7 @@ async function reallyDisplay(
   beautiful: boolean,
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
   client: string,
+  period: string,
 ): Promise<HTMLTableElement> {
   console.log(`amazon_order_history_table.reallyDisplay starting for ${tableType}`);
 
@@ -312,11 +313,12 @@ async function reallyDisplay(
         'plain table',
         function() { display(
           Promise.resolve(entities), tableType, false, getBackgroundPort, client,
+          period,
         ); },
         'azad_table_button'
       );
 
-      addCsvButton(entities, tableType, getBackgroundPort);
+      addCsvButton(entities, tableType, getBackgroundPort, period);
       datatable_wrap.init(cols);
     } else {
       util.removeButton('plain table');
@@ -325,11 +327,12 @@ async function reallyDisplay(
         'data table',
         function() { display(
           Promise.resolve(entities), tableType, true, getBackgroundPort, client,
+          period,
         ); },
         'azad_table_button'
       );
 
-      addCsvButton(entities, tableType, getBackgroundPort);
+      addCsvButton(entities, tableType, getBackgroundPort, period);
     }
   });
 
@@ -357,6 +360,7 @@ function addCsvButton(
   entities: azad_entity.IEntity[],
   tableType: string,
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
+  period: string,
 ): void {
   const title = "download spreadsheet ('.csv')";
 
@@ -369,13 +373,14 @@ function addCsvButton(
         false,
         getBackgroundPort,
         'Azad UI',
+        period,
       );
 
       const show_totals: boolean = await settings.getBoolean(
         'show_totals_in_csv'
       );
 
-      csv.download(table, show_totals);
+      csv.download(table, show_totals, csv.filename(tableType, period));
     },
     'azad_table_button'
   );
@@ -387,6 +392,7 @@ export async function display(
   beautiful: boolean,
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
   client: string,
+  period: string = '',  // e.g. "2025": goes into the csv file name.
 ): Promise<HTMLTableElement> {
   const entities = await entities_promise;
   console.log(`amazon_order_history_table.display starting for ${tableType}`);
@@ -408,6 +414,7 @@ export async function display(
     beautiful,
     getBackgroundPort,
     client,
+    period,
   );
 
   console.log(

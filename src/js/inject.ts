@@ -4,6 +4,7 @@
 
 import * as azad_order from './order';
 import * as azad_table from './table';
+import * as csv from './csv';
 import {dateToDateIsoString} from './date';
 import * as git_hash from '../generated/git_hash';
 import * as iframeWorker from './iframe-worker';
@@ -83,7 +84,8 @@ async function fetchAndShowOrdersByYears(
   );
 
   return azad_table.display(
-    orderPromises, tableType, true, ports.getBackgroundPort, client);
+    orderPromises, tableType, true, ports.getBackgroundPort, client,
+    csv.yearsLabel(years));
 }
 
 async function fetchAndShowOrdersByRange(
@@ -122,7 +124,8 @@ async function fetchAndShowOrdersByRange(
   );
 
   return azad_table.display(
-    orders, tableType, beautifulTable, ports.getBackgroundPort, client);
+    orders, tableType, beautifulTable, ports.getBackgroundPort, client,
+    csv.periodLabel(start_date, end_date));
 }
 
 async function registerContentScript(isIframeWorker: boolean) {
@@ -217,6 +220,7 @@ function handleMessageFromBackgroundToRootContentPage(msg: Record<string, unknow
               true,
               ports.getBackgroundPort,
               client,
+              (msg.period as string | undefined) ?? '',
             );
           }
         })();
