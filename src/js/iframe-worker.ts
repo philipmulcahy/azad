@@ -75,8 +75,13 @@ import * as extraction from './extraction';
 import * as pageType from './page_type';
 import * as ports from './ports';
 import * as transaction from './transaction';
+import * as urls from './url';
 import * as util from './util';
 import { v4 as uuidv4 } from 'uuid';
+
+// How long fetchURL waits for its iframe worker to answer: the page has to
+// load, and then waitForXPathToMatch may poll for up to 10s.
+export const FETCH_URL_TIMEOUT_MILLIS = 60 * 1000;
 
 const IFRAME_CLASS = 'azad-iframe-worker';
 const IFRAME_CONTAINER_CLASS = 'azad-iframe-worker-container';
@@ -249,12 +254,15 @@ function removeThisIframe(): void {
  * @param url the URL whose HTML we desire.
  * @param xpath that will match when the HTML is properly "baked".
  * @param purpose visual note about why this execution task is active
+ * @param timeoutMillis give up (and remove the iframe) after this long.
  * @returns
+ * @throws string: starts with "Timed out" if the worker never answered.
  */
 export function fetchURL(
   url: string,
   xpath: string,
   purpose: string,
+  timeoutMillis: number = FETCH_URL_TIMEOUT_MILLIS,
 ): Promise<FetchResponse> {
   const guid: string = uuidv4();
 
@@ -267,37 +275,68 @@ export function fetchURL(
   };
 
   return new Promise<FetchResponse>((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined = undefined;
+
+    const listener = (msg: unknown) => {
+      const response = msg as FetchUrlResponseWithGuid;
+      if (response.action != 'fetch_url_response') {
+        return;
+      }
+
+      if (response.guid != guid) {
+        return;
+      }
+
+      finish();
+
+      if (response.status != 'OK') {
+        reject(response.status);
+        return;
+      }
+
+      resolve({
+        url,
+        html: response.html,
+      });
+    };
+
+    // Each call adds a listener: take it away again once we're done, or a
+    // long scrape piles up hundreds of them.
+    const finish = () => {
+      clearTimeout(timer);
+      ports.removeMessageListener(listener);
+    };
+
+    timer = setTimeout(() => {
+      finish();
+
+      // The worker may never have started (Amazon sent it somewhere we
+      // don't run), so it won't remove itself.
+      if (!pageType.isIframe()) {
+        removeIframeWorker(guid);
+      }
+
+      // request.ts treats a rejection starting "Timed out" as a timeout.
+      const msg = `Timed out after ${timeoutMillis}ms waiting for iframe ` +
+                  `worker ${guid} to fetch ${url}`;
+
+      console.warn(msg);
+      reject(msg);
+    }, timeoutMillis);
+
     ports.getBackgroundPort().then((port) => {
       if (!port) {
+        finish();
         reject('Could not obtain background port');
         return;
       }
 
-      ports.addMessageListener((msg: unknown) => {
-        const response = msg as FetchUrlResponseWithGuid;
-        if (response.action != 'fetch_url_response') {
-          return;
-        }
-
-        if (response.guid != guid) {
-          return;
-        }
-
-        if (response.status != 'OK') {
-          reject(response.status);
-          return;
-        }
-
-        resolve({
-          url,
-          html: response.html,
-        });
-      });
-
+      ports.addMessageListener(listener);
       port.postMessage(requestMsg);
       console.log('fetchURL requested', url, xpath, guid);
     }).catch((ex) => {
       console.error('failed to post message to background script', ex);
+      finish();
       reject(ex);
     });
   });
@@ -314,7 +353,15 @@ export async function handleInstructionsResponse(msg: unknown): Promise<void> {
   switch (action) {
     case 'scrape_transactions':
       {
-        if (
+        if (pageType.isSignInPage(document.URL)) {
+          // There are no transactions to scrape here, and publishing an
+          // empty list would look like a real answer. The transactions
+          // message has no way to carry a failure, so just clear up.
+          console.warn(
+            'scrape_transactions was redirected to sign-in:', document.URL);
+
+          removeThisIframe();
+        } else if (
           Object.prototype.hasOwnProperty.call(typedMsg, 'start_date') &&
           Object.prototype.hasOwnProperty.call(typedMsg, 'end_date')
         ) {
@@ -347,22 +394,10 @@ export async function handleInstructionsResponse(msg: unknown): Promise<void> {
       break;
     case 'fetch_url':
       {
-        if (typedMsg.url != document.documentURI) {
-          console.debug(
-            'fetch_url wants', typedMsg.url, 'but this iframe has', document.documentURI
-          );
-        } else {
-          const completionXPath: string = typedMsg.xpath;
-          const guid: string = typedMsg.guid;
-          let html = '';
-          let status = 'OK';
+        const completionXPath: string = typedMsg.xpath;
+        const guid: string = typedMsg.guid;
 
-          try {
-            html = await getBakedHtml(typedMsg.url, completionXPath);
-          } catch (ex) {
-            status = ex as string;
-          }
-
+        const respond = async (html: string, status: string) => {
           await relayToParent({
             action: 'fetch_url_response',
             url: typedMsg.url,
@@ -372,6 +407,34 @@ export async function handleInstructionsResponse(msg: unknown): Promise<void> {
           });
 
           await removeThisIframe();
+        };
+
+        if (pageType.isSignInPage(document.URL)) {
+          // Amazon wants the user to sign in again: this page isn't going to
+          // turn into the one we asked for, so say so now.
+          const msg = `fetch_url for ${typedMsg.url} was redirected to ` +
+                      `sign-in: ${document.URL}`;
+
+          console.warn(msg);
+          await respond('', msg);
+        } else if (!urls.isSameDestination(typedMsg.url, document.URL)) {
+          // Maybe a page on the way to the one we want: if it gets there,
+          // inject.ts asks for instructions again from there. If it doesn't,
+          // fetchURL's timeout gives up on it.
+          console.warn(
+            'fetch_url wants', typedMsg.url, 'but this iframe has', document.URL
+          );
+        } else {
+          let html = '';
+          let status = 'OK';
+
+          try {
+            html = await getBakedHtml(typedMsg.url, completionXPath);
+          } catch (ex) {
+            status = ex as string;
+          }
+
+          await respond(html, status);
         }
       }
       break;
@@ -501,10 +564,10 @@ async function getBakedHtml(
   url: string,
   completionXPath: string,
 ): Promise<string> {
-  if (document.URL != url) {
+  if (!urls.isSameDestination(url, document.URL)) {
     const msg =
       'fetch_url instructions to this iframe expected url: ' + url +
-      'but it is actually: ' + document.URL;
+      ' but it is actually: ' + document.URL;
 
     console.error(msg);
     throw msg;

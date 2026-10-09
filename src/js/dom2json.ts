@@ -9,12 +9,12 @@ export interface IJsonObject {
 }
 
 export function toJSON(
+    this: unknown,  // a Node, if called as a method; otherwise undefined.
     node: Node | null,
     include_attribs?: Set<string>,
     exclude_elem_types?: Set<string>
 ): IJsonObject|null {
-  // @ts-expect-error: this has weird/missing type.
-  node = node || this;
+  node = node || ((this as Node | null | undefined) ?? null);
 
   if (!node) {
     return null;

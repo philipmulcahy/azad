@@ -346,7 +346,9 @@ class LocalCacheImpl {
     }
   }
 
-  async get(key: string): Promise<unknown> {
+  // maxAgeMillis: treat entries older than this as missing. If it is left
+  // out, entries never expire (apart from being trimmed when the store fills).
+  async get(key: string, maxAgeMillis?: number): Promise<unknown> {
     const real_key: string = this.buildRealKey(key);
 
     try {
@@ -370,6 +372,16 @@ class LocalCacheImpl {
 
       if (!packed || !packed.value) {
         throw new Error(key + ' not found');
+      }
+
+      if (maxAgeMillis !== undefined) {
+        const age = millisNow() - packed.timestamp;
+
+        // !(age <= max) rather than age > max: a missing timestamp gives NaN.
+        if (!(age <= maxAgeMillis)) {
+          console.debug('cachestuff.get found an expired entry for', key);
+          throw new Error(key + ' expired');
+        }
       }
 
       ++this.hit_count;
@@ -461,7 +473,7 @@ class LocalCacheImpl {
 
 export interface Cache {
   set: (key: string, value: unknown) => void;
-  get: (key: string) => Promise<unknown>;
+  get: (key: string, maxAgeMillis?: number) => Promise<unknown>;
   clear: () => void;
   hitCount: () => number;
 }
@@ -471,7 +483,7 @@ export function createLocalCache(cache_name: string): Cache {
 
   return {
     set: (key: string, value: unknown) => { void cache.set(key, value); },
-    get: (key: string) => cache.get(key),
+    get: (key: string, maxAgeMillis?: number) => cache.get(key, maxAgeMillis),
     clear: () => { void cache.clear(); },
     hitCount: () => cache.hitCount(),
   };

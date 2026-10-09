@@ -14,9 +14,18 @@ interface IResponse<T> {
   query: string
 }
 
-interface IFetcher {
+export interface IFetcher {
   execute(): Promise<AzadResponseEvent>;
 }
+
+// How a request may use the cache, beyond nocache.
+export type CachePolicy<T> = {
+  // Ignore cached results older than this. If absent, they never expire.
+  maxAgeMillis?: number,
+
+  // Whether a freshly converted result should be cached. If absent, it is.
+  shouldCache?: (result: T) => boolean,
+};
 
 function makeXHRTask(
   url: string,
@@ -161,6 +170,7 @@ class AzadRequest<T> {
   _scheduler: request_scheduler.IRequestScheduler;
   _priority: string;
   _nocache: boolean;
+  _cache_policy: CachePolicy<T>;
   _debug_context: string;
   _resolve_response: (response: IResponse<T>) => void;
   _reject_response: (error :string) => void;
@@ -175,6 +185,7 @@ class AzadRequest<T> {
     priority: string,
     nocache: boolean,
     debug_context: string,
+    cache_policy: CachePolicy<T> = {},
   ) {
     this._url = urls.normalizeUrl(url, urls.getSite());
     this._request_type = request_type;
@@ -183,6 +194,7 @@ class AzadRequest<T> {
     this._scheduler = scheduler;
     this._priority = priority;
     this._nocache = nocache;
+    this._cache_policy = cache_policy;
     this._debug_context = debug_context;
     const response_promise_stuff = make_promise_with_callbacks<IResponse<T>>();
     this._response = response_promise_stuff.promise;
@@ -246,16 +258,24 @@ class AzadRequest<T> {
     this.check_state(base.State.ENQUEUED);
     this.change_state(base.State.DEQUEUED);
 
-    try {
-      const cached = await this._scheduler
-                               .cache()
-                               .get(this.key()) as (T | null | undefined);
+    // nocache means "fetch afresh", so don't read the cache either: an older
+    // version, or an earlier scrape with a different policy, may have written
+    // an entry for this key.
+    if (!this._nocache) {
+      try {
+        const cached = await this._scheduler
+                                 .cache()
+                                 .get(
+                                   this.key(),
+                                   this._cache_policy.maxAgeMillis,
+                                 ) as (T | null | undefined);
 
-      if (cached != null) {
-        return this.D_CacheHit(cached);
+        if (cached != null) {
+          return this.D_CacheHit(cached);
+        }
+      } catch (ex) {
+        console.warn(ex);
       }
-    } catch (ex) {
-      console.warn(ex);
     }
 
     return this.C_Send();
@@ -386,10 +406,13 @@ class AzadRequest<T> {
 
     this.change_state(base.State.CONVERTED);
 
-    if (this._nocache) {
-      setTimeout( () => this.IJK_Success(converted) );
-    } else {
+    const cacheable = !this._nocache &&
+                      (this._cache_policy.shouldCache?.(converted) ?? true);
+
+    if (cacheable) {
       setTimeout( () => this.J_Cached(converted) );
+    } else {
+      setTimeout( () => this.IJK_Success(converted) );
     }
   }
 
@@ -433,17 +456,20 @@ class AzadRequest<T> {
   }
 }
 
-export async function makeAsyncStaticRequest<T>(
+// Fetch (or find in the cache) url with fetcher, and convert the response.
+// makeAsyncStaticRequest and makeAsyncDynamicRequest supply the fetcher;
+// tests can supply their own.
+export async function makeAsyncRequest<T>(
   url: string,
   request_type: string,
+  fetcher: IFetcher,
   event_converter: EventConverter<T>,
   scheduler: request_scheduler.IRequestScheduler,
   priority: string,
   nocache: boolean,
   debug_context: string,
+  cache_policy: CachePolicy<T> = {},
 ): Promise<T> {
-  const fetcher = makeXHRTask(url, scheduler);
-
   const req = new AzadRequest(
     url,
     request_type,
@@ -453,10 +479,36 @@ export async function makeAsyncStaticRequest<T>(
     priority,
     nocache,
     debug_context,
+    cache_policy,
   );
 
   const response = await req.response();
   return response.result;
+}
+
+export async function makeAsyncStaticRequest<T>(
+  url: string,
+  request_type: string,
+  event_converter: EventConverter<T>,
+  scheduler: request_scheduler.IRequestScheduler,
+  priority: string,
+  nocache: boolean,
+  debug_context: string,
+  cache_policy: CachePolicy<T> = {},
+): Promise<T> {
+  const fetcher = makeXHRTask(url, scheduler);
+
+  return makeAsyncRequest(
+    url,
+    request_type,
+    fetcher,
+    event_converter,
+    scheduler,
+    priority,
+    nocache,
+    debug_context,
+    cache_policy,
+  );
 }
 
 export async function makeAsyncDynamicRequest<T>(
@@ -468,12 +520,13 @@ export async function makeAsyncDynamicRequest<T>(
   priority: string,
   nocache: boolean,
   debug_context: string,
+  cache_policy: CachePolicy<T> = {},
 ): Promise<T> {
   console.log(`makeAsyncDynamicRequest(${url}, ${request_type}, ...) starting`);
   const fetcher = makeDynamicFetchTask(url, readyXPath, debug_context);
   
   try {
-    const req = new AzadRequest(
+    const result = await makeAsyncRequest(
       url,
       request_type,
       fetcher,
@@ -482,11 +535,11 @@ export async function makeAsyncDynamicRequest<T>(
       priority,
       nocache,
       debug_context,
+      cache_policy,
     );
 
-    const response = await req.response();
     console.log(`makeAsyncDynamicRequest(${url}, ${request_type}, ...) complete`);
-    return response.result;
+    return result;
   } catch(ex) {
     console.warn(`makeAsyncDynamicRequest(${url}, ${request_type}, ...) failed: ${ex}`);
     throw ex;

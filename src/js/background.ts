@@ -8,6 +8,7 @@ import * as extpay from './extpay_client';
 import * as msg from './message_types';
 import * as remoteLog from './remote_log';
 import * as settings from './settings';
+import * as tabPorts from './tab_ports';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface FetchUrlMessage {
@@ -173,6 +174,34 @@ export async function sendToOneContentPage(msg: BackgroundMessage) {
   }
 }
 
+/*
+ * Send msg to the root content page in the same tab as sender, which is
+ * where it belongs if it answers something sender started. The active tab
+ * is the wrong place if the user has switched tabs since. Falls back to
+ * sendToOneContentPage if that tab has no root content page.
+ */
+function sendToContentPageInSameTab(
+  sender: chrome.runtime.MessageSender | undefined,
+  msg: BackgroundMessage,
+): void {
+  const target = tabPorts.rootPortsInTab(content_ports, sender?.tab?.id)[0];
+
+  if (!target) {
+    console.warn(
+      'sendToContentPageInSameTab: no content page in tab',
+      sender?.tab?.id, '- using the active tab instead');
+
+    void sendToOneContentPage(msg);
+    return;
+  }
+
+  try {
+    target.postMessage(msg);
+  } catch (ex) {
+    console.warn('sendToContentPageInSameTab caught', ex);
+  }
+}
+
 async function relayToParentOfIframe(
   sender: chrome.runtime.MessageSender,
   msg: RelayToParentMessage,
@@ -212,7 +241,10 @@ function handleMessageFromContentScript(msg: BackgroundMessage, port: chrome.run
 
           const purpose = msg.purpose ?? 'fetch url';
 
-          sendToOneContentPage({
+          // The iframe has to go in the tab that asked: the worker's answer
+          // is relayed to the root page of the iframe's own tab, and only
+          // the asker is listening for it.
+          sendToContentPageInSameTab(port.sender, {
             action: 'start_iframe_worker',
             guid: msg.guid,
             url: msg.url,
@@ -250,8 +282,10 @@ function handleMessageFromContentScript(msg: BackgroundMessage, port: chrome.run
         console.debug('got keepalive');
         break;
       case 'transactions':
+        // From a transaction-scraping iframe worker: its own tab is the one
+        // that asked for them.
         console.log('forwarding transactions');
-        sendToOneContentPage(msg);
+        sendToContentPageInSameTab(port.sender, msg);
         break;
       case 'relay_to_parent':
         if (port.sender) {

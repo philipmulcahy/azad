@@ -113,6 +113,7 @@ class RequestScheduler {
   set_signin_warned(): void { this._signin_warned = true; }
 
   live: boolean = true;
+  _aborted: boolean = false;  // abort() is final; running out of work isn't.
 
   constructor(
     purpose: string,
@@ -132,6 +133,16 @@ class RequestScheduler {
   overlay_url_map(): string_string_map { return this._overlay_url_map; }
 
   schedule(task: PrioritisedTask, stateful: request_base.UntypedRequest) {
+    if (!this.live && !this._aborted) {
+      // _checkDone saw nothing left to do, but here is more. That happens
+      // between pages of an order list: a request that hits the cache
+      // finishes before _checkDone looks, and the next page's request is
+      // only scheduled after that. Without this, the new task would never
+      // run, and whoever awaits it would wait for ever.
+      console.log('RequestScheduler.schedule() resuming after _checkDone');
+      this.live = true;
+    }
+
     const id = this._sequence_number;
     this._sequence_number += 1;
     const id_task: IdentifiedTask = {task: task, id: id};
@@ -150,6 +161,7 @@ class RequestScheduler {
   abort() {
     // Prevent (irreversably) this scheduler from doing any more work.
     console.log('RequestScheduler.abort()');
+    this._aborted = true;
     this.live = false;
   }
 
