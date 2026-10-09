@@ -280,7 +280,9 @@ const ORDER_COLS: colspec.ColSpec[] = [
     field_name: 'subscribe & save',
     value_promise_func_name: 'subscribe_and_save',
     is_numeric: true,
-    sites: new RegExp('\\.(ca|.com|.co.uk)'),
+    // Anchored, with escaped dots: the old '\\.(ca|.com|.co.uk)' matched
+    // www.amazon.ca but neither www.amazon.com nor www.amazon.co.uk.
+    sites: /\.(ca|com|co\.uk)$/,
   }, {
     field_name: 'refund',
     value_promise_func_name: 'refund',
@@ -388,10 +390,8 @@ const ITEM_COLS: colspec.ColSpec[] = [
     value_promise_func_name: 'price',
     is_numeric: false,
   }, {
-    field_name: 'subscribe & save',
-    value_promise_func_name: 'subscribe_and_save',
-    is_numeric: true
-  }, {
+    // No 'subscribe & save' column here: it is an order-level discount, and
+    // items have no subscribe_and_save field, so it always showed 0.
     field_name: 'ASIN',
     value_promise_func_name: 'asin',
     is_numeric: false,

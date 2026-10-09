@@ -163,7 +163,7 @@ function extractDetailFromDoc(
       context,
     );
     if (d) {
-      return new Date(date.normalizeDateString(d));
+      return date.dateFromNormalizedDateString(date.normalizeDateString(d));
     }
     return util.defaulted(header.date, null);
   }();

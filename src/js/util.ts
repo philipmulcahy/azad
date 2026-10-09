@@ -47,6 +47,10 @@ export function parseStringToDOM(html: string) {
 }
 
 function clean_mixed_decimal_separators(number_string: string): string {
+  // Non-breaking spaces are only ever thousands separators
+  // (e.g. "1\u202f234,56" on amazon.fr).
+  number_string = number_string.replace(/(\d)[\u00a0\u202f](?=\d)/g, '$1');
+
   if (number_string.includes(',') && number_string.includes('.')) {
     const seps = number_string.replace(/[^.,]/g, '');
     const last = seps.substr(seps.length-1,1);
@@ -54,17 +58,29 @@ function clean_mixed_decimal_separators(number_string: string): string {
     if (others.length != (seps.length-1)) {
       throw Error(number_string + ' has too many ' + last + ' chars.');
     }
-    const cleaned = number_string.replace(others[0], '');
+    // Remove every thousands separator, not just the first:
+    // "1,234,567.89" -> "1234567.89".
+    const cleaned = number_string.split(others[0]).join('');
     return cleaned;
   }
+
+  // A separator that appears more than once, with no other kind present, can
+  // only be grouping thousands: "1,234,567" or "1.234.567".
+  for (const sep of [',', '.']) {
+    if (number_string.split(sep).length > 2) {
+      return number_string.split(sep).join('');
+    }
+  }
+
   return number_string;
 }
 
 export function currencyRegex(): RegExp {
   // \u20ac is Euro symbol (€).
+  // \u20b9 is Indian Rupee symbol (₹).
   // Sometimes typing it "properly" seems to break the regular
   // expression.
-  return /(?:\u20ac|€|£|\$|AUD|CAD|EUR|GBP|USD)/;
+  return /(?:\u20ac|€|£|\$|\u20b9|₹|AUD|CAD|EUR|GBP|INR|USD)/;
 }
 
 function parseToNumber(i: string | number): number {
@@ -160,20 +176,37 @@ export function clearBody(): void {
 }
 
 export function moneyRegEx(): RegExp {
-    return /\s*(-?(GBP|USD|CAD|EUR|AUD|[$£€])?\s?(\d+[.,]\d\d))\s*/;
+    return /\s*(-?(GBP|USD|CAD|EUR|AUD|INR|[$£€\u20b9])?\s?(\d{1,3}(?<azad_thousands>[.,\u00a0\u202f])(?:\d{2,3}\k<azad_thousands>)*\d{3}(?!\k<azad_thousands>)[.,]\d\d|\d+[.,]\d\d))\s*/;
 /*
     /
         \s*
         (
             -?
             (
-                GBP|USD|CAD|EUR|AUD|[$£€]
+                GBP|USD|CAD|EUR|AUD|INR|[$£€\u20b9]
             )?
             \s?
-            (\d+[.,]\d\d)
+            (
+                # grouped thousands: "1,234.56", "1.234,56", "1,234,567.89",
+                # "1\u202f234,56", and amazon.in's lakhs: "1,23,456.00".
+                # The same separator throughout, a group of three digits last,
+                # and a different separator before the cents.
+                \d{1,3}
+                (?<azad_thousands>[.,\u00a0\u202f])
+                (?:\d{2,3}\k<azad_thousands>)*
+                \d{3}
+                (?!\k<azad_thousands>)[.,]\d\d
+            |
+                # ungrouped: "123.45", "1234,56"
+                \d+[.,]\d\d
+            )
         )
         \s*
     /
+    Groups 1-3 are unchanged from the old pattern: callers use [1] (the
+    amount with any sign and currency) and [3] (the bare number). The named
+    group is a back reference, so it stays correct when callers prepend text
+    to .source.
 */
 }
 

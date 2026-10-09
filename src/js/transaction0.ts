@@ -78,7 +78,8 @@ function extractSingleTransaction(
 
   const amountText = amountSpan.textContent ?? '0';
   const amountMatch = amountText.match(util.moneyRegEx());
-  const unsignedAmount: number = amountMatch ? +amountMatch[3] : 0;
+  // floatVal, not unary +, because amountMatch[3] may be "1,234.56" or "12,34".
+  const unsignedAmount: number = amountMatch ? util.floatVal(amountMatch[3]) : 0;
   const isNegative: boolean = amountText.includes('-');
   const amount = isNegative ? -unsignedAmount : unsignedAmount;
 

@@ -1,6 +1,7 @@
 /* Copyright(c) 2023 Philip Mulcahy. */
 
 import * as business from './business';
+import * as date from './date';
 import * as dom2json from './dom2json';
 import * as extraction from './extraction';
 import * as order_header from './order_header';
@@ -177,8 +178,34 @@ export async function getHeaders(
   const headerss = await util.get_settled_and_discard_rejects(pheaderss);
   const headers = headerss.flat();
   const deduped = dedupeHeaders(headers);
-  const filtered = deduped.filter(oh => oh.date?.getFullYear() == year);
+  const filtered = filterHeadersToYear(deduped, year);
   return filtered;
+}
+
+/*
+ * Keep the headers whose order date falls in year.
+ * Headers whose date we couldn't read are dropped too, because we can't tell
+ * which year they belong to, but we say so rather than losing them silently.
+ */
+export function filterHeadersToYear(
+  headers: order_header.IOrderHeader[],
+  year: number,
+): order_header.IOrderHeader[] {
+  const isDated = (h: order_header.IOrderHeader) =>
+    h.date != null && !isNaN(h.date.getTime());
+
+  const undated = headers.filter(h => !isDated(h));
+
+  if (undated.length) {
+    console.warn(
+      `order_list_page: dropping ${undated.length} order(s) listed for ` +
+      `${year} because their order date could not be read: ` +
+      undated.map(h => h.id).join(', ')
+    );
+  }
+
+  // calendarYear, not getFullYear: see date.calendarDate.
+  return headers.filter(h => isDated(h) && date.calendarYear(h.date!) == year);
 }
 
 const BASE_URL_TEMPLATE = 'https://%(site)s/your-orders/orders?' + [

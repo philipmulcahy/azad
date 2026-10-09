@@ -19,6 +19,7 @@
         "test_order": "node --trace-uncaught build-node/nodejs_tests.bundle.js",
         "debug_order_tests": "node --inspect-brk build-node/nodejs_tests.bundle.js",
         "test_jest": "npx jest",
+        "test_jest_timezones": "node utils/test_timezones.js",
         "debug_jest": "node --inspect-brk node_modules/.bin/jest --runInBand",
         "test_selenium": "npx jest --config jest.config.selenium.js",
         "open_chrome_test": "node utils/open_chrome_test.js",
