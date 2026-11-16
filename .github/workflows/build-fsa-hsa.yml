@@ -34,10 +34,16 @@ jobs:
       - name: Run public Jest tests (private fixtures unavailable)
         run: npm run test_jest -- --runInBand --testPathIgnorePatterns='(transaction(_unit)?|year_discovery).test.ts'
 
+      - name: Label test extension with workflow build number
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          node -e 'const fs=require("fs"); const p="build/manifest.json"; const m=JSON.parse(fs.readFileSync(p,"utf8")); m.version_name=m.version+" - FSA/HSA Test Build "+process.env.BUILD_NUMBER; fs.writeFileSync(p,JSON.stringify(m,null,2));'
+
       - name: Upload test extension
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: azad-fsa-hsa-test-extension
+          name: azad-fsa-hsa-test-build-${{ github.run_number }}
           path: build/
           if-no-files-found: error
