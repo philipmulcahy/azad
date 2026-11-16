@@ -23,3 +23,14 @@ export function fsa_hsa_eligible_amount(doc: HTMLDocument): string {
   }
   return '';
 }
+
+/**
+ * Only accept the product-specific health-benefit label. Other references
+ * to FSA/HSA (navigation, suggestions, help text) do not prove eligibility.
+ */
+export function product_fsa_hsa_eligible(doc: HTMLDocument): boolean {
+  const label = doc.querySelector('#hbaLabel_feature_div');
+  if (!label) return false;
+  const text = (label.textContent || '').replace(/\s+/g, ' ').trim();
+  return /\bFSA\s*(?:or|\/)\s*HSA\s*eligible\b/i.test(text);
+}
