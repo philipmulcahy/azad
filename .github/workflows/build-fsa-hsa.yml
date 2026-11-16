@@ -28,13 +28,14 @@ jobs:
       - name: Generate build metadata required by public tests
         run: npm run generate_code
 
-      - name: Run public Jest tests (private fixture unavailable)
-        run: npm run test_jest -- --runInBand --testPathIgnorePatterns='transaction(_unit)?.test.ts'
-
       - name: Build extension (includes TypeScript lint)
         run: npm run build
 
+      - name: Run public Jest tests (private fixtures unavailable)
+        run: npm run test_jest -- --runInBand --testPathIgnorePatterns='(transaction(_unit)?|year_discovery).test.ts'
+
       - name: Upload test extension
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: azad-fsa-hsa-test-extension
