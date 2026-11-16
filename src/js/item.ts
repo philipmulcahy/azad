@@ -2,6 +2,7 @@
 
 import * as azad_entity from './entity';
 import * as extraction from './extraction';
+import * as fsa_hsa from './fsa_hsa';
 import * as order_header from './order_header';
 import * as request_scheduler from './request_scheduler';
 import * as req from './request';
@@ -18,6 +19,7 @@ export interface IItem extends azad_entity.IEntity {
   asin: string;
   order_header: order_header.IOrderHeader;
   category: string;
+  fsa_hsa_eligible?: string;  // 'Yes' when Amazon explicitly marks the product
 }
 
 type ItemsExtractor = (
@@ -70,66 +72,66 @@ async function categoriseItems(
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<IItem[]> {
   let show_category_in_items_view = true;
-
   try {
     show_category_in_items_view = await settings.getBoolean(
       'show_category_in_items_view');
-
-    if (!show_category_in_items_view) {
-      return items;
-    }
   } catch (ex) {
-    console.log(
-      'categoriseItems caught', ex,
-      'when looking at settings: maybe we are doing regression testing?');
+    console.log('categoriseItems caught', ex,
+      'when looking at settings: maybe it has never been set?');
   }
 
-  const completions: Promise<void>[] = [];
-
-  items.forEach(async function (item: IItem) {
-    const category_promise = getCategoryForProduct(item.url, scheduler);
-    completions.push(category_promise.then(_ => { }));
-
+  // Amazon exposes the FSA label on the product page, even when the order
+  // summary has no FSA amount. Fetch it via the existing cached scheduler.
+  // Reuse that same response to fetch the category if enabled.
+  const completions = items.map(async (item: IItem): Promise<void> => {
+    item.fsa_hsa_eligible = '';
+    const is_us_item = /(^|\.)amazon\.com$/i.test(item.order_header.site);
+    if (!show_category_in_items_view && !is_us_item) return;
+    if (!item.url || !/^https?:\/\//i.test(item.url)) return;
     try {
-      item.category = await category_promise;
+      const result = await getProductInfo(item.url, scheduler);
+      if (show_category_in_items_view) item.category = result.category;
+      if (is_us_item && result.fsa_hsa_eligible) {
+        item.fsa_hsa_eligible = 'Yes';
+      }
     } catch (ex) {
-      const exs = util.stringifyError(ex);
-      const msg = `categorizeItems caught: ${exs}`;
-      console.debug(msg);
-      // We don't care;
+      console.debug('getProductInfo failed for item', util.stringifyError(ex));
     }
   });
-
   await Promise.allSettled(completions);
   return items;
 }
 
-function getCategoryForProduct(
+interface ProductInfo {
+  category: string;
+  fsa_hsa_eligible: boolean;
+}
+
+function getProductInfo(
   product_url: string,
   scheduler: request_scheduler.IRequestScheduler,
-): Promise<string> {
-  return req.makeAsyncStaticRequest<string>(
+): Promise<ProductInfo> {
+  return req.makeAsyncStaticRequest<ProductInfo>(
     product_url,
-    'getCategoryForProduct',
+    'getProductInfo',
     (evt) => {
-      const productPage = util.parseStringToDOM(evt.target.responseText)
-        .documentElement;
-
-      const raw = extraction.by_regex(
+      const doc = util.parseStringToDOM(evt.target.responseText);
+      const category = extraction.by_regex(
         'item_category',
-        ['//*[@id="wayfinding-breadcrumbs_feature_div"]//ul',],
+        ['//*[@id="wayfinding-breadcrumbs_feature_div"]//ul'],
         null,
         '',
-        productPage,
+        doc.documentElement,
         'category'
       );
-
-      const tidied = raw!.replace(/\s+/g, ' ').trim();
-      return tidied;
+      return {
+        category: (category || '').replace(/\s+/g, ' ').trim(),
+        fsa_hsa_eligible: fsa_hsa.product_fsa_hsa_eligible(doc),
+      };
     },
     scheduler,
     '00000',  // priority
-    false,  // false means results are cacheable,
+    false,  // cached response is acceptable
     'category',
   );
 }
