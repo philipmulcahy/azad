@@ -25,8 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Jest tests
-        run: npm run test_jest -- --runInBand
+      - name: Generate build metadata required by public tests
+        run: npm run generate_code
+
+      - name: Run public Jest tests (private fixture unavailable)
+        run: npm run test_jest -- --runInBand --testPathIgnorePatterns=transaction_unit.test.ts
 
       - name: Build extension (includes TypeScript lint)
         run: npm run build
