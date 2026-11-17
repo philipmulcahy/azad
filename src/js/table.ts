@@ -381,6 +381,28 @@ function addCsvButton(
   );
 }
 
+/**
+ * FSA-only view includes orders with an explicitly positive Amazon-reported
+ * FSA amount, or with at least one product explicitly labeled eligible.
+ * It does not infer eligibility from product names or prices.
+ */
+async function filterFsaOrders(orders: azad_order.IOrder[]): Promise<azad_order.IOrder[]> {
+  const eligible = await Promise.all(orders.map(async (order): Promise<boolean> => {
+    try {
+      const [amount, items] = await Promise.all([
+        order.fsa_hsa_eligible_amount(),
+        order.item_list(),
+      ]);
+      const positiveAmount = Number(amount.replace(/[^0-9.]/g, '')) > 0;
+      return positiveAmount || items.some(i => i.fsa_hsa_eligible === 'Yes');
+    } catch (ex) {
+      console.debug('Unable to determine FSA status of an order', ex);
+      return false;
+    }
+  }));
+  return orders.filter((_, i) => eligible[i]);
+}
+
 export async function display(
   entities_promise: Promise<azad_entity.IEntity[]>,
   tableType: string,
@@ -388,7 +410,9 @@ export async function display(
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
   client: string,
 ): Promise<HTMLTableElement> {
-  const entities = await entities_promise;
+  const allEntities = await entities_promise;
+  const entities = tableType === 'fsa_orders' ?
+    await filterFsaOrders(allEntities as azad_order.IOrder[]) : allEntities;
   console.log(`amazon_order_history_table.display starting for ${tableType}`);
 
   if (entities.length >= 500 && beautiful) {
