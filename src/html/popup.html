@@ -46,12 +46,6 @@
         </table>
       </div>
       <div class="azad_separator"></div>
-      <div id="azad_fsa_panel">
-        <div class="azad_fsa_title">FSA / HSA purchases</div>
-        <div class="azad_fsa_desc">Find orders with an eligible amount or a labeled eligible product.</div>
-        <button type="button" id="azad_fsa_orders">View FSA orders · Last 6 months</button>
-        <div class="azad_fsa_note">Includes invoice links when Amazon provides them.</div>
-      </div>
       <div id="azad_help">
         <a href="https://github.com/philipmulcahy/azad/blob/master/README.md"
            target="_blank" class="azad_help" id="azad_help">
@@ -91,6 +85,13 @@
           </td>
         </tr>
       </table>
+      <div id="azad_fsa_filter">
+        <label for="azad_only_fsa">
+          <input type="checkbox" id="azad_only_fsa"/>
+          <span>Only FSA/HSA purchases</span>
+        </label>
+        <div class="azad_fsa_note">Filters your selected period. In Items view, shows only labeled eligible products.</div>
+      </div>
       <table id="azad_settings">
         <tr>
           <td>
