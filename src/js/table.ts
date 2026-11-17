@@ -281,7 +281,30 @@ function addFsaSummary(
     [
       ['Matching orders', String(count)],
       ['Invoice links', String(invoiceLinks)],
-      ['Amazon-reported eligible amount', '
+      ['Amazon-reported eligible amount', '$' + reportedAmount.toFixed(2)],
+    ];
+  entries.forEach(([label, value]) => {
+    const metric = document.createElement('div');
+    const number = document.createElement('b');
+    number.textContent = value;
+    const description = document.createElement('span');
+    description.textContent = label;
+    metric.appendChild(number);
+    metric.appendChild(description);
+    details.appendChild(metric);
+  });
+  panel.appendChild(details);
+  const note = document.createElement('small');
+  note.textContent = tableType === 'fsa_items' ?
+    'Only products Amazon explicitly labels eligible are shown.' :
+    'Eligible amount includes only figures Amazon explicitly reports; mixed orders may have no reported amount.';
+  panel.appendChild(note);
+  const anchor = document.getElementById('azad_order_table');
+  if (anchor) anchor.parentNode?.insertBefore(panel, anchor);
+  else document.body.appendChild(panel);
+}
+
+async function reallyDisplay(
   entities: azad_entity.IEntity[],
   tableType: string,
   beautiful: boolean,
@@ -389,295 +412,6 @@ function addFsaSummary(
     },
   });
 
-  console.log('azad.reallyDisplay returning');
-  return table;
-}
-
-
-
-function addProgressBar(): void {
-  progress_indicator = progress_bar.addProgressBar(document.body);
-}
-
-function addCsvButton(
-  entities: azad_entity.IEntity[],
-  tableType: string,
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
-): void {
-  const title = "download spreadsheet ('.csv')";
-
-  util.addButton(
-    title,
-    async function() {
-      const table: HTMLTableElement = await display(
-        Promise.resolve(entities),
-        tableType,
-        false,
-        getBackgroundPort,
-        'Azad UI',
-      );
-
-      const show_totals: boolean = await settings.getBoolean(
-        'show_totals_in_csv'
-      );
-
-      csv.download(table, show_totals);
-    },
-    'azad_table_button'
-  );
-}
-
-/**
- * FSA-only view includes orders with an explicitly positive Amazon-reported
- * FSA amount, or with at least one product explicitly labeled eligible.
- * It does not infer eligibility from product names or prices.
- */
-async function filterFsaOrders(orders: azad_order.IOrder[]): Promise<azad_order.IOrder[]> {
-  const eligible = await Promise.all(orders.map(async (order): Promise<boolean> => {
-    try {
-      const [amount, items] = await Promise.all([
-        order.fsa_hsa_eligible_amount(),
-        order.item_list(),
-      ]);
-      const positiveAmount = Number(amount.replace(/[^0-9.]/g, '')) > 0;
-      return positiveAmount || items.some(i => i.fsa_hsa_eligible === 'Yes');
-    } catch (ex) {
-      console.debug('Unable to determine FSA status of an order', ex);
-      return false;
-    }
-  }));
-  return orders.filter((_, i) => eligible[i]);
-}
-
-export async function display(
-  entities_promise: Promise<azad_entity.IEntity[]>,
-  tableType: string,
-  beautiful: boolean,
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
-  client: string,
-): Promise<HTMLTableElement> {
-  const allEntities = await entities_promise;
-  const entities = tableType === 'fsa_orders' ?
-    await filterFsaOrders(allEntities as azad_order.IOrder[]) : allEntities;
-  console.log(`amazon_order_history_table.display starting for ${tableType}`);
-
-  if (entities.length >= 500 && beautiful) {
-    beautiful = false;
-
-    notice.showNotificationBar(
-      `500 or more ${tableType} found. That's a lot!\n` +
-      'We\'ll start you off with a plain table to make display faster.\n' +
-      'You can click the blue "datatable" button to restore sorting, filtering etc.',
-      document
-    );
-  }
-
-  const table_promise: Promise<HTMLTableElement> = reallyDisplay(
-    entities,
-    tableType,
-    beautiful,
-    getBackgroundPort,
-    client,
-  );
-
-  console.log(
-    'amazon_order_history_table.display then func returning ' +
-      'table promise.'
-  );
-
-  console.log('amazon_order_history_table.display returning');
-  return table_promise;
-}
-
-export function dumpOrderDiagnostics(
-  order_id: string,
-  getScheduler: () => request_scheduler.IRequestScheduler,
-) {
-  console.log('dumpOrderDiagnostics: ' + order_id);
-  const order = order_map[order_id];
-
-  if (!order) {
-    window.alert(
-      `This is a message from Amazon Order History Reporter, not Amazon.\nOrder data not (yet) available.\nTo build an order dump file I need to have loaded the order on one of the order-focussed output tables:\n1. Click one of the first three radio buttons\n2. Scrape the year that has your chosen order (${order_id}) in it\n3. Retry the dump file generation for ${order_id} on the resulting table.`
-    );
-
-    return;
-  }
-
-  const utc_today = new Date().toISOString().substr(0,10);
-  const file_name = order_id + '_' + utc_today + '.json';
-
-  azad_order.assembleDiagnostics(order, getScheduler).then(
-    async diagnostics => {
-      try {
-        const previous = await stats.Counters.load();
-        const updated = previous.add(stats.Counters.stats);
-        diagnostics['strategy_stats_last'] = JSON.parse(stats.Counters.stats.serialize());
-        diagnostics['strategy_stats_all'] = JSON.parse(updated.serialize());
-      } catch (ex) {
-        console.warn('Could not add statistics to diagnostics', ex);
-      }
-      return diagnostic_download.save_json_to_file(
-        diagnostics,
-        file_name
-      );
-    }
-  ).then(
-    () => {
-      const msg = 'Debug file ' + file_name + ' saved.';
-      console.log(msg);
-      notice.showNotificationBar(msg, document);
-    },
-    err => {
-      const msg = 'Failed to create debug file: ' + file_name +
-        ' ' + err;
-      console.warn(msg);
-      notice.showNotificationBar(msg, document);
-    }
-  );
-}
-
-let lastSeenProgressRatio: number = -1.0;
-export function updateProgressBar(statistics: stats.Statistics): void {
-  if (progress_indicator) {
-    const completed = statistics.get(stats.OStatsKey.COMPLETED_COUNT);
-    const cache_hits = statistics.get(stats.OStatsKey.CACHE_HIT_COUNT);
-    const queued = statistics.get(stats.OStatsKey.QUEUED_COUNT);
-    const running = statistics.get(stats.OStatsKey.RUNNING_COUNT);
-
-    if (completed!=null && queued!=null && running!=null) {
-      const ratio: number = (completed + cache_hits) /
-                            (completed + queued + running + cache_hits);
-
-      if (ratio && ratio != lastSeenProgressRatio) {
-        progress_indicator.update_progress(ratio);
-
-        if (ratio == 1.0) {
-          stats.Counters.logAndSave();
-        }
-
-        lastSeenProgressRatio = ratio;
-      }
-    }
-  }
-}
-
-
- + reportedAmount.toFixed(2)],
-    ];
-  entries.forEach(([label, value]) => {
-    const metric = document.createElement('div');
-    const number = document.createElement('b');
-    number.textContent = value;
-    const description = document.createElement('span');
-    description.textContent = label;
-    metric.appendChild(number);
-    metric.appendChild(description);
-    details.appendChild(metric);
-  });
-  panel.appendChild(details);
-  const note = document.createElement('small');
-  note.textContent = tableType === 'fsa_items' ?
-    'Only products Amazon explicitly labels eligible are shown.' :
-    'Eligible amount includes only figures Amazon explicitly reports; mixed orders may have no reported amount.';
-  panel.appendChild(note);
-  const anchor = document.getElementById('azad_order_table');
-  if (anchor) anchor.parentNode?.insertBefore(panel, anchor);
-  else document.body.appendChild(panel);
-}
-
-async function reallyDisplay(
-  entities: azad_entity.IEntity[],
-  tableType: string,
-  beautiful: boolean,
-  getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
-  client: string,
-): Promise<HTMLTableElement> {
-  console.log(`amazon_order_history_table.reallyDisplay starting for ${tableType}`);
-
-  if (tableType !== 'transactions') {
-    for (const entry in order_map) {
-      delete order_map[entry];
-    }
-  }
-
-  util.clearBody();
-  scrape_status.finishing();
-  banner.addBanner();
-
-  if (tableType !== 'transactions') {
-    addProgressBar();
-    const orders = entities as azad_order.IOrder[];
-    orders.forEach( order => {
-      order.id().then(
-        id => { order_map[id] = order; },
-        err => {
-          const errs = util.stringifyError(err);
-          const msg = `reallyDisplay caught ${errs} while reading id`;
-          console.debug(msg);
-        },
-      );
-    });
-  }
-
-  const cols = table_config.getCols(tableType);
-
-  let table_promise: Promise<HTMLTableElement>;
-  if (tableType === 'items' || tableType === 'fsa_items') {
-    table_promise = addItemTable(
-      document, entities as azad_order.IOrder[], cols, tableType === 'fsa_items'
-    );
-  } else if (tableType === 'shipments') {
-    table_promise = addShipmentsTable(document, entities as azad_order.IOrder[], cols);
-  } else {
-    table_promise = addTable(document, entities, cols);
-  }
-
-  // Wait for table to be there before doing more html stuff.
-  const table = await table_promise;
-  banner.removeBanner();
-
-  $( () => {
-    if (beautiful) {
-      datatable_wrap.destroy();
-      util.removeButton('data table');
-
-      util.addButton(
-        'plain table',
-        function() { display(
-          Promise.resolve(entities), tableType, false, getBackgroundPort, client,
-        ); },
-        'azad_table_button'
-      );
-
-      addCsvButton(entities, tableType, getBackgroundPort);
-      datatable_wrap.init(cols);
-    } else {
-      util.removeButton('plain table');
-
-      util.addButton(
-        'data table',
-        function() { display(
-          Promise.resolve(entities), tableType, true, getBackgroundPort, client,
-        ); },
-        'azad_table_button'
-      );
-
-      addCsvButton(entities, tableType, getBackgroundPort);
-    }
-  });
-
-  (await getBackgroundPort())?.postMessage({
-    action: 'remote_log_with_user_id',
-    log_msg: {
-      operation: `display.${tableType}`,
-      status: 'complete',
-      rowCount: (table.rows.length).toString(),
-      client,
-    },
-  });
-
-  scrape_status.complete();
   console.log('azad.reallyDisplay returning');
   return table;
 }
