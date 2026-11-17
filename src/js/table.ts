@@ -12,6 +12,7 @@ import * as diagnostic_download from './diagnostic_download';
 import * as notice from './notice';
 import * as progress_bar from './progress_bar';
 import * as request_scheduler from './request_scheduler';
+import * as scrape_status from './scrape_status';
 import * as settings from './settings';
 import * as stats from './statistics';
 import * as table_config from './table_config';
@@ -274,6 +275,7 @@ async function reallyDisplay(
   }
 
   util.clearBody();
+  scrape_status.finishing();
   banner.addBanner();
 
   if (tableType !== 'transactions') {
@@ -348,6 +350,7 @@ async function reallyDisplay(
     },
   });
 
+  scrape_status.complete();
   console.log('azad.reallyDisplay returning');
   return table;
 }
