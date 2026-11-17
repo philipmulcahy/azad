@@ -3,7 +3,6 @@
 import $ from 'jquery';
 import 'datatables.net';
 import * as colspec from './colspec';
-import * as sprintf from 'sprintf-js';
 import * as util from './util';
 
 interface IDataTableInstance {
@@ -23,36 +22,57 @@ export function init(cols: Promise<colspec.ColSpec[]>) {
       [10, 25, 50, 100, -1],
       [10, 25, 50, 100, 'All'] ],
     'footerCallback': function(this: { api: () => unknown }) {
-      const api = this.api() as { column: (idx: number, options?: unknown) => { data: () => (string | number)[], footer: () => unknown } };
-      let col_index = 0;
-      cols.then( cols => cols.forEach( col_spec => {
-        const sum_col = function(col: { data: () => (string | number)[] }) {
-          const data = col.data();
-          if (data) {
-            const sum = data
-              .map( (v: string | number) => util.floatVal(v) )
-              .reduce(
-                (a: number, b: number) => a+b,
-                0
-              );
-            return util.floatVal(sum);
-          } else {
-            return 0;
-          }
+      const api = this.api() as {
+        column: (idx: number, options?: unknown) => {
+          data: () => (string | number)[];
+          footer: () => unknown;
         };
-        if(col_spec.is_numeric) {
-          col_spec.sum = sum_col(api.column(col_index));
-          col_spec.pageSum = sum_col(
-            api.column(col_index, {page: 'current'}));
-            $(api.column(col_index).footer() as HTMLElement).html(
-              sprintf.sprintf(
-                'page=%s; all=%s',
-                col_spec.pageSum.toFixed(2),
-                col_spec.sum.toFixed(2))
-            );
+      };
+      void cols.then(specs => {
+        const selected = specs.map((spec, idx) => ({spec, idx})).filter(
+          entry => entry.spec.is_numeric && /^(total|shipping|tax|refund|FSA\/HSA amount|FSA amount)$/i.test(entry.spec.field_name)
+        );
+        const sum = (values: (string | number)[]): number =>
+          values.reduce<number>((acc, value) => acc + util.floatVal(value), 0);
+        const metrics = selected.map(({spec, idx}) => {
+          const all = sum(api.column(idx, {search: 'applied'}).data());
+          const page = sum(api.column(idx, {page: 'current'}).data());
+          spec.sum = all;
+          spec.pageSum = page;
+          return {label: spec.field_name, all, page};
+        });
+        let panel = document.getElementById('azad_totals_summary');
+        if (!panel) {
+          panel = document.createElement('section');
+          panel.id = 'azad_totals_summary';
+          const anchor = document.querySelector('#azad_order_table_wrapper') ||
+            document.getElementById('azad_order_table');
+          anchor?.parentNode?.insertBefore(panel, anchor);
         }
-        col_index += 1;
-      }));
+        panel.replaceChildren();
+        const heading = document.createElement('strong');
+        heading.textContent = 'Totals';
+        panel.appendChild(heading);
+        const hint = document.createElement('span');
+        hint.textContent = 'Page / All matching rows';
+        hint.className = 'azad_totals_hint';
+        panel.appendChild(hint);
+        const grid = document.createElement('div');
+        grid.className = 'azad_totals_grid';
+        metrics.forEach(metric => {
+          const cell = document.createElement('div');
+          cell.className = 'azad_total_metric';
+          const name = document.createElement('span');
+          name.textContent = metric.label;
+          const amount = document.createElement('b');
+          const money = (value: number) => '$' + value.toFixed(2);
+          amount.textContent = money(metric.page) + ' / ' + money(metric.all);
+          cell.appendChild(name);
+          cell.appendChild(amount);
+          grid.appendChild(cell);
+        });
+        panel.appendChild(grid);
+      });
     }
   });
 }
