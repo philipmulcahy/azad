@@ -99,9 +99,12 @@ function connectToBackground() {
       case 'statistics_update':
         console.info('control got statistics update');
         if (msg.statistics) {
-          const text = Object.entries(msg.statistics)
-          .map(([k,v]) => {return k + ':' + v;})
-          .join('; ');
+          const numbers = msg.statistics;
+          const done = numbers.COMPLETED_COUNT + numbers.CACHE_HIT_COUNT;
+          const text = 'Running ' + numbers.RUNNING_COUNT +
+            ' | Waiting ' + numbers.QUEUED_COUNT +
+            ' | Processed ' + done +
+            (numbers.ERROR_COUNT ? ' | Errors ' + numbers.ERROR_COUNT : '');
           $('#azad_statistics').text(text);
           if (
             (
@@ -110,7 +113,8 @@ function connectToBackground() {
           ) {
             activateScrapingUI(msg.purpose);
           } else {
-            activateDone(msg.purpose);
+            // Idle request queues can precede final table preparation.
+            activateDone('Finishing results on Amazon tab');
           }
         }
         break;
