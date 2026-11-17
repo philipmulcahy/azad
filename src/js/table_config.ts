@@ -21,7 +21,7 @@ export function getCols(table_type: string): Promise<colspec.ColSpec[]> {
   // TODO: this should be a(n) map/object and lookup func.
   const cols: colspec.ColSpec[] = (table_type == 'orders' || table_type == 'fsa_orders') ?
     ORDER_COLS :
-    (table_type == 'items') ?
+    (table_type == 'items' || table_type == 'fsa_items') ?
       ITEM_COLS :
       (table_type == 'shipments') ?
         SHIPMENT_COLS :
