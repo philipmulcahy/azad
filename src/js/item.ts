@@ -22,6 +22,19 @@ export interface IItem extends azad_entity.IEntity {
   fsa_hsa_eligible?: string;  // 'Yes' when Amazon explicitly marks the product
 }
 
+// A scrape's table mode determines whether product pages are needed.
+const productLookupModes = new WeakMap<request_scheduler.IRequestScheduler, string>();
+const productInfoPromises = new WeakMap<
+  request_scheduler.IRequestScheduler, Map<string, Promise<ProductInfo>>
+>();
+
+export function configureProductLookup(
+  scheduler: request_scheduler.IRequestScheduler,
+  tableType: string,
+): void {
+  productLookupModes.set(scheduler, tableType);
+}
+
 type ItemsExtractor = (
   order_elem: HTMLElement,
   order_header: order_header.IOrderHeader,
@@ -71,27 +84,31 @@ async function categoriseItems(
   items: IItem[],
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<IItem[]> {
-  let show_category_in_items_view = true;
-  try {
-    show_category_in_items_view = await settings.getBoolean(
-      'show_category_in_items_view');
-  } catch (ex) {
-    console.log('categoriseItems caught', ex,
-      'when looking at settings: maybe it has never been set?');
-  }
+  const mode = productLookupModes.get(scheduler);
+  const usesItemColumns = mode === 'items' || mode === 'fsa_items';
+  // When no mode is configured (e.g. diagnostics), retain historical behavior.
+  const needFsa = mode === undefined || mode === 'fsa_orders' ||
+    usesItemColumns;
+  let needCategory = mode === undefined || usesItemColumns;
 
-  // Amazon exposes the FSA label on the product page, even when the order
-  // summary has no FSA amount. Fetch it via the existing cached scheduler.
-  // Reuse that same response to fetch the category if enabled.
+  if (needCategory) {
+    try {
+      needCategory = await settings.getBoolean('show_category_in_items_view');
+    } catch (ex) {
+      console.log('Could not read category setting:', ex);
+    }
+  }
+  // Orders and shipments need neither product categories nor item labels.
+  // This avoids extra product requests during ordinary order exports.
   const completions = items.map(async (item: IItem): Promise<void> => {
     item.fsa_hsa_eligible = '';
     const is_us_item = /(^|\.)amazon\.com$/i.test(item.order_header.site);
-    if (!show_category_in_items_view && !is_us_item) return;
+    if (!needCategory && (!needFsa || !is_us_item)) return;
     if (!item.url || !/^https?:\/\//i.test(item.url)) return;
     try {
       const result = await getProductInfo(item.url, scheduler);
-      if (show_category_in_items_view) item.category = result.category;
-      if (is_us_item && result.fsa_hsa_eligible) {
+      if (needCategory) item.category = result.category;
+      if (needFsa && is_us_item && result.fsa_hsa_eligible) {
         item.fsa_hsa_eligible = 'Yes';
       }
     } catch (ex) {
@@ -108,6 +125,26 @@ interface ProductInfo {
 }
 
 function getProductInfo(
+  product_url: string,
+  scheduler: request_scheduler.IRequestScheduler,
+): Promise<ProductInfo> {
+  let requests = productInfoPromises.get(scheduler);
+  if (!requests) {
+    requests = new Map<string, Promise<ProductInfo>>();
+    productInfoPromises.set(scheduler, requests);
+  }
+  const existing = requests.get(product_url);
+  if (existing) return existing;
+  const promise = fetchProductInfo(product_url, scheduler);
+  requests.set(product_url, promise);
+  // Allow a later attempt when the request fails; keep successes for reuse.
+  void promise.catch(() => {
+    if (requests?.get(product_url) === promise) requests.delete(product_url);
+  });
+  return promise;
+}
+
+function fetchProductInfo(
   product_url: string,
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<ProductInfo> {
