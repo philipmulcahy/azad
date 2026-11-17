@@ -131,37 +131,41 @@ div#azad_statistics {
   padding: 6px;
 }
 
-#azad_fsa_panel {
+#azad_fsa_filter {
+  margin: 10px 0 4px;
+  padding: 10px 12px;
   border: 1px solid #ead6bf;
+  border-radius: 8px;
   background: #fffaf4;
-  border-radius: 10px;
-  padding: 12px;
 }
-.azad_fsa_title {
-  font-size: 14px;
-  font-weight: 750;
-  margin-bottom: 4px;
+#azad_fsa_filter label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
 }
-.azad_fsa_desc, .azad_fsa_note {
+#azad_fsa_filter input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--azad-orange);
+}
+.azad_fsa_note {
+  margin-top: 7px;
+  padding-left: 26px;
   font-size: 11px;
   line-height: 1.45;
   color: #695a4a;
 }
-.azad_fsa_note { margin-top: 7px; }
-#azad_fsa_orders {
-  display: block;
-  width: 100%;
-  margin-top: 10px;
-  padding: 10px 12px;
-  background: var(--azad-orange);
-  border: 1px solid var(--azad-orange);
-  border-radius: 7px;
-  color: #fff;
-  font: inherit;
-  font-weight: 750;
-  cursor: pointer;
+#azad_fsa_filter.azad_fsa_unavailable {
+  opacity: .58;
+  background: #f7f7f7;
+  border-color: var(--azad-border);
 }
-#azad_fsa_orders:hover { background: var(--azad-orange-hover); }
+#azad_fsa_filter.azad_fsa_unavailable label { cursor: not-allowed; }
 
 #azad_help { margin-top: 4px; }
 a#azad_help {
