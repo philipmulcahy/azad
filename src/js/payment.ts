@@ -21,13 +21,16 @@ const LEGACY_INSTRUMENT_BOX_CLASS = 'pmts-payments-instrument-detail-box';
 const PAYMENT_INSTRUMENT_XPATH = './/*[@data-testid="payment-instrument"]';
 const PAYMENT_METHOD_ARIA_XPATH = './/*[@aria-label="payment method"]';
 const PAYMENT_INSTRUMENT_MESSAGE_TESTID = 'payment-instrument-message';
+const CARD_ENDING_IN_PHRASE = 'ending in';
 const NON_CARD_PAYMENT_TERMS = [
   util.GIFT_CARD_REGEX.source,
-  'gift\\s*card',
+  ...[
+    util.GIFT_CARD_LABEL,
+    util.GIFT_CERTIFICATE_LABEL,
+    util.BUONO_REGALO_LABEL,
+  ].map(label => label.replace(/ /g, '\\s*')),
   'carte\\s*cadeau',
-  'buono\\s*regalo',
   'tarjeta\\s*regalo',
-  'gift\\s*certificate',
   'reward\\s*points',
 ];
 
@@ -117,7 +120,7 @@ function payments_from_invoice(
     );
 
     const payment_amounts = map_payment_field(
-      /Grand Total: (.*) Payment Method/i,
+      new RegExp(`${util.GRAND_TOTAL_LABEL}: (.*) Payment Method`, 'i'),
     );
 
     const count = Math.min(
@@ -130,7 +133,7 @@ function payments_from_invoice(
     let i = 0;
 
     for ( i = 0; i < count; i++ ) {
-      const p: Payment = `${card_names[i]} ending in ${card_number_suffixes[i]}: ${payment_amounts[i]}`;
+      const p: Payment = `${card_names[i]} ${CARD_ENDING_IN_PHRASE} ${card_number_suffixes[i]}: ${payment_amounts[i]}`;
 
       payments.push(p);
     }
@@ -380,7 +383,7 @@ export function paymentsFromDetailPage(
 
     const cardText = extractVisibleText(rowNodes[0], true);
     const cardDetailsPattern = new RegExp(
-      `(?:${util.CARD_MASKED_DIGITS_REGEX.source}|ending in)\\s*${util.CARD_LAST_DIGITS_REGEX.source}`,
+      `(?:${util.CARD_MASKED_DIGITS_REGEX.source}|${CARD_ENDING_IN_PHRASE})\\s*${util.CARD_LAST_DIGITS_REGEX.source}`,
       'i'
     );
     const nonCardPattern = new RegExp(NON_CARD_PAYMENT_TERMS.join('|'), 'i');

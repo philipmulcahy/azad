@@ -172,7 +172,7 @@ function extractDetailFromDoc(
     const currencies = util.CURRENCY_STRINGS;
     const titles = [
       'Grand total',
-      'Grand Total',
+      util.GRAND_TOTAL_LABEL,
       'Total general',
       'Total for this order',
       'Total of this order',
@@ -192,17 +192,17 @@ function extractDetailFromDoc(
         '//span[contains(@id,"grand-total-amount")]/text()',
 
         '//div[contains(@id,"od-subtotals")]//' +
-        '*[.//text()[contains(.,"Grand Total")] ' +
+        `*[.//text()[contains(.,"${util.GRAND_TOTAL_LABEL}")] ` +
         'or .//text()[contains(.,"Montant total TTC")]' +
         'or .//text()[contains(.,"Total général du paiement")]' +
         ']/parent::div/following-sibling::div/span',
 
-        '//span[contains(text(),"Grand Total:")]' +
+        `//span[contains(text(),"${util.GRAND_TOTAL_LABEL}:")]` +
         '/parent::*/parent::*/parent::*/div/span[' +
         currencies.map(ccy => `contains(text(), "${ccy}")`).join(' or ') +
         ']/parent::*/parent::*',
 
-        '//span[contains(text(),"Grand Total:")]' +
+        `//span[contains(text(),"${util.GRAND_TOTAL_LABEL}:")]` +
         '/parent::*/parent::*/div/span[' +
         currencies.map(ccy => `contains(text(), "${ccy}")`).join(' or ') +
         ']/parent::*/parent::*',
@@ -230,16 +230,16 @@ function extractDetailFromDoc(
       'orderdetails_gift',
       [
         '//div[contains(@id,"od-subtotals")]//' +
-        'span[.//text()[(contains(.,"Gift") or contains(.,"Importo Buono Regalo")) and not(contains(., "wrap"))]]' +
+        `span[.//text()[(contains(.,"Gift") or contains(.,"Importo ${util.BUONO_REGALO_LABEL}")) and not(contains(., "wrap"))]]` +
         'parent::div/following-sibling::div/span',
 
         '//span[contains(@id, "giftCardAmount-amount")]/text()', // Whole foods or Amazon Fresh.
 
-        '//span[text()[contains(.,"Gift Certificate")]]',
+        `//span[text()[contains(.,"${util.GIFT_CERTIFICATE_LABEL}")]]`,
 
         // '//span[text()[contains(.,"Gift Card") and not(contains(.,"Gift Cards"))]]',
         '//span[' +
-          'text()[contains(.,"Gift Card") and not(contains(.,"Gift Cards"))] ' +
+          `text()[contains(.,"${util.GIFT_CARD_LABEL}") and not(contains(.,"${util.GIFT_CARD_LABEL}s"))] ` +
           'and not (@data-testid) ' +
         ']/ancestor::div[2][not (@data-pmts-component-id)]',
       ],

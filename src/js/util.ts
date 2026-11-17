@@ -64,6 +64,10 @@ export const CARD_NAME_REGEX = /([A-Za-z][A-Za-z0-9. ]{2,49})/;
 export const CARD_MASKED_DIGITS_REGEX = /([•*]{3,4})/;
 export const CARD_LAST_DIGITS_REGEX = /([0-9]{3,4})/;
 export const GIFT_CARD_REGEX = /(Amazon Gift Card|Amazon-Geschenkgutschein)/;
+export const GRAND_TOTAL_LABEL = 'Grand Total';
+export const GIFT_CARD_LABEL = 'Gift Card';
+export const GIFT_CERTIFICATE_LABEL = 'Gift Certificate';
+export const BUONO_REGALO_LABEL = 'Buono Regalo';
 
 export const CURRENCY_STRINGS = [
   '$', '£', '€', 'AUD', 'CAD', 'EUR', 'GBP', 'USD',
