@@ -7,6 +7,7 @@ import * as azad_table from './table';
 import {dateToDateIsoString} from './date';
 import * as git_hash from '../generated/git_hash';
 import * as iframeWorker from './iframe-worker';
+import * as item from './item';
 import * as notice from './notice';
 import * as periods from './periods';
 import * as pageType from './page_type';
@@ -75,6 +76,7 @@ async function fetchAndShowOrdersByYears(
 
   const purpose: string = years.join(', ');
   resetScheduler(purpose);
+  item.configureProductLookup(getScheduler(), tableType);
 
   const orderPromises = azad_order.getOrdersByYear(
     years,
@@ -108,6 +110,7 @@ async function fetchAndShowOrdersByRange(
     + dateToDateIsoString(end_date);
 
   resetScheduler(purpose);
+  item.configureProductLookup(getScheduler(), tableType);
 
   const orders = azad_order.getOrdersByRange(
     start_date,
