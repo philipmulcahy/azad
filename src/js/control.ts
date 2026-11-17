@@ -354,9 +354,9 @@ function handleStopClick() {
 function init() {
   settings.startMonitoringSettingsStorage();
   settings.initialiseUi();
-  settings.registerTableTypeRadioButtons();
+  void settings.registerTableTypeRadioButtons()
+    .then(updateFsaFilterAvailability);
   $('input.azad_table_type').on('change', updateFsaFilterAvailability);
-  updateFsaFilterAvailability();
   console.log('init');
   setVersion();
   activateIdle();
