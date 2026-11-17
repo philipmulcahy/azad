@@ -376,6 +376,7 @@ function addFsaSummary(
 
       addCsvButton(entities, tableType, getBackgroundPort);
     }
+    scrape_status.complete();
   });
 
   (await getBackgroundPort())?.postMessage({
@@ -388,7 +389,6 @@ function addFsaSummary(
     },
   });
 
-  scrape_status.complete();
   console.log('azad.reallyDisplay returning');
   return table;
 }
