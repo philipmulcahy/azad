@@ -19,7 +19,7 @@ export function getCols(table_type: string): Promise<colspec.ColSpec[]> {
   const results: colspec.ColSpec[] = [];
 
   // TODO: this should be a(n) map/object and lookup func.
-  const cols: colspec.ColSpec[] = (table_type == 'orders') ?
+  const cols: colspec.ColSpec[] = (table_type == 'orders' || table_type == 'fsa_orders') ?
     ORDER_COLS :
     (table_type == 'items') ?
       ITEM_COLS :
@@ -31,9 +31,9 @@ export function getCols(table_type: string): Promise<colspec.ColSpec[]> {
 
   cols.forEach( col => {
     if (col?.sites?.test(urls.getSite()) ?? true) {
-      const visible_promise = col.visibility ?
-        col.visibility() :
-        Promise.resolve(true);
+      const visible_promise = (table_type == 'fsa_orders' && col.field_name == 'invoice') ?
+        Promise.resolve(true) :
+        (col.visibility ? col.visibility() : Promise.resolve(true));
       waits.push(visible_promise);
       visible_promise.then( visible => {
         if ( visible ) {
