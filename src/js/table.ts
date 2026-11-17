@@ -40,7 +40,8 @@ function appendCell(
       if (
         typeof(x) === 'string' &&
         parseFloat(
-          x.replace(/^([£$]|CAD|EUR|GBP) */, '').replace(/,/, '.')
+          x.replace(new RegExp(`^${util.currencyRegex().source} *`), '')
+            .replace(/,/, '.')
         ) + 0 == 0
       ) {
         return 0;

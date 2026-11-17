@@ -169,7 +169,7 @@ function extractDetailFromDoc(
   }();
 
   const total: string = function(): string {
-    const currencies = ['$', '£', '€', 'AUD', 'CAD', 'GBP', 'USD'];
+    const currencies = util.CURRENCY_STRINGS;
     const titles = [
       'Grand total',
       'Grand Total',
@@ -500,11 +500,14 @@ function extractDetailFromDoc(
     return '';
   }();
 
+  const gift_amount = gift();
+
   function payments() {
     return payment.paymentsFromDetailPage(
       doc,
       order_date,
-      total
+      total,
+      gift_amount,
     );
   }
 
@@ -513,7 +516,7 @@ function extractDetailFromDoc(
     total: total,
     postage: postage(),
     postage_refund: postage_refund(),
-    gift: gift(),
+    gift: gift_amount,
     subscribe_and_save: subscribe_and_save(),
     us_tax: us_tax(),
     vat: vat(),

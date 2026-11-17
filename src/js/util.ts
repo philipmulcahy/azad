@@ -60,11 +60,28 @@ function clean_mixed_decimal_separators(number_string: string): string {
   return number_string;
 }
 
+export const CARD_NAME_REGEX = /([A-Za-z][A-Za-z0-9. ]{2,49})/;
+export const CARD_MASKED_DIGITS_REGEX = /([•*]{3,4})/;
+export const CARD_LAST_DIGITS_REGEX = /([0-9]{3,4})/;
+export const GIFT_CARD_REGEX = /(Amazon Gift Card|Amazon-Geschenkgutschein)/;
+
+export const CURRENCY_STRINGS = [
+  '$', '£', '€', 'AUD', 'CAD', 'EUR', 'GBP', 'USD',
+] as const;
+
 export function currencyRegex(): RegExp {
   // \u20ac is Euro symbol (€).
   // Sometimes typing it "properly" seems to break the regular
   // expression.
   return /(?:\u20ac|€|£|\$|AUD|CAD|EUR|GBP|USD)/;
+}
+
+export function currencyAmountRegex(): RegExp {
+  return new RegExp(`(-? *${currencyRegex().source} *\\d[0-9,.]*)`);
+}
+
+export function positiveCurrencyAmountRegex(): RegExp {
+  return new RegExp(`${currencyRegex().source}\\s*\\d[\\d,.]*`);
 }
 
 function parseToNumber(i: string | number): number {
@@ -160,21 +177,9 @@ export function clearBody(): void {
 }
 
 export function moneyRegEx(): RegExp {
-    return /\s*(-?(GBP|USD|CAD|EUR|AUD|[$£€])?\s?(\d+[.,]\d\d))\s*/;
-/*
-    /
-        \s*
-        (
-            -?
-            (
-                GBP|USD|CAD|EUR|AUD|[$£€]
-            )?
-            \s?
-            (\d+[.,]\d\d)
-        )
-        \s*
-    /
-*/
+  return new RegExp(
+    `\\s*(-?(${currencyRegex().source})?\\s?(\\d+[.,]\\d\\d))\\s*`
+  );
 }
 
 export function orderIdRegExp(): RegExp {

@@ -5,6 +5,7 @@
 'use strict';
 
 import * as save_file from './save_file';
+import * as util from './util';
 
 function string_or_null(s: string | null | undefined) {
   if (s) {
@@ -39,7 +40,9 @@ function make_csv_string(
           | null
           | string = cells[j];
         if (x?.getAttribute('class')?.search('azad_numeric_no') == -1) {
-          x = x?.textContent?.replace(/^([£$]|CAD|EUR|GBP) */, '');
+          x = x?.textContent?.replace(
+            new RegExp(`^${util.currencyRegex().source} *`), ''
+          );
         } else {
           x = x.textContent;
         }
