@@ -310,14 +310,7 @@ const ORDER_COLS: colspec.ColSpec[] = [
     },
     is_numeric: false,
   }, {
-    field_name: 'FSA/HSA amount',
-    value_promise_func_name: 'fsa_hsa_eligible_amount',
-    is_numeric: true,
-    sites: new RegExp('\\.com$'),
-    help: 'The dollar amount explicitly reported by Amazon on the order page. ' +
-      'A blank amount is normal for some mixed orders even when an eligible item is found.',
-  }, {
-    field_name: 'FSA/HSA found',
+    field_name: 'FSA item found',
     render_func: async (order: azad_entity.IEntity, td: HTMLElement) => {
       const o = order as azad_order.IOrder;
       const [amount, items] = await Promise.all([
@@ -335,6 +328,13 @@ const ORDER_COLS: colspec.ColSpec[] = [
       'Normal Orders exports skip product-page checks for speed; use the ' +
       'FSA filter or Items export to check mixed orders. ' +
       'Blank is not a determination of ineligibility.',
+  }, {
+    field_name: 'FSA/HSA amount',
+    value_promise_func_name: 'fsa_hsa_eligible_amount',
+    is_numeric: true,
+    sites: new RegExp('\\.com$'),
+    help: 'The dollar amount explicitly reported by Amazon on the order page. ' +
+      'A blank amount is normal for some mixed orders even when an eligible item is found.',
   }, {
     field_name: 'invoice',
     render_func: (order: azad_entity.IEntity, td: HTMLElement) => {
