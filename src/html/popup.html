@@ -6,7 +6,7 @@
     <script src="control.bundle.js"></script>
   </head>
   <body>
-    <div style="padding: 5px 8px; background: #fff3cd; color: #664d03; font-size: 12px; font-weight: bold; text-align: center;">AZAD FSA/HSA TEST VERSION</div>
+    <div id="azad_test_banner">AZAD FSA/HSA <span>TEST VERSION</span></div>
     <div id="azad_page_actions" class="azad_control_page">
       <div id="azad_actions">
         <table width="100%">
@@ -30,6 +30,7 @@
     <div class="azad_separator"></div>
     <div id="azad_page_default" class="azad_control_page">
       <div id="azad_year_missing_message"></div>
+      <div class="azad_section_label">Select a time period</div>
       <div id="azad_year_list"></div>
       <div class="azad_separator"></div>
       <div id="azad_info">
@@ -45,6 +46,12 @@
         </table>
       </div>
       <div class="azad_separator"></div>
+      <div id="azad_fsa_panel">
+        <div class="azad_fsa_title">FSA / HSA purchases</div>
+        <div class="azad_fsa_desc">Find orders with an eligible amount or a labeled eligible product.</div>
+        <button type="button" id="azad_fsa_orders">View FSA orders · Last 6 months</button>
+        <div class="azad_fsa_note">Includes invoice links when Amazon provides them.</div>
+      </div>
       <div id="azad_help">
         <a href="https://github.com/philipmulcahy/azad/blob/master/README.md"
            target="_blank" class="azad_help" id="azad_help">
