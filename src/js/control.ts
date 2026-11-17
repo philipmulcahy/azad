@@ -178,6 +178,19 @@ function registerActionButtons() {
       }
     });
 
+    $('#azad_fsa_orders').on('click', () => {
+      const end_date = new Date();
+      const start_date = util.subtract_months(end_date, 6);
+      activateScrapingUI('FSA orders · 6 months');
+      background_port?.postMessage({
+        action: 'scrape_range',
+        start_date,
+        end_date,
+        table_type: 'fsa_orders',
+        client: 'Azad FSA test UI',
+      });
+    });
+
     $('#azad_stop').on('click', () => {
       console.log('stop clicked');
       handleStopClick();
