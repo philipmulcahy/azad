@@ -121,10 +121,13 @@ function appendEntityRow(
 async function addItemTable(
   doc: HTMLDocument,
   orders: azad_order.IOrder[],
-  cols: Promise<colspec.ColSpec[]>
+  cols: Promise<colspec.ColSpec[]>,
+  fsaOnly = false,
 ): Promise<HTMLTableElement> {
   const items = await order_util.enriched_items_from_orders(orders);
-  return addTable(doc, items, cols);
+  const visibleItems = fsaOnly ?
+    items.filter(item => item.fsa_hsa_eligible === 'Yes') : items;
+  return addTable(doc, visibleItems, cols);
 }
 
 async function addShipmentsTable(
@@ -291,8 +294,10 @@ async function reallyDisplay(
   const cols = table_config.getCols(tableType);
 
   let table_promise: Promise<HTMLTableElement>;
-  if (tableType === 'items') {
-    table_promise = addItemTable(document, entities as azad_order.IOrder[], cols);
+  if (tableType === 'items' || tableType === 'fsa_items') {
+    table_promise = addItemTable(
+      document, entities as azad_order.IOrder[], cols, tableType === 'fsa_items'
+    );
   } else if (tableType === 'shipments') {
     table_promise = addShipmentsTable(document, entities as azad_order.IOrder[], cols);
   } else {
