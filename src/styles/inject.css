@@ -171,3 +171,26 @@
   white-space: nowrap;
 }
 #azad_order_table tbody td { padding: 8px 10px; }
+
+
+/* Replace noisy repeated sorting background graphics with simple indicators. */
+#azad_order_table thead th.sorting,
+#azad_order_table thead th.sorting_asc,
+#azad_order_table thead th.sorting_desc {
+  background-image: none !important;
+}
+#azad_order_table thead th.sorting::after {
+  content: '↕';
+  color: #a4aeb8;
+  margin-left: 7px;
+}
+#azad_order_table thead th.sorting_asc::after {
+  content: '↑';
+  color: #4263b2;
+  margin-left: 7px;
+}
+#azad_order_table thead th.sorting_desc::after {
+  content: '↓';
+  color: #4263b2;
+  margin-left: 7px;
+}
