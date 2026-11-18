@@ -19,9 +19,9 @@ export function getCols(table_type: string): Promise<colspec.ColSpec[]> {
   const results: colspec.ColSpec[] = [];
 
   // TODO: this should be a(n) map/object and lookup func.
-  const cols: colspec.ColSpec[] = (table_type == 'orders') ?
+  const cols: colspec.ColSpec[] = (table_type == 'orders' || table_type == 'fsa_orders') ?
     ORDER_COLS :
-    (table_type == 'items') ?
+    (table_type == 'items' || table_type == 'fsa_items') ?
       ITEM_COLS :
       (table_type == 'shipments') ?
         SHIPMENT_COLS :
@@ -31,9 +31,9 @@ export function getCols(table_type: string): Promise<colspec.ColSpec[]> {
 
   cols.forEach( col => {
     if (col?.sites?.test(urls.getSite()) ?? true) {
-      const visible_promise = col.visibility ?
-        col.visibility() :
-        Promise.resolve(true);
+      const visible_promise = (table_type == 'fsa_orders' && col.field_name == 'invoice') ?
+        Promise.resolve(true) :
+        (col.visibility ? col.visibility() : Promise.resolve(true));
       waits.push(visible_promise);
       visible_promise.then( visible => {
         if ( visible ) {
@@ -310,6 +310,32 @@ const ORDER_COLS: colspec.ColSpec[] = [
     },
     is_numeric: false,
   }, {
+    field_name: 'FSA item found',
+    render_func: async (order: azad_entity.IEntity, td: HTMLElement) => {
+      const o = order as azad_order.IOrder;
+      const [amount, items] = await Promise.all([
+        o.fsa_hsa_eligible_amount(), o.item_list(),
+      ]);
+      const hasReportedAmount = Number(amount.replace(/[^0-9.]/g, '')) > 0;
+      td.textContent = hasReportedAmount ||
+        items.some(item => item.fsa_hsa_eligible === 'Yes') ? 'Yes' : '';
+      return null;
+    },
+    is_numeric: false,
+    sites: new RegExp('\\.com$'),
+    help: 'Yes means Amazon reported an eligible order amount or at least ' +
+      'one product was explicitly marked FSA/HSA eligible. ' +
+      'Normal Orders exports skip product-page checks for speed; use the ' +
+      'FSA filter or Items export to check mixed orders. ' +
+      'Blank is not a determination of ineligibility.',
+  }, {
+    field_name: 'FSA/HSA amount',
+    value_promise_func_name: 'fsa_hsa_eligible_amount',
+    is_numeric: true,
+    sites: new RegExp('\\.com$'),
+    help: 'The dollar amount explicitly reported by Amazon on the order page. ' +
+      'A blank amount is normal for some mixed orders even when an eligible item is found.',
+  }, {
     field_name: 'invoice',
     render_func: (order: azad_entity.IEntity, td: HTMLElement) => {
       return (order as azad_order.IOrder).invoice_url().then( url => {
@@ -391,6 +417,14 @@ const ITEM_COLS: colspec.ColSpec[] = [
     field_name: 'subscribe & save',
     value_promise_func_name: 'subscribe_and_save',
     is_numeric: true
+  }, {
+    field_name: 'FSA/HSA eligible',
+    value_promise_func_name: 'fsa_hsa_eligible',
+    is_numeric: false,
+    sites: new RegExp('\\.com$'),
+    help: 'Yes means Amazon explicitly labels this product FSA/HSA eligible. ' +
+      'Blank means no matching label was available, not that the item is ' +
+      'necessarily ineligible. This is not a reimbursement amount.',
   }, {
     field_name: 'ASIN',
     value_promise_func_name: 'asin',

@@ -7,12 +7,14 @@ import * as azad_table from './table';
 import {dateToDateIsoString} from './date';
 import * as git_hash from '../generated/git_hash';
 import * as iframeWorker from './iframe-worker';
+import * as item from './item';
 import * as notice from './notice';
 import * as periods from './periods';
 import * as pageType from './page_type';
 import * as ports from './ports';
 import * as request_scheduler from './request_scheduler';
 import * as signin from './signin';
+import * as scrape_status from './scrape_status';
 import * as stats from './statistics';
 import * as transaction from './transaction';
 import * as urls from './url';
@@ -34,6 +36,13 @@ function setStatsTimeout() {
   const sendStatsMsg = async () => {
     await _stats.publish(ports.getBackgroundPort, getScheduler().purpose());
     azad_table.updateProgressBar(_stats);
+    scrape_status.update(
+      _stats.get(stats.OStatsKey.QUEUED_COUNT),
+      _stats.get(stats.OStatsKey.RUNNING_COUNT),
+      _stats.get(stats.OStatsKey.COMPLETED_COUNT) +
+        _stats.get(stats.OStatsKey.CACHE_HIT_COUNT),
+      _stats.get(stats.OStatsKey.ERROR_COUNT)
+    );
   };
 
   if (stats_timeout) {
@@ -75,6 +84,8 @@ async function fetchAndShowOrdersByYears(
 
   const purpose: string = years.join(', ');
   resetScheduler(purpose);
+  scrape_status.start();
+  item.configureProductLookup(getScheduler(), tableType);
 
   const orderPromises = azad_order.getOrdersByYear(
     years,
@@ -82,8 +93,13 @@ async function fetchAndShowOrdersByYears(
     () => true,
   );
 
-  return azad_table.display(
-    orderPromises, tableType, true, ports.getBackgroundPort, client);
+  try {
+    return await azad_table.display(
+      orderPromises, tableType, true, ports.getBackgroundPort, client);
+  } catch (ex) {
+    scrape_status.failed();
+    throw ex;
+  }
 }
 
 async function fetchAndShowOrdersByRange(
@@ -108,6 +124,8 @@ async function fetchAndShowOrdersByRange(
     + dateToDateIsoString(end_date);
 
   resetScheduler(purpose);
+  scrape_status.start();
+  item.configureProductLookup(getScheduler(), tableType);
 
   const orders = azad_order.getOrdersByRange(
     start_date,
@@ -121,8 +139,13 @@ async function fetchAndShowOrdersByRange(
     },
   );
 
-  return azad_table.display(
-    orders, tableType, beautifulTable, ports.getBackgroundPort, client);
+  try {
+    return await azad_table.display(
+      orders, tableType, beautifulTable, ports.getBackgroundPort, client);
+  } catch (ex) {
+    scrape_status.failed();
+    throw ex;
+  }
 }
 
 async function registerContentScript(isIframeWorker: boolean) {

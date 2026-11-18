@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Amazon Order History Reporter",
+  "name": "AZAD FSA/HSA (Test)",
   "content_security_policy": {
     "extension_pages":
       "script-src 'self'; object-src 'self'; connect-src https://extensionpay.com https://azad-extension.co.uk"
@@ -64,7 +64,7 @@
     }
   ],
   "action": {
-    "default_title": "Amazon Order History Reporter",
+    "default_title": "AZAD FSA/HSA (Test)",
     "default_popup": "popup.html"
   },
   "icons": {

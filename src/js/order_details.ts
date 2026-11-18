@@ -8,6 +8,7 @@ import * as payment from './payment';
 import * as req from './request';
 import * as request_scheduler from './request_scheduler';
 import * as shipment from './shipment';
+import * as fsa_hsa from './fsa_hsa';
 import * as strategy from './strategy';
 import * as sprintf from 'sprintf-js';
 import * as util from './util';
@@ -27,6 +28,7 @@ export interface IOrderDetails {
   who: string;
   invoice_url: string;
   payments: string[];  // this is not the only source of payment information.
+  fsa_hsa_eligible_amount: string;
 }
 
 export interface IOrderDetailsAndItems {
@@ -526,6 +528,7 @@ function extractDetailFromDoc(
     who: who(),
     invoice_url: invoice_url,
     payments: payments(),
+    fsa_hsa_eligible_amount: fsa_hsa.fsa_hsa_eligible_amount(doc),
   };
 
   return details;

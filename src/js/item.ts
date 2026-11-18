@@ -2,6 +2,7 @@
 
 import * as azad_entity from './entity';
 import * as extraction from './extraction';
+import * as fsa_hsa from './fsa_hsa';
 import * as order_header from './order_header';
 import * as request_scheduler from './request_scheduler';
 import * as req from './request';
@@ -18,6 +19,20 @@ export interface IItem extends azad_entity.IEntity {
   asin: string;
   order_header: order_header.IOrderHeader;
   category: string;
+  fsa_hsa_eligible?: string;  // 'Yes' when Amazon explicitly marks the product
+}
+
+// A scrape's table mode determines whether product pages are needed.
+const productLookupModes = new WeakMap<request_scheduler.IRequestScheduler, string>();
+const productInfoPromises = new WeakMap<
+  request_scheduler.IRequestScheduler, Map<string, Promise<ProductInfo>>
+>();
+
+export function configureProductLookup(
+  scheduler: request_scheduler.IRequestScheduler,
+  tableType: string,
+): void {
+  productLookupModes.set(scheduler, tableType);
 }
 
 type ItemsExtractor = (
@@ -69,67 +84,91 @@ async function categoriseItems(
   items: IItem[],
   scheduler: request_scheduler.IRequestScheduler,
 ): Promise<IItem[]> {
-  let show_category_in_items_view = true;
+  const mode = productLookupModes.get(scheduler);
+  const usesItemColumns = mode === 'items' || mode === 'fsa_items';
+  // When no mode is configured (e.g. diagnostics), retain historical behavior.
+  const needFsa = mode === undefined || mode === 'fsa_orders' ||
+    usesItemColumns;
+  let needCategory = mode === undefined || usesItemColumns;
 
-  try {
-    show_category_in_items_view = await settings.getBoolean(
-      'show_category_in_items_view');
-
-    if (!show_category_in_items_view) {
-      return items;
-    }
-  } catch (ex) {
-    console.log(
-      'categoriseItems caught', ex,
-      'when looking at settings: maybe we are doing regression testing?');
-  }
-
-  const completions: Promise<void>[] = [];
-
-  items.forEach(async function (item: IItem) {
-    const category_promise = getCategoryForProduct(item.url, scheduler);
-    completions.push(category_promise.then(_ => { }));
-
+  if (needCategory) {
     try {
-      item.category = await category_promise;
+      needCategory = await settings.getBoolean('show_category_in_items_view');
     } catch (ex) {
-      const exs = util.stringifyError(ex);
-      const msg = `categorizeItems caught: ${exs}`;
-      console.debug(msg);
-      // We don't care;
+      console.log('Could not read category setting:', ex);
+    }
+  }
+  // Orders and shipments need neither product categories nor item labels.
+  // This avoids extra product requests during ordinary order exports.
+  const completions = items.map(async (item: IItem): Promise<void> => {
+    item.fsa_hsa_eligible = '';
+    const is_us_item = /(^|\.)amazon\.com$/i.test(item.order_header.site);
+    if (!needCategory && (!needFsa || !is_us_item)) return;
+    if (!item.url || !/^https?:\/\//i.test(item.url)) return;
+    try {
+      const result = await getProductInfo(item.url, scheduler);
+      if (needCategory) item.category = result.category;
+      if (needFsa && is_us_item && result.fsa_hsa_eligible) {
+        item.fsa_hsa_eligible = 'Yes';
+      }
+    } catch (ex) {
+      console.debug('getProductInfo failed for item', util.stringifyError(ex));
     }
   });
-
   await Promise.allSettled(completions);
   return items;
 }
 
-function getCategoryForProduct(
+interface ProductInfo {
+  category: string;
+  fsa_hsa_eligible: boolean;
+}
+
+function getProductInfo(
   product_url: string,
   scheduler: request_scheduler.IRequestScheduler,
-): Promise<string> {
-  return req.makeAsyncStaticRequest<string>(
-    product_url,
-    'getCategoryForProduct',
-    (evt) => {
-      const productPage = util.parseStringToDOM(evt.target.responseText)
-        .documentElement;
+): Promise<ProductInfo> {
+  let requests = productInfoPromises.get(scheduler);
+  if (!requests) {
+    requests = new Map<string, Promise<ProductInfo>>();
+    productInfoPromises.set(scheduler, requests);
+  }
+  const existing = requests.get(product_url);
+  if (existing) return existing;
+  const promise = fetchProductInfo(product_url, scheduler);
+  requests.set(product_url, promise);
+  // Allow a later attempt when the request fails; keep successes for reuse.
+  void promise.catch(() => {
+    if (requests?.get(product_url) === promise) requests.delete(product_url);
+  });
+  return promise;
+}
 
-      const raw = extraction.by_regex(
+function fetchProductInfo(
+  product_url: string,
+  scheduler: request_scheduler.IRequestScheduler,
+): Promise<ProductInfo> {
+  return req.makeAsyncStaticRequest<ProductInfo>(
+    product_url,
+    'getProductInfo',
+    (evt) => {
+      const doc = util.parseStringToDOM(evt.target.responseText);
+      const category = extraction.by_regex(
         'item_category',
-        ['//*[@id="wayfinding-breadcrumbs_feature_div"]//ul',],
+        ['//*[@id="wayfinding-breadcrumbs_feature_div"]//ul'],
         null,
         '',
-        productPage,
+        doc.documentElement,
         'category'
       );
-
-      const tidied = raw!.replace(/\s+/g, ' ').trim();
-      return tidied;
+      return {
+        category: (category || '').replace(/\s+/g, ' ').trim(),
+        fsa_hsa_eligible: fsa_hsa.product_fsa_hsa_eligible(doc),
+      };
     },
     scheduler,
     '00000',  // priority
-    false,  // false means results are cacheable,
+    false,  // cached response is acceptable
     'category',
   );
 }

@@ -12,6 +12,7 @@ import * as diagnostic_download from './diagnostic_download';
 import * as notice from './notice';
 import * as progress_bar from './progress_bar';
 import * as request_scheduler from './request_scheduler';
+import * as scrape_status from './scrape_status';
 import * as settings from './settings';
 import * as stats from './statistics';
 import * as table_config from './table_config';
@@ -122,10 +123,14 @@ function appendEntityRow(
 async function addItemTable(
   doc: HTMLDocument,
   orders: azad_order.IOrder[],
-  cols: Promise<colspec.ColSpec[]>
+  cols: Promise<colspec.ColSpec[]>,
+  fsaOnly = false,
 ): Promise<HTMLTableElement> {
   const items = await order_util.enriched_items_from_orders(orders);
-  return addTable(doc, items, cols);
+  const visibleItems = fsaOnly ?
+    items.filter(item => item.fsa_hsa_eligible === 'Yes') : items;
+  if (fsaOnly) addFsaSummary('fsa_items', visibleItems.length, 0, 0);
+  return addTable(doc, visibleItems, cols);
 }
 
 async function addShipmentsTable(
@@ -256,6 +261,50 @@ async function addTable(
   });
 }
 
+function addFsaSummary(
+  tableType: string,
+  count: number,
+  invoiceLinks: number,
+  reportedAmount: number,
+): void {
+  const old = document.getElementById('azad_fsa_results');
+  old?.remove();
+  if (tableType !== 'fsa_orders' && tableType !== 'fsa_items') return;
+  const panel = document.createElement('section');
+  panel.id = 'azad_fsa_results';
+  const heading = document.createElement('strong');
+  heading.textContent = 'FSA/HSA results';
+  panel.appendChild(heading);
+  const details = document.createElement('div');
+  details.className = 'azad_fsa_results_metrics';
+  const entries: [string, string][] = tableType === 'fsa_items' ?
+    [['Eligible item rows', String(count)]] :
+    [
+      ['Matching orders', String(count)],
+      ['Invoice links', String(invoiceLinks)],
+      ['Amazon-reported eligible amount', '$' + reportedAmount.toFixed(2)],
+    ];
+  entries.forEach(([label, value]) => {
+    const metric = document.createElement('div');
+    const number = document.createElement('b');
+    number.textContent = value;
+    const description = document.createElement('span');
+    description.textContent = label;
+    metric.appendChild(number);
+    metric.appendChild(description);
+    details.appendChild(metric);
+  });
+  panel.appendChild(details);
+  const note = document.createElement('small');
+  note.textContent = tableType === 'fsa_items' ?
+    'Only products Amazon explicitly labels eligible are shown.' :
+    'Eligible amount includes only figures Amazon explicitly reports; mixed orders may have no reported amount.';
+  panel.appendChild(note);
+  const anchor = document.getElementById('azad_order_table');
+  if (anchor) anchor.parentNode?.insertBefore(panel, anchor);
+  else document.body.appendChild(panel);
+}
+
 async function reallyDisplay(
   entities: azad_entity.IEntity[],
   tableType: string,
@@ -272,6 +321,7 @@ async function reallyDisplay(
   }
 
   util.clearBody();
+  scrape_status.finishing();
   banner.addBanner();
 
   if (tableType !== 'transactions') {
@@ -289,11 +339,29 @@ async function reallyDisplay(
     });
   }
 
+  if (tableType === 'fsa_orders') {
+    const orders = entities as azad_order.IOrder[];
+    const facts = await Promise.all(orders.map(async order => {
+      const [invoice, amount] = await Promise.all([
+        order.invoice_url(), order.fsa_hsa_eligible_amount(),
+      ]);
+      const numericAmount = Number(amount.replace(/[^0-9.]/g, '')) || 0;
+      return {invoice: Boolean(invoice), amount: numericAmount};
+    }));
+    addFsaSummary(
+      tableType, orders.length,
+      facts.filter(fact => fact.invoice).length,
+      facts.reduce((sum, fact) => sum + fact.amount, 0),
+    );
+  }
+
   const cols = table_config.getCols(tableType);
 
   let table_promise: Promise<HTMLTableElement>;
-  if (tableType === 'items') {
-    table_promise = addItemTable(document, entities as azad_order.IOrder[], cols);
+  if (tableType === 'items' || tableType === 'fsa_items') {
+    table_promise = addItemTable(
+      document, entities as azad_order.IOrder[], cols, tableType === 'fsa_items'
+    );
   } else if (tableType === 'shipments') {
     table_promise = addShipmentsTable(document, entities as azad_order.IOrder[], cols);
   } else {
@@ -332,6 +400,7 @@ async function reallyDisplay(
 
       addCsvButton(entities, tableType, getBackgroundPort);
     }
+    scrape_status.complete();
   });
 
   (await getBackgroundPort())?.postMessage({
@@ -382,6 +451,28 @@ function addCsvButton(
   );
 }
 
+/**
+ * FSA-only view includes orders with an explicitly positive Amazon-reported
+ * FSA amount, or with at least one product explicitly labeled eligible.
+ * It does not infer eligibility from product names or prices.
+ */
+async function filterFsaOrders(orders: azad_order.IOrder[]): Promise<azad_order.IOrder[]> {
+  const eligible = await Promise.all(orders.map(async (order): Promise<boolean> => {
+    try {
+      const [amount, items] = await Promise.all([
+        order.fsa_hsa_eligible_amount(),
+        order.item_list(),
+      ]);
+      const positiveAmount = Number(amount.replace(/[^0-9.]/g, '')) > 0;
+      return positiveAmount || items.some(i => i.fsa_hsa_eligible === 'Yes');
+    } catch (ex) {
+      console.debug('Unable to determine FSA status of an order', ex);
+      return false;
+    }
+  }));
+  return orders.filter((_, i) => eligible[i]);
+}
+
 export async function display(
   entities_promise: Promise<azad_entity.IEntity[]>,
   tableType: string,
@@ -389,7 +480,9 @@ export async function display(
   getBackgroundPort: ()=>Promise<chrome.runtime.Port | null>,
   client: string,
 ): Promise<HTMLTableElement> {
-  const entities = await entities_promise;
+  const allEntities = await entities_promise;
+  const entities = tableType === 'fsa_orders' ?
+    await filterFsaOrders(allEntities as azad_order.IOrder[]) : allEntities;
   console.log(`amazon_order_history_table.display starting for ${tableType}`);
 
   if (entities.length >= 500 && beautiful) {

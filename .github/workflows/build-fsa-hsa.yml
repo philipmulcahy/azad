@@ -1,0 +1,49 @@
+name: Build FSA/HSA test extension
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/fsa-hsa-support
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate build metadata required by public tests
+        run: npm run generate_code
+
+      - name: Build extension (includes TypeScript lint)
+        run: npm run build
+
+      - name: Run public Jest tests (private fixtures unavailable)
+        run: npm run test_jest -- --runInBand --testPathIgnorePatterns='(transaction(_unit)?|year_discovery).test.ts'
+
+      - name: Label test extension with workflow build number
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          node -e 'const fs=require("fs"); const p="build/manifest.json"; const m=JSON.parse(fs.readFileSync(p,"utf8")); m.version_name=m.version+" - FSA/HSA Test Build "+process.env.BUILD_NUMBER; fs.writeFileSync(p,JSON.stringify(m,null,2));'
+
+      - name: Upload test extension
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: azad-fsa-hsa-test-build-${{ github.run_number }}
+          path: build/
+          if-no-files-found: error

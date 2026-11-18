@@ -99,9 +99,12 @@ function connectToBackground() {
       case 'statistics_update':
         console.info('control got statistics update');
         if (msg.statistics) {
-          const text = Object.entries(msg.statistics)
-          .map(([k,v]) => {return k + ':' + v;})
-          .join('; ');
+          const numbers = msg.statistics;
+          const done = numbers.COMPLETED_COUNT + numbers.CACHE_HIT_COUNT;
+          const text = 'Running ' + numbers.RUNNING_COUNT +
+            ' | Waiting ' + numbers.QUEUED_COUNT +
+            ' | Processed ' + done +
+            (numbers.ERROR_COUNT ? ' | Errors ' + numbers.ERROR_COUNT : '');
           $('#azad_statistics').text(text);
           if (
             (
@@ -110,7 +113,8 @@ function connectToBackground() {
           ) {
             activateScrapingUI(msg.purpose);
           } else {
-            activateDone(msg.purpose);
+            // Idle request queues can precede final table preparation.
+            activateDone('Finishing results on Amazon tab');
           }
         }
         break;
@@ -275,12 +279,27 @@ async function showMonthsButtons(month_counts: number[]): Promise<void> {
   console.log('showMonthButtons(...) buttons wired up');
 }
 
+function filteredTableType(tableType: string): string {
+  const onlyFsa = ($('#azad_only_fsa').prop('checked') as boolean) || false;
+  if (!onlyFsa) return tableType;
+  if (tableType === 'orders') return 'fsa_orders';
+  if (tableType === 'items') return 'fsa_items';
+  return tableType;
+}
+
+function updateFsaFilterAvailability(): void {
+  const selected = String($('input.azad_table_type:checked').attr('id') || '');
+  const supported = selected === 'azad_show_orders' || selected === 'azad_show_items';
+  $('#azad_only_fsa').prop('disabled', !supported);
+  $('#azad_fsa_filter').toggleClass('azad_fsa_unavailable', !supported);
+}
+
 async function handleYearClick(evt: JQuery.TriggeredEvent<HTMLElement, undefined, HTMLElement, HTMLElement>) {
   const button = evt.target as HTMLButtonElement;
   const year: number = parseInt(button.value);
   const years: number[] = [year];
   activateScrapingUI(years);
-  const tableType = await settings.getString('azad_table_type');
+  const tableType = filteredTableType(await settings.getString('azad_table_type'));
   if (background_port) {
     console.log('sending scrape_years', year, 'message');
     try {
@@ -314,7 +333,7 @@ async function handleMonthsClick(evt: JQuery.TriggeredEvent<HTMLElement, undefin
   const end_date = new Date();
   const start_date = util.subtract_months(end_date, month_count);
   activateScrapingUI([month_count]);
-  const tableType = await settings.getString('azad_table_type');
+  const tableType = filteredTableType(await settings.getString('azad_table_type'));
   if (background_port) {
     console.log('sending scrape_range', start_date, end_date, 'message');
     background_port.postMessage({
@@ -339,7 +358,9 @@ function handleStopClick() {
 function init() {
   settings.startMonitoringSettingsStorage();
   settings.initialiseUi();
-  settings.registerTableTypeRadioButtons();
+  void settings.registerTableTypeRadioButtons()
+    .then(updateFsaFilterAvailability);
+  $('input.azad_table_type').on('change', updateFsaFilterAvailability);
   console.log('init');
   setVersion();
   activateIdle();

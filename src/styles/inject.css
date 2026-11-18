@@ -105,3 +105,92 @@
 .azad-iframe-worker-guid {
   color: silver;
 }
+
+
+/* Release 2: persistent status and compact summaries */
+#azad_scrape_status {
+  position: fixed;
+  top: 12px;
+  right: 14px;
+  z-index: 2147483000;
+  width: min(350px, calc(100vw - 28px));
+  padding: 11px 14px;
+  border: 1px solid #e3d2b9;
+  border-left: 4px solid #c66b13;
+  border-radius: 9px;
+  background: #fffdf8;
+  color: #27313c;
+  box-shadow: 0 5px 22px rgba(0,0,0,.13);
+  font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+}
+#azad_scrape_status strong { display: block; font-size: 13px; margin-bottom: 3px; }
+#azad_scrape_status small { display: block; margin-top: 5px; color: #576575; }
+#azad_scrape_status.azad_status_complete {
+  border-left-color: #268158; background: #f4fbf7;
+}
+#azad_scrape_status.azad_status_error {
+  border-left-color: #b93737; background: #fff7f6;
+}
+#azad_scrape_status.azad_status_finishing { border-left-color: #4263b2; }
+
+#azad_order_table_foot { display: none; }
+#azad_totals_summary, #azad_fsa_results {
+  clear: both;
+  margin: 14px 0;
+  padding: 14px 16px;
+  max-width: 1100px;
+  border: 1px solid #e3e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  color: #28313c;
+  font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+}
+#azad_fsa_results { background: #fffbf5; border-color: #eedac0; }
+#azad_totals_summary > strong, #azad_fsa_results > strong { font-size: 14px; }
+.azad_totals_hint { color: #6f7c89; font-size: 11px; margin-left: 12px; }
+.azad_totals_grid, .azad_fsa_results_metrics {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  margin-top: 10px;
+}
+.azad_total_metric, .azad_fsa_results_metrics > div {
+  min-width: 115px; padding: 8px 11px;
+  border: 1px solid #e4e7eb; border-radius: 7px; background: white;
+}
+.azad_total_metric > span, .azad_fsa_results_metrics span {
+  display: block; color: #687482; font-size: 11px;
+}
+.azad_total_metric > b, .azad_fsa_results_metrics b {
+  display: block; font-size: 13px; white-space: nowrap;
+}
+#azad_fsa_results small { display: block; color: #687482; margin-top: 9px; }
+
+#azad_order_table thead th {
+  background: #f7f8fa;
+  border-bottom: 1px solid #dfe3e8;
+  padding: 9px 13px;
+  white-space: nowrap;
+}
+#azad_order_table tbody td { padding: 8px 10px; }
+
+
+/* Replace noisy repeated sorting background graphics with simple indicators. */
+#azad_order_table thead th.sorting,
+#azad_order_table thead th.sorting_asc,
+#azad_order_table thead th.sorting_desc {
+  background-image: none !important;
+}
+#azad_order_table thead th.sorting::after {
+  content: '↕';
+  color: #a4aeb8;
+  margin-left: 7px;
+}
+#azad_order_table thead th.sorting_asc::after {
+  content: '↑';
+  color: #4263b2;
+  margin-left: 7px;
+}
+#azad_order_table thead th.sorting_desc::after {
+  content: '↓';
+  color: #4263b2;
+  margin-left: 7px;
+}

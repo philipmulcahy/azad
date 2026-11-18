@@ -1,11 +1,12 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
   <head>
-    <title>Amazon Order History Reporter: Control Panel</title>
+    <title>AZAD FSA/HSA (Test): Control Panel</title>
     <link rel="stylesheet" type="text/css" href="./popup.css" />
     <script src="control.bundle.js"></script>
   </head>
   <body>
+    <div id="azad_test_banner">AZAD FSA/HSA <span>TEST VERSION</span></div>
     <div id="azad_page_actions" class="azad_control_page">
       <div id="azad_actions">
         <table width="100%">
@@ -29,6 +30,7 @@
     <div class="azad_separator"></div>
     <div id="azad_page_default" class="azad_control_page">
       <div id="azad_year_missing_message"></div>
+      <div class="azad_section_label">Select a time period</div>
       <div id="azad_year_list"></div>
       <div class="azad_separator"></div>
       <div id="azad_info">
@@ -83,6 +85,13 @@
           </td>
         </tr>
       </table>
+      <div id="azad_fsa_filter">
+        <label for="azad_only_fsa">
+          <input type="checkbox" id="azad_only_fsa"/>
+          <span>Only FSA/HSA purchases</span>
+        </label>
+        <div class="azad_fsa_note">Uses the selected month or year. Orders: matching orders. Items: eligible products only.</div>
+      </div>
       <table id="azad_settings">
         <tr>
           <td>
