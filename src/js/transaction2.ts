@@ -50,17 +50,15 @@ const alternatedStatus = new RegExp(
 );
 
 export const patterns = new Map<Component, RegExp>([
-  [Component.BLANKED_DIGITS, new RegExp('([•*]{3,4})')],
-  [Component.CARD_DIGITS, new RegExp('([0-9]{3,4})')],
-  [Component.CARD_NAME, new RegExp('([A-Za-z][A-Za-z0-9. ]{2,49})')],
+  [Component.BLANKED_DIGITS, util.CARD_MASKED_DIGITS_REGEX],
+  [Component.CARD_DIGITS, util.CARD_LAST_DIGITS_REGEX],
+  [Component.CARD_NAME, util.CARD_NAME_REGEX],
 
-  [Component.CURRENCY_AMOUNT,
-    new RegExp(`(-? *${util.currencyRegex().source} *\\d[0-9,.]*)`)],
+  [Component.CURRENCY_AMOUNT, util.currencyAmountRegex()],
 
   [Component.DATE, new RegExp(`(${dt.getDateRegex().source})`)],
 
-  [Component.GIFT_CARD,
-   new RegExp('(Amazon Gift Card|Amazon-Geschenkgutschein)')],
+  [Component.GIFT_CARD, util.GIFT_CARD_REGEX],
 
   [Component.ORDER_ID, util.orderIdRegExp()],
   [Component.PAYMENT_STATUS, alternatedStatus],

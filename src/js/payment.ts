@@ -13,6 +13,46 @@ import * as util from './util';
 export type Payment = string;
 export type Payments = Payment[];
 
+const PAYMENT_PLAN_WIDGET_XPATH =
+  '//*[@data-component="viewPaymentPlanSummaryWidget"]';
+const AAPI_PAYMENT_METHODS_XPATH =
+  '//*[@data-component="aapiPaymentMethods"]';
+const LEGACY_INSTRUMENT_BOX_CLASS = 'pmts-payments-instrument-detail-box';
+const PAYMENT_INSTRUMENT_XPATH = './/*[@data-testid="payment-instrument"]';
+const PAYMENT_METHOD_ARIA_XPATH = './/*[@aria-label="payment method"]';
+const PAYMENT_INSTRUMENT_MESSAGE_TESTID = 'payment-instrument-message';
+const CARD_ENDING_IN_PHRASE = 'ending in';
+const NON_CARD_PAYMENT_TERMS = [
+  util.GIFT_CARD_REGEX.source,
+  ...[
+    util.GIFT_CARD_LABEL,
+    util.GIFT_CERTIFICATE_LABEL,
+    util.BUONO_REGALO_LABEL,
+  ].map(label => label.replace(/ /g, '\\s*')),
+  'carte\\s*cadeau',
+  'tarjeta\\s*regalo',
+  'reward\\s*points',
+];
+
+function extractVisibleText(node: Node, clone = false): string {
+  const target = (clone ? node.cloneNode(true) : node) as Element;
+
+  for (const tag of ['script', 'style']) {
+    target.querySelectorAll(tag).forEach(el => el.remove());
+  }
+
+  return target.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+}
+
+function formatPayment(
+  source: string,
+  orderDate: Date | null,
+  amount: string,
+): Payment {
+  const dateString = orderDate ? dateToDateIsoString(orderDate) : '?';
+  return `${source}: ${dateString}: ${amount}`;
+}
+
 function payments_from_invoice(
   invoiceDoc: HTMLDocument,
   defaultDate: Date | null,
@@ -80,7 +120,7 @@ function payments_from_invoice(
     );
 
     const payment_amounts = map_payment_field(
-      /Grand Total: (.*) Payment Method/i,
+      new RegExp(`${util.GRAND_TOTAL_LABEL}: (.*) Payment Method`, 'i'),
     );
 
     const count = Math.min(
@@ -93,7 +133,7 @@ function payments_from_invoice(
     let i = 0;
 
     for ( i = 0; i < count; i++ ) {
-      const p: Payment = (`${card_names[i]} ending in ${card_number_suffixes[i]}: ${payment_amounts[i]}`);
+      const p: Payment = `${card_names[i]} ${CARD_ENDING_IN_PHRASE} ${card_number_suffixes[i]}: ${payment_amounts[i]}`;
 
       payments.push(p);
     }
@@ -103,25 +143,14 @@ function payments_from_invoice(
 
   function strategy_3(): Payments {
     const roots = extraction.findMultipleNodeValues(
-      '//*[@data-component="viewPaymentPlanSummaryWidget"]//*[contains(@class, "pmts-payments-instrument-detail-box")]',
+      `${PAYMENT_PLAN_WIDGET_XPATH}//*[contains(@class, "${LEGACY_INSTRUMENT_BOX_CLASS}")]`,
       invoiceDoc.documentElement
     );
 
-    // remove non visible text such as scripts and styles
-    for (const r of roots) {
-      for (const tag of ['script', 'style']) {
-        (r as Element).querySelectorAll(tag).forEach(el => el.remove());
-      }
-    }
-
-    const texts: string[] = roots.map(
-      e => e.textContent?.replace(/\s+/g, ' ').trim() ?? ''
-    );
+    const texts: string[] = roots.map(r => extractVisibleText(r));
 
     if (texts.length === 1 && defaultDate && defaultAmount !== '') {
-      const dateString = dateToDateIsoString(defaultDate);
-      const p: Payment = `${texts[0]}: ${dateString}: ${defaultAmount}`;
-      return [p] as Payments;
+      return [formatPayment(texts[0], defaultDate, defaultAmount)];
     }
 
     return texts as Payments;
@@ -140,6 +169,7 @@ export function paymentsFromDetailPage(
   detailDoc: HTMLDocument,
   defaultOrderDate: Date | null,
   defaultTotal: string,
+  giftAmount: string = '',
 ): Payments {
 
   function strategy0(): Payments {
@@ -161,15 +191,7 @@ export function paymentsFromDetailPage(
 
     const cardText = cardTextNodes.map(n => n.textContent).join(' ');
 
-    const paymentStrings: string[] = [
-      [
-        cardText,
-        defaultOrderDate ? dateToDateIsoString(defaultOrderDate) : '?',
-        defaultTotal,
-      ].join(': ')
-    ];
-
-    return paymentStrings.map(ps => ps as Payment) as Payments;
+    return [formatPayment(cardText, defaultOrderDate, defaultTotal)];
   }
 
   function strategy1(): Payments {
@@ -187,11 +209,10 @@ export function paymentsFromDetailPage(
     }
 
     const patterns = new Map<Component, RegExp>([
-      [Component.BLANKED_DIGITS, new RegExp('([•*]{3,4})')],
-      [Component.CARD_DIGITS, new RegExp('([0-9]{3,4})')],
-      [Component.CARD_NAME, new RegExp('([A-Za-z][A-Za-z0-9. ]{2,49})')],
-      [Component.GIFT_CARD,
-       new RegExp('(Amazon Gift Card|Amazon-Geschenkgutschein)')],
+      [Component.BLANKED_DIGITS, util.CARD_MASKED_DIGITS_REGEX],
+      [Component.CARD_DIGITS, util.CARD_LAST_DIGITS_REGEX],
+      [Component.CARD_NAME, util.CARD_NAME_REGEX],
+      [Component.GIFT_CARD, util.GIFT_CARD_REGEX],
     ]);
 
     // This function has grown to feel sordid, and hard to understand.
@@ -282,18 +303,104 @@ export function paymentsFromDetailPage(
       .map(n => n.text);
 
     if (sources.length == 1) {
-      const source = sources[0];
-
-      const paymentString =  [
-        source,
-        defaultOrderDate ? dateToDateIsoString(defaultOrderDate) : '?',
-        defaultTotal,
-      ].join(': ');
-
-      return [paymentString];
+      return [formatPayment(sources[0], defaultOrderDate, defaultTotal)];
     } else {
       return sources;
     }
+  }
+
+  // NOTE: This strategy intentionally breaks the project principle of
+  // "don't make stuff up, assume, extrapolate or interpolate from what Amazon
+  // html tells us" by copying the order total onto a payment card row that
+  // does not itself state an amount. To keep that assumption as safe as
+  // possible, it only fires when ALL of the following constraints hold:
+  // 1) There is a single card details row, and no other payment information
+  //    (such as a gift card or second/subsequent payment card details).
+  // 2) The row does not already include a payment amount.
+  // 3) The order detail page includes an unambiguous order total ccy amount
+  //    that can be copied.
+  function strategy2(): Payments {
+    const trimmedTotal = defaultTotal.trim();
+    const ccyAmountPattern = new RegExp(
+      `^${util.positiveCurrencyAmountRegex().source}$`
+    );
+
+    // Constraint 3: unambiguous order total currency amount.
+    if (!ccyAmountPattern.test(trimmedTotal)) {
+      return [];
+    }
+
+    // Constraint 1: no gift card amount and no other payment information in
+    // aapiPaymentMethods or multiple payment instruments.
+    if (giftAmount.trim() !== '') {
+      return [];
+    }
+
+    const aapiPaymentNodes = extraction.findMultipleNodeValues(
+      AAPI_PAYMENT_METHODS_XPATH,
+      detailDoc.documentElement,
+    );
+    const hasAapiPaymentText = aapiPaymentNodes.some(
+      n => (n.textContent?.trim() ?? '') !== '',
+    );
+
+    if (hasAapiPaymentText) {
+      return [];
+    }
+
+    const widgetNodes = extraction.findMultipleNodeValues(
+      PAYMENT_PLAN_WIDGET_XPATH,
+      detailDoc.documentElement,
+    );
+
+    if (widgetNodes.length !== 1) {
+      return [];
+    }
+
+    const widget = widgetNodes[0] as HTMLElement;
+    const instrumentNodes = extraction.findMultipleNodeValues(
+      PAYMENT_INSTRUMENT_XPATH,
+      widget,
+    );
+    const labelledMethodNodes = extraction.findMultipleNodeValues(
+      PAYMENT_METHOD_ARIA_XPATH,
+      widget,
+    );
+
+    if (instrumentNodes.length > 1 || labelledMethodNodes.length > 1) {
+      return [];
+    }
+
+    const rowNodes = extraction.findMultipleNodeValues(
+      `.//*[@data-testid="${PAYMENT_INSTRUMENT_MESSAGE_TESTID}" ` +
+      `or contains(@class, "${LEGACY_INSTRUMENT_BOX_CLASS}")]`,
+      widget,
+    );
+
+    if (rowNodes.length !== 1) {
+      return [];
+    }
+
+    const cardText = extractVisibleText(rowNodes[0], true);
+    const cardDetailsPattern = new RegExp(
+      `(?:${util.CARD_MASKED_DIGITS_REGEX.source}|${CARD_ENDING_IN_PHRASE})\\s*${util.CARD_LAST_DIGITS_REGEX.source}`,
+      'i'
+    );
+    const nonCardPattern = new RegExp(NON_CARD_PAYMENT_TERMS.join('|'), 'i');
+
+    if (!cardDetailsPattern.test(cardText) || nonCardPattern.test(cardText)) {
+      return [];
+    }
+
+    // Constraint 2: the row itself does not include a payment amount.
+    if (
+      util.positiveCurrencyAmountRegex().test(cardText) ||
+      util.moneyRegEx().test(cardText)
+    ) {
+      return [];
+    }
+
+    return [formatPayment(cardText, defaultOrderDate, trimmedTotal)];
   }
 
   return strategy.firstMatchingStrategy(
@@ -301,6 +408,7 @@ export function paymentsFromDetailPage(
     [
       strategy0,
       strategy1,
+      strategy2,
     ],
     [],
   );
