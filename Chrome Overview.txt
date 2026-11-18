@@ -57,6 +57,14 @@ Feature requests: if there's a github ticket outstanding for the same thing,
 please add your thoughts there rather than making a new one. You can signal
 your sincerity by clear communication and responsiveness to follow-up queries.
 
+Changes 1.16.25
+---------------
+#422 When single card payment orders don't show the payment amount next to the
+     card details, we attempt to copy the grand total amount to synthesize a
+     payment in the Order.payments column. I cannot say I like this feature
+     but the masses have spoken, repeatedly and assertively.
+Various npm security fixes.
+
 Changes 1.16.24
 ---------------
 #417 1) Fixed "Failed to scrape for some .com users"
@@ -78,16 +86,6 @@ Changes 1.16.22
      dump files. These statistics count how often each alternative scraping
      strategy is successful at various points in the code, without leaking
      personally identifiable information.
-
-Changes 1.16.21
----------------
-#369 Improved scraping of returns refund amount (at order level, not item
-     level).
-#385 Improved reliability of order debug json dump file creation, plus
-     additional console logging.
-#??? Many non-functional code health improvements, now passing eslint with no
-     warnings or errors.
-
 
 Source Code
 -------------
