@@ -34,8 +34,11 @@ describe('payments from detail page: gift card + credit card', () => {
     GIFT_AMOUNT,
   );
 
-  test('exactly the two on-page payment rows are reported, tidied', () => {
-    expect(payments).toEqual(['Visa •••• 1234', 'Amazon Gift Card']);
+  test('card gets grand total, gift card gets gift card amount', () => {
+    expect(payments).toEqual([
+      'Visa •••• 1234: 2026-09-14: $6.50',
+      'Amazon Gift Card: 2026-09-14: $15.00',
+    ]);
   });
 
   test('credit card payment is reported', () => {
@@ -58,6 +61,38 @@ describe('payments from detail page: gift card + credit card', () => {
     expect(
       giftCardPayments.some(p => p.includes(GRAND_TOTAL))
     ).toBe(false);
+  });
+});
+
+// order_details.ts gift() usually strips the minus sign: "$15.00".
+describe('payments from detail page: gift card amount without minus', () => {
+  const payments = payment.paymentsFromDetailPage(
+    loadFixture(),
+    ORDER_DATE,
+    GRAND_TOTAL,
+    '$15.00',
+  );
+
+  test('card gets grand total, gift card gets gift card amount', () => {
+    expect(payments).toEqual([
+      'Visa •••• 1234: 2026-09-14: $6.50',
+      'Amazon Gift Card: 2026-09-14: $15.00',
+    ]);
+  });
+});
+
+// Without a gift card amount on the page we cannot split the total, so no
+// amounts are made up.
+describe('payments from detail page: gift card + card, no gift amount', () => {
+  const payments = payment.paymentsFromDetailPage(
+    loadFixture(),
+    ORDER_DATE,
+    GRAND_TOTAL,
+    '',
+  );
+
+  test('rows reported without amounts', () => {
+    expect(payments).toEqual(['Visa •••• 1234', 'Amazon Gift Card']);
   });
 });
 

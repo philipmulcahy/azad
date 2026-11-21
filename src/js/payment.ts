@@ -323,6 +323,10 @@ export function paymentsFromDetailPage(
       .filter(n => n.components.has(Component.PAYMENT_SOURCE))
       .map(n => n.text.replace(/\s+/g, ' ').trim());
 
+    if (sources.length == 2) {
+      return splitCardAndGiftCard(sources) ?? sources;
+    }
+
     if (sources.length != 1) {
       return sources;
     }
@@ -332,6 +336,51 @@ export function paymentsFromDetailPage(
     }
 
     return [formatPayment(sources[0], defaultOrderDate, defaultTotal)];
+  }
+
+  // One card plus one gift card, with the order summary showing a gift card
+  // amount: the gift card paid the gift card amount, and the card paid the
+  // grand total (which Amazon computes after deducting the gift card).
+  // Both amounts are stated on the page; we only pair them with the rows.
+  function splitCardAndGiftCard(sources: string[]): Payments | null {
+    const giftCardAmount = giftAmount.trim().replace(/^-\s*/, '');
+    const grandTotal = defaultTotal.trim();
+    const ccyAmountPattern = new RegExp(
+      `^${util.positiveCurrencyAmountRegex().source}$`
+    );
+
+    if (
+      !ccyAmountPattern.test(giftCardAmount) ||
+      !ccyAmountPattern.test(grandTotal)
+    ) {
+      return null;
+    }
+
+    const giftCards = sources.filter(s => NON_CARD_PAYMENT_PATTERN.test(s));
+    const cards = sources.filter(
+      s => !NON_CARD_PAYMENT_PATTERN.test(s) &&
+           SINGLE_TEXT_CARD_DETAILS_PATTERN.test(s)
+    );
+
+    if (giftCards.length != 1 || cards.length != 1) {
+      return null;
+    }
+
+    // No other, unrecognised, payment rows on the page.
+    const paymentRows = extraction.findMultipleNodeValues(
+      `${PAYMENT_PLAN_WIDGET_XPATH}${PAYMENT_INSTRUMENT_XPATH.substring(1)}`,
+      detailDoc.documentElement,
+    );
+
+    if (paymentRows.length > 2) {
+      return null;
+    }
+
+    return sources.map(
+      s => s == cards[0] ?
+        formatPayment(s, defaultOrderDate, grandTotal) :
+        formatPayment(s, defaultOrderDate, giftCardAmount)
+    );
   }
 
   // Copying the order total onto the only payment source we recognised is only
