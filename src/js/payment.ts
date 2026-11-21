@@ -33,6 +33,19 @@ const NON_CARD_PAYMENT_TERMS = [
   'tarjeta\\s*regalo',
   'reward\\s*points',
 ];
+const NON_CARD_PAYMENT_PATTERN = new RegExp(
+  NON_CARD_PAYMENT_TERMS.join('|'),
+  'i',
+);
+
+// Card name, masked digits and last digits all in one text node, e.g.
+// "Visa •••• 1234" or "Visa ending in 1234" (amazon.com, 2026-11).
+const SINGLE_TEXT_CARD_DETAILS_PATTERN = new RegExp(
+  `${util.CARD_NAME_REGEX.source}\\s*` +
+  `(?:${util.CARD_MASKED_DIGITS_REGEX.source}|${CARD_ENDING_IN_PHRASE})\\s*` +
+  `${util.CARD_LAST_DIGITS_REGEX.source}\\b`,
+  'i',
+);
 
 function extractVisibleText(node: Node, clone = false): string {
   const target = (clone ? node.cloneNode(true) : node) as Element;
@@ -237,6 +250,14 @@ export function paymentsFromDetailPage(
             }
         }
 
+        if (
+          !candidates.has(Component.GIFT_CARD) &&
+          SINGLE_TEXT_CARD_DETAILS_PATTERN.test(n.directText) &&
+          !NON_CARD_PAYMENT_PATTERN.test(n.directText)
+        ) {
+          candidates.add(Component.CARD_DETAILS);
+        }
+
         return candidates;
       }
 
@@ -300,13 +321,35 @@ export function paymentsFromDetailPage(
 
     const sources = t.classified
       .filter(n => n.components.has(Component.PAYMENT_SOURCE))
-      .map(n => n.text);
+      .map(n => n.text.replace(/\s+/g, ' ').trim());
 
-    if (sources.length == 1) {
-      return [formatPayment(sources[0], defaultOrderDate, defaultTotal)];
-    } else {
+    if (sources.length != 1) {
       return sources;
     }
+
+    if (!loneSourceAccountsForOrderTotal(sources[0])) {
+      return sources;
+    }
+
+    return [formatPayment(sources[0], defaultOrderDate, defaultTotal)];
+  }
+
+  // Copying the order total onto the only payment source we recognised is only
+  // safe if there is no evidence of other payment sources we failed to
+  // recognise. Otherwise we'd attribute (e.g.) a card charge to a gift card.
+  function loneSourceAccountsForOrderTotal(source: string): boolean {
+    // Grand total is what's left *after* gift card deduction, so it is never
+    // the gift card's contribution when a gift card amount is shown.
+    if (giftAmount.trim() !== '' && NON_CARD_PAYMENT_PATTERN.test(source)) {
+      return false;
+    }
+
+    const paymentRows = extraction.findMultipleNodeValues(
+      `${PAYMENT_PLAN_WIDGET_XPATH}${PAYMENT_INSTRUMENT_XPATH.substring(1)}`,
+      detailDoc.documentElement,
+    );
+
+    return paymentRows.length <= 1;
   }
 
   // NOTE: This strategy intentionally breaks the project principle of
@@ -386,9 +429,10 @@ export function paymentsFromDetailPage(
       `(?:${util.CARD_MASKED_DIGITS_REGEX.source}|${CARD_ENDING_IN_PHRASE})\\s*${util.CARD_LAST_DIGITS_REGEX.source}`,
       'i'
     );
-    const nonCardPattern = new RegExp(NON_CARD_PAYMENT_TERMS.join('|'), 'i');
-
-    if (!cardDetailsPattern.test(cardText) || nonCardPattern.test(cardText)) {
+    if (
+      !cardDetailsPattern.test(cardText) ||
+      NON_CARD_PAYMENT_PATTERN.test(cardText)
+    ) {
       return [];
     }
 
