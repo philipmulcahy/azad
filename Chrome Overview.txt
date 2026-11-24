@@ -1,4 +1,5 @@
 This extension extracts order history from your Amazon account.
+
 Amazon used to provide csv reports for US customers only, but it didn't include
 digital orders, shipping, total amount, or payment information. Sometime in the
 middle of 2020, Amazon withdrew the feature even in the USA.
