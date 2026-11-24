@@ -14,6 +14,7 @@ export function isWorker(): boolean {
   const relevantPage = url.includes('/transactions') ||
                        url.includes('/your-orders/orders') ||
                        url.includes('/your-orders/order-details') ||
+                       url.includes('/your-account/order-details') ||
                        url.includes('/order-history') ||
                        url.includes('/gp/css/order-history');
 
