@@ -164,11 +164,11 @@ export function createIframe(
   appendChild(container, 'div', 'azad-iframe-worker-guid', guid);
 
   // Q: Why not use the appendChild helper function as for the children above?
-  // A: Because we'd lose control over when the embedded scripts start, and 
+  // A: Because we'd lose control over when the embedded scripts start, and
   // they'd get confused (by, for example, not being able to see their guid).
   const iframe = document.createElement('iframe');
   iframe.setAttribute('class', IFRAME_CLASS);
-  iframe.setAttribute('name', guid);
+  iframe.setAttribute('name', pageType.makeWorkerName(guid));
   iframe.setAttribute('src', url);
   container.appendChild(iframe);  // this seems to be when scripts start running
 
@@ -179,7 +179,12 @@ export function createIframe(
 export async function requestInstructions(
   getBackgroundPort: () => Promise<chrome.runtime.Port | null>
 ): Promise<void> {
-  const guid = window.name;
+  const guid = pageType.getWorkerGuid();
+  if (!guid) {
+    console.warn('requestInstructions called without valid worker guid in window.name:', window.name);
+    return;
+  }
+
   const port = await getBackgroundPort();
 
   if (port) {
@@ -208,8 +213,9 @@ export function removeIframeWorker(guid: string): void {
   const candidates: HTMLCollectionOf<Element>
     = document.getElementsByClassName(IFRAME_CLASS);
 
-  if (Object.prototype.hasOwnProperty.call(candidates, guid)) {
-    const iframe = candidates?.namedItem(guid) as HTMLIFrameElement;
+  const workerName = pageType.makeWorkerName(guid);
+  if (Object.prototype.hasOwnProperty.call(candidates, workerName)) {
+    const iframe = candidates?.namedItem(workerName) as HTMLIFrameElement;
     const container = iframe.parentNode as HTMLDivElement;
     iframe.remove();
     container.remove();
@@ -231,7 +237,11 @@ function removeThisIframe(): void {
     return;
   }
 
-  const guid = window.name;
+  const guid = pageType.getWorkerGuid();
+  if (!guid) {
+    console.error('removeThisIframe called without valid worker guid in window.name:', window.name);
+    return;
+  }
 
   void relayToParent({
     action: 'remove_iframe_worker',
