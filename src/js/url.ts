@@ -30,6 +30,29 @@ export function stripSite(url: string): string {
   return stripped;
 }
 
+/*
+ * Whether a page that ended up at actualUrl is the one requestedUrl asked
+ * for: same host and path. The query may differ, because Amazon adds, drops
+ * and reorders parameters when it redirects, and rewrites them with
+ * history.replaceState once the page is up.
+ * requestedUrl may be relative to actualUrl.
+ */
+export function isSameDestination(
+  requestedUrl: string,
+  actualUrl: string,
+): boolean {
+  try {
+    const actual = new URL(actualUrl);
+    const requested = new URL(requestedUrl, actual);
+    const path = (u: URL) => u.pathname.replace(/\/+$/, '');
+
+    return requested.hostname.toLowerCase() == actual.hostname.toLowerCase() &&
+           path(requested) == path(actual);
+  } catch (_ex) {
+    return requestedUrl == actualUrl;
+  }
+}
+
 export function stripHashSuffix(url: string): string {
   const removeRegEx = new RegExp('#[/0-9A-Za-z]+$');
   const trimmed = url.replace(removeRegEx, '');

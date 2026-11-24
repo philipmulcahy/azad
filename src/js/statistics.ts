@@ -11,6 +11,7 @@ export const OStatsKey = {
   ERROR_COUNT: 4,
   PAGE_COUNT: 5,  // originally added to show progress of transaction scraping.
   YEAR_COUNT: 6,  // originally added to show progress of transaction scraping.
+  LIST_PAGE_FAILURE_COUNT: 7,  // order list pages we gave up on.
 };
 
 export type StatsKey = typeof OStatsKey[keyof typeof OStatsKey];
@@ -27,6 +28,7 @@ export class Statistics {
     [OStatsKey.ERROR_COUNT]: 0,
     [OStatsKey.PAGE_COUNT]: 0,
     [OStatsKey.YEAR_COUNT]: 0,
+    [OStatsKey.LIST_PAGE_FAILURE_COUNT]: 0,
   };
 
   increment(key: StatsKey): void {

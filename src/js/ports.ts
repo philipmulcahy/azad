@@ -12,6 +12,18 @@ export function addMessageListener(listener: (msg: unknown) => void): void {
   }
 }
 
+export function removeMessageListener(listener: (msg: unknown) => void): void {
+  const i = messageListeners.indexOf(listener);
+
+  if (i >= 0) {
+    messageListeners.splice(i, 1);
+  }
+
+  if (background_port) {
+    background_port.onMessage.removeListener(listener);
+  }
+}
+
 async function initialiseBackgroundPort(): Promise<void> {
   const isWorker = pageType.isWorker();
   const isIframe = pageType.isIframe();

@@ -5,6 +5,17 @@ export function isIframe(): boolean {
   return wellIsIt;
 }
 
+export function isSignInPage(url: string): boolean {
+  return url.includes('/ap/signin') || url.includes('/signin?');
+}
+
+// createIframe names each worker iframe after its task's guid (a v4 uuid),
+// and the name survives navigation within the iframe.
+function hasWorkerName(): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    .test(window.name);
+}
+
 export function isWorker(): boolean {
   const inIframe = isIframe();
   const url = document.URL;
@@ -17,7 +28,11 @@ export function isWorker(): boolean {
                        url.includes('/order-history') ||
                        url.includes('/gp/css/order-history');
 
-  return inIframe && relevantPage;
+  // One of our workers that Amazon sent to sign in instead: it still needs
+  // to report back, or whoever asked for the page waits for ever.
+  const redirectedWorker = isSignInPage(url) && hasWorkerName();
+
+  return inIframe && (relevantPage || redirectedWorker);
 }
 
 export function getPageType(): string {
