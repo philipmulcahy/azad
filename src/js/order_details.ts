@@ -396,6 +396,9 @@ function extractDetailFromDoc(
         '//div[text() = "Tax Collected:"]/following-sibling::div/text()',
         '//span[.//text()[contains(.,"Estimated tax to be collected:")]]/../../div[2]/span/text()',
         '//span[contains(@id, "totalTax-amount")]/text()',
+        // Grocery/UFF order details (definition list dt/dd layout)
+        '//span[contains(text(),"Estimated tax to be collected:")]' +
+        '/parent::dt/parent::div/following-sibling::div/dd/span',
       ],
       util.moneyRegEx(),
       '',
