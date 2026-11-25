@@ -26,6 +26,7 @@ export interface IOrderDetails {
   refund: string;
   who: string;
   invoice_url: string;
+  items_url: string;
   payments: string[];  // this is not the only source of payment information.
 }
 
@@ -504,6 +505,21 @@ function extractDetailFromDoc(
     return '';
   }();
 
+  const items_url: string = function(): string {
+    const candidates = extraction.findMultipleNodeValues(
+      '//a[contains(@href, "/item-details")]',
+      doc.documentElement,
+      context,
+    );
+    for (const node of candidates) {
+      const href = (<HTMLElement>node).getAttribute('href');
+      if (href && /\/item-details(\?.*)?$/.test(href)) {
+        return href.startsWith('http') ? href : 'https://' + header.site + href;
+      }
+    }
+    return '';
+  }();
+
   const gift_amount = gift();
 
   function payments() {
@@ -529,6 +545,7 @@ function extractDetailFromDoc(
     refund: refund(),
     who: who(),
     invoice_url: invoice_url,
+    items_url: items_url,
     payments: payments(),
   };
 

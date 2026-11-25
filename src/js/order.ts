@@ -24,6 +24,7 @@ export interface IOrder extends azad_entity.IEntity {
   id(): Promise<string>;
   detail_url(): Promise<string>;
   invoice_url(): Promise<string>;
+  items_url(): Promise<string>;
   list_url(): Promise<string>;
   payments_url(): Promise<string>;
 
@@ -51,6 +52,7 @@ export interface ISyncOrder extends azad_entity.IEntity {
   id: string;
   detail_url: string;
   invoice_url: string;
+  items_url: string;
   list_url: string;
   payments_url: string;
   date: Date|null;
@@ -82,6 +84,7 @@ class Order implements IOrder{
     const id = await this.id();
     const detail_url = await this.detail_url();
     const invoice_url = await this.invoice_url();
+    const items_url = await this.items_url();
     const list_url = await this.list_url();
     const payments_url = await this.payments_url();
     const date = await this.date();
@@ -105,6 +108,7 @@ class Order implements IOrder{
       id: id,
       detail_url: detail_url,
       invoice_url: invoice_url,
+      items_url: items_url,
       list_url: list_url,
       payments_url: payments_url,
       date: date,
@@ -245,6 +249,9 @@ class Order implements IOrder{
   }
   invoice_url(): Promise<string> {
     return this._detail_dependent_promise( detail => detail.invoice_url );
+  }
+  items_url(): Promise<string> {
+    return this._detail_dependent_promise( detail => detail.items_url );
   }
 }
 
@@ -442,6 +449,7 @@ export async function assembleDiagnostics(
     doLookup('id'),
     doLookup('list_url'),
     doLookup('detail_url'),
+    doLookup('items_url'),
     doLookup('payments_url'),
     doLookup('date'),
     doLookup('total'),
@@ -495,6 +503,46 @@ export async function assembleDiagnostics(
     ),
 
     makeLookup(
+      'items_html',
+      async () => {
+        if (!sync_order.items_url) {
+          return '';
+        }
+        try {
+          const response = await single_fetch.checkedStaticFetch(
+            sync_order.items_url
+          );
+
+          return response.text();
+        } catch (ex) {
+          console.warn(util.stringifyError(ex));
+          throw ex;
+        }
+      }
+    ),
+
+    makeLookup(
+      'items_html_cooked',
+      async () => {
+        if (!sync_order.items_url) {
+          return '';
+        }
+        try {
+          const response = await iframeWorker.fetchURL(
+            sync_order.items_url,
+            '',  // empty xpath: wait for the timeout to expire, but then succeed.
+            'assembleDiagnostics items_html_cooked',
+          );
+
+          return response.html;
+        } catch (ex) {
+          console.warn(util.stringifyError(ex));
+          throw ex;
+        }
+      }
+    ),
+
+    makeLookup(
       'invoice_html',
       async () => {
         try {
@@ -521,8 +569,10 @@ export async function assembleDiagnostics(
     } catch (ex) {
       diagnostics[key] = '?';
       let errStr = util.stringifyError(ex);
-      if (key === 'detail_html_cooked') {
-        const url = sync_order.detail_url;
+      if (key === 'detail_html_cooked' || key === 'items_html_cooked') {
+        const url = key === 'detail_html_cooked'
+          ? sync_order.detail_url
+          : sync_order.items_url;
         const iframe = Array.from(document.querySelectorAll('iframe.azad-iframe-worker'))
           .find(i => (i as HTMLIFrameElement).src.includes(url)) as HTMLIFrameElement | undefined;
         if (iframe) {
