@@ -358,31 +358,31 @@ export async function handleInstructionsResponse(msg: unknown): Promise<void> {
     case 'fetch_url':
       {
         if (typedMsg.url != document.documentURI) {
-          console.debug(
-            'fetch_url wants', typedMsg.url, 'but this iframe has', document.documentURI
+          console.log(
+            'fetch_url redirected from', typedMsg.url, 'to', document.documentURI
           );
-        } else {
-          const completionXPath: string = typedMsg.xpath;
-          const guid: string = typedMsg.guid;
-          let html = '';
-          let status = 'OK';
-
-          try {
-            html = await getBakedHtml(typedMsg.url, completionXPath);
-          } catch (ex) {
-            status = ex as string;
-          }
-
-          await relayToParent({
-            action: 'fetch_url_response',
-            url: typedMsg.url,
-            html,
-            guid,
-            status,
-          });
-
-          await removeThisIframe();
         }
+
+        const completionXPath: string = typedMsg.xpath;
+        const guid: string = typedMsg.guid;
+        let html = '';
+        let status = 'OK';
+
+        try {
+          html = await getBakedHtml(typedMsg.url, completionXPath);
+        } catch (ex) {
+          status = ex as string;
+        }
+
+        await relayToParent({
+          action: 'fetch_url_response',
+          url: typedMsg.url,
+          html,
+          guid,
+          status,
+        });
+
+        await removeThisIframe();
       }
       break;
     default:
@@ -511,15 +511,6 @@ async function getBakedHtml(
   url: string,
   completionXPath: string,
 ): Promise<string> {
-  if (document.URL != url) {
-    const msg =
-      'fetch_url instructions to this iframe expected url: ' + url +
-      'but it is actually: ' + document.URL;
-
-    console.error(msg);
-    throw msg;
-  }
-
   console.log(`getBakedHtml(${url}, ${completionXPath}) starting`);
   await waitForXPathToMatch(document, completionXPath);
   const bakedHtml = document.documentElement.outerHTML;
