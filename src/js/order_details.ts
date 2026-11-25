@@ -207,6 +207,10 @@ function extractDetailFromDoc(
         currencies.map(ccy => `contains(text(), "${ccy}")`).join(' or ') +
         ']/parent::*/parent::*',
 
+        // Grocery/UFF order details (definition list dt/dd layout)
+        `//span[contains(text(),"${util.GRAND_TOTAL_LABEL}:")]` +
+        '/parent::dt/parent::div/following-sibling::div/dd/span',
+
         '//*[' +
           titles.map(t => `contains(text(), "${t}")`).join(' or ') +
         ']',
@@ -376,7 +380,7 @@ function extractDetailFromDoc(
       doc.documentElement,
       context,
     );
-  
+
     return strategy.firstMatchingStrategy(
       'extractDetailFromDoc.vat',
       [strategy0, strategy1],
