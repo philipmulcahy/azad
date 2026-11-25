@@ -360,6 +360,7 @@ export async function assembleDiagnostics(
   type Lookup = {
     key: string,
     promise: Promise<string|Record<string, string>>,
+    enrichError?: (errStr: string) => string,
   }
 
   const problems: string[] = [];
@@ -409,12 +410,13 @@ export async function assembleDiagnostics(
 
   function makeLookup(
     key: string,
-    getPromise: () => Promise<string | Record<string, string>>
+    getPromise: () => Promise<string | Record<string, string>>,
+    enrichError?: (errStr: string) => string,
   ): Lookup {
     try {
       const promise = getPromise();
       const wrappedPromise = timeout.wrapPromise(promise, 60_000);
-      return {key, promise: wrappedPromise};
+      return {key, promise: wrappedPromise, enrichError};
     } catch (ex) {
       const exs = util.stringifyError(ex);
       console.warn(`makeLookup failed to wrap promise for ${key}: ${exs}`);
@@ -423,9 +425,48 @@ export async function assembleDiagnostics(
         key,
         promise: Promise.resolve(
           `makeLookup failure: ${exs}`
-        )
+        ),
+        enrichError,
       };
     }
+  }
+
+  function makeCookedLookup(key: string, url: string): Lookup {
+    const enrichError = (errStr: string): string => {
+      const iframe = Array.from(document.querySelectorAll('iframe.azad-iframe-worker'))
+        .find(i => (i as HTMLIFrameElement).src.includes(url)) as HTMLIFrameElement | undefined;
+      if (iframe) {
+        try {
+          const currentUrl = iframe.contentWindow?.location.href;
+          return `${errStr} (iframe URL: ${currentUrl})`;
+        } catch (secEx) {
+          return `${errStr} (iframe redirected cross-origin or access blocked: ${util.stringifyError(secEx)})`;
+        }
+      }
+      return `${errStr} (iframe not found in DOM)`;
+    };
+
+    return makeLookup(
+      key,
+      async () => {
+        if (!url) {
+          return '';
+        }
+        try {
+          const response = await iframeWorker.fetchURL(
+            url,
+            '',  // empty xpath: wait for the timeout to expire, but then succeed.
+            `assembleDiagnostics ${key}`,
+          );
+
+          return response.html;
+        } catch (ex) {
+          console.warn(util.stringifyError(ex));
+          throw ex;
+        }
+      },
+      enrichError,
+    );
   }
 
   function doLookup(key: keyof ISyncOrder): Lookup {
@@ -484,23 +525,7 @@ export async function assembleDiagnostics(
       }
     ),
 
-    makeLookup(
-      'detail_html_cooked',
-      async () => {
-        try {
-          const response = await iframeWorker.fetchURL(
-            sync_order.detail_url,
-            '',  // empty xpath: wait for the timeout to expire, but then succeed.
-            'assembleDiagnostics detail_html_cooked',
-          );
-
-          return response.html;
-        } catch (ex) {
-          console.warn(util.stringifyError(ex));
-          throw ex;
-        }
-      }
-    ),
+    makeCookedLookup('detail_html_cooked', sync_order.detail_url),
 
     makeLookup(
       'items_html',
@@ -521,26 +546,7 @@ export async function assembleDiagnostics(
       }
     ),
 
-    makeLookup(
-      'items_html_cooked',
-      async () => {
-        if (!sync_order.items_url) {
-          return '';
-        }
-        try {
-          const response = await iframeWorker.fetchURL(
-            sync_order.items_url,
-            '',  // empty xpath: wait for the timeout to expire, but then succeed.
-            'assembleDiagnostics items_html_cooked',
-          );
-
-          return response.html;
-        } catch (ex) {
-          console.warn(util.stringifyError(ex));
-          throw ex;
-        }
-      }
-    ),
+    makeCookedLookup('items_html_cooked', sync_order.items_url),
 
     makeLookup(
       'invoice_html',
@@ -568,24 +574,8 @@ export async function assembleDiagnostics(
       diagnostics[key] = value;
     } catch (ex) {
       diagnostics[key] = '?';
-      let errStr = util.stringifyError(ex);
-      if (key === 'detail_html_cooked' || key === 'items_html_cooked') {
-        const url = key === 'detail_html_cooked'
-          ? sync_order.detail_url
-          : sync_order.items_url;
-        const iframe = Array.from(document.querySelectorAll('iframe.azad-iframe-worker'))
-          .find(i => (i as HTMLIFrameElement).src.includes(url)) as HTMLIFrameElement | undefined;
-        if (iframe) {
-          try {
-            const currentUrl = iframe.contentWindow?.location.href;
-            errStr += ` (iframe URL: ${currentUrl})`;
-          } catch (secEx) {
-            errStr += ` (iframe redirected cross-origin or access blocked: ${util.stringifyError(secEx)})`;
-          }
-        } else {
-          errStr += ' (iframe not found in DOM)';
-        }
-      }
+      const rawErr = util.stringifyError(ex);
+      const errStr = lu.enrichError ? lu.enrichError(rawErr) : rawErr;
       problems.push(key + ': ' + errStr);
     }
   }
