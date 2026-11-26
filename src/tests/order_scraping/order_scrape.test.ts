@@ -14,6 +14,69 @@ interface ITestResult {
   defects: string[];
 }
 
+function canonicalItemKey(item: azad_item.IItem): string {
+  const sorted: Record<string, unknown> = {};
+  const record = item as unknown as Record<string, unknown>;
+  Object.keys(record).sort().forEach(k => {
+    sorted[k] = record[k];
+  });
+  return JSON.stringify(sorted).toLowerCase();
+}
+
+function diffItemLists(
+  expected: azad_item.IItem[],
+  actual: azad_item.IItem[],
+): { missing: azad_item.IItem[]; unexpected: azad_item.IItem[] } {
+  const expectedCounts = new Map<string, { item: azad_item.IItem; count: number }>();
+  const actualCounts = new Map<string, { item: azad_item.IItem; count: number }>();
+
+  for (const item of expected) {
+    const key = canonicalItemKey(item);
+    const entry = expectedCounts.get(key);
+    if (entry) {
+      entry.count += 1;
+    } else {
+      expectedCounts.set(key, { item, count: 1 });
+    }
+  }
+
+  for (const item of actual) {
+    const key = canonicalItemKey(item);
+    const entry = actualCounts.get(key);
+    if (entry) {
+      entry.count += 1;
+    } else {
+      actualCounts.set(key, { item, count: 1 });
+    }
+  }
+
+  const missing: azad_item.IItem[] = [];
+  for (const [key, { item, count }] of expectedCounts) {
+    const actualCount = actualCounts.get(key)?.count ?? 0;
+    for (let i = actualCount; i < count; i += 1) {
+      missing.push(item);
+    }
+  }
+
+  const unexpected: azad_item.IItem[] = [];
+  for (const [key, { item, count }] of actualCounts) {
+    const expectedCount = expectedCounts.get(key)?.count ?? 0;
+    for (let i = expectedCount; i < count; i += 1) {
+      unexpected.push(item);
+    }
+  }
+
+  return { missing, unexpected };
+}
+
+function sortRecordKeys(obj: Record<string, unknown>): Record<string, unknown> {
+  const sorted: Record<string, unknown> = {};
+  Object.keys(obj).sort().forEach(k => {
+    sorted[k] = obj[k];
+  });
+  return sorted;
+}
+
 async function testOneOrderTarget(
     target: order_data.ITestTarget
 ): Promise<ITestResult> {
@@ -62,6 +125,11 @@ async function testOneOrderTarget(
         actual_value = dateToDateIsoString(actual_value as Date);
       }
 
+      if ( key == 'items' ) {
+        expected_value = sortRecordKeys(expected_value as Record<string, unknown>);
+        actual_value = sortRecordKeys(actual_value as Record<string, unknown>);
+      }
+
       if ( key == 'item_list' ) {
         const strip_uninteresting_fields = (
           item_list: azad_item.IItem[]
@@ -76,20 +144,41 @@ async function testOneOrderTarget(
           return item_list;
         };
 
-        expected_value = strip_uninteresting_fields(
+        const expected_items = strip_uninteresting_fields(
           expected_value as azad_item.IItem[]
         );
 
-        actual_value = strip_uninteresting_fields(
+        const actual_items = strip_uninteresting_fields(
           actual_value as azad_item.IItem[]
         );
+
+        const diff = diffItemLists(expected_items, actual_items);
+        if ( diff.missing.length > 0 || diff.unexpected.length > 0 ) {
+          const parts: string[] = [];
+          if ( diff.missing.length > 0 ) {
+            parts.push('missing ' + JSON.stringify(diff.missing));
+          }
+          if ( diff.unexpected.length > 0 ) {
+            parts.push('unexpected ' + JSON.stringify(diff.unexpected));
+          }
+          result.defects.push(`${key} mismatch: ${parts.join('; ')}`);
+        }
+        return;
       }
       if ( key == 'shipments' ) {
-        (actual_value as { items: { order_header?: unknown }[] }[]).forEach( shipment =>
-          shipment.items.forEach(
-            item => { delete item.order_header; }
-          )
-        );
+        type ShipmentLike = { items: azad_item.IItem[] };
+        const normalizeShipments = (shipments: ShipmentLike[]) => {
+          shipments.forEach( shipment => {
+            shipment.items.forEach( item => {
+              delete (item as unknown as Record<string, unknown>)['order_header'];
+            });
+            shipment.items.sort((a, b) =>
+              canonicalItemKey(a).localeCompare(canonicalItemKey(b))
+            );
+          });
+        };
+        normalizeShipments(expected_value as ShipmentLike[]);
+        normalizeShipments(actual_value as ShipmentLike[]);
       }
 
       const actual_string = JSON.stringify(actual_value).toLowerCase();
