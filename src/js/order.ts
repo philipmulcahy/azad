@@ -24,6 +24,7 @@ export interface IOrder extends azad_entity.IEntity {
   id(): Promise<string>;
   detail_url(): Promise<string>;
   invoice_url(): Promise<string>;
+  items_url(): Promise<string>;
   list_url(): Promise<string>;
   payments_url(): Promise<string>;
 
@@ -51,6 +52,7 @@ export interface ISyncOrder extends azad_entity.IEntity {
   id: string;
   detail_url: string;
   invoice_url: string;
+  items_url: string;
   list_url: string;
   payments_url: string;
   date: Date|null;
@@ -82,6 +84,7 @@ class Order implements IOrder{
     const id = await this.id();
     const detail_url = await this.detail_url();
     const invoice_url = await this.invoice_url();
+    const items_url = await this.items_url();
     const list_url = await this.list_url();
     const payments_url = await this.payments_url();
     const date = await this.date();
@@ -105,6 +108,7 @@ class Order implements IOrder{
       id: id,
       detail_url: detail_url,
       invoice_url: invoice_url,
+      items_url: items_url,
       list_url: list_url,
       payments_url: payments_url,
       date: date,
@@ -246,6 +250,9 @@ class Order implements IOrder{
   invoice_url(): Promise<string> {
     return this._detail_dependent_promise( detail => detail.invoice_url );
   }
+  items_url(): Promise<string> {
+    return this._detail_dependent_promise( detail => detail.items_url );
+  }
 }
 
 async function fetchYear(
@@ -353,6 +360,7 @@ export async function assembleDiagnostics(
   type Lookup = {
     key: string,
     promise: Promise<string|Record<string, string>>,
+    enrichError?: (errStr: string) => string,
   }
 
   const problems: string[] = [];
@@ -402,12 +410,13 @@ export async function assembleDiagnostics(
 
   function makeLookup(
     key: string,
-    getPromise: () => Promise<string | Record<string, string>>
+    getPromise: () => Promise<string | Record<string, string>>,
+    enrichError?: (errStr: string) => string,
   ): Lookup {
     try {
       const promise = getPromise();
       const wrappedPromise = timeout.wrapPromise(promise, 60_000);
-      return {key, promise: wrappedPromise};
+      return {key, promise: wrappedPromise, enrichError};
     } catch (ex) {
       const exs = util.stringifyError(ex);
       console.warn(`makeLookup failed to wrap promise for ${key}: ${exs}`);
@@ -416,9 +425,48 @@ export async function assembleDiagnostics(
         key,
         promise: Promise.resolve(
           `makeLookup failure: ${exs}`
-        )
+        ),
+        enrichError,
       };
     }
+  }
+
+  function makeCookedLookup(key: string, url: string): Lookup {
+    const enrichError = (errStr: string): string => {
+      const iframe = Array.from(document.querySelectorAll('iframe.azad-iframe-worker'))
+        .find(i => (i as HTMLIFrameElement).src.includes(url)) as HTMLIFrameElement | undefined;
+      if (iframe) {
+        try {
+          const currentUrl = iframe.contentWindow?.location.href;
+          return `${errStr} (iframe URL: ${currentUrl})`;
+        } catch (secEx) {
+          return `${errStr} (iframe redirected cross-origin or access blocked: ${util.stringifyError(secEx)})`;
+        }
+      }
+      return `${errStr} (iframe not found in DOM)`;
+    };
+
+    return makeLookup(
+      key,
+      async () => {
+        if (!url) {
+          return '';
+        }
+        try {
+          const response = await iframeWorker.fetchURL(
+            url,
+            '',  // empty xpath: wait for the timeout to expire, but then succeed.
+            `assembleDiagnostics ${key}`,
+          );
+
+          return response.html;
+        } catch (ex) {
+          console.warn(util.stringifyError(ex));
+          throw ex;
+        }
+      },
+      enrichError,
+    );
   }
 
   function doLookup(key: keyof ISyncOrder): Lookup {
@@ -442,6 +490,7 @@ export async function assembleDiagnostics(
     doLookup('id'),
     doLookup('list_url'),
     doLookup('detail_url'),
+    doLookup('items_url'),
     doLookup('payments_url'),
     doLookup('date'),
     doLookup('total'),
@@ -476,23 +525,28 @@ export async function assembleDiagnostics(
       }
     ),
 
+    makeCookedLookup('detail_html_cooked', sync_order.detail_url),
+
     makeLookup(
-      'detail_html_cooked',
+      'items_html',
       async () => {
+        if (!sync_order.items_url) {
+          return '';
+        }
         try {
-          const response = await iframeWorker.fetchURL(
-            sync_order.detail_url,
-            '',  // empty xpath: wait for the timeout to expire, but then succeed.
-            'assembleDiagnostics detail_html_cooked',
+          const response = await single_fetch.checkedStaticFetch(
+            sync_order.items_url
           );
 
-          return response.html;
+          return response.text();
         } catch (ex) {
           console.warn(util.stringifyError(ex));
           throw ex;
         }
       }
     ),
+
+    makeCookedLookup('items_html_cooked', sync_order.items_url),
 
     makeLookup(
       'invoice_html',
@@ -520,22 +574,8 @@ export async function assembleDiagnostics(
       diagnostics[key] = value;
     } catch (ex) {
       diagnostics[key] = '?';
-      let errStr = util.stringifyError(ex);
-      if (key === 'detail_html_cooked') {
-        const url = sync_order.detail_url;
-        const iframe = Array.from(document.querySelectorAll('iframe.azad-iframe-worker'))
-          .find(i => (i as HTMLIFrameElement).src.includes(url)) as HTMLIFrameElement | undefined;
-        if (iframe) {
-          try {
-            const currentUrl = iframe.contentWindow?.location.href;
-            errStr += ` (iframe URL: ${currentUrl})`;
-          } catch (secEx) {
-            errStr += ` (iframe redirected cross-origin or access blocked: ${util.stringifyError(secEx)})`;
-          }
-        } else {
-          errStr += ' (iframe not found in DOM)';
-        }
-      }
+      const rawErr = util.stringifyError(ex);
+      const errStr = lu.enrichError ? lu.enrichError(rawErr) : rawErr;
       problems.push(key + ': ' + errStr);
     }
   }

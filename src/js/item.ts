@@ -310,8 +310,14 @@ function strategy3(
     );
     const description = util.defaulted(link.textContent, '').trim();
     const url = util.defaulted(link.getAttribute('href'), '').trim();
-    const sqty = link.parentNode?.nextSibling?.textContent?.trim() ?? "1";
+    const sqty = (link.parentNode as HTMLElement)
+      ?.nextElementSibling
+      ?.textContent
+      ?.trim() ?? "1";
     const qty = parseInt(sqty);
+    if (isNaN(qty)) {
+      throw 'strategy3: non-numeric quantity';
+    }
     let price = '';
     try {
       const priceElem = <HTMLElement>extraction.findSingleNodeValue(

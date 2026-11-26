@@ -26,6 +26,7 @@ export interface IOrderDetails {
   refund: string;
   who: string;
   invoice_url: string;
+  items_url: string;
   payments: string[];  // this is not the only source of payment information.
 }
 
@@ -56,11 +57,13 @@ export async function extractDetailPromise(
       doc, url, header, context, scheduler, header.site);
     shipments.forEach(
       s => console.log('shipment: ' + s.toString()));
+    const details = extractDetailFromDoc(header, doc);
     return {
-      details: extractDetailFromDoc(header, doc),
+      details: details,
       items: await get_items(
         header,
         doc.documentElement,
+        details.items_url,
         shipments,
         scheduler,
         context),
@@ -91,6 +94,7 @@ export async function extractDetailPromise(
 async function get_items(
   header: order_header.IOrderHeader,
   order_detail_page_elem: HTMLElement,
+  items_url: string,
   shipments: shipment.IShipment[],
   scheduler: request_scheduler.IRequestScheduler,
   context: string,
@@ -98,6 +102,27 @@ async function get_items(
   let items: item.IItem[] = [];
   if ( shipments.length != 0 ) {
     items = shipments.map(s => s.items).flat();
+  }
+  if ( items.length == 0 && items_url ) {
+    try {
+      const items_elem = await req.makeAsyncStaticRequest<HTMLElement>(
+        items_url,
+        'get_items',
+        evt => util.parseStringToDOM(evt.target.responseText).documentElement,
+        scheduler,
+        util.defaulted(header.id, '9999'),
+        false,  // nocache=false: cached response is acceptable
+        'order_items',
+      );
+      items = await item.extractItems(
+        items_elem,
+        header,
+        scheduler,
+        context,
+      );
+    } catch (ex) {
+      console.warn('get_items failed to fetch items_url:', items_url, ex);
+    }
   }
   if ( items.length == 0 ) {
     // Try the "legacy" item extraction strategy.
@@ -206,6 +231,10 @@ function extractDetailFromDoc(
         '/parent::*/parent::*/div/span[' +
         currencies.map(ccy => `contains(text(), "${ccy}")`).join(' or ') +
         ']/parent::*/parent::*',
+
+        // Grocery/UFF order details (definition list dt/dd layout)
+        `//span[contains(text(),"${util.GRAND_TOTAL_LABEL}:")]` +
+        '/parent::dt/parent::div/following-sibling::div/dd/span',
 
         '//*[' +
           titles.map(t => `contains(text(), "${t}")`).join(' or ') +
@@ -376,7 +405,7 @@ function extractDetailFromDoc(
       doc.documentElement,
       context,
     );
-  
+
     return strategy.firstMatchingStrategy(
       'extractDetailFromDoc.vat',
       [strategy0, strategy1],
@@ -391,6 +420,9 @@ function extractDetailFromDoc(
         '//div[text() = "Tax Collected:"]/following-sibling::div/text()',
         '//span[.//text()[contains(.,"Estimated tax to be collected:")]]/../../div[2]/span/text()',
         '//span[contains(@id, "totalTax-amount")]/text()',
+        // Grocery/UFF order details (definition list dt/dd layout)
+        '//span[contains(text(),"Estimated tax to be collected:")]' +
+        '/parent::dt/parent::div/following-sibling::div/dd/span',
       ],
       util.moneyRegEx(),
       '',
@@ -500,6 +532,21 @@ function extractDetailFromDoc(
     return '';
   }();
 
+  const items_url: string = function(): string {
+    const candidates = extraction.findMultipleNodeValues(
+      '//a[contains(@href, "/item-details")]',
+      doc.documentElement,
+      context,
+    );
+    for (const node of candidates) {
+      const href = (<HTMLElement>node).getAttribute('href');
+      if (href && /\/item-details(\?.*)?$/.test(href)) {
+        return href.startsWith('http') ? href : 'https://' + header.site + href;
+      }
+    }
+    return '';
+  }();
+
   const gift_amount = gift();
 
   function payments() {
@@ -525,6 +572,7 @@ function extractDetailFromDoc(
     refund: refund(),
     who: who(),
     invoice_url: invoice_url,
+    items_url: items_url,
     payments: payments(),
   };
 
