@@ -57,11 +57,13 @@ export async function extractDetailPromise(
       doc, url, header, context, scheduler, header.site);
     shipments.forEach(
       s => console.log('shipment: ' + s.toString()));
+    const details = extractDetailFromDoc(header, doc);
     return {
-      details: extractDetailFromDoc(header, doc),
+      details: details,
       items: await get_items(
         header,
         doc.documentElement,
+        details.items_url,
         shipments,
         scheduler,
         context),
@@ -92,6 +94,7 @@ export async function extractDetailPromise(
 async function get_items(
   header: order_header.IOrderHeader,
   order_detail_page_elem: HTMLElement,
+  items_url: string,
   shipments: shipment.IShipment[],
   scheduler: request_scheduler.IRequestScheduler,
   context: string,
@@ -99,6 +102,27 @@ async function get_items(
   let items: item.IItem[] = [];
   if ( shipments.length != 0 ) {
     items = shipments.map(s => s.items).flat();
+  }
+  if ( items.length == 0 && items_url ) {
+    try {
+      const items_elem = await req.makeAsyncStaticRequest<HTMLElement>(
+        items_url,
+        'get_items',
+        evt => util.parseStringToDOM(evt.target.responseText).documentElement,
+        scheduler,
+        util.defaulted(header.id, '9999'),
+        false,  // nocache=false: cached response is acceptable
+        'order_items',
+      );
+      items = await item.extractItems(
+        items_elem,
+        header,
+        scheduler,
+        context,
+      );
+    } catch (ex) {
+      console.warn('get_items failed to fetch items_url:', items_url, ex);
+    }
   }
   if ( items.length == 0 ) {
     // Try the "legacy" item extraction strategy.

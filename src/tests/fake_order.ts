@@ -72,6 +72,10 @@ export function orderFromTestData(
   url_map[order_dump.list_url] = order_dump.list_html;
   url_map[order_dump.detail_url] = order_dump.detail_html;
   url_map[order_dump.payments_url] = order_dump.invoice_html;
+  if (order_dump.items_url) {
+    url_map[order_dump.items_url] =
+      order_dump.items_html_cooked ?? order_dump.items_html;
+  }
 
   ['item_data', 'tracking_data'].forEach( map_type => {
     const data = order_dump[map_type] as Record<string, string>;
