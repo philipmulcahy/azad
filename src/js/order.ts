@@ -34,6 +34,7 @@ export interface IOrder extends azad_entity.IEntity {
   item_list(): Promise<item.IItem[]>;
   shipments(): Promise<shipment.IShipment[]>;
   payments(): Promise<string[]>;
+  fsa_hsa_eligible_amount(): Promise<string>;
   postage(): Promise<string>;
   postage_refund(): Promise<string>;
   pst(): Promise<string>;
@@ -61,6 +62,7 @@ export interface ISyncOrder extends azad_entity.IEntity {
   item_list: item.IItem[];
   shipments: shipment.IShipment[];
   payments: string[];
+  fsa_hsa_eligible_amount: string;
   postage: string;
   postage_refund: string;
   pst: string;
@@ -93,6 +95,7 @@ class Order implements IOrder{
     const shipments = await this.shipments();
     const item_list = await this.item_list();
     const payments = await this.payments();
+    const fsa_hsa_eligible_amount = await this.fsa_hsa_eligible_amount();
     const postage = await this.postage();
     const postage_refund = await this.postage_refund();
     const pst = await this.pst();
@@ -117,6 +120,7 @@ class Order implements IOrder{
       shipments: shipments,
       item_list: item_list,
       payments: payments,
+      fsa_hsa_eligible_amount: fsa_hsa_eligible_amount,
       postage: postage,
       postage_refund: postage_refund,
       pst: pst,
@@ -217,6 +221,11 @@ class Order implements IOrder{
       }
     }
     return Promise.resolve('');
+  }
+  fsa_hsa_eligible_amount(): Promise<string> {
+    return this._detail_dependent_promise(
+      detail => detail.fsa_hsa_eligible_amount
+    );
   }
   postage(): Promise<string> {
     return this._detail_dependent_promise( detail => detail.postage );

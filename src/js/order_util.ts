@@ -65,6 +65,7 @@ export async function enriched_items_from_orders(
       asin: i.asin,
       order_header: i.order_header,
       category: i.category,
+      fsa_hsa_eligible: i.fsa_hsa_eligible,
     }));
   });
   return items;
