@@ -14,6 +14,26 @@ function string_or_null(s: string | null | undefined) {
   return '';
 }
 
+// Spreadsheets treat a cell that starts with = + - or @ as a formula, and
+// some skip a leading tab, carriage return or line feed first. Item titles and other
+// cells are sellers' text, so a title such as
+// =HYPERLINK("https://example.com","Click me") would be live when the CSV is
+// opened. An apostrophe in front makes such a cell plain text.
+// Amounts such as "-16.92" or "-£16.92" are left alone, so they stay numbers.
+export function neutraliseFormula(cell: string): string {
+  if (!/^[=+\-@\t\r\n]/.test(cell)) {
+    return cell;
+  }
+
+  const amount = /^[-+]?\s*(?:[£$€₹]|AUD|CAD|EUR|GBP|INR|USD)?\s*\d[\d.,\s]*$/;
+
+  if (amount.test(cell)) {
+    return cell;
+  }
+
+  return "'" + cell;
+}
+
 export async function download(
   table: HTMLTableElement,
   sums_for_spreadsheet: boolean
@@ -22,7 +42,7 @@ export async function download(
   await save_file.save(csv_string, 'amazon_order_history.csv');
 }
 
-function make_csv_string(
+export function make_csv_string(
   table: HTMLTableElement,
   sums_for_spreadsheet: boolean
 ): string {
@@ -46,7 +66,9 @@ function make_csv_string(
         } else {
           x = x.textContent;
         }
-        cell_array.push(string_or_null(x));
+        // Only cells from the table: the sums row below is meant to hold
+        // formulas.
+        cell_array.push(neutraliseFormula(string_or_null(x)));
       }
       result.push(cell_array);
     }
