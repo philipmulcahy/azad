@@ -12,12 +12,26 @@ import * as util from './util';
 
 export interface IItem extends azad_entity.IEntity {
   description: string;
-  price: string;
+  unit_price: string;
+  total_price: string;
   quantity: number;
   url: string;
   asin: string;
   order_header: order_header.IOrderHeader;
   category: string;
+}
+
+function splitPrices(
+  reportedPrice: string,
+  quantity: number,
+  isTotalPrice: boolean,
+): { unit_price: string; total_price: string } {
+  if (quantity == 1) {
+    return { unit_price: reportedPrice, total_price: reportedPrice };
+  }
+  return isTotalPrice
+    ? { unit_price: '', total_price: reportedPrice }
+    : { unit_price: reportedPrice, total_price: '' };
 }
 
 type ItemsExtractor = (
@@ -189,7 +203,7 @@ function strategy0(
     return {
       description: description,
       order_header: order_header,
-      price: price,
+      ...splitPrices(price, qty, false),
       quantity: qty,
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
@@ -234,7 +248,7 @@ function strategy1(
     return {
       description: description,
       order_header: order_header,
-      price: price,
+      ...splitPrices(price, qty, false),
       quantity: qty,
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
@@ -282,7 +296,7 @@ function strategy2(
     return {
       description: description,
       order_header: order_header,
-      price: price,
+      ...splitPrices(price, qty, false),
       quantity: qty,
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
@@ -333,7 +347,7 @@ function strategy3(
     return {
       description: description,
       order_header: order_header,
-      price: price,
+      ...splitPrices(price, qty, true),
       quantity: qty,
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
@@ -396,7 +410,7 @@ function strategy4(
     return {
       description: description,
       order_header: order_header,
-      price: price,
+      ...splitPrices(price, qty, false),
       quantity: qty,
       url: urls.normalizeUrl(url, urls.getSite()),
       asin: asin,
@@ -444,7 +458,7 @@ function strategy5(
   const description = lines[0];
   const _seller = lines[1];
   const quantity = +(lines[2]!);
-  const price = itemCells[1]?.textContent?.trim();
+  const price = itemCells[1]?.textContent?.trim() ?? '';
   const url = urls.normalizeUrl(
     `/gp/digital/your-account/order-summary.html?orderID=${order_header.id}`,
     urls.getSite()
@@ -454,7 +468,7 @@ function strategy5(
     {
       description,
       order_header,
-      price,
+      ...splitPrices(price, quantity, false),
       quantity,
       url,
       asin: '',

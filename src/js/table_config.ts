@@ -384,8 +384,12 @@ const ITEM_COLS: colspec.ColSpec[] = [
     is_numeric: false,
     hide_in_browser: true,
   }, {
-    field_name: 'price',
-    value_promise_func_name: 'price',
+    field_name: 'unit price',
+    value_promise_func_name: 'unit_price',
+    is_numeric: false,
+  }, {
+    field_name: 'total price',
+    value_promise_func_name: 'total_price',
     is_numeric: false,
   }, {
     field_name: 'subscribe & save',

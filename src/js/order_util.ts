@@ -59,7 +59,8 @@ export async function enriched_items_from_orders(
     return ii.map( i => ({
       shipment: s,
       description: i.description,
-      price: i.price,
+      unit_price: i.unit_price,
+      total_price: i.total_price,
       quantity: i.quantity,
       url: i.url,
       asin: i.asin,
